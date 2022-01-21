@@ -1,0 +1,25 @@
+<mxfile host="app.diagrams.net" modified="2022-01-21T09:42:10.350Z" agent="5.0 (Windows)" etag="tr_GW4FAnoGYDtthwYM3" version="16.4.3" type="github">
+  <diagram id="MyLmROxJEcBoF24_wdBo" name="Page-1">
+    <mxGraphModel dx="1307" dy="960" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="1bePe6BsT-jUBI4wU3lD-1" value="Graph API" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="230" y="230" width="330" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="1bePe6BsT-jUBI4wU3lD-2" value="JSON-LD" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="270" y="200" width="50" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="1bePe6BsT-jUBI4wU3lD-3" value="JSON&lt;br&gt;API" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="460" y="200" width="50" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="1bePe6BsT-jUBI4wU3lD-4" value="Schema" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;" vertex="1" parent="1">
+          <mxGeometry x="290" y="390" width="60" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="1bePe6BsT-jUBI4wU3lD-5" value="Entities" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;" vertex="1" parent="1">
+          <mxGeometry x="410" y="390" width="60" height="80" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
