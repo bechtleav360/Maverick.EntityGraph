@@ -1,4 +1,6 @@
-# Draft API
+
+
+Draft API
 
 Open Questions: 
 
@@ -158,6 +160,12 @@ Creates a new template. Example can be found here: https://www.w3.org/TR/json-ld
 
 We use the flag "@explicit" in the example. Any other attributes in the graph will be omitted.
 
+The following flags are supported:
+
+* [@embed](https://www.w3.org/TR/json-ld11-framing/#object-embed-flag) (default is "@once", but can also be "@never" or "@always")
+* [@explicit](https://www.w3.org/TR/json-ld11-framing/#explicit-inclusion-flag) (if true, not mentioned attributes will be omitted)
+* @omitDefault
+* @omitGraph for single node objects
 
 ## Queries
 Support for querying the graph
@@ -183,6 +191,9 @@ returns entities of given type
 In this example, the type `eagl:LearningUnit` is abstract. There are no direct instances in the graph, we only have WikipediaEntries and YoutubeVideos. By adding the ``expand``-flag, we define that we are interested in all entities whose type inherits from the query parameter.
 
 Query support comes through attribute matching in the frames.
+
+
+
 
 ## Entities
 Managing entities
