@@ -39,7 +39,7 @@ A valid type definition. The definition can include as many types as needed
 
 The following example is using the Turtle Syntax
 
-```
+```turtle
 @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix eagl: <http://av360.org/schema/eagl#> .
@@ -59,7 +59,7 @@ eagl:hasWikpediaLink a rdf:Property ;
 
 and the following using json-ld (as graph)
 
-```
+```json
 {
   "@context": {
     "rdf": "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
@@ -96,7 +96,7 @@ Provides access to the supported schemas identified by namespaces and prefixes
 
 Provides a list of all supported prefixes. Those are automatically determined from the uploaded types
 
-```
+```json
 {
  "@context": {
     "jsonld": "http://www.w3.org/ns/json-ld"
@@ -145,7 +145,7 @@ Creates a new template. Example can be found here: https://www.w3.org/TR/json-ld
 
 * ``verifiable``: if set to true, the template will be checked if it suits the needs for a verifiable presentation, see https://www.w3.org/TR/vc-data-model/#presentations
 
-```
+```json
 
 {
   "@context": {"@vocab": "http://av360.org/schema/eagl#"},
@@ -213,7 +213,105 @@ Returns an invidual item
 
 Payload has to be a valid json-ld document with a @type and ideally @id (could be automatically generated)
 
+```json
+{
+  "@context": {
+    "rdf": "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
+    "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+    "eagl": "http://av360.org/schema/eagl#",
+    "xsd": "http://www.w3.org/2001/XMLSchema#", 
+    "sdo:" "https://schema.org/"
+
+  },
+  "@graph": [
+       {
+        "@type": "eagl:WikipediaEntry",
+        .. other values
+        "eagl:hasWikipediaLink": {
+            "@type": "sdo:url",
+            "url": "http://en.wikipedia.org/..", 
+            "language": "en-US"
+        }
+  ]
+}
+```
+
 If it includes a proof, it will be verified (and should signed in a credential chain)
+
+
+### Partial updates
+Partial updates are crucial in the graph, and natively supported. "@id" is required
+
+
+#### Adding an embedded object
+
+Scenario: adding a new wikipedia link in a different language
+
+Conflicts can arise: 
+ - if the embedded object with exactly the same values (but different ids) already exists
+ - if a constraint is violated (e.g. only lang de and en are supported)
+ - 
+```json
+{
+  "@context": {
+    "rdf": "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
+    "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+    "eagl": "http://av360.org/schema/eagl#",
+    "xsd": "http://www.w3.org/2001/XMLSchema#", 
+    "sdo:" "https://schema.org/"
+  },
+  "@graph": [
+       {
+        "@type": "sdo:url",
+        "@id": "df87da74-7e9b-11ec-90d6-0242ac120003"
+        "url": "http://de.wikipedia.org/..", 
+        "language": "de-DE"
+       }, 
+       {
+        "@type": "eagl:WikipediaEntry",
+        "@id": "684416b4-2ea3-48b0-b55c-6a2410e2baec", 
+        "eagl:hasWikipediaLink": {
+            "@id": "df87da74-7e9b-11ec-90d6-0242ac120003"
+        }
+  ]
+}
+```
+
+#### Deleting an embedded object
+
+Is the same request again via HTTP DELETE. 
+
+Conflicts can arise: 
+ - if the request does not include all edges pointing to the deleted object (means, we have dangling edges)
+ - if the user is not allowed to modify entities, who have edges pointing to the deleted object
+
+```json
+{
+  "@context": {
+    "rdf": "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
+    "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+    "eagl": "http://av360.org/schema/eagl#",
+    "xsd": "http://www.w3.org/2001/XMLSchema#", 
+    "sdo:" "https://schema.org/"
+  },
+  "@graph": [
+       {
+        "@type": "sdo:url",
+        "@id": "df87da74-7e9b-11ec-90d6-0242ac120003"
+        "url": "http://de.wikipedia.org/..", 
+        "language": "de-DE"
+       }, 
+       {
+        "@type": "eagl:WikipediaEntry",
+        "@id": "684416b4-2ea3-48b0-b55c-6a2410e2baec", 
+        "eagl:hasWikipediaLink": {
+            "@id": "df87da74-7e9b-11ec-90d6-0242ac120003"
+        }
+  ]
+}
+```
+
+#### Changing an attribute value
 
 
 
