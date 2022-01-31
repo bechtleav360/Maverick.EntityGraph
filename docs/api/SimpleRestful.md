@@ -1,5 +1,19 @@
 # Simple (but opinionated) Restful Api
 
+## Summary
+
+* ``GET /api/rs/{prefix.type}/{id}`` (Read resource)
+* ``GET /api/rs/{id}``
+* ``GET /api/rs/{prefix.type}`` (List resources)
+* ``POST /api/rs/{prefix.type}`` (Create resource)
+* ``DELETE /api/rs/{prefix.type}/{id}``
+* ``PUT /api/rs/{prefix.type}/{id}``
+* ``GET /api/rs/{prefix:type}/{id}/{key}`` (Get value/s)
+* `` ``
+* `` ``
+
+--- 
+
 What if we try to make the api as simple as possible?
 
 Let's assume the following constraints: 
@@ -38,7 +52,7 @@ We could expose the following API Methods
 
 ### Create Entity 
 
-``POST /api/{prefix.type}``
+``POST /api//{prefix.type}``
 
 ``POST /api/{prefix.type}/{id}``
 
@@ -171,12 +185,12 @@ will always patch the values in the payload:
 
 ### Get values
 
-``GET /api/{prefix:type}/{id}/{key}``
+``GET /api/{prefix.type}/{id}/{prefix.key}``
 
 
 will return the value of entity field, can be either a value, object or array. The response might contain annotations
 
-``GET /api/case/093r9e039/topic``
+``GET /api/mav.case/093r9e039/mav.topic``
 ````json
 {
   "value": "job application",
@@ -184,7 +198,7 @@ will return the value of entity field, can be either a value, object or array. T
 }
 ````
 
-``GET /api/record/4214214/owner``
+``GET /api/mav.record/4214214/mav.owner``
 
 ````json
 {

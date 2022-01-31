@@ -7,6 +7,7 @@ server:
   port : 8070
 
 security:
+  apiKey: "1234"
   basic:
     enabled: false
 
@@ -23,7 +24,7 @@ management:
   endpoints:
     web:
       exposure:
-        include: "health, info, env, loggers, metrics, scheduledTasks, logfile"
+        include: "health, info, env, loggers, metrics, scheduledTasks, logfile, mappings"
   endpoint:
     health:
       enabled: true

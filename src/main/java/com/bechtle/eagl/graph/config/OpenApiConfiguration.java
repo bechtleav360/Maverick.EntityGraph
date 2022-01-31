@@ -44,8 +44,8 @@ class OpenApiConfiguration {
                 .securitySchemes(List.of(apiKey()))
                 .securityContexts(List.of(securityContext()))
                 .select()
-                .apis(RequestHandlerSelectors.any())
-                .paths(PathSelectors.ant("/api/**"))
+                .apis(RequestHandlerSelectors.basePackage("com.bechtle.eagl.graph.api"))
+                // .paths(PathSelectors.ant("/api/**"))
                 .build();
     }
 

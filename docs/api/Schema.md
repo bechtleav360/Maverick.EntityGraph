@@ -42,7 +42,7 @@ The following example is using the Turtle Syntax
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix eagl: <http://av360.org/schema/eagl#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
-@prefix schema: <https://schema.org/>,
+@prefix schema: <https://schema.org/> .
 
 eagl:WikipediaEntry a rdfs:Class ;
     rdfs:label "Wikipedia Entry" ;

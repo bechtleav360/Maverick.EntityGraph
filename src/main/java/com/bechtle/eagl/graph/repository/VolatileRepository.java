@@ -101,12 +101,6 @@ public class VolatileRepository implements AutoCloseable {
     }
 
 
-    public void build() {
-        try (RepositoryConnection conn = this.repository.getConnection()) {
-            conn.
-        }
-    }
-
     @Override
     public void close() {
         this.repository.shutDown();

@@ -127,26 +127,6 @@
     <build>
         <plugins>
             <plugin>
-                <groupId>io.swagger.codegen.v3</groupId>
-                <artifactId>swagger-codegen-maven-plugin</artifactId>
-                <version>3.0.30</version>
-                <executions>
-                    <execution>
-                        <phase>none</phase>
-                        <configuration>
-                            <skip>true</skip>
-                            <inputSpec>http://eagl-enmeshed.germanywestcentral.azurecontainer.io/docs/json</inputSpec>
-                            <language>java</language>
-                            <configOptions>
-
-                                <java8>true</java8>
-                                <library>resttemplate</library>
-                            </configOptions>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <configuration>
@@ -156,7 +136,7 @@
                         <publish>true</publish>
                         <verboseLogging>true</verboseLogging>
                         <env>
-                            <BP_OCI_SOURCE>https://github.com/bechtleav360/eagl-service-wallet</BP_OCI_SOURCE>
+                            <BP_OCI_SOURCE>https://github.com/bechtleav360/eagl-service-graph</BP_OCI_SOURCE>
                         </env>
                     </image>
                     <docker>

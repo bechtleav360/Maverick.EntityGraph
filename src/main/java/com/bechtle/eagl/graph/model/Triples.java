@@ -13,7 +13,9 @@ import org.eclipse.rdf4j.rio.helpers.ContextStatementCollector;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -27,6 +29,10 @@ public class Triples {
     public Triples(Collection<Statement> statements, Map<String, String> namespaces) {
         this.statements = statements;
         this.namespaces = namespaces;
+    }
+    public Triples() {
+        this.statements = new ArrayList<>();
+        this.namespaces = new HashMap<>();
     }
 
 

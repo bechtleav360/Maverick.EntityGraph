@@ -21,7 +21,7 @@ import java.util.List;
 @EnableWebFluxSecurity
 public class SecurityConfiguration {
 
-    @Value("${security.api-key}")
+    @Value("${security.apiKey}")
     String key;
 
     private static final String API_KEY_HEADER = "X-API-KEY";

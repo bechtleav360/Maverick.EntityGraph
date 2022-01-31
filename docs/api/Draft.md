@@ -28,6 +28,7 @@ Is now organized in different sections:
 * [Entities](./Entities.md) - storing, updating and reading the entities (including proof and annotations)
 * [Templates](./Templates.md) - managing the frames used for different representations of the entities
 * [Queries](./Queries.md) - searching for entities
+* [Configs](#) - generating configurations for clients out of the schema
 
 
 
