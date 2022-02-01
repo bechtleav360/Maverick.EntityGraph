@@ -5,29 +5,35 @@ Managing the entity resources
 ## Summary by format
 
 ### Turtle / JSON-LD
-* ``GET /api/rs/{id}`` (Read entity) /v2
-* ``GET /api/rs/{prefix.type}/{id}`` (Read entity with type coercion)
-* ``POST /api/rs/{id}`` (Read entity by example) /v1
 * ``POST /api/rs`` (Create entity) /v1
-* ``GET /api/rs/{prefix.type}`` (List entities)  /v2
+* ``POST /api/rs/{id}/{prefix.key}`` (Create value or relation) /v1
+* ``PUT /api/rs/{id}/{prefix.key}`` (Create annotations on edge) /v1
+* ``POST /api/rs/{id}/{prefix.key}/{id}`` (Create edge to existing entity) /v1
+
+
+* ``DELETE /api/rs/{id}/{prefix.key}`` (Delete value or relation) /v2
+* ``GET /api/rs/{id}/{prefix.key}`` (Reads value or embedded object) /v2
 * ``DELETE /api/rs/{id}`` (Delete entity) /v2
+* ``GET /api/rs/{prefix.type}`` (List entities)  /v2
+* ``GET /api/rs/{id}`` (Read entity) /v2
+
+* ``GET /api/rs/{prefix.type}/{id}`` (Read entity with type coercion) /v3
 * ``PUT /api/rs/{id}`` (Patch entity) /v3
 * ``PUT /api/rs/{id}/{prefix.key}`` (Update value) /v3
-* ``GET /api/rs/{id}/{prefix.key}`` (Reads value or embedded object) /v2
-* ``POST /api/rs/{id}/{prefix.key}`` (Create value or relation) /v1
-* ``PUT /api/rs/{id}/{prefix.key}`` (Create annotations on edge) /v2
-* ``DELETE /api/rs/{id}/{prefix.key}`` (Delete value or relation) /v2
+
+* ``POST /api/rs/{id}`` (Read entity by example) /v5
+
 
 ### JSON+HATEOAS Mode 
-* ``GET /api/rs/{id}`` (Read entity)
-* ``GET /api/rs/{prefix.type}/{id}`` (Read entity with type coercion)
-* ``POST /api/rs/{prefix.type}`` (Create entities)
-* ``GET /api/rs/{prefix.type}`` (List entities)
-* ``DELETE /api/rs/{prefix.type}/{id}`` (Delete entity) /v2
-* ``PUT /api/rs/{prefix.type}/{id}`` (Patch entity)
+* ``GET /api/rs/{id}`` (Read entity) /v7
+* ``GET /api/rs/{prefix.type}/{id}`` (Read entity with type coercion) /v7
+* ``POST /api/rs/{prefix.type}`` (Create entities) /v7
+* ``GET /api/rs/{prefix.type}`` (List entities) /v7
+* ``DELETE /api/rs/{prefix.type}/{id}`` (Delete entity) /v7
+* ``PUT /api/rs/{prefix.type}/{id}`` (Patch entity) /v7
 * 
-* ``GET /api/rs/{prefix.type}/{id}/{key}`` (Get value/s)
-* ``PUT /api/rs/{prefix.type}/{id}/{prefix.key}`` (Create annotations on edge) /v2
+* ``GET /api/rs/{prefix.type}/{id}/{key}`` (Get value/s) /v7
+* ``PUT /api/rs/{prefix.type}/{id}/{prefix.key}`` (Create annotations on edge) /v7
 
 
 

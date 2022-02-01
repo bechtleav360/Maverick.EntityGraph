@@ -6,37 +6,12 @@
 server:
   port : 8070
 
-security:
-  apiKey: "1234"
-  basic:
-    enabled: false
 
 spring:
   profiles:
     active: local
 
 
-logging:
-  file:
-    name: server.log
 
-management:
-  endpoints:
-    web:
-      exposure:
-        include: "health, info, env, loggers, metrics, scheduledTasks, logfile, mappings"
-  endpoint:
-    health:
-      enabled: true
-    info:
-      enabled: true
-    env:
-      enabled: true
-    loggers:
-      enabled: true
-    metrics:
-      enabled: true
-    scheduledTasks:
-      enabled: true
-    logfile:
-      enabled: true
+
+

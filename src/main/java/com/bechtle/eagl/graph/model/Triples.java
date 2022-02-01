@@ -13,6 +13,7 @@ import org.eclipse.rdf4j.rio.helpers.ContextStatementCollector;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -21,7 +22,7 @@ import java.util.Map;
 /**
  * A collection of statements
  */
-public class Triples {
+public class Triples implements Serializable {
 
     private final Collection<Statement> statements;
     private final Map<String, String> namespaces;
@@ -58,5 +59,13 @@ public class Triples {
 
     public Map<String, String> getNamespaces() {
         return namespaces;
+    }
+
+    @Override
+    public String toString() {
+        return "Triples{" +
+                "statements=" + statements +
+                ", namespaces=" + namespaces +
+                '}';
     }
 }

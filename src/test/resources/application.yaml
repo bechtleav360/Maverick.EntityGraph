@@ -1,0 +1,23 @@
+#spring:
+#  datasource:
+#    url: jdbc:h2:file:/data/demo
+
+security:
+  ignored: /**
+
+spring:
+  profiles:
+    active: test
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.security.SecurityAutoConfiguration
+
+
+logging:
+  level:
+    com:
+      bechtle: TRACE
+    org:
+      springframework:
+        security: INFO
+

@@ -1,14 +1,16 @@
 package com.bechtle.eagl.graph.api;
 
+import com.bechtle.eagl.graph.connector.rdf4j.model.ResourceIdentifier;
 import com.bechtle.eagl.graph.model.Triples;
-import com.bechtle.eagl.graph.services.Graph;
+import com.bechtle.eagl.graph.services.EntityServices;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.reactive.function.server.ServerResponse;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @RestController
@@ -37,12 +39,13 @@ import reactor.core.publisher.Mono;
         }
 )
 @Api( tags = "Entities")
+@Slf4j
 public class Entities {
 
     protected final ObjectMapper objectMapper;
-    protected final Graph graphService;
+    protected final EntityServices graphService;
 
-    public Entities(ObjectMapper objectMapper, Graph graphService) {
+    public Entities(ObjectMapper objectMapper, EntityServices graphService) {
         this.objectMapper = objectMapper;
         this.graphService = graphService;
     }
@@ -51,15 +54,19 @@ public class Entities {
     @GetMapping("/{id}")
     @ResponseStatus(HttpStatus.OK)
     Mono<Triples> read(@PathVariable String id) {
-        return graphService.get(id);
+
+        return graphService.readEntity(ResourceIdentifier.of(id));
     }
 
     @ApiOperation(value = "Create entity", tags = {"v1", "entity"})
-    @PostMapping(value = "/")
+    @PostMapping(value = "")
     @ResponseStatus(HttpStatus.CREATED)
-    Mono<ResponseEntity<Void>>  createEntity(@RequestBody Triples request) {
-        return graphService.create(request)
-                .map(id -> ResponseEntity.ok().build());
+    Mono<ResponseEntity<Void>> createEntity(@RequestBody Triples request) {
+        log.trace("(Request) Create Entity with payload: {}", request.toString());
+        return graphService.createEntity(request)
+                .collectList()
+                .map(id -> ResponseEntity.accepted().build());
+            //FIXME: return valid uri to created resource.. difficult if we created multiple
     }
 
     /*

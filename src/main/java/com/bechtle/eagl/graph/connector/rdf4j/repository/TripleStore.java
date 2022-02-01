@@ -1,17 +1,18 @@
-package com.bechtle.eagl.graph.services;
+package com.bechtle.eagl.graph.connector.rdf4j.repository;
 
-import com.apicatalog.rdf.Rdf;
+import com.bechtle.eagl.graph.connector.rdf4j.model.ResourceIdentifier;
 import com.bechtle.eagl.graph.model.Identifier;
 import com.bechtle.eagl.graph.model.Triples;
+import com.bechtle.eagl.graph.repository.Graph;
 import lombok.extern.slf4j.Slf4j;
+import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.ValueFactory;
+import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.rio.RDFFormat;
-import org.eclipse.rdf4j.rio.RDFWriter;
-import org.eclipse.rdf4j.rio.RDFWriterFactory;
 import org.eclipse.rdf4j.rio.Rio;
-import org.springframework.stereotype.Service;
-import org.springframework.web.reactive.function.server.ServerResponse;
+import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -19,22 +20,22 @@ import java.security.SecureRandom;
 import java.util.Base64;
 
 @Slf4j
-@Service
-public class Graph {
+@Component
+public class TripleStore implements Graph {
 
     private final Repository repository;
     private final SecureRandom secureRandom;
 
-    public Graph(Repository repository) {
-        this.secureRandom = new SecureRandom();
+    public TripleStore(Repository repository) {
         this.repository = repository;
+        this.secureRandom = new SecureRandom();
     }
 
-
-    public Mono<Identifier> create(Triples of) {
-        return Mono.create(c -> {
+    @Override
+    public Flux<Identifier> store(Triples triples) {
+        return Flux.create(c -> {
             // generate unique identifier
-            Rio.write(of.getStatements(), Rio.createWriter(RDFFormat.NQUADS, System.out));
+            Rio.write(triples.getStatements(), Rio.createWriter(RDFFormat.NQUADS, System.out));
 
             // perform validation via shacl
             // https://rdf4j.org/javadoc/3.2.0/org/eclipse/rdf4j/sail/shacl/ShaclSail.html
@@ -44,20 +45,23 @@ public class Graph {
             try(RepositoryConnection connection = repository.getConnection()) {
                 try {
                     connection.begin();
-                    connection.add(of.getStatements());
+                    connection.add(triples.getStatements());
                     connection.commit();
-                    c.success();
+                    c.next(new ResourceIdentifier(SimpleValueFactory.getInstance().createIRI("http://www.example.org", "hello")));
                 } catch (Exception e) {
                     log.warn("Error while loading statements, performing rollback.", e);
                     connection.rollback();
                     c.error(e);
                 }
+            } finally {
+                c.complete();
             }
-        });
 
+        });
     }
 
-    public Mono<Triples> get(String id) {
+    @Override
+    public Mono<Triples> get(Identifier id) {
         return Mono.create(c -> {
             try(RepositoryConnection connection = repository.getConnection()) {
                 try {
@@ -70,9 +74,7 @@ public class Graph {
                 }
             }
         });
-
     }
-
 
     private String generateRandomBase64Token() {
         byte[] token = new byte[16];

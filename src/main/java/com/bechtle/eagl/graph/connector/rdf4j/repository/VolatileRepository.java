@@ -1,8 +1,7 @@
-package com.bechtle.eagl.graph.repository;
+package com.bechtle.eagl.graph.connector.rdf4j.repository;
 
 import com.apicatalog.jsonld.JsonLdError;
 import com.apicatalog.jsonld.document.JsonDocument;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.eclipse.rdf4j.repository.Repository;
@@ -15,7 +14,6 @@ import org.eclipse.rdf4j.rio.Rio;
 import org.eclipse.rdf4j.sail.memory.MemoryStore;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.BeanDefinition;
-import org.springframework.beans.factory.wiring.BeanConfigurerSupport;
 import org.springframework.context.annotation.Scope;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Component;
@@ -24,6 +22,8 @@ import java.io.*;
 
 /**
  * Single use in-memory repository. Use it only to load and dump, e.g. in a different format
+ * (note: use RIO directly for this)
+ *
  */
 @Component
 @Scope(BeanDefinition.SCOPE_PROTOTYPE)

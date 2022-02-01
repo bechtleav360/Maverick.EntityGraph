@@ -4,9 +4,9 @@
 # 1 - Loading data 
 
 - [ ] Support for native queries
-- [ ] Create entity
+- [x] Create entity
 - [ ] Create value or relation
-- [ ] Service configuration with working swagger UI
+- [x] Service configuration with working swagger UI
 - [ ] Instance on cloud with persistent storage
 - [ ] Preloaded videos 
 
@@ -40,3 +40,5 @@
 # 6 - Proof
 
 - [ ] Support proof query parameter
+
+# 7 - JSON only mode
