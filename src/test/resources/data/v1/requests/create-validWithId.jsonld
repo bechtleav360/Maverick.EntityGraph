@@ -1,0 +1,9 @@
+{
+  "@context": {
+    "ical": "http://www.w3.org/2002/12/cal/ical#",
+    "my": "http://example.org#"
+  },
+  "@type": "ical:Vevent",
+  "@id": "my:cal124121323",
+  "ical:summary": "Lady Gaga Concert"
+}

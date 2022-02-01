@@ -43,23 +43,88 @@ public class JsonLdEntitiesTest implements EntitiesTest {
     }
 
     @Override
-    public void createEntityWithInvalidSyntax() {
-
+    @Test
+    public void createEntityWithMissingType() {
+        Resource file = new ClassPathResource("data/v1/requests/create-invalid-missingType.jsonld");
+        webClient.post()
+                .uri("/api/rs")
+                .contentType(MediaType.parseMediaType("application/ld+json"))
+                .body(BodyInserters.fromResource(file))
+                .exchange()
+                .expectStatus().isBadRequest();
     }
 
     @Override
+    @Test
+    public void createEntityWithInvalidSyntax() {
+        Resource file = new ClassPathResource("data/v1/requests/create-invalid-syntax.jsonld");
+        webClient.post()
+                .uri("/api/rs")
+                .contentType(MediaType.parseMediaType("application/ld+json"))
+                .body(BodyInserters.fromResource(file))
+                .exchange()
+                .expectStatus().isBadRequest();
+    }
+
+    @Override
+    @Test
     public void createEntityWithValidId() {
+        Resource file = new ClassPathResource("data/v1/requests/create-validWithId.jsonld");
+        webClient.post()
+                .uri("/api/rs")
+                .contentType(MediaType.parseMediaType("application/ld+json"))
+                .body(BodyInserters.fromResource(file))
+                .exchange()
+                .expectStatus().isAccepted();
 
     }
 
+    @Test
+    public void createEntityWithValidIdAndBase() {
+        Resource file = new ClassPathResource("data/v1/requests/create-validWithIdAndBase.jsonld");
+        webClient.post()
+                .uri("/api/rs")
+                .contentType(MediaType.parseMediaType("application/ld+json"))
+                .body(BodyInserters.fromResource(file))
+                .exchange()
+                .expectStatus().isAccepted();
+
+    }
+
+    @Test
     @Override
     public void createEntityWithInvalidId() {
-
+        Resource file = new ClassPathResource("data/v1/requests/create-validWithInvalidId.jsonld");
+        webClient.post()
+                .uri("/api/rs")
+                .contentType(MediaType.parseMediaType("application/ld+json"))
+                .body(BodyInserters.fromResource(file))
+                .exchange()
+                .expectStatus().isBadRequest();
     }
 
     @Override
+    @Test
     public void createMultipleEntities() {
+        Resource file = new ClassPathResource("data/v1/requests/create-valid_multiple.jsonld");
+        webClient.post()
+                .uri("/api/rs")
+                .contentType(MediaType.parseMediaType("application/ld+json"))
+                .body(BodyInserters.fromResource(file))
+                .exchange()
+                .expectStatus().isAccepted();
+    }
 
+
+    @Test
+    public void createMultipleEntitiesWithNoType() {
+        Resource file = new ClassPathResource("data/v1/requests/create-invalid_multipleOneNoType.jsonld");
+        webClient.post()
+                .uri("/api/rs")
+                .contentType(MediaType.parseMediaType("application/ld+json"))
+                .body(BodyInserters.fromResource(file))
+                .exchange()
+                .expectStatus().isBadRequest();
     }
 
     @Override

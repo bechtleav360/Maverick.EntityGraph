@@ -1,0 +1,18 @@
+{
+  "@context": {
+    "@base": "http://www.example.org",
+    "ical": "http://www.w3.org/2002/12/cal/ical#"
+  },
+  "@graph": [
+    {
+      "@id": "1",
+      "@type": "ical:Vevent",
+      "ical:summary": "Lady Gaga Concert"
+    },
+    {
+      "@id": "2",
+      "@type": "ical:Vevent",
+      "ical:summary": "Madonna Concert"
+    }
+  ]
+}

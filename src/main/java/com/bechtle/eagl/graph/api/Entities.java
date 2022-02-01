@@ -13,6 +13,8 @@ import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.io.InvalidObjectException;
+
 @RestController
 @RequestMapping(path = "/api/rs",
         consumes = {
@@ -63,10 +65,14 @@ public class Entities {
     @ResponseStatus(HttpStatus.CREATED)
     Mono<ResponseEntity<Void>> createEntity(@RequestBody Triples request) {
         log.trace("(Request) Create Entity with payload: {}", request.toString());
-        return graphService.createEntity(request)
-                .collectList()
-                .map(id -> ResponseEntity.accepted().build());
-            //FIXME: return valid uri to created resource.. difficult if we created multiple
+        try {
+            return graphService.createEntity(request)
+                    .collectList()
+                    .map(id -> ResponseEntity.accepted().build());
+        } catch (InvalidObjectException e) {
+            return Mono.just(ResponseEntity.badRequest().build());
+        }
+        //FIXME: return valid uri to created resource.. difficult if we created multiple
     }
 
     /*

@@ -10,6 +10,8 @@ public interface EntitiesTest {
      */
     void createEntity();
 
+    void createEntityWithMissingType();
+
     /**
      *  <pre>POST /api/rs</pre>
      */

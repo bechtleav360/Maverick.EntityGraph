@@ -76,9 +76,5 @@ public class TripleStore implements Graph {
         });
     }
 
-    private String generateRandomBase64Token() {
-        byte[] token = new byte[16];
-        secureRandom.nextBytes(token);
-        return Base64.getUrlEncoder().withoutPadding().encodeToString(token); //base64 encoding
-    }
+
 }

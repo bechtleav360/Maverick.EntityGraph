@@ -76,14 +76,17 @@ public class RdfDecoder implements Decoder<Triples> {
                     try (InputStream is = dataBuffer.asInputStream(true)) {
                         parser.setRDFHandler(collector);
                         parser.parse(is);
-                        return Flux.just(new Triples(collector.getStatements(), collector.getNamespaces()));
+                        return Flux.just(new Triples(collector.getStatements()));
                     } catch (RDFParseException e) {
                         log.error("Failed to parse request of mimetype '{}'", mimeType.toString(), e);
                         return Flux.error(new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid format"));
                     } catch (IOException e) {
                         return Flux.error(e);
-                    } finally {
-                        log.trace("Parsing completed");
+                    } catch (Exception e) {
+                        return Flux.error(e);
+                    }
+                    finally {
+                        log.trace("(Decoder) Parsing of payload with mimetype '{}' completed", mimeType.toString());
                     }
         });
 

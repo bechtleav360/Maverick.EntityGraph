@@ -4,7 +4,12 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import jakarta.json.JsonObject;
+import org.eclipse.rdf4j.model.Model;
+import org.eclipse.rdf4j.model.Namespace;
 import org.eclipse.rdf4j.model.Statement;
+import org.eclipse.rdf4j.model.impl.DynamicModelFactory;
+import org.eclipse.rdf4j.model.impl.LinkedHashModel;
+import org.eclipse.rdf4j.model.impl.SimpleNamespace;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.rio.RDFFormat;
 import org.eclipse.rdf4j.rio.RDFParser;
@@ -14,26 +19,22 @@ import org.eclipse.rdf4j.rio.helpers.ContextStatementCollector;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 /**
  * A collection of statements
  */
 public class Triples implements Serializable {
 
-    private final Collection<Statement> statements;
-    private final Map<String, String> namespaces;
+    private final Model model;
 
-    public Triples(Collection<Statement> statements, Map<String, String> namespaces) {
-        this.statements = statements;
-        this.namespaces = namespaces;
+    public Triples(Collection<Statement> statements) {
+        this.model = new LinkedHashModel();
+        this.model.addAll(statements);
+        this.model.setNamespace(new SimpleNamespace("local", "http://eagl.av360.io"));
     }
     public Triples() {
-        this.statements = new ArrayList<>();
-        this.namespaces = new HashMap<>();
+        this(Collections.emptyList());
     }
 
 
@@ -44,7 +45,7 @@ public class Triples implements Serializable {
             parser.setRDFHandler(collector);
             parser.parse(bais);
 
-            return new Triples(collector.getStatements(), collector.getNamespaces());
+            return new Triples(collector.getStatements());
         } catch (JsonProcessingException e) {
             throw e;
         } catch (IOException e) {
@@ -54,18 +55,16 @@ public class Triples implements Serializable {
     }
 
     public Collection<Statement> getStatements() {
-        return statements;
+        return this.model;
     }
 
-    public Map<String, String> getNamespaces() {
-        return namespaces;
-    }
 
     @Override
     public String toString() {
-        return "Triples{" +
-                "statements=" + statements +
-                ", namespaces=" + namespaces +
-                '}';
+        return getStatements().toString();
+    }
+
+    public synchronized Model getModel() {
+        return this.model;
     }
 }
