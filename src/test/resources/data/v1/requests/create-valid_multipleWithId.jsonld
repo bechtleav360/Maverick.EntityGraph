@@ -5,10 +5,12 @@
   },
   "@graph": [
     {
+      "@id": "1",
       "@type": "ical:Vevent",
       "ical:summary": "Lady Gaga Concert"
     },
     {
+      "@id": "2",
       "@type": "ical:Vevent",
       "ical:summary": "Madonna Concert"
     }

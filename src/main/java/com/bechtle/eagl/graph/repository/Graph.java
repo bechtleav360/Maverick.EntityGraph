@@ -1,7 +1,10 @@
 package com.bechtle.eagl.graph.repository;
 
-import com.bechtle.eagl.graph.model.Identifier;
-import com.bechtle.eagl.graph.model.Triples;
+import com.bechtle.eagl.graph.model.NamespaceAwareStatement;
+import com.bechtle.eagl.graph.model.Transaction;
+import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Model;
+import org.eclipse.rdf4j.query.TupleQueryResult;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -13,11 +16,14 @@ public interface Graph {
      *
      * Can store multiple entities.
      *
-     * @param triples the statements to store
-     * @return  Returns the identifier (IRI) of the created entity.
+     * @param model the statements to store
+     * @return  Returns the transaction statements
      */
-    Flux<Identifier> store(Triples triples);
+    Flux<NamespaceAwareStatement> store(Model model);
 
+    Flux<NamespaceAwareStatement> get(IRI id);
 
-    Mono<Triples> get(Identifier id);
+    Mono<TupleQueryResult> queryValues(String query);
+
+    Flux<NamespaceAwareStatement> queryStatements(String query);
 }

@@ -12,6 +12,12 @@ spring:
     active: local
 
 
+defaults:
+  namespace:
+    transactions: "http://www.av360.io/schema/transactions#"
+    entities: "http://www.av360.io/schema/entities/"
+
+
 
 
 

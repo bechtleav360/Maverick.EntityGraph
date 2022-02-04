@@ -1,46 +1,24 @@
 package com.bechtle.eagl.graph.api;
 
-import com.bechtle.eagl.graph.connector.rdf4j.model.ResourceIdentifier;
-import com.bechtle.eagl.graph.model.Triples;
+import com.bechtle.eagl.graph.connector.rdf4j.model.EntityIdentifier;
+import com.bechtle.eagl.graph.model.IncomingModel;
+import com.bechtle.eagl.graph.model.NamespaceAwareStatement;
 import com.bechtle.eagl.graph.services.EntityServices;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.client.HttpClientErrorException;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
 
+import java.io.IOException;
 import java.io.InvalidObjectException;
 
 @RestController
-@RequestMapping(path = "/api/rs",
-        consumes = {
-            "text/xml",
-            "text/nquads",
-            "text/turtle",
-            "text/n3",
-            "text/rdf+n3",
-            "application/x-turtle",
-            "text/x-turtlestar",
-            "application/n-triples",
-            "application/n-quads",
-            "application/ld+json",
-            "application/rdf+xml",
-            "application/rdf+json",
-            "application/xml",
-            "application/trix",
-            "application/trig",
-            "application/x-trig",
-            "application/x-trigstar",
-            "application/x-turtlestar",
-            "application/x-binary-rdf",
-            "application/x-ld+ndjson"
-        }
-)
-@Api( tags = "Entities")
+@RequestMapping(path = "/api/rs")
+@Api(tags = "Entities")
 @Slf4j
 public class Entities {
 
@@ -53,26 +31,33 @@ public class Entities {
     }
 
     @ApiOperation(value = "Read entity", tags = {"v1", "entity"})
-    @GetMapping("/{id}")
+    @GetMapping(value = "/{id}", produces = {"text/turtle", "application/ld+json"})
     @ResponseStatus(HttpStatus.OK)
-    Mono<Triples> read(@PathVariable String id) {
-
-        return graphService.readEntity(ResourceIdentifier.of(id));
+    Flux<NamespaceAwareStatement> read(@PathVariable String id) {
+        log.trace("(Request) Reading Entity with id: {}", id);
+        return graphService.readEntity(EntityIdentifier.fromIdentifier(id));
+        /*
+                .map(triples -> {
+                    log.trace("Returning {} statements for id {}", triples.getStatements().size(), id);
+                    return triples;
+                });
+         */
     }
 
     @ApiOperation(value = "Create entity", tags = {"v1", "entity"})
-    @PostMapping(value = "")
-    @ResponseStatus(HttpStatus.CREATED)
-    Mono<ResponseEntity<Void>> createEntity(@RequestBody Triples request) {
+    @PostMapping(value = "", consumes = {"text/turtle", "application/ld+json"}, produces = {"text/turtle", "application/ld+json"})
+    @ResponseStatus(HttpStatus.ACCEPTED)
+    Flux<NamespaceAwareStatement> createEntity(@RequestBody IncomingModel request) {
         log.trace("(Request) Create Entity with payload: {}", request.toString());
         try {
-            return graphService.createEntity(request)
-                    .collectList()
-                    .map(id -> ResponseEntity.accepted().build());
+            return graphService.createEntity(request);
         } catch (InvalidObjectException e) {
-            return Mono.just(ResponseEntity.badRequest().build());
+            log.warn("Invalid request while creating entity. ", e);
+            return Flux.error(new HttpClientErrorException(HttpStatus.BAD_REQUEST));
+        } catch (IOException e) {
+            log.error("Exception while creating entity. ", e);
+            return Flux.error(new HttpClientErrorException(HttpStatus.INTERNAL_SERVER_ERROR));
         }
-        //FIXME: return valid uri to created resource.. difficult if we created multiple
     }
 
     /*

@@ -17,7 +17,7 @@ import java.io.IOException;
 import java.io.InputStream;
 
 @Configuration
-@Profile({"prod", "stage", "it"})
+@Profile({"prod", "stage", "it", "local"})
 public class RepositoryConfiguration {
 
 

@@ -20,7 +20,7 @@ import java.util.List;
 
 @Configuration
 @EnableWebFluxSecurity
-@Profile({"prod", "stage", "it"})
+@Profile({"prod", "stage", "it", "local"})
 public class SecurityConfiguration {
 
     @Value("${security.apiKey}")
