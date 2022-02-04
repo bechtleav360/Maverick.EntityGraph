@@ -1,4 +1,4 @@
-package com.bechtle.eagl.graph.connector.rdf4j.model;
+package com.bechtle.eagl.graph.model;
 
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Namespace;
@@ -6,7 +6,7 @@ import org.eclipse.rdf4j.model.Namespace;
 import java.security.SecureRandom;
 import java.util.Base64;
 
-public class GeneratedIdentifier extends EntityIdentifier {
+public class GeneratedIdentifier extends SimpleIRI {
     private static final SecureRandom secureRandom;
 
     static {
@@ -14,7 +14,7 @@ public class GeneratedIdentifier extends EntityIdentifier {
     }
 
     public GeneratedIdentifier(String namespace) {
-        super.setNamespace(namespace);
+        super(namespace);
         super.setLocalName(this.generate());
     }
 

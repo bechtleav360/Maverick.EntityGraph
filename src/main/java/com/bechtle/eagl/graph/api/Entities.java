@@ -1,6 +1,5 @@
 package com.bechtle.eagl.graph.api;
 
-import com.bechtle.eagl.graph.connector.rdf4j.model.EntityIdentifier;
 import com.bechtle.eagl.graph.model.IncomingModel;
 import com.bechtle.eagl.graph.model.NamespaceAwareStatement;
 import com.bechtle.eagl.graph.services.EntityServices;
@@ -9,6 +8,7 @@ import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.util.Assert;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.HttpClientErrorException;
 import reactor.core.publisher.Flux;
@@ -30,21 +30,15 @@ public class Entities {
         this.graphService = graphService;
     }
 
-    @ApiOperation(value = "Read entity", tags = {"v1", "entity"})
-    @GetMapping(value = "/{id}", produces = {"text/turtle", "application/ld+json"})
+    @ApiOperation(value = "Read entity", tags = {"v1"})
+    @GetMapping(value = "/{id:[\\w|\\d|-|_]+}", produces = {"text/turtle", "application/ld+json"})
     @ResponseStatus(HttpStatus.OK)
     Flux<NamespaceAwareStatement> read(@PathVariable String id) {
         log.trace("(Request) Reading Entity with id: {}", id);
-        return graphService.readEntity(EntityIdentifier.fromIdentifier(id));
-        /*
-                .map(triples -> {
-                    log.trace("Returning {} statements for id {}", triples.getStatements().size(), id);
-                    return triples;
-                });
-         */
+        return graphService.readEntity(id);
     }
 
-    @ApiOperation(value = "Create entity", tags = {"v1", "entity"})
+    @ApiOperation(value = "Create entity", tags = {"v1"})
     @PostMapping(value = "", consumes = {"text/turtle", "application/ld+json"}, produces = {"text/turtle", "application/ld+json"})
     @ResponseStatus(HttpStatus.ACCEPTED)
     Flux<NamespaceAwareStatement> createEntity(@RequestBody IncomingModel request) {
@@ -58,6 +52,27 @@ public class Entities {
             log.error("Exception while creating entity. ", e);
             return Flux.error(new HttpClientErrorException(HttpStatus.INTERNAL_SERVER_ERROR));
         }
+    }
+
+
+
+    @ApiOperation(value = "Create value or relation", tags = {"v1"})
+    @PostMapping(value = "/{id:[\\w|\\d|-|_]+}/{prefixedKey:[\\w|\\d]+\\.[\\w|\\d]+}", consumes = {"text/plain"}, produces = {"text/turtle", "application/ld+json"})
+    @ResponseStatus(HttpStatus.CREATED)
+    Flux<NamespaceAwareStatement> createValue(@PathVariable String id, @PathVariable String prefixedKey, @RequestBody String value) {
+        log.trace("(Request) Set value '{}' for property '{}' of entity '{}'", value.toString(), prefixedKey, id);
+        String[] property = prefixedKey.split("\\.");
+        Assert.isTrue(property.length == 2, "Failed to extract prefix and name from path parameter "+prefixedKey);
+
+        return graphService.setValue(id, property[0], property[1], value);
+
+       /* } catch (InvalidObjectException e) {
+            log.warn("Invalid request while saving value. ", e);
+            return Flux.error(new HttpClientErrorException(HttpStatus.BAD_REQUEST));
+        } catch (IOException e) {
+            log.error("Exception while saving value. ", e);
+            return Flux.error(new HttpClientErrorException(HttpStatus.INTERNAL_SERVER_ERROR));
+        }*/
     }
 
     /*
@@ -75,11 +90,6 @@ public class Entities {
     @GetMapping("/{prefixedType:[\\w|\\d]+\\.[\\w|\\d]+}")
     @ResponseStatus(HttpStatus.OK)
     Mono<ServerResponse> listEntities(@RequestParam String page, @RequestParam int count);
-
-    @ApiOperation(value = "Create entity", tags = {"v1", "entity"})
-    @PostMapping(value = "/")
-    @ResponseStatus(HttpStatus.CREATED)
-    Mono<ServerResponse>  createEntity(ServerRequest request);
 
     @ApiOperation(value = "Create entity with type", tags = {"v3", "entity"})
     @PostMapping("/{prefixedType}")
@@ -106,10 +116,6 @@ public class Entities {
     @ResponseStatus(HttpStatus.OK)
     Mono<ServerResponse> readValue(@PathVariable String id, @PathVariable String prefixedKey);
 
-    @ApiOperation(value = "Create value or relation", tags = {"v1", "entity"})
-    @PostMapping("/{id}/{prefixedKey}")
-    @ResponseStatus(HttpStatus.CREATED)
-    Mono<ServerResponse> createValue(@PathVariable String id, @PathVariable String prefixedKey);
 
     @ApiOperation(value = "Annotate value or relation", tags = {"v2", "entity"})
     @PutMapping("/{id}/{prefixedKey}")

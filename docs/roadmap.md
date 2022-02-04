@@ -3,9 +3,10 @@
 
 # 1 - Loading data 
 
-- [ ] Support for native queries
+- [x] Support for native queries
 - [x] Create entity
-- [ ] Create value or relation
+- [x] Add value 
+- [ ] Create relation to existing entity
 - [x] Service configuration with working swagger UI
 - [ ] Instance on cloud with persistent storage
 - [ ] Preloaded videos 

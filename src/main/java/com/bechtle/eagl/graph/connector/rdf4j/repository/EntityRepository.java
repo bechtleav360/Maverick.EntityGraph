@@ -23,13 +23,41 @@ import java.util.stream.Collectors;
 
 @Slf4j
 @Component
-public class TripleStore implements Graph {
+public class EntityRepository implements Graph {
 
     private final Repository repository;
 
-    public TripleStore(Repository repository) {
+    public EntityRepository(Repository repository) {
         this.repository = repository;
     }
+
+
+    @Override
+    public Flux<NamespaceAwareStatement> store(IRI subject, IRI predicate, Value literal) {
+        Transaction transaction = new Transaction();
+        return Flux.create(c -> {
+            try(RepositoryConnection connection = repository.getConnection()) {
+                try {
+                    connection.begin();
+                    connection.add(repository.getValueFactory().createStatement(subject, predicate, literal));
+                    transaction.addModifiedResource(subject);
+                    connection.commit();
+                    transaction.stream().forEach(c::next);
+                } catch (Exception e) {
+                    log.warn("Error while loading statements, performing rollback.", e);
+                    connection.rollback();
+                    c.error(e);
+                } finally {
+
+                    c.complete();
+                }
+            }
+
+        });
+
+    }
+
+
 
     @Override
     public Flux<NamespaceAwareStatement> store(Model model) {
@@ -143,6 +171,12 @@ public class TripleStore implements Graph {
             }
         });
     }
+
+    @Override
+    public ValueFactory getValueFactory() {
+        return this.repository.getValueFactory();
+    }
+
 
 
 }

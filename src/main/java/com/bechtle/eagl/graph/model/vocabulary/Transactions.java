@@ -1,4 +1,4 @@
-package com.bechtle.eagl.graph.connector.rdf4j.model.vocabulary;
+package com.bechtle.eagl.graph.model.vocabulary;
 
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Namespace;

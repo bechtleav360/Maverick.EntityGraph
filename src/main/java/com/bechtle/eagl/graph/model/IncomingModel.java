@@ -1,7 +1,6 @@
 package com.bechtle.eagl.graph.model;
 
-import com.bechtle.eagl.graph.connector.rdf4j.model.GeneratedIdentifier;
-import com.bechtle.eagl.graph.connector.rdf4j.model.vocabulary.Default;
+import com.bechtle.eagl.graph.model.vocabulary.Default;
 import org.eclipse.rdf4j.model.*;
 import org.eclipse.rdf4j.model.util.ModelBuilder;
 

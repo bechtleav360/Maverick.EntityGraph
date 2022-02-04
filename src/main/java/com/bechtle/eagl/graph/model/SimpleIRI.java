@@ -1,41 +1,42 @@
-package com.bechtle.eagl.graph.connector.rdf4j.model;
+package com.bechtle.eagl.graph.model;
 
-import com.bechtle.eagl.graph.connector.rdf4j.model.vocabulary.Default;
+import com.bechtle.eagl.graph.model.vocabulary.Default;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.base.AbstractIRI;
-import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 
-import java.net.URI;
-
-public class EntityIdentifier extends AbstractIRI {
+public class SimpleIRI extends AbstractIRI {
 
 
     private String namespace;
     private String localName;
 
-    protected EntityIdentifier() {
-
-    }
-
-    public EntityIdentifier(String iri) {
-        this(SimpleValueFactory.getInstance().createIRI(iri));
-    }
-
-    public static EntityIdentifier fromIdentifier(String identifier) {
-        EntityIdentifier result = new EntityIdentifier();
-        result.setNamespace(Default.NAMESPACE);
-        result.setLocalName(identifier);
-        return result;
-    }
-
-    public EntityIdentifier(String namespace, String localName) {
+    protected SimpleIRI(String namespace, String localName) {
         this.namespace = namespace;
         this.localName = localName;
     }
 
-    public EntityIdentifier(IRI iri) {
+    public SimpleIRI(IRI iri) {
         this(iri.getNamespace(), iri.getLocalName());
     }
+
+    protected SimpleIRI(String namespace) {
+        this.namespace = namespace;
+    }
+
+    public static SimpleIRI from(IRI iri) {
+        return new SimpleIRI(iri.getNamespace(), iri.getLocalName());
+    }
+
+
+    public static SimpleIRI withDefaultNamespace(String localname) {
+        return new SimpleIRI(Default.NAMESPACE, localname);
+    }
+
+    public static SimpleIRI withDefinedNamespace(String namespace, String localname) {
+        return new SimpleIRI(namespace, localname);
+    }
+
+
 
     protected void setLocalName(String localName) {
         this.localName = localName;

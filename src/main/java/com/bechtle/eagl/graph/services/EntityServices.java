@@ -1,11 +1,14 @@
 package com.bechtle.eagl.graph.services;
 
+import com.bechtle.eagl.graph.model.SimpleIRI;
 import com.bechtle.eagl.graph.model.IncomingModel;
 import com.bechtle.eagl.graph.model.NamespaceAwareStatement;
 import com.bechtle.eagl.graph.repository.Graph;
+import com.bechtle.eagl.graph.repository.Schema;
 import lombok.extern.slf4j.Slf4j;
-import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
+import org.eclipse.rdf4j.model.ValueFactory;
+import org.eclipse.rdf4j.model.impl.SimpleStatement;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
@@ -19,13 +22,15 @@ import java.util.ArrayList;
 public class EntityServices {
 
     private final Graph graph;
+    private final Schema schema;
 
-    public EntityServices(Graph graph) {
+    public EntityServices(Graph graph, Schema schema) {
         this.graph = graph;
+        this.schema = schema;
     }
 
-    public Flux<NamespaceAwareStatement> readEntity(IRI identifier) {
-        return  graph.get(identifier);
+    public Flux<NamespaceAwareStatement> readEntity(String identifier) {
+        return  graph.get(SimpleIRI.withDefaultNamespace(identifier));
     }
 
 
@@ -60,8 +65,23 @@ public class EntityServices {
         return graph.store(triples.getModel());
     }
 
+    /**
+     * Saves a value, return an transaction
+     * @param id entity id
+     * @param prefixedKey identifier for relation
+     * @param value value
+     * @return transaction model
+     */
+    public Flux<NamespaceAwareStatement> setValue(String id, String predicatePrefix, String predicateKey, String value) {
+        ValueFactory vf = this.graph.getValueFactory();
+        SimpleIRI entityIdentifier = SimpleIRI.withDefaultNamespace(id);
+        String namespace = schema.getNamespaceFor(predicatePrefix).orElseThrow().getName();
+        return this.graph.store(
+                entityIdentifier,
+                SimpleIRI.withDefinedNamespace(namespace, predicateKey),
+                vf.createLiteral(value)
+        );
 
 
-
-
+    }
 }
