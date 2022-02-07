@@ -1,8 +1,8 @@
 package com.bechtle.eagl.graph.repository;
 
-import com.bechtle.eagl.graph.model.NamespaceAwareStatement;
-import com.bechtle.eagl.graph.model.wrapper.Entity;
-import com.bechtle.eagl.graph.model.wrapper.Transaction;
+import com.bechtle.eagl.graph.domain.model.extensions.NamespaceAwareStatement;
+import com.bechtle.eagl.graph.domain.model.wrapper.Entity;
+import com.bechtle.eagl.graph.domain.model.wrapper.Transaction;
 import org.eclipse.rdf4j.model.*;
 import org.eclipse.rdf4j.query.TupleQueryResult;
 import reactor.core.publisher.Flux;
