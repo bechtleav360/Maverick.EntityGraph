@@ -15,7 +15,7 @@ steps:
       publishJUnitResults: true
       testResultsFiles: '**/surefire-reports/TEST-*.xml'
       javaHomeOption: 'JDKVersion'
-      jdkVersionOption: 1.11
+      jdkVersionOption: 1.17
       jdkArchitectureOption: x64
       mavenVersionOption: 'Default'
       mavenAuthenticateFeed: false
@@ -31,5 +31,5 @@ steps:
       mavenPomFile: 'pom.xml'
       goals: 'spring-boot:build-image'
       publishJUnitResults: false
-      jdkVersionOption: 1.11
+      jdkVersionOption: 1.17
   

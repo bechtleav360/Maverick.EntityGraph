@@ -59,4 +59,6 @@ public interface Graph {
      * @return its type (or empty)
      */
     Mono<Value> type(Resource identifier);
+
+    Mono<Void> reset();
 }

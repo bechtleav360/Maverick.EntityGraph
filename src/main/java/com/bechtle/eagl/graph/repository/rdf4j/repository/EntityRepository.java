@@ -219,5 +219,18 @@ public class EntityRepository implements Graph {
         });
     }
 
+    @Override
+    public Mono<Void> reset() {
+        return Mono.create(m -> {
+            try (RepositoryConnection connection = repository.getConnection()) {
+                RepositoryResult<Statement> statements =  connection.getStatements(null, null, null);
+                connection.remove(statements);
+                m.success();
+            } catch (Exception e) {
+                m.error(e);
+            }
+        });
+    }
+
 
 }
