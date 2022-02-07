@@ -1,0 +1,35 @@
+# Don't forget to set the following variables for your pipeline: ghcr.user, ghcr.password
+    
+trigger:
+- main
+- develop
+
+pool:
+  vmImage: ubuntu-latest
+
+steps:
+  - task: Maven@3
+    displayName: Package
+    inputs:
+      mavenPomFile: 'pom.xml'
+      publishJUnitResults: true
+      testResultsFiles: '**/surefire-reports/TEST-*.xml'
+      javaHomeOption: 'JDKVersion'
+      jdkVersionOption: 1.11
+      jdkArchitectureOption: x64
+      mavenVersionOption: 'Default'
+      mavenAuthenticateFeed: false
+      effectivePomSkip: false
+      sonarQubeRunAnalysis: false
+  - script: echo "Publishing image with $(Build.BuildNumber) for user $(ghcr.user)"
+  - task: Maven@3
+    displayName: Build Docker Image
+    env:
+      GHCR_USER: $(ghcr.user)
+      GHCR_PASSWORD: $(ghcr.password)
+    inputs:
+      mavenPomFile: 'pom.xml'
+      goals: 'spring-boot:build-image'
+      publishJUnitResults: false
+      jdkVersionOption: 1.11
+  

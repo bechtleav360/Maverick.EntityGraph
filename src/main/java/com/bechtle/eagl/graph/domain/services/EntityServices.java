@@ -1,9 +1,9 @@
 package com.bechtle.eagl.graph.domain.services;
 
+import com.bechtle.eagl.graph.domain.model.errors.MissingType;
 import com.bechtle.eagl.graph.domain.model.extensions.EntityIRI;
-import com.bechtle.eagl.graph.domain.model.errors.EntityExists;
+import com.bechtle.eagl.graph.domain.model.errors.EntityExistsAlready;
 import com.bechtle.eagl.graph.domain.model.errors.EntityNotFound;
-import com.bechtle.eagl.graph.domain.model.errors.InvalidEntityModel;
 import com.bechtle.eagl.graph.domain.model.wrapper.Entity;
 import com.bechtle.eagl.graph.domain.model.wrapper.IncomingStatements;
 import com.bechtle.eagl.graph.domain.model.wrapper.Transaction;
@@ -47,7 +47,7 @@ public class EntityServices {
                         /* check if each node object has a valid type definition */
                         if (!triples.getModel().contains(obj, RDF.TYPE, null)) {
                             log.error("The object {} is missing a type", obj);
-                            return Mono.error(new InvalidEntityModel("Missing type definition for object"));
+                            return Mono.error(new MissingType("Missing type definition for object"));
                         }
 
                         /* TODO: check if create of resource of given type is supported or is it delegated to connector */
@@ -60,13 +60,12 @@ public class EntityServices {
                         } else {
                             // otherwise check if id already exists in graph
                             if (graph.existsSync(obj)) {
-                                return Mono.error(new EntityExists(obj));
+                                return Mono.error(new EntityExistsAlready(obj));
                             }
                         }
 
                         /* TODO: separate into different contexts by prefix */
                     }
-                    ;
                     return Mono.just(sts);
                 })
                 .flatMap(incomingStatements -> graph.store(triples.getModel()));

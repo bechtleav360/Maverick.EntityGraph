@@ -2,6 +2,7 @@ package com.bechtle.eagl.graph.api.config;
 
 import com.bechtle.eagl.graph.domain.model.errors.EntityNotFound;
 import com.bechtle.eagl.graph.domain.model.errors.InvalidEntityModel;
+import com.bechtle.eagl.graph.domain.model.errors.MissingType;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.rdf4j.rio.RDFParseException;
 import org.springframework.boot.web.error.ErrorAttributeOptions;
@@ -33,7 +34,7 @@ public class GlobalExceptionHandler extends DefaultErrorAttributes {
         Map<String, Object> errorAttributes = super.getErrorAttributes(request, options);
 
         if (error instanceof IllegalArgumentException) {
-            log.debug("(ErrorHandler) Handling illegal argument error");
+            log.debug("(ErrorHandler) Handling illegal argument error with message: {}", error.getMessage());
             errorAttributes.replace("status", HttpStatus.BAD_REQUEST.value());
             errorAttributes.replace("message", error.getMessage());
             errorAttributes.remove("exception");
@@ -41,16 +42,23 @@ public class GlobalExceptionHandler extends DefaultErrorAttributes {
         }
 
         else if (error instanceof EntityNotFound) {
-            log.debug("(ErrorHandler) Handling entity not found");
+            log.debug("(ErrorHandler) Handling entity not found with message: {}", error.getMessage());
             errorAttributes.replace("status", HttpStatus.NOT_FOUND.value());
             errorAttributes.replace("message", error.getMessage());
             errorAttributes.remove("exception");
             errorAttributes.remove("trace");
         }
 
+        else if (error instanceof MissingType) {
+            log.debug("(ErrorHandler) Handling missing type with message: {}", error.getMessage());
+            errorAttributes.replace("status", HttpStatus.BAD_REQUEST.value());
+            errorAttributes.replace("message", error.getMessage());
+            errorAttributes.remove("exception");
+            errorAttributes.remove("trace");
+        }
 
         else if (error instanceof InvalidEntityModel) {
-            log.debug("(ErrorHandler) Handling invalid entity model");
+            log.debug("(ErrorHandler) Handling invalid entity model with message: {}", error.getMessage());
             errorAttributes.replace("status", HttpStatus.CONFLICT.value());
             errorAttributes.replace("error", error.getMessage());
             errorAttributes.remove("exception");
@@ -58,7 +66,7 @@ public class GlobalExceptionHandler extends DefaultErrorAttributes {
         }
 
         else if (error instanceof RDFParseException) {
-            log.debug("(ErrorHandler) Handling rdf parsing exception");
+            log.debug("(ErrorHandler) Handling rdf parsing exception with message: {}", error.getMessage());
             errorAttributes.replace("status", HttpStatus.BAD_REQUEST.value());
             errorAttributes.replace("error", HttpStatus.BAD_REQUEST.getReasonPhrase());
             errorAttributes.put("line", ((RDFParseException) error).getLineNumber());
