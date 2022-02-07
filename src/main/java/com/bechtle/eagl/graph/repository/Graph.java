@@ -1,8 +1,8 @@
 package com.bechtle.eagl.graph.repository;
 
 import com.bechtle.eagl.graph.model.NamespaceAwareStatement;
-import com.bechtle.eagl.graph.model.SimpleIRI;
-import com.bechtle.eagl.graph.model.Transaction;
+import com.bechtle.eagl.graph.model.wrapper.Entity;
+import com.bechtle.eagl.graph.model.wrapper.Transaction;
 import org.eclipse.rdf4j.model.*;
 import org.eclipse.rdf4j.query.TupleQueryResult;
 import reactor.core.publisher.Flux;
@@ -19,9 +19,19 @@ public interface Graph {
      * @param model the statements to store
      * @return  Returns the transaction statements
      */
-    Flux<NamespaceAwareStatement> store(Model model);
+    Mono<Transaction> store(Model model, Transaction transaction);
 
-    Flux<NamespaceAwareStatement> get(IRI id);
+    default  Mono<Transaction> store(Model model) {
+        return this.store(model, new Transaction());
+    }
+
+    Mono<Transaction> store(Resource subject, IRI predicate, Value literal, Transaction transaction);
+
+    default Mono<Transaction> store(Resource subject, IRI predicate, Value literal) {
+        return this.store(subject, predicate, literal, new Transaction());
+    }
+
+    Mono<Entity> get(IRI id);
 
     Mono<TupleQueryResult> queryValues(String query);
 
@@ -29,5 +39,5 @@ public interface Graph {
 
     ValueFactory getValueFactory();
 
-    Flux<NamespaceAwareStatement> store(IRI subject, IRI predicate, Value literal);
+
 }

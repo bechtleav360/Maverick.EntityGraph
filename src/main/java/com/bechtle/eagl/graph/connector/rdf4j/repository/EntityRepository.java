@@ -1,7 +1,9 @@
 package com.bechtle.eagl.graph.connector.rdf4j.repository;
 
 import com.bechtle.eagl.graph.model.NamespaceAwareStatement;
-import com.bechtle.eagl.graph.model.Transaction;
+import com.bechtle.eagl.graph.model.wrapper.AbstractModelWrapper;
+import com.bechtle.eagl.graph.model.wrapper.Entity;
+import com.bechtle.eagl.graph.model.wrapper.Transaction;
 import com.bechtle.eagl.graph.repository.Graph;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.rdf4j.model.*;
@@ -11,6 +13,7 @@ import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.RepositoryResult;
 import org.springframework.http.HttpStatus;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.HttpClientErrorException;
 import reactor.core.publisher.Flux;
@@ -32,24 +35,24 @@ public class EntityRepository implements Graph {
     }
 
 
+
     @Override
-    public Flux<NamespaceAwareStatement> store(IRI subject, IRI predicate, Value literal) {
-        Transaction transaction = new Transaction();
-        return Flux.create(c -> {
+    public Mono<Transaction> store(Resource subject, IRI predicate, Value literal, @Nullable Transaction transaction) {
+        if(transaction == null) transaction = new Transaction();
+
+        Transaction finalTransaction = transaction;
+        return Mono.create(c -> {
             try(RepositoryConnection connection = repository.getConnection()) {
                 try {
                     connection.begin();
                     connection.add(repository.getValueFactory().createStatement(subject, predicate, literal));
-                    transaction.addModifiedResource(subject);
+                    finalTransaction.addModifiedResource(subject);
                     connection.commit();
-                    transaction.stream().forEach(c::next);
+                    c.success(finalTransaction);
                 } catch (Exception e) {
                     log.warn("Error while loading statements, performing rollback.", e);
                     connection.rollback();
                     c.error(e);
-                } finally {
-
-                    c.complete();
                 }
             }
 
@@ -60,14 +63,11 @@ public class EntityRepository implements Graph {
 
 
     @Override
-    public Flux<NamespaceAwareStatement> store(Model model) {
+    public Mono<Transaction> store(Model model, Transaction transaction) {
         /* create a new transaction node with some metadata, which is returned as object */
 
-        Transaction transaction = new Transaction();
-
-        return Flux.create(c -> {
+        return Mono.create(c -> {
             // Rio.write(triples.getStatements(), Rio.createWriter(RDFFormat.NQUADS, System.out));
-
 
             // TODO: perform validation via sha
             // https://rdf4j.org/javadoc/3.2.0/org/eclipse/rdf4j/sail/shacl/ShaclSail.html
@@ -77,6 +77,7 @@ public class EntityRepository implements Graph {
             try(RepositoryConnection connection = repository.getConnection()) {
                 try {
 
+
                     connection.begin();
                     for(Resource obj : new ArrayList<>(model.subjects())) {
                         if(obj.isIRI()) {
@@ -85,40 +86,29 @@ public class EntityRepository implements Graph {
                         }
                     }
                     connection.commit();
-                    transaction.stream().forEach(c::next);
+                    c.success(transaction);
 
                 } catch (Exception e) {
                     log.warn("Error while loading statements, performing rollback.", e);
                     connection.rollback();
                     c.error(e);
-                } finally {
-
-                    c.complete();
                 }
             }
 
         });
     }
 
-    @Override
-    public Flux<NamespaceAwareStatement> get(IRI id) {
-        return Flux.create(c -> {
-            try(RepositoryConnection connection = repository.getConnection()) {
-                try {
-                    RepositoryResult<Statement> result = connection.getStatements(id, null, null);
-                    // FIXME: predefine set of namespaces
-                    Set<Namespace> namespaces = new HashSet<>();
 
-                    result.forEach(statement -> c.next(NamespaceAwareStatement.wrap(statement, namespaces)));
-                } catch (Exception e) {
-                    log.warn("Error while loading statements, performing rollback.", e);
-                    connection.rollback();
-                }
+    @Override
+    public Mono<Entity> get(IRI id) {
+        return Mono.create(c -> {
+            try(RepositoryConnection connection = repository.getConnection()) {
+                Entity entity = new Entity().withResult(connection.getStatements(id, null, null));
+                c.success(entity);
+
             } catch (Exception e) {
                 log.error("Unknown error while running query", e);
                 c.error(e);
-            } finally {
-                c.complete();
             }
         });
     }

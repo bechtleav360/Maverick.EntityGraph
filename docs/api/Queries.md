@@ -58,10 +58,16 @@ WHERE
   }
 ```
 
-Only SELECT Queries are supported, no UPDATES, DELETE or INSERTS
+Only Tuple Query (SELECT) and Graph Queries (CONSTRUCT) Queries are supported, no UPDATES, DELETE or INSERTS
+Which parsers are invoked depends on the Accept-Header
 
-The results are rdf statements, supported formats are
+For ``select``
 
-* JSON
-* CSV
-* 
+* ``text/csv``
+* ``application/sparql-results+json``
+
+For ``construct``
+
+* ``text/turtle``
+* ``application/ld+json``
+  (and others)

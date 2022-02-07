@@ -1,17 +1,22 @@
 package com.bechtle.eagl.graph.api;
 
-import com.bechtle.eagl.graph.model.IncomingModel;
+import com.bechtle.eagl.graph.model.wrapper.AbstractModelWrapper;
+import com.bechtle.eagl.graph.model.wrapper.IncomingStatements;
 import com.bechtle.eagl.graph.model.NamespaceAwareStatement;
+import com.bechtle.eagl.graph.model.wrapper.Transaction;
+import com.bechtle.eagl.graph.model.enums.RdfMimeTypes;
 import com.bechtle.eagl.graph.services.EntityServices;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.util.Assert;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.HttpClientErrorException;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import java.io.IOException;
 import java.io.InvalidObjectException;
@@ -31,20 +36,22 @@ public class Entities {
     }
 
     @ApiOperation(value = "Read entity", tags = {"v1"})
-    @GetMapping(value = "/{id:[\\w|\\d|-|_]+}", produces = {"text/turtle", "application/ld+json"})
+    @GetMapping(value = "/{id:[\\w|\\d|-|_]+}", produces = { RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.NQUADS_VALUE })
     @ResponseStatus(HttpStatus.OK)
     Flux<NamespaceAwareStatement> read(@PathVariable String id) {
         log.trace("(Request) Reading Entity with id: {}", id);
-        return graphService.readEntity(id);
+        return graphService.readEntity(id).flatMapIterable(AbstractModelWrapper::asStatements);
     }
 
     @ApiOperation(value = "Create entity", tags = {"v1"})
-    @PostMapping(value = "", consumes = {"text/turtle", "application/ld+json"}, produces = {"text/turtle", "application/ld+json"})
+    @PostMapping(value = "",
+            consumes = { RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE },
+            produces = { RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.NQUADS_VALUE })
     @ResponseStatus(HttpStatus.ACCEPTED)
-    Flux<NamespaceAwareStatement> createEntity(@RequestBody IncomingModel request) {
+    Flux<NamespaceAwareStatement> createEntity(@RequestBody IncomingStatements request) {
         log.trace("(Request) Create Entity with payload: {}", request.toString());
         try {
-            return graphService.createEntity(request);
+            return graphService.createEntity(request).flatMapIterable(AbstractModelWrapper::asStatements);
         } catch (InvalidObjectException e) {
             log.warn("Invalid request while creating entity. ", e);
             return Flux.error(new HttpClientErrorException(HttpStatus.BAD_REQUEST));
@@ -57,14 +64,18 @@ public class Entities {
 
 
     @ApiOperation(value = "Create value or relation", tags = {"v1"})
-    @PostMapping(value = "/{id:[\\w|\\d|-|_]+}/{prefixedKey:[\\w|\\d]+\\.[\\w|\\d]+}", consumes = {"text/plain"}, produces = {"text/turtle", "application/ld+json"})
+    @PostMapping(value = "/{id:[\\w|\\d|-|_]+}/{prefixedKey:[\\w|\\d]+\\.[\\w|\\d]+}",
+            consumes = MediaType.TEXT_PLAIN_VALUE,
+            produces = { RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE})
     @ResponseStatus(HttpStatus.CREATED)
     Flux<NamespaceAwareStatement> createValue(@PathVariable String id, @PathVariable String prefixedKey, @RequestBody String value) {
         log.trace("(Request) Set value '{}' for property '{}' of entity '{}'", value.toString(), prefixedKey, id);
+        if(value.matches(".*\n.*")) return Flux.error(new HttpClientErrorException(HttpStatus.BAD_REQUEST, "Newlines in request are not supported"));
+
         String[] property = prefixedKey.split("\\.");
         Assert.isTrue(property.length == 2, "Failed to extract prefix and name from path parameter "+prefixedKey);
 
-        return graphService.setValue(id, property[0], property[1], value);
+        return graphService.setValue(id, property[0], property[1], value).flatMapIterable(AbstractModelWrapper::asStatements);
 
        /* } catch (InvalidObjectException e) {
             log.warn("Invalid request while saving value. ", e);
@@ -72,6 +83,31 @@ public class Entities {
         } catch (IOException e) {
             log.error("Exception while saving value. ", e);
             return Flux.error(new HttpClientErrorException(HttpStatus.INTERNAL_SERVER_ERROR));
+        }*/
+    }
+
+    @ApiOperation(value = "Create value or relation", tags = {"v1"})
+    @PostMapping(value = "/{id:[\\w|\\d|-|_]+}/{prefixedKey:[\\w|\\d]+\\.[\\w|\\d]+}",
+            consumes = { RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE },
+            produces = { RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE})
+    @ResponseStatus(HttpStatus.CREATED)
+    Flux<NamespaceAwareStatement> createEmbedded(@PathVariable String id, @PathVariable String prefixedKey, @RequestBody IncomingStatements value)  {
+        log.trace("(Request) Add embedded entity to property '{}' of entity '{}'", prefixedKey, id);
+        String[] property = prefixedKey.split("\\.");
+        Assert.isTrue(property.length == 2, "Failed to extract prefix and name from path parameter "+prefixedKey);
+        try {
+            return graphService.link(id, property[0], property[1], value).flatMapIterable(AbstractModelWrapper::asStatements);
+        } catch (IOException e) {
+            log.error("Exception while linking embedded. ", e);
+            return Flux.error(new HttpClientErrorException(HttpStatus.INTERNAL_SERVER_ERROR));
+        }
+
+
+       /* } catch (InvalidObjectException e) {
+            log.warn("Invalid request while saving value. ", e);
+            return Flux.error(new HttpClientErrorException(HttpStatus.BAD_REQUEST));
+        } catch (IOException e) {
+
         }*/
     }
 

@@ -1,6 +1,6 @@
 package com.bechtle.eagl.graph.config.converter;
 
-import com.bechtle.eagl.graph.model.IncomingModel;
+import com.bechtle.eagl.graph.model.wrapper.IncomingStatements;
 import org.eclipse.rdf4j.common.exception.RDF4JException;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
@@ -67,15 +67,15 @@ public class RdfUtils {
 
 
     public static class TriplesCollector extends AbstractRDFInserter {
-        private final IncomingModel model;
+        private final IncomingStatements model;
 
         public TriplesCollector() {
             super(SimpleValueFactory.getInstance());
-            this.model = new IncomingModel(); 
+            this.model = new IncomingStatements();
         }
 
 
-        public IncomingModel getModel() {
+        public IncomingStatements getModel() {
             return model;
         }
 
