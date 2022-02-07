@@ -14,7 +14,6 @@ public class NamespaceAwareStatement implements Statement, NamespaceAware {
     private final Set<Namespace> namespaces;
 
     private NamespaceAwareStatement(Statement statement, Set<Namespace> namespaces) {
-
         this.statement = statement;
         this.namespaces = namespaces;
     }

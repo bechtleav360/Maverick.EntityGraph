@@ -1,9 +1,9 @@
 package com.bechtle.eagl.graph.api;
 
+import com.bechtle.eagl.graph.model.GeneratedIdentifier;
 import com.bechtle.eagl.graph.model.wrapper.AbstractModelWrapper;
 import com.bechtle.eagl.graph.model.wrapper.IncomingStatements;
 import com.bechtle.eagl.graph.model.NamespaceAwareStatement;
-import com.bechtle.eagl.graph.model.wrapper.Transaction;
 import com.bechtle.eagl.graph.model.enums.RdfMimeTypes;
 import com.bechtle.eagl.graph.services.EntityServices;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -16,7 +16,6 @@ import org.springframework.util.Assert;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.HttpClientErrorException;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
 
 import java.io.IOException;
 import java.io.InvalidObjectException;
@@ -40,7 +39,11 @@ public class Entities {
     @ResponseStatus(HttpStatus.OK)
     Flux<NamespaceAwareStatement> read(@PathVariable String id) {
         log.trace("(Request) Reading Entity with id: {}", id);
-        return graphService.readEntity(id).flatMapIterable(AbstractModelWrapper::asStatements);
+        Assert.isTrue(id.length() == GeneratedIdentifier.LENGTH, "Incorrect length for identifier.");
+
+        return graphService.readEntity(id)
+
+                .flatMapIterable(AbstractModelWrapper::asStatements);
     }
 
     @ApiOperation(value = "Create entity", tags = {"v1"})
@@ -50,15 +53,8 @@ public class Entities {
     @ResponseStatus(HttpStatus.ACCEPTED)
     Flux<NamespaceAwareStatement> createEntity(@RequestBody IncomingStatements request) {
         log.trace("(Request) Create Entity with payload: {}", request.toString());
-        try {
-            return graphService.createEntity(request).flatMapIterable(AbstractModelWrapper::asStatements);
-        } catch (InvalidObjectException e) {
-            log.warn("Invalid request while creating entity. ", e);
-            return Flux.error(new HttpClientErrorException(HttpStatus.BAD_REQUEST));
-        } catch (IOException e) {
-            log.error("Exception while creating entity. ", e);
-            return Flux.error(new HttpClientErrorException(HttpStatus.INTERNAL_SERVER_ERROR));
-        }
+        Assert.isTrue(request.getModel().size() > 0, "No statements in request detected.");
+        return graphService.createEntity(request).flatMapIterable(AbstractModelWrapper::asStatements);
     }
 
 
@@ -70,10 +66,10 @@ public class Entities {
     @ResponseStatus(HttpStatus.CREATED)
     Flux<NamespaceAwareStatement> createValue(@PathVariable String id, @PathVariable String prefixedKey, @RequestBody String value) {
         log.trace("(Request) Set value '{}' for property '{}' of entity '{}'", value.toString(), prefixedKey, id);
-        if(value.matches(".*\n.*")) return Flux.error(new HttpClientErrorException(HttpStatus.BAD_REQUEST, "Newlines in request are not supported"));
 
-        String[] property = prefixedKey.split("\\.");
-        Assert.isTrue(property.length == 2, "Failed to extract prefix and name from path parameter "+prefixedKey);
+        Assert.isTrue(! value.matches("(?s).*[\\n\\r].*"), "Newlines in request body are not supported");
+
+        String[] property = splitPrefixedIdentifier(prefixedKey);
 
         return graphService.setValue(id, property[0], property[1], value).flatMapIterable(AbstractModelWrapper::asStatements);
 
@@ -93,8 +89,7 @@ public class Entities {
     @ResponseStatus(HttpStatus.CREATED)
     Flux<NamespaceAwareStatement> createEmbedded(@PathVariable String id, @PathVariable String prefixedKey, @RequestBody IncomingStatements value)  {
         log.trace("(Request) Add embedded entity to property '{}' of entity '{}'", prefixedKey, id);
-        String[] property = prefixedKey.split("\\.");
-        Assert.isTrue(property.length == 2, "Failed to extract prefix and name from path parameter "+prefixedKey);
+        String[] property = splitPrefixedIdentifier(prefixedKey);
         try {
             return graphService.link(id, property[0], property[1], value).flatMapIterable(AbstractModelWrapper::asStatements);
         } catch (IOException e) {
@@ -109,6 +104,12 @@ public class Entities {
         } catch (IOException e) {
 
         }*/
+    }
+
+    private String[] splitPrefixedIdentifier(String prefixedKey) {
+        String[] property = prefixedKey.split("\\.");
+        Assert.isTrue(property.length == 2, "Failed to extract prefix and name from path parameter "+ prefixedKey);
+        return property;
     }
 
     /*

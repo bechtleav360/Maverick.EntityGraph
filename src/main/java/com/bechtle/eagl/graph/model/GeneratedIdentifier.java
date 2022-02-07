@@ -5,13 +5,13 @@ import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Namespace;
 
 import java.security.SecureRandom;
-import java.util.Arrays;
 import java.util.Base64;
 
 public class GeneratedIdentifier extends SimpleIRI {
     private static final SecureRandom secureRandom;
     private static final RandomStringGenerator randomStringGenerator;
     private static final char[][] range = { {'a', 'z'}, {'0', '9'} };
+    public static int LENGTH = 16;
 
     static {
         secureRandom = new SecureRandom();
@@ -31,13 +31,13 @@ public class GeneratedIdentifier extends SimpleIRI {
 
 
     private String generateSecureRandom() {
-        byte[] token = new byte[16];
+        byte[] token = new byte[LENGTH];
         secureRandom.nextBytes(token);
         return Base64.getUrlEncoder().withoutPadding().encodeToString(token); //base64 encoding
     }
 
     private String generateRandomString() {
-        return randomStringGenerator.generate(16);
+        return randomStringGenerator.generate(LENGTH);
     }
 
 

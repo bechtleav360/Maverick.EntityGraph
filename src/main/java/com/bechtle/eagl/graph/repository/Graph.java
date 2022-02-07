@@ -39,5 +39,24 @@ public interface Graph {
 
     ValueFactory getValueFactory();
 
+    /**
+     * Checks whether an entity with the given identity exists, ie. we have an rdf:type statement.
+     * @param subj the id of the entity
+     * @return true if exists
+     */
+    boolean existsSync(Resource subj);
 
+    /**
+     * Checks whether an entity with the given identity exists, ie. we have an rdf:type statement.
+     * @param subj the id of the entity
+     * @return true if exists
+     */
+    Mono<Boolean> exists(Resource subj);
+
+    /**
+     * Returns the type of the entity identified by the given id;
+     * @param identifier the id of the entity
+     * @return its type (or empty)
+     */
+    Mono<Value> type(Resource identifier);
 }

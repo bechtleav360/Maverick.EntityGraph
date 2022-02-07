@@ -4,7 +4,6 @@ import com.bechtle.eagl.graph.model.GeneratedIdentifier;
 import com.bechtle.eagl.graph.model.vocabulary.Default;
 import org.eclipse.rdf4j.model.*;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Set;
 
@@ -20,7 +19,7 @@ public class IncomingStatements extends AbstractModelWrapper<IncomingStatements>
     }
 
 
-    public void generateName(Resource subj) throws IOException {
+    public void replaceAnonymousIdentifier(Resource subj) {
 
         IRI identifier = new GeneratedIdentifier(Default.NS);
 

@@ -70,7 +70,7 @@ public class StatementsDecoder implements Decoder<IncomingStatements> {
                         return Mono.just(handler.getModel());
                     } catch (RDFParseException e) {
                         log.error("Failed to parse request of mimetype '{}'", mimeType.toString(), e);
-                        return Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid format"));
+                        return Mono.error(e);
                     } catch (Exception e) {
                         return Mono.error(e);
                     } finally {

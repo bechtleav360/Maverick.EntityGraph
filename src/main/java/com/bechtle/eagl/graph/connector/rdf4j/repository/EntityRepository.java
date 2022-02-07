@@ -1,6 +1,7 @@
 package com.bechtle.eagl.graph.connector.rdf4j.repository;
 
 import com.bechtle.eagl.graph.model.NamespaceAwareStatement;
+import com.bechtle.eagl.graph.model.errors.InvalidEntityModel;
 import com.bechtle.eagl.graph.model.wrapper.AbstractModelWrapper;
 import com.bechtle.eagl.graph.model.wrapper.Entity;
 import com.bechtle.eagl.graph.model.wrapper.Transaction;
@@ -8,6 +9,7 @@ import com.bechtle.eagl.graph.repository.Graph;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.rdf4j.model.*;
 import org.eclipse.rdf4j.model.impl.SimpleNamespace;
+import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.query.*;
 import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
@@ -19,6 +21,7 @@ import org.springframework.web.client.HttpClientErrorException;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
@@ -35,14 +38,13 @@ public class EntityRepository implements Graph {
     }
 
 
-
     @Override
     public Mono<Transaction> store(Resource subject, IRI predicate, Value literal, @Nullable Transaction transaction) {
-        if(transaction == null) transaction = new Transaction();
+        if (transaction == null) transaction = new Transaction();
 
         Transaction finalTransaction = transaction;
         return Mono.create(c -> {
-            try(RepositoryConnection connection = repository.getConnection()) {
+            try (RepositoryConnection connection = repository.getConnection()) {
                 try {
                     connection.begin();
                     connection.add(repository.getValueFactory().createStatement(subject, predicate, literal));
@@ -61,7 +63,6 @@ public class EntityRepository implements Graph {
     }
 
 
-
     @Override
     public Mono<Transaction> store(Model model, Transaction transaction) {
         /* create a new transaction node with some metadata, which is returned as object */
@@ -74,13 +75,13 @@ public class EntityRepository implements Graph {
 
 
             // get statements and load into repo
-            try(RepositoryConnection connection = repository.getConnection()) {
+            try (RepositoryConnection connection = repository.getConnection()) {
                 try {
 
 
                     connection.begin();
-                    for(Resource obj : new ArrayList<>(model.subjects())) {
-                        if(obj.isIRI()) {
+                    for (Resource obj : new ArrayList<>(model.subjects())) {
+                        if (obj.isIRI()) {
                             connection.add(model.getStatements(obj, null, null));
                             transaction.addModifiedResource(obj);
                         }
@@ -102,9 +103,20 @@ public class EntityRepository implements Graph {
     @Override
     public Mono<Entity> get(IRI id) {
         return Mono.create(c -> {
-            try(RepositoryConnection connection = repository.getConnection()) {
-                Entity entity = new Entity().withResult(connection.getStatements(id, null, null));
-                c.success(entity);
+            try (RepositoryConnection connection = repository.getConnection()) {
+                Entity entity = new Entity()
+                        .withResult(connection.getStatements(id, null, null));
+
+                // embedded level 1
+                entity.getModel().objects().stream()
+                        .filter(Value::isIRI)
+                        .map(value -> connection.getStatements((IRI) value, null, null))
+                        .toList()
+                        .forEach(entity::withResult);
+
+
+                if (entity.getModel().size() > 0) c.success(entity);
+                else c.success();
 
             } catch (Exception e) {
                 log.error("Unknown error while running query", e);
@@ -116,7 +128,7 @@ public class EntityRepository implements Graph {
     @Override
     public Mono<TupleQueryResult> queryValues(String query) {
         return Mono.create(c -> {
-            try(RepositoryConnection connection = repository.getConnection()) {
+            try (RepositoryConnection connection = repository.getConnection()) {
                 TupleQuery q = connection.prepareTupleQuery(QueryLanguage.SPARQL, query);
                 try (TupleQueryResult result = q.evaluate()) {
                     c.success(result);
@@ -137,7 +149,7 @@ public class EntityRepository implements Graph {
     @Override
     public Flux<NamespaceAwareStatement> queryStatements(String query) {
         return Flux.create(c -> {
-            try(RepositoryConnection connection = repository.getConnection()) {
+            try (RepositoryConnection connection = repository.getConnection()) {
                 GraphQuery q = connection.prepareGraphQuery(QueryLanguage.SPARQL, query);
                 try (GraphQueryResult result = q.evaluate()) {
                     Set<Namespace> namespaces = result.getNamespaces().entrySet().stream()
@@ -145,7 +157,7 @@ public class EntityRepository implements Graph {
                             .collect(Collectors.toSet());
 
                     result.forEach(statement -> c.next(NamespaceAwareStatement.wrap(statement, namespaces)));
-                }  catch (Exception e) {
+                } catch (Exception e) {
                     log.warn("Error while running value query.", e);
                     c.error(e);
                 }
@@ -155,8 +167,7 @@ public class EntityRepository implements Graph {
             } catch (Exception e) {
                 log.error("Unknown error while running query", e);
                 c.error(e);
-            }
-            finally {
+            } finally {
                 c.complete();
             }
         });
@@ -167,6 +178,49 @@ public class EntityRepository implements Graph {
         return this.repository.getValueFactory();
     }
 
+    @Override
+    public Mono<Boolean> exists(Resource subj) {
+        return Mono.create(m -> {
+            try (RepositoryConnection connection = repository.getConnection()) {
+                boolean b = connection.hasStatement(subj, RDF.TYPE, null, false);
+                m.success(b);
+            } catch (Exception e) {
+                m.error(e);
+            }
+        });
+    }
+
+    @Override
+    public boolean existsSync(Resource subj) {
+        try (RepositoryConnection connection = repository.getConnection()) {
+            return connection.hasStatement(subj, RDF.TYPE, null, false);
+        }
+    }
+
+
+
+    @Override
+    public Mono<Value> type(Resource identifier) {
+        return Mono.create(m -> {
+            try (RepositoryConnection connection = repository.getConnection()) {
+                RepositoryResult<Statement> statements = connection.getStatements(identifier, RDF.TYPE, null, false);
+
+                Value result = null;
+                for (Statement st : statements) {
+                    // FIXME: not sure if this is a domain exception (which mean it should not be handled here)
+                    if (result != null)
+                        m.error(new IOException("Duplicate type definitions for resource with identifier " + identifier.stringValue()));
+                    else result = st.getObject();
+                }
+                if (result == null) m.success();
+                else m.success(result);
+
+
+            } catch (Exception e) {
+                m.error(e);
+            }
+        });
+    }
 
 
 }
