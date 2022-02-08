@@ -1,0 +1,42 @@
+## All XXX fields are provisioned through environment variables
+
+security:
+  api-key: "XXX"
+
+spring:
+  security:
+    user:
+      name: "xxx"
+      password: "xxx"
+
+
+logging:
+  file:
+    name: server.log
+  level:
+    com:
+      bechtle: INFO
+    org:
+      springframework:
+        security: INFO
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "health, info, env, loggers, metrics, scheduledTasks, logfile, mappings"
+  endpoint:
+    health:
+      enabled: true
+    info:
+      enabled: true
+    env:
+      enabled: true
+    loggers:
+      enabled: true
+    metrics:
+      enabled: true
+    scheduledTasks:
+      enabled: true
+    logfile:
+      enabled: true

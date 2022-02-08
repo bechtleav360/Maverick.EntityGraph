@@ -7,8 +7,8 @@ import com.bechtle.eagl.graph.domain.model.errors.EntityNotFound;
 import com.bechtle.eagl.graph.domain.model.wrapper.Entity;
 import com.bechtle.eagl.graph.domain.model.wrapper.IncomingStatements;
 import com.bechtle.eagl.graph.domain.model.wrapper.Transaction;
-import com.bechtle.eagl.graph.repository.Graph;
-import com.bechtle.eagl.graph.repository.Schema;
+import com.bechtle.eagl.graph.repository.EntityStore;
+import com.bechtle.eagl.graph.repository.SchemaStore;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Value;
@@ -25,10 +25,10 @@ import java.util.ArrayList;
 @Service
 public class EntityServices {
 
-    private final Graph graph;
-    private final Schema schema;
+    private final EntityStore graph;
+    private final SchemaStore schema;
 
-    public EntityServices(Graph graph, Schema schema) {
+    public EntityServices(EntityStore graph, SchemaStore schema) {
         this.graph = graph;
         this.schema = schema;
     }

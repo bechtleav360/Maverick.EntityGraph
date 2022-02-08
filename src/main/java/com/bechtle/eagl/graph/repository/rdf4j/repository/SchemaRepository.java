@@ -1,38 +1,33 @@
 package com.bechtle.eagl.graph.repository.rdf4j.repository;
 
+import com.bechtle.eagl.graph.domain.model.vocabulary.Default;
 import com.bechtle.eagl.graph.domain.model.vocabulary.Transactions;
-import com.bechtle.eagl.graph.repository.Schema;
+import com.bechtle.eagl.graph.repository.SchemaStore;
 import org.eclipse.rdf4j.model.Namespace;
+import org.eclipse.rdf4j.model.util.Namespaces;
 import org.eclipse.rdf4j.model.vocabulary.*;
 import org.eclipse.rdf4j.repository.Repository;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
+import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 
 @Component
-public class SchemaRepository implements Schema {
+public class SchemaRepository implements SchemaStore {
 
     private static Set<Namespace> namespaces;
 
     static {
-        namespaces = Set.of(
-                PROV.NS,
-                RDF.NS,
-                RDFS.NS,
-                Transactions.NS,
-                DC.NS,
-                DCTERMS.NS,
-                FOAF.NS,
-                ORG.NS,
-                SKOS.NS,
-                XSD.NS
-        );
+        namespaces = new HashSet<>(Namespaces.DEFAULT_RDF4J);
+        namespaces.add(Transactions.NS);
+        namespaces.add(Default.NS);
     }
 
     private final Repository repository;
 
-    public SchemaRepository(Repository repository) {
+    public SchemaRepository(@Qualifier("schema-storage") Repository repository) {
         this.repository = repository;
     }
 

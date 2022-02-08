@@ -10,9 +10,7 @@ import org.springframework.core.io.buffer.DataBuffer;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import java.util.concurrent.Flow;
-
-public interface Graph {
+public interface EntityStore {
 
 
     /**

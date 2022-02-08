@@ -15,7 +15,16 @@ API to access skills, learning units, and everything else through a json-ld api
   - ``bechtleav360/eagl-service-graph:latest`` as full image name
 3. Enable Application logging
 4. Add application property "SPRING_APPLICATION_JSON" (see below)
-  - 
+
+
+### Configure Storage
+
+1. Create a new storage account (if one doesn't exist yet in your resource group)
+2. Create the following new file share within the account:
+  - ``graph-entities``
+  - ``graph-transactions``
+3. Switch to Configuration for your webapp and there to "Path mappings"
+   1. Create a new mount point for each file share under "/var/data"
 
 
 ### Access the logs
@@ -36,20 +45,8 @@ Go to Kudu via "Advanced tools"
 
 Configure a new web app and define the  application setting (as Deployment Option) with the Key SPRING_APPLICATION_JSON and the following value
 
-```
-{
-  "endpoints": {
-    "wallet": {
-      "url": "http://xxxx.azurecontainer.io:8080/api/wallet",
-      "apikey": "xxx"
-    },
-    "user": {
-      "url": "http://xxxx.azurecontainer.io:8080/api/user",
-      "apikey": "xxx"
-    }
-  },
-  "key": "xxxx"
-}
+```json
+{ "security": { "apiKey": "xxx" }, "spring": { "profiles": { "active": "test" }, "security": { "user": { "name": "admin", "password": "xxx" } } }, "logging": { "level": { "com": { "bechtle": "TRACE" } } } }
 ```
 
 The application setting PORT should point to the port configured in the application properties. 

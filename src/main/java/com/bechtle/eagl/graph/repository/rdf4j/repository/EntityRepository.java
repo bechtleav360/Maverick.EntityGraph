@@ -4,7 +4,7 @@ import com.bechtle.eagl.graph.api.converter.RdfUtils;
 import com.bechtle.eagl.graph.domain.model.extensions.NamespaceAwareStatement;
 import com.bechtle.eagl.graph.domain.model.wrapper.Entity;
 import com.bechtle.eagl.graph.domain.model.wrapper.Transaction;
-import com.bechtle.eagl.graph.repository.Graph;
+import com.bechtle.eagl.graph.repository.EntityStore;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.rdf4j.model.*;
 import org.eclipse.rdf4j.model.impl.SimpleNamespace;
@@ -17,6 +17,7 @@ import org.eclipse.rdf4j.repository.util.RDFInserter;
 import org.eclipse.rdf4j.rio.RDFParser;
 import org.eclipse.rdf4j.rio.RDFParserFactory;
 import org.reactivestreams.Publisher;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.core.io.buffer.DataBufferUtils;
 import org.springframework.http.HttpStatus;
@@ -28,22 +29,20 @@ import org.springframework.web.client.HttpClientErrorException;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.Flow;
 import java.util.stream.Collectors;
 
 @Slf4j
 @Component
-public class EntityRepository implements Graph {
+public class EntityRepository implements EntityStore {
 
     private final Repository repository;
 
-    public EntityRepository(Repository repository) {
+    public EntityRepository(@Qualifier("entities-storage") Repository repository) {
         this.repository = repository;
     }
 
