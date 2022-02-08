@@ -18,7 +18,7 @@ import java.io.IOException;
 import java.nio.file.Paths;
 
 @Configuration
-@Profile({"it", "local"})
+@Profile({"test", "local"})
 public class InMemoryRepositoryConfiguration {
 
 

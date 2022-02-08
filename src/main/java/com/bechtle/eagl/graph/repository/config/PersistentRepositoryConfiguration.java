@@ -25,7 +25,7 @@ import java.nio.file.FileSystem;
 import java.nio.file.Paths;
 
 @Configuration
-@Profile({"prod", "stage", "test"})
+@Profile({"prod", "stage", "it"})
 public class PersistentRepositoryConfiguration {
 
 
