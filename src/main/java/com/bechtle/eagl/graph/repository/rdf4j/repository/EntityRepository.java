@@ -1,5 +1,6 @@
 package com.bechtle.eagl.graph.repository.rdf4j.repository;
 
+import com.bechtle.eagl.graph.api.converter.RdfUtils;
 import com.bechtle.eagl.graph.domain.model.extensions.NamespaceAwareStatement;
 import com.bechtle.eagl.graph.domain.model.wrapper.Entity;
 import com.bechtle.eagl.graph.domain.model.wrapper.Transaction;
@@ -12,16 +13,28 @@ import org.eclipse.rdf4j.query.*;
 import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.RepositoryResult;
+import org.eclipse.rdf4j.repository.util.RDFInserter;
+import org.eclipse.rdf4j.rio.RDFParser;
+import org.eclipse.rdf4j.rio.RDFParserFactory;
+import org.reactivestreams.Publisher;
+import org.springframework.core.io.buffer.DataBuffer;
+import org.springframework.core.io.buffer.DataBufferUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
+import org.springframework.util.Assert;
+import org.springframework.util.MimeType;
 import org.springframework.web.client.HttpClientErrorException;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.Flow;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -195,7 +208,6 @@ public class EntityRepository implements Graph {
     }
 
 
-
     @Override
     public Mono<Value> type(Resource identifier) {
         return Mono.create(m -> {
@@ -223,13 +235,41 @@ public class EntityRepository implements Graph {
     public Mono<Void> reset() {
         return Mono.create(m -> {
             try (RepositoryConnection connection = repository.getConnection()) {
-                RepositoryResult<Statement> statements =  connection.getStatements(null, null, null);
+                RepositoryResult<Statement> statements = connection.getStatements(null, null, null);
                 connection.remove(statements);
                 m.success();
             } catch (Exception e) {
                 m.error(e);
             }
         });
+    }
+
+    @Override
+    public Mono<Void> importStatements(Publisher<DataBuffer> bytesPublisher, String mimetype) {
+        Optional<RDFParserFactory> parserFactory = RdfUtils.getParserFactory(MimeType.valueOf(mimetype));
+        Assert.isTrue(parserFactory.isPresent(), "Unsupported mimetype for parsing the file.");
+        RDFParser parser = parserFactory.orElseThrow().getParser();
+
+
+        Mono<DataBuffer> joined = DataBufferUtils.join(bytesPublisher);
+
+
+        return joined.flatMap(bytes -> {
+            try (RepositoryConnection connection = repository.getConnection()) {
+                parser.setRDFHandler(new RDFInserter(connection));
+                try (InputStream bais = bytes.asInputStream(true)) {
+                    parser.parse(bais);
+                } catch (Exception e) {
+                    return Mono.error(e);
+                }
+                return Mono.empty();
+            } catch (Exception e) {
+                return Mono.error(e);
+            }
+
+        }).thenEmpty(Mono.empty());
+
+
     }
 
 

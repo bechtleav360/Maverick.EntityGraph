@@ -1,0 +1,60 @@
+{
+  "security": {
+    "apiKey": "..."
+  },
+  "spring": {
+    "profiles": {
+      "active": "stage"
+    },
+    "security": {
+      "user": {
+        "name": "admin",
+        "password": "..."
+      }
+    }
+  },
+  "logging": {
+    "level": {
+      "com": {
+        "bechtle": "TRACE"
+      },
+      "org": {
+        "springframework": {
+          "security": "INFO"
+        }
+      }
+    }
+  },
+  "management": {
+    "endpoints": {
+      "web": {
+        "exposure": {
+          "include": "health, info, env, loggers, metrics, scheduledTasks, logfile, mappings"
+        }
+      }
+    },
+    "endpoint": {
+      "health": {
+        "enabled": true
+      },
+      "info": {
+        "enabled": true
+      },
+      "env": {
+        "enabled": true
+      },
+      "loggers": {
+        "enabled": true
+      },
+      "metrics": {
+        "enabled": true
+      },
+      "scheduledTasks": {
+        "enabled": true
+      },
+      "logfile": {
+        "enabled": true
+      }
+    }
+  }
+}

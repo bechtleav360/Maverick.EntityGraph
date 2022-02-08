@@ -5,8 +5,12 @@ import com.bechtle.eagl.graph.domain.model.wrapper.Entity;
 import com.bechtle.eagl.graph.domain.model.wrapper.Transaction;
 import org.eclipse.rdf4j.model.*;
 import org.eclipse.rdf4j.query.TupleQueryResult;
+import org.reactivestreams.Publisher;
+import org.springframework.core.io.buffer.DataBuffer;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+
+import java.util.concurrent.Flow;
 
 public interface Graph {
 
@@ -61,4 +65,6 @@ public interface Graph {
     Mono<Value> type(Resource identifier);
 
     Mono<Void> reset();
+
+    Mono<Void> importStatements(Publisher<DataBuffer> bytes, String mimetype);
 }

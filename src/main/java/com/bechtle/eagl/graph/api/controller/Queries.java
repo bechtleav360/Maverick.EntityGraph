@@ -22,7 +22,7 @@ public class Queries {
         this.queryServices = queryServices;
     }
 
-    @ApiOperation(value = "Run a query", tags = {"v1", "entity"})
+    @ApiOperation(value = "Run a query", tags = {"v1"})
     @PostMapping(value = "", consumes = "text/plain", produces = {"text/csv", "application/sparql-results+json"})
     @ResponseStatus(HttpStatus.ACCEPTED)
     Mono<TupleQueryResult> queryBindings(@RequestBody String query) {
@@ -31,7 +31,7 @@ public class Queries {
     }
 
 
-    @ApiOperation(value = "Run a query", tags = {"v1", "entity"})
+    @ApiOperation(value = "Run a query", tags = {"v1"})
     @PostMapping(value = "", consumes = "text/plain", produces = {"text/turtle", "application/ld+json"})
     @ResponseStatus(HttpStatus.ACCEPTED)
     Flux<NamespaceAwareStatement> queryStatements(@RequestBody String query) {
