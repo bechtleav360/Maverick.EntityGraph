@@ -47,7 +47,7 @@ public class EntityServices {
 
 
     public Mono<Transaction> createEntity(IncomingStatements triples, Map<String, String> parameters) {
-
+        if(log.isDebugEnabled()) log.debug("(Service) {} statements incoming for creating new entity. Parameters: {}", triples.stream().count(),  parameters.size() > 0 ? parameters : "none");
 
         return Mono.just(triples)
                 .flatMap(sts -> {

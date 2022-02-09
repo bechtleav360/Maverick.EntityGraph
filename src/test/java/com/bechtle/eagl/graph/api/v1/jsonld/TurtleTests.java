@@ -19,7 +19,7 @@ import org.springframework.web.reactive.function.BodyInserters;
 @ContextConfiguration(classes = TestConfigurations.class)
 @RecordApplicationEvents
 @ActiveProfiles("test")
-public class JsonLdEntitiesTest implements EntitiesTest {
+public class TurtleTests implements EntitiesTest {
 
 
     @Autowired
@@ -29,10 +29,10 @@ public class JsonLdEntitiesTest implements EntitiesTest {
     @Override
     @Test
     public void createEntity() {
-        Resource file = new ClassPathResource("data/v1/requests/create-valid.jsonld");
+        Resource file = new ClassPathResource("data/v1/requests/create-valid.ttl");
         webClient.post()
                 .uri("/api/entities")
-                .contentType(MediaType.parseMediaType("application/ld+json"))
+                .contentType(MediaType.parseMediaType("text/turtle"))
                 .body(BodyInserters.fromResource(file))
                 .exchange()
                 .expectStatus().isAccepted();
@@ -45,10 +45,10 @@ public class JsonLdEntitiesTest implements EntitiesTest {
     @Override
     @Test
     public void createEntityWithMissingType() {
-        Resource file = new ClassPathResource("data/v1/requests/create-invalid-missingType.jsonld");
+        Resource file = new ClassPathResource("data/v1/requests/create-invalid-missingType.ttl");
         webClient.post()
                 .uri("/api/entities")
-                .contentType(MediaType.parseMediaType("application/ld+json"))
+                .contentType(MediaType.parseMediaType("text/turtle"))
                 .body(BodyInserters.fromResource(file))
                 .exchange()
                 .expectStatus().isBadRequest();
@@ -57,10 +57,10 @@ public class JsonLdEntitiesTest implements EntitiesTest {
     @Override
     @Test
     public void createEntityWithInvalidSyntax() {
-        Resource file = new ClassPathResource("data/v1/requests/create-invalid-syntax.jsonld");
+        Resource file = new ClassPathResource("data/v1/requests/create-invalid-syntax.ttl");
         webClient.post()
                 .uri("/api/entities")
-                .contentType(MediaType.parseMediaType("application/ld+json"))
+                .contentType(MediaType.parseMediaType("text/turtle"))
                 .body(BodyInserters.fromResource(file))
                 .exchange()
                 .expectStatus().isBadRequest();
@@ -69,10 +69,10 @@ public class JsonLdEntitiesTest implements EntitiesTest {
     @Override
     @Test
     public void createEntityWithValidId() {
-        Resource file = new ClassPathResource("data/v1/requests/create-validWithId.jsonld");
+        Resource file = new ClassPathResource("data/v1/requests/create-validWithId.ttl");
         webClient.post()
                 .uri("/api/entities")
-                .contentType(MediaType.parseMediaType("application/ld+json"))
+                .contentType(MediaType.parseMediaType("text/turtle"))
                 .body(BodyInserters.fromResource(file))
                 .exchange()
                 .expectStatus().isAccepted();
@@ -81,10 +81,10 @@ public class JsonLdEntitiesTest implements EntitiesTest {
 
     @Test
     public void createEntityWithValidIdAndBase() {
-        Resource file = new ClassPathResource("data/v1/requests/create-validWithIdAndBase.jsonld");
+        Resource file = new ClassPathResource("data/v1/requests/create-validWithIdAndBase.ttl");
         webClient.post()
                 .uri("/api/entities")
-                .contentType(MediaType.parseMediaType("application/ld+json"))
+                .contentType(MediaType.parseMediaType("text/turtle"))
                 .body(BodyInserters.fromResource(file))
                 .exchange()
                 .expectStatus().isAccepted();
@@ -97,10 +97,10 @@ public class JsonLdEntitiesTest implements EntitiesTest {
      * The parser fails here, bug was reported: https://github.com/eclipse/rdf4j/issues/3658
      */
     public void createEntityWithInvalidId() {
-        Resource file = new ClassPathResource("data/v1/requests/create-validWithInvalidId.jsonld");
+        Resource file = new ClassPathResource("data/v1/requests/create-validWithInvalidId.ttl");
         webClient.post()
                 .uri("/api/entities")
-                .contentType(MediaType.parseMediaType("application/ld+json"))
+                .contentType(MediaType.parseMediaType("text/turtle"))
                 .body(BodyInserters.fromResource(file))
                 .exchange()
                 .expectStatus().isBadRequest();
@@ -109,10 +109,10 @@ public class JsonLdEntitiesTest implements EntitiesTest {
     @Override
     @Test
     public void createMultipleEntities() {
-        Resource file = new ClassPathResource("data/v1/requests/create-valid_multiple.jsonld");
+        Resource file = new ClassPathResource("data/v1/requests/create-valid_multiple.ttl");
         webClient.post()
                 .uri("/api/entities")
-                .contentType(MediaType.parseMediaType("application/ld+json"))
+                .contentType(MediaType.parseMediaType("text/turtle"))
                 .body(BodyInserters.fromResource(file))
                 .exchange()
                 .expectStatus().isAccepted();
@@ -121,10 +121,10 @@ public class JsonLdEntitiesTest implements EntitiesTest {
 
     @Test
     public void createMultipleEntitiesWithNoType() {
-        Resource file = new ClassPathResource("data/v1/requests/create-invalid_multipleOneNoType.jsonld");
+        Resource file = new ClassPathResource("data/v1/requests/create-invalid_multipleOneNoType.ttl");
         webClient.post()
                 .uri("/api/entities")
-                .contentType(MediaType.parseMediaType("application/ld+json"))
+                .contentType(MediaType.parseMediaType("text/turtle"))
                 .body(BodyInserters.fromResource(file))
                 .exchange()
                 .expectStatus().isBadRequest();

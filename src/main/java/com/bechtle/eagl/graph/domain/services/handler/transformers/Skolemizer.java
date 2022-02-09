@@ -9,6 +9,7 @@ import com.bechtle.eagl.graph.domain.model.vocabulary.SDO;
 import com.bechtle.eagl.graph.domain.model.wrapper.AbstractModelWrapper;
 import com.bechtle.eagl.graph.domain.services.handler.AbstractTypeHandler;
 import com.bechtle.eagl.graph.repository.EntityStore;
+import lombok.extern.slf4j.Slf4j;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Statement;
@@ -28,29 +29,27 @@ import java.util.Map;
  * Systems wishing to skolemise bNodes, and expose those skolem constants to external systems (e.g. in query results) SHOULD mint a "fresh" (globally unique) URI for each bNode.
  * All systems performing skolemisation SHOULD do so in a way that they can recognise the constants once skolemised, and map back to the source bNodes where possible.
  */
+@Slf4j
 public class Skolemizer extends AbstractTypeHandler {
-    @Override
-    public boolean handlesType(Resource object) {
-        return object.isIRI() && ((IRI) object).equals(SDO.DEFINED_TERM);
-    }
 
     @Override
     public Mono<? extends AbstractModelWrapper> handle(EntityStore graph, Mono<? extends AbstractModelWrapper> model, Map<String, String> parameters) {
         return model.map(triples -> {
-                    for (Resource obj : new ArrayList<>(triples.getModel().subjects())) {
-                        /* Handle Ids */
-                        if (obj.isBNode()) {
-                            // generate a new qualified identifier if it is an anonymous node
-                            this.skolemize(obj, triples);
+            log.trace("(Transformer) Skolemizing identifiers");
+
+            for (Resource obj : new ArrayList<>(triples.getModel().subjects())) {
+                /* Handle Ids */
+                if (obj.isBNode()) {
+                    // generate a new qualified identifier if it is an anonymous node
+                    this.skolemize(obj, triples);
 
 
-                        } else if (parameters.containsKey(Parameters.FORCE_GENERATE_IDENTIFIER) && Boolean.parseBoolean(parameters.get(Parameters.FORCE_GENERATE_IDENTIFIER))) {
-                            this.skolemize(obj, triples);
-                        }
-                    }
-                    return triples;
+                } else if (parameters.containsKey(Parameters.FORCE_GENERATE_IDENTIFIER) && Boolean.parseBoolean(parameters.get(Parameters.FORCE_GENERATE_IDENTIFIER))) {
+                    this.skolemize(obj, triples);
                 }
-        );
+            }
+            return triples;
+        });
 
 
     }

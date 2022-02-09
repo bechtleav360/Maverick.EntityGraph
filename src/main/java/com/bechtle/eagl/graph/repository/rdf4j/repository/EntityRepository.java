@@ -59,9 +59,11 @@ public class EntityRepository implements EntityStore {
                     connection.add(repository.getValueFactory().createStatement(subject, predicate, literal));
                     finalTransaction.addModifiedResource(subject);
                     connection.commit();
+
+                    if (log.isDebugEnabled()) log.debug("(Store) Transaction completed for storing one statement.");
                     c.success(finalTransaction);
                 } catch (Exception e) {
-                    log.warn("Error while loading statements, performing rollback.", e);
+                    log.warn("Error while storing statement, performing rollback.", e);
                     connection.rollback();
                     c.error(e);
                 }
@@ -96,6 +98,9 @@ public class EntityRepository implements EntityStore {
                         }
                     }
                     connection.commit();
+
+                    if (log.isDebugEnabled())
+                        log.debug("(Store) Transaction completed for storing a model with {} statements.", (long) model.size());
                     c.success(transaction);
 
                 } catch (Exception e) {
@@ -111,27 +116,33 @@ public class EntityRepository implements EntityStore {
 
     @Override
     public Mono<Entity> get(IRI id) {
-        return Mono.create(c -> {
-            try (RepositoryConnection connection = repository.getConnection()) {
-                Entity entity = new Entity()
-                        .withResult(connection.getStatements(id, null, null));
+        try (RepositoryConnection connection = repository.getConnection()) {
 
-                // embedded level 1
-                entity.getModel().objects().stream()
-                        .filter(Value::isIRI)
-                        .map(value -> connection.getStatements((IRI) value, null, null))
-                        .toList()
-                        .forEach(entity::withResult);
-
-
-                if (entity.getModel().size() > 0) c.success(entity);
-                else c.success();
-
-            } catch (Exception e) {
-                log.error("Unknown error while running query", e);
-                c.error(e);
+            RepositoryResult<Statement> statements = connection.getStatements(id, null, null);
+            if (!statements.hasNext()) {
+                if (log.isDebugEnabled()) log.debug("(Store) Found no statements for IRI: <{}>.", id);
+                return Mono.empty();
             }
-        });
+
+
+            Entity entity = new Entity().withResult(statements);
+
+            // embedded level 1
+            entity.getModel().objects().stream()
+                    .filter(Value::isIRI)
+                    .map(value -> connection.getStatements((IRI) value, null, null))
+                    .toList()
+                    .forEach(entity::withResult);
+
+
+            if (log.isDebugEnabled())
+                log.debug("(Store) Loaded {} statements for entity with IRI: <{}>.", entity.getModel().size(), id);
+            return Mono.just(entity);
+
+        } catch (Exception e) {
+            log.error("Unknown error while running query", e);
+            return Mono.error(e);
+        }
     }
 
     @Override

@@ -30,6 +30,7 @@ public class StatementsDecoder implements Decoder<IncomingStatements> {
                 MimeType.valueOf(RDFFormat.RDFJSON.getDefaultMIMEType()),
                 MimeType.valueOf(RDFFormat.NTRIPLES.getDefaultMIMEType()),
                 MimeType.valueOf(RDFFormat.N3.getDefaultMIMEType()),
+                MimeType.valueOf(RDFFormat.TURTLE.getDefaultMIMEType()),
                 MimeType.valueOf(RDFFormat.NQUADS.getDefaultMIMEType())
         );
     }
@@ -69,14 +70,11 @@ public class StatementsDecoder implements Decoder<IncomingStatements> {
                     try (InputStream is = dataBuffer.asInputStream(false)) {
                         parser.setRDFHandler(handler);
                         parser.parse(is);
-                        return Mono.just(handler.getModel());
-                    } catch (RDFParseException e) {
-                        log.error("Failed to parse request of mimetype '{}'", mimeType.toString(), e);
-                        return Mono.error(e);
-                    } catch (Exception e) {
-                        return Mono.error(e);
-                    } finally {
                         log.trace("(Decoder) Parsing of payload with mimetype '{}' completed", mimeType.toString());
+                        return Mono.just(handler.getModel());
+                    } catch (Exception e) {
+                        log.error("(Decoder) Failed to parse request of mimetype '{}'", mimeType.toString(), e);
+                        return Mono.error(e);
                     }
         });
 

@@ -11,6 +11,9 @@ import java.util.Base64;
  *
  * http://example.org/api/entities/{id}
  * http://example.org/api/transactions/{id}
+ *
+ * FIXME: should require the current id (either bnode or externally set) to create reproducible ids
+ * FIXME: should also keep track of the original id (we should store this in the provenance)
  */
 public class GeneratedIdentifier extends EntityIRI {
     private static final SecureRandom secureRandom;

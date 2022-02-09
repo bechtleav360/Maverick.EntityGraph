@@ -13,18 +13,16 @@ import java.util.Map;
 
 @Slf4j
 public class TypeIsRequired extends AbstractTypeHandler {
-    @Override
-    public boolean handlesType(Resource object) {
-        return true;
-    }
 
     @Override
     public Mono<? extends AbstractModelWrapper> handle(EntityStore graph, Mono<? extends AbstractModelWrapper> mono, Map<String, String> parameters) {
         return mono.flatMap(model -> {
+            log.trace("(Validator) Checking if type is defined");
+
             for (Resource obj : model.getModel().subjects()) {
                 /* check if each node object has a valid type definition */
                 if (!model.getModel().contains(obj, RDF.TYPE, null)) {
-                    log.error("The object {} is missing a type", obj);
+                    log.error("(Validator) The object {} is missing a type", obj);
                     return Mono.error(new MissingType("Missing type definition for object"));
                 }
             }
