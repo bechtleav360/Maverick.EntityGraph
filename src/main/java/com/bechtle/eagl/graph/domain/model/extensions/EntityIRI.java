@@ -1,6 +1,6 @@
 package com.bechtle.eagl.graph.domain.model.extensions;
 
-import com.bechtle.eagl.graph.domain.model.vocabulary.Default;
+import com.bechtle.eagl.graph.domain.model.vocabulary.Local;
 import org.eclipse.rdf4j.model.base.AbstractIRI;
 
 public class EntityIRI extends AbstractIRI {
@@ -31,7 +31,7 @@ public class EntityIRI extends AbstractIRI {
     }
 
     public static EntityIRI withDefaultNamespace(String localname) {
-        return new EntityIRI(Default.NAMESPACE, localname);
+        return new EntityIRI(Local.Entities.NAMESPACE, localname);
     }
 
     public static EntityIRI withDefinedNamespace(String namespace, String localname) {

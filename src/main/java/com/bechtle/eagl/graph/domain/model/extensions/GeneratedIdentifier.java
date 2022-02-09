@@ -6,6 +6,12 @@ import org.eclipse.rdf4j.model.Namespace;
 import java.security.SecureRandom;
 import java.util.Base64;
 
+/**
+ * The generated entity identifier needs to resolve, it should be in the form
+ *
+ * http://example.org/api/entities/{id}
+ * http://example.org/api/transactions/{id}
+ */
 public class GeneratedIdentifier extends EntityIRI {
     private static final SecureRandom secureRandom;
     private static final RandomStringGenerator randomStringGenerator;

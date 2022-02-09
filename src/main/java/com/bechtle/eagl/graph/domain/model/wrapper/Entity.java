@@ -12,7 +12,7 @@ import java.util.Set;
  *
  *
  */
-public class Entity extends AbstractModelWrapper<Entity> {
+public class Entity extends AbstractModelWrapper {
 
 
     public Entity withResult(RepositoryResult<Statement> statements) {

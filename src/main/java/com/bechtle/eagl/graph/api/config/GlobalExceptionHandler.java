@@ -1,9 +1,11 @@
 package com.bechtle.eagl.graph.api.config;
 
+import com.bechtle.eagl.graph.domain.model.errors.EntityExistsAlready;
 import com.bechtle.eagl.graph.domain.model.errors.EntityNotFound;
 import com.bechtle.eagl.graph.domain.model.errors.InvalidEntityModel;
 import com.bechtle.eagl.graph.domain.model.errors.MissingType;
 import lombok.extern.slf4j.Slf4j;
+import org.eclipse.rdf4j.query.MalformedQueryException;
 import org.eclipse.rdf4j.rio.RDFParseException;
 import org.springframework.boot.web.error.ErrorAttributeOptions;
 import org.springframework.boot.web.reactive.error.DefaultErrorAttributes;
@@ -19,7 +21,6 @@ import java.util.Map;
  */
 @Configuration
 @Slf4j
-@Profile({"local", "test", "it"})
 public class GlobalExceptionHandler extends DefaultErrorAttributes {
 
     @Override
@@ -64,6 +65,13 @@ public class GlobalExceptionHandler extends DefaultErrorAttributes {
             errorAttributes.remove("exception");
             errorAttributes.remove("trace");
         }
+        else if (error instanceof EntityExistsAlready) {
+            log.debug("(ErrorHandler) Handling entity id conflict error with message: {}", error.getMessage());
+            errorAttributes.replace("status", HttpStatus.CONFLICT.value());
+            errorAttributes.replace("error", error.getMessage());
+            errorAttributes.remove("exception");
+            errorAttributes.remove("trace");
+        }
 
         else if (error instanceof RDFParseException) {
             log.debug("(ErrorHandler) Handling rdf parsing exception with message: {}", error.getMessage());
@@ -74,7 +82,17 @@ public class GlobalExceptionHandler extends DefaultErrorAttributes {
             errorAttributes.remove("exception");
             errorAttributes.remove("trace");
 
+        } else if (error instanceof MalformedQueryException) {
+            log.debug("(ErrorHandler) Handling malformed query exception with message: {}", error.getMessage());
+            errorAttributes.replace("status", HttpStatus.BAD_REQUEST.value());
+            errorAttributes.replace("error", HttpStatus.BAD_REQUEST.getReasonPhrase());
+            errorAttributes.put("message", "Malformed query in request.");
+            errorAttributes.put("reason", ((MalformedQueryException) error).getMessage());
+            errorAttributes.remove("exception");
+            errorAttributes.remove("trace");
         }
+
+
 
         return errorAttributes;
     }

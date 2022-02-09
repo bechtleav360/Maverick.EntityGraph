@@ -11,6 +11,7 @@ import org.reactivestreams.Publisher;
 import org.springframework.core.ResolvableType;
 import org.springframework.core.codec.Decoder;
 import org.springframework.core.io.buffer.DataBuffer;
+import org.springframework.core.io.buffer.DataBufferUtils;
 import org.springframework.util.MimeType;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -58,12 +59,14 @@ public class StatementsDecoder implements Decoder<IncomingStatements> {
 
     private Mono<IncomingStatements> parse(Publisher<DataBuffer> publisher, MimeType mimeType) {
 
-        return Mono.from(publisher).flatMap(dataBuffer -> {
+        return DataBufferUtils.join(publisher)
+                .flatMap(dataBuffer -> {
+
                     log.debug("(Decoder) Trying to parse payload of mimetype '{}'", mimeType.toString());
                     RDFParser parser = RdfUtils.getParserFactory(mimeType).orElseThrow().getParser();
                     RdfUtils.TriplesCollector handler = RdfUtils.getTriplesCollector();
 
-                    try (InputStream is = dataBuffer.asInputStream(true)) {
+                    try (InputStream is = dataBuffer.asInputStream(false)) {
                         parser.setRDFHandler(handler);
                         parser.parse(is);
                         return Mono.just(handler.getModel());

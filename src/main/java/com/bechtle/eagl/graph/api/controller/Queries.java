@@ -23,19 +23,19 @@ public class Queries {
     }
 
     @ApiOperation(value = "Run a query", tags = {"v1"})
-    @PostMapping(value = "", consumes = "text/plain", produces = {"text/csv", "application/sparql-results+json"})
+    @PostMapping(value = "/select", consumes = "text/plain", produces = {"text/csv", "application/sparql-results+json"})
     @ResponseStatus(HttpStatus.ACCEPTED)
     Mono<TupleQueryResult> queryBindings(@RequestBody String query) {
-        log.trace("(Request) CSV Search graph with query: {}", query.toString());
+        log.trace("(Request) Search graph with tuples query: {}", query.toString());
         return queryServices.queryValues(query); // .map(ResponseEntity::ok);
     }
 
 
     @ApiOperation(value = "Run a query", tags = {"v1"})
-    @PostMapping(value = "", consumes = "text/plain", produces = {"text/turtle", "application/ld+json"})
+    @PostMapping(value = "/construct", consumes = "text/plain", produces = {"text/turtle", "application/ld+json"})
     @ResponseStatus(HttpStatus.ACCEPTED)
     Flux<NamespaceAwareStatement> queryStatements(@RequestBody String query) {
-        log.trace("(Request) Search graph with query: {}", query.toString());
+        log.trace("(Request) Search graph with construct query: {}", query.toString());
 
         return queryServices.queryGraph(query);
     }

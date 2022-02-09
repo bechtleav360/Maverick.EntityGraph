@@ -4,17 +4,17 @@ import com.bechtle.eagl.graph.domain.model.extensions.EntityIRI;
 import com.bechtle.eagl.graph.domain.model.extensions.EntityNamespace;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Namespace;
-import org.eclipse.rdf4j.model.vocabulary.PROV;
 
-public class ICAL {
-
+public class SDO {
 
 
-        public static final String NAMESPACE = "http://www.w3.org/2002/12/cal/ical#";
-        public static final String PREFIX = "ical";
+
+        public static final String NAMESPACE = "http://schema.org/";
+        public static final String PREFIX = "sdo";
         public static final Namespace NS = EntityNamespace.of(PREFIX, NAMESPACE);
-        public static final IRI VEVENT = EntityIRI.from(NAMESPACE, "VEVENT");
 
-        public ICAL() {
+        public static final IRI DEFINED_TERM = EntityIRI.from(NAMESPACE, "DefinedTerm");
+
+        public SDO() {
         }
 }

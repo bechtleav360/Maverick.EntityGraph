@@ -136,21 +136,21 @@ public class EntityRepository implements EntityStore {
 
     @Override
     public Mono<TupleQueryResult> queryValues(String query) {
-        return Mono.create(c -> {
+        return Mono.create(m -> {
             try (RepositoryConnection connection = repository.getConnection()) {
                 TupleQuery q = connection.prepareTupleQuery(QueryLanguage.SPARQL, query);
                 try (TupleQueryResult result = q.evaluate()) {
-                    c.success(result);
+                    m.success(result);
                 } catch (Exception e) {
                     log.warn("Error while running value query.", e);
-                    c.error(e);
+                    m.error(e);
                 }
             } catch (MalformedQueryException e) {
-                log.warn("Error while parsing query", e);
-                c.error(new HttpClientErrorException(HttpStatus.BAD_REQUEST, "Invalid query"));
+                log.warn("Error while parsing query, reason: {}", e.getMessage());
+                m.error(e);
             } catch (Exception e) {
                 log.error("Unknown error while running query", e);
-                c.error(e);
+                m.error(e);
             }
         });
     }

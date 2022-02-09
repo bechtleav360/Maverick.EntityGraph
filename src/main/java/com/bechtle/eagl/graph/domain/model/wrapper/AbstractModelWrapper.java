@@ -10,7 +10,7 @@ import java.util.Set;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
-public class AbstractModelWrapper<T> implements NamespaceAware, Serializable {
+public class AbstractModelWrapper implements NamespaceAware, Serializable {
 
     private ModelBuilder modelBuilder;
 
@@ -32,7 +32,7 @@ public class AbstractModelWrapper<T> implements NamespaceAware, Serializable {
         return getBuilder().build();
     }
 
-    protected void reset() {
+    public void reset() {
         this.modelBuilder = new NamespacedModelBuilder();
     }
 
@@ -46,13 +46,14 @@ public class AbstractModelWrapper<T> implements NamespaceAware, Serializable {
 
     public Stream<Value> streamValues(Resource subject, IRI predicate) {
         Iterable<Statement> statements = this.getModel().getStatements(subject, predicate, null);
-        return StreamSupport.stream(statements.spliterator(), true).map(statement -> statement.getObject());
+        return StreamSupport.stream(statements.spliterator(), true).map(Statement::getObject);
     }
 
     @Override
     public String toString() {
         return this.getModel().toString();
     }
+
 
 
 }

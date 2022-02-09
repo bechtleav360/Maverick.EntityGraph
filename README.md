@@ -1,8 +1,11 @@
 # eagl-service-graph
 API to access skills, learning units, and everything else through a json-ld api
 
+## Develop
 
-## Setting up
+Start locally with param ``spring_profiles_active=dev``
+
+## Deploy
 
 
 ### Configure Azure WebApp
@@ -15,6 +18,7 @@ API to access skills, learning units, and everything else through a json-ld api
   - ``bechtleav360/eagl-service-graph:latest`` as full image name
 3. Enable Application logging
 4. Add application property "SPRING_APPLICATION_JSON" (see below)
+5. Add application property "PORT" in configuration 
 
 
 ### Configure Storage

@@ -18,9 +18,10 @@ import org.springframework.web.client.HttpClientErrorException;
 import reactor.core.publisher.Flux;
 
 import java.io.IOException;
+import java.util.Map;
 
 @RestController
-@RequestMapping(path = "/api/rs")
+@RequestMapping(path = "/api/entities")
 @Api(tags = "Entities")
 @Slf4j
 public class Entities {
@@ -34,7 +35,7 @@ public class Entities {
     }
 
     @ApiOperation(value = "Read entity", tags = {"v1"})
-    @GetMapping(value = "/{id:[\\w|\\d|-|_]+}", produces = { RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.NQUADS_VALUE })
+    @GetMapping(value = "/{id:[\\w|\\d|-|_]+}", produces = { RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.NQUADS_VALUE, RdfMimeTypes.N3_VALUE })
     @ResponseStatus(HttpStatus.OK)
     Flux<NamespaceAwareStatement> read(@PathVariable String id) {
         log.trace("(Request) Reading Entity with id: {}", id);
@@ -47,13 +48,18 @@ public class Entities {
 
     @ApiOperation(value = "Create entity", tags = {"v1"})
     @PostMapping(value = "",
-            consumes = { RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE },
-            produces = { RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.NQUADS_VALUE })
+            consumes = { RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.N3_VALUE },
+            produces = { RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.NQUADS_VALUE, RdfMimeTypes.N3_VALUE })
     @ResponseStatus(HttpStatus.ACCEPTED)
-    Flux<NamespaceAwareStatement> createEntity(@RequestBody IncomingStatements request) {
-        log.trace("(Request) Create Entity with payload: {}", request.toString());
+    Flux<NamespaceAwareStatement> createEntity(@RequestBody IncomingStatements request,
+                                               @RequestParam(defaultValue = "false", value = "generate-identifier") boolean generateIdentifier) {
+
+        if(log.isDebugEnabled()) log.debug("(Request) Create a new Entity");
+        if(log.isTraceEnabled()) log.trace("(Request) Payload: \n {}", request.toString());
+
         Assert.isTrue(request.getModel().size() > 0, "No statements in request detected.");
-        return graphService.createEntity(request).flatMapIterable(AbstractModelWrapper::asStatements);
+        Map<String, String> parameter = Map.of(Parameters.FORCE_GENERATE_IDENTIFIER, Boolean.valueOf(generateIdentifier).toString());
+        return graphService.createEntity(request, parameter).flatMapIterable(AbstractModelWrapper::asStatements);
     }
 
 
@@ -64,7 +70,8 @@ public class Entities {
             produces = { RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE})
     @ResponseStatus(HttpStatus.CREATED)
     Flux<NamespaceAwareStatement> createValue(@PathVariable String id, @PathVariable String prefixedKey, @RequestBody String value) {
-        log.trace("(Request) Set value '{}' for property '{}' of entity '{}'", value.toString(), prefixedKey, id);
+
+        if(log.isDebugEnabled()) log.debug("(Request) Set property '{}' of entity '{}' to value '{}'", value.length() > 64 ? value.substring(0, 64) : value, prefixedKey, id);
 
         Assert.isTrue(! value.matches("(?s).*[\\n\\r].*"), "Newlines in request body are not supported");
 
@@ -87,22 +94,14 @@ public class Entities {
             produces = { RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE})
     @ResponseStatus(HttpStatus.CREATED)
     Flux<NamespaceAwareStatement> createEmbedded(@PathVariable String id, @PathVariable String prefixedKey, @RequestBody IncomingStatements value)  {
-        log.trace("(Request) Add embedded entity to property '{}' of entity '{}'", prefixedKey, id);
+
+        if(log.isTraceEnabled()) log.trace("(Request) Add embedded entity to property '{}' of entity '{}'", prefixedKey, id);
+
         String[] property = splitPrefixedIdentifier(prefixedKey);
-        try {
-            return graphService.link(id, property[0], property[1], value).flatMapIterable(AbstractModelWrapper::asStatements);
-        } catch (IOException e) {
-            log.error("Exception while linking embedded. ", e);
-            return Flux.error(new HttpClientErrorException(HttpStatus.INTERNAL_SERVER_ERROR));
-        }
+
+        return graphService.link(id, property[0], property[1], value).flatMapIterable(AbstractModelWrapper::asStatements);
 
 
-       /* } catch (InvalidObjectException e) {
-            log.warn("Invalid request while saving value. ", e);
-            return Flux.error(new HttpClientErrorException(HttpStatus.BAD_REQUEST));
-        } catch (IOException e) {
-
-        }*/
     }
 
     private String[] splitPrefixedIdentifier(String prefixedKey) {

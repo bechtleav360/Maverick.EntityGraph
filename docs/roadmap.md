@@ -6,9 +6,9 @@
 - [x] Support for native queries
 - [x] Create entity
 - [x] Add value 
-- [ ] Create relation to existing entity
+- [x] Create relation to existing entity
 - [x] Service configuration with working swagger UI
-- [ ] Instance on cloud with persistent storage
+- [x] Instance on cloud with persistent storage
 - [ ] Preloaded videos 
 
 # 2 - EAGL MVP

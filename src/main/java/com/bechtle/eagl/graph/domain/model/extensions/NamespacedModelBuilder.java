@@ -1,6 +1,6 @@
 package com.bechtle.eagl.graph.domain.model.extensions;
 
-import com.bechtle.eagl.graph.domain.model.vocabulary.Default;
+import com.bechtle.eagl.graph.domain.model.vocabulary.Local;
 import com.bechtle.eagl.graph.domain.model.vocabulary.ICAL;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Model;
@@ -21,7 +21,10 @@ public class NamespacedModelBuilder extends ModelBuilder {
     static {
         namespaceMap = new HashMap<>(Namespaces.DEFAULT_RDF4J.size()+10);
         Namespaces.DEFAULT_RDF4J.forEach(namespace -> namespaceMap.put(namespace.getName(), namespace));
-        namespaceMap.put(Default.NAMESPACE, Default.NS);
+        namespaceMap.put(Local.Entities.NAMESPACE, Local.Entities.NS);
+        namespaceMap.put(Local.Transactions.NAMESPACE, Local.Transactions.NS);
+        namespaceMap.put(Local.Versions.NAMESPACE, Local.Versions.NS);
+
         namespaceMap.put(ICAL.NAMESPACE, ICAL.NS);
     }
 
