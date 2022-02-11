@@ -31,9 +31,7 @@ import reactor.core.publisher.Mono;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -55,12 +53,16 @@ public class EntityRepository implements EntityStore {
         return Mono.create(c -> {
             try (RepositoryConnection connection = repository.getConnection()) {
                 try {
+
+                    Statement statement = repository.getValueFactory().createStatement(subject, predicate, literal);
                     connection.begin();
-                    connection.add(repository.getValueFactory().createStatement(subject, predicate, literal));
-                    finalTransaction.addModifiedResource(subject);
+                    connection.add(statement);
                     connection.commit();
 
+                    finalTransaction.addModifiedResource(subject);
+                    finalTransaction.with(NamespaceAwareStatement.wrap(statement, Collections.emptySet()));
                     if (log.isDebugEnabled()) log.debug("(Store) Transaction completed for storing one statement.");
+
                     c.success(finalTransaction);
                 } catch (Exception e) {
                     log.warn("Error while storing statement, performing rollback.", e);
@@ -90,14 +92,27 @@ public class EntityRepository implements EntityStore {
                 try {
 
 
-                    connection.begin();
+                    List<Resource> modifiedResources = new ArrayList<>();
+
                     for (Resource obj : new ArrayList<>(model.subjects())) {
+
                         if (obj.isIRI()) {
-                            connection.add(model.getStatements(obj, null, null));
+
+                            connection.begin();
+                            Iterable<Statement> statements = model.getStatements(obj, null, null);
+                            connection.add(statements);
+                            connection.commit();
+
                             transaction.addModifiedResource(obj);
+                            transaction.with(statements);
                         }
+
+                        modifiedResources.add(obj);
                     }
-                    connection.commit();
+
+
+                    modifiedResources.forEach(transaction::addModifiedResource);
+                    transaction.with(model);
 
                     if (log.isDebugEnabled())
                         log.debug("(Store) Transaction completed for storing a model with {} statements.", (long) model.size());

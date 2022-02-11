@@ -1,6 +1,7 @@
 package com.bechtle.eagl.graph.domain.services.handler;
 
-import com.bechtle.eagl.graph.domain.model.wrapper.AbstractModelWrapper;
+import com.bechtle.eagl.graph.domain.model.wrapper.AbstractModel;
+import com.bechtle.eagl.graph.domain.services.handler.transformers.Skolemizer;
 import com.bechtle.eagl.graph.domain.services.handler.transformers.UniqueEntityHandler;
 import com.bechtle.eagl.graph.repository.EntityStore;
 import org.springframework.stereotype.Component;
@@ -16,11 +17,12 @@ public class Transformers {
 
     public Transformers() {
         registeredHandlers = Set.of(
+                new Skolemizer(),
                 new UniqueEntityHandler()
         );
     }
 
-    public Mono<? extends AbstractModelWrapper> delegate(Mono<? extends AbstractModelWrapper> triples, EntityStore graph, Map<String, String> parameters) {
+    public Mono<? extends AbstractModel> delegate(Mono<? extends AbstractModel> triples, EntityStore graph, Map<String, String> parameters) {
         for(AbstractTypeHandler handler : registeredHandlers) {
             triples = handler.handle(graph, triples, parameters);
         }

@@ -3,7 +3,7 @@ package com.bechtle.eagl.graph.domain.model.errors;
 import org.eclipse.rdf4j.model.Resource;
 
 
-public class MissingType extends Exception {
+public class MissingType extends RuntimeException {
     private final String identifier;
 
     public MissingType(String identifier) {

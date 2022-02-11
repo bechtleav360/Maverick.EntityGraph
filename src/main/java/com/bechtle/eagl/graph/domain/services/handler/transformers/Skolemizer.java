@@ -1,12 +1,10 @@
 package com.bechtle.eagl.graph.domain.services.handler.transformers;
 
 import com.bechtle.eagl.graph.api.controller.Parameters;
-import com.bechtle.eagl.graph.domain.model.errors.EntityExistsAlready;
 import com.bechtle.eagl.graph.domain.model.extensions.GeneratedIdentifier;
 import com.bechtle.eagl.graph.domain.model.extensions.NamespaceAwareStatement;
 import com.bechtle.eagl.graph.domain.model.vocabulary.Local;
-import com.bechtle.eagl.graph.domain.model.vocabulary.SDO;
-import com.bechtle.eagl.graph.domain.model.wrapper.AbstractModelWrapper;
+import com.bechtle.eagl.graph.domain.model.wrapper.AbstractModel;
 import com.bechtle.eagl.graph.domain.services.handler.AbstractTypeHandler;
 import com.bechtle.eagl.graph.repository.EntityStore;
 import lombok.extern.slf4j.Slf4j;
@@ -33,7 +31,7 @@ import java.util.Map;
 public class Skolemizer extends AbstractTypeHandler {
 
     @Override
-    public Mono<? extends AbstractModelWrapper> handle(EntityStore graph, Mono<? extends AbstractModelWrapper> model, Map<String, String> parameters) {
+    public Mono<? extends AbstractModel> handle(EntityStore graph, Mono<? extends AbstractModel> model, Map<String, String> parameters) {
         return model.map(triples -> {
             log.trace("(Transformer) Skolemizing identifiers");
 
@@ -54,7 +52,7 @@ public class Skolemizer extends AbstractTypeHandler {
 
     }
 
-    public void skolemize(Resource subj, AbstractModelWrapper triples) {
+    public void skolemize(Resource subj, AbstractModel triples) {
 
         IRI identifier = new GeneratedIdentifier(Local.Entities.NS);
 

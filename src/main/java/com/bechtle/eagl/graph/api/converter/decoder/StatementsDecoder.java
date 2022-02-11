@@ -1,11 +1,10 @@
 package com.bechtle.eagl.graph.api.converter.decoder;
 
 import com.bechtle.eagl.graph.api.converter.RdfUtils;
-import com.bechtle.eagl.graph.domain.model.wrapper.AbstractModelWrapper;
-import com.bechtle.eagl.graph.domain.model.wrapper.IncomingStatements;
+import com.bechtle.eagl.graph.domain.model.wrapper.AbstractModel;
+import com.bechtle.eagl.graph.domain.model.wrapper.Incoming;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.rdf4j.rio.RDFFormat;
-import org.eclipse.rdf4j.rio.RDFParseException;
 import org.eclipse.rdf4j.rio.RDFParser;
 import org.reactivestreams.Publisher;
 import org.springframework.core.ResolvableType;
@@ -21,7 +20,7 @@ import java.util.List;
 import java.util.Map;
 
 @Slf4j
-public class StatementsDecoder implements Decoder<IncomingStatements> {
+public class StatementsDecoder implements Decoder<Incoming> {
     private static final List<MimeType> mimeTypes;
 
     static {
@@ -42,23 +41,23 @@ public class StatementsDecoder implements Decoder<IncomingStatements> {
 
     @Override
     public boolean canDecode(ResolvableType elementType, MimeType mimeType) {
-        return mimeType != null && AbstractModelWrapper.class.isAssignableFrom(elementType.toClass()) && mimeType.isPresentIn(mimeTypes);
+        return mimeType != null && AbstractModel.class.isAssignableFrom(elementType.toClass()) && mimeType.isPresentIn(mimeTypes);
     }
 
     @Override
-    public Flux<IncomingStatements> decode(Publisher<DataBuffer> inputStream, ResolvableType elementType, MimeType mimeType, Map<String, Object> hints) {
+    public Flux<Incoming> decode(Publisher<DataBuffer> inputStream, ResolvableType elementType, MimeType mimeType, Map<String, Object> hints) {
         return Flux.from(this.parse(inputStream, mimeType));
     }
 
     @Override
-    public Mono<IncomingStatements> decodeToMono(Publisher<DataBuffer> inputStream, ResolvableType elementType, MimeType mimeType, Map<String, Object> hints) {
+    public Mono<Incoming> decodeToMono(Publisher<DataBuffer> inputStream, ResolvableType elementType, MimeType mimeType, Map<String, Object> hints) {
         return this.parse(inputStream, mimeType);
     }
 
 
 
 
-    private Mono<IncomingStatements> parse(Publisher<DataBuffer> publisher, MimeType mimeType) {
+    private Mono<Incoming> parse(Publisher<DataBuffer> publisher, MimeType mimeType) {
 
         return DataBufferUtils.join(publisher)
                 .flatMap(dataBuffer -> {

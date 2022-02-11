@@ -2,10 +2,7 @@ package com.bechtle.eagl.graph.domain.model.extensions;
 
 import com.bechtle.eagl.graph.domain.model.vocabulary.Local;
 import com.bechtle.eagl.graph.domain.model.vocabulary.ICAL;
-import org.eclipse.rdf4j.model.IRI;
-import org.eclipse.rdf4j.model.Model;
-import org.eclipse.rdf4j.model.Namespace;
-import org.eclipse.rdf4j.model.Resource;
+import org.eclipse.rdf4j.model.*;
 import org.eclipse.rdf4j.model.util.ModelBuilder;
 import org.eclipse.rdf4j.model.util.Namespaces;
 
@@ -16,7 +13,7 @@ import java.util.*;
  */
 public class NamespacedModelBuilder extends ModelBuilder {
 
-    private static Map<String, Namespace> namespaceMap;
+    private final static Map<String, Namespace> namespaceMap;
 
     static {
         namespaceMap = new HashMap<>(Namespaces.DEFAULT_RDF4J.size()+10);
@@ -37,6 +34,17 @@ public class NamespacedModelBuilder extends ModelBuilder {
         customNamespaces.forEach(namespace -> namespaceMap.put(namespace.getName(), namespace));
     }
 
+
+    public NamespacedModelBuilder with(Model model) {
+        model.getNamespaces().forEach(super::setNamespace);
+        model.forEach(st -> super.build().add(st));
+        return this;
+    }
+
+    public NamespacedModelBuilder add(Statement st) {
+        super.build().add(st.getSubject(), st.getPredicate(), st.getObject());
+        return this;
+    }
 
 
     public ModelBuilder add(Resource subject, IRI predicate, Object object) {

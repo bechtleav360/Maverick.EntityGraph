@@ -1,8 +1,8 @@
 package com.bechtle.eagl.graph.api.controller;
 
 import com.bechtle.eagl.graph.domain.model.extensions.GeneratedIdentifier;
-import com.bechtle.eagl.graph.domain.model.wrapper.AbstractModelWrapper;
-import com.bechtle.eagl.graph.domain.model.wrapper.IncomingStatements;
+import com.bechtle.eagl.graph.domain.model.wrapper.AbstractModel;
+import com.bechtle.eagl.graph.domain.model.wrapper.Incoming;
 import com.bechtle.eagl.graph.domain.model.extensions.NamespaceAwareStatement;
 import com.bechtle.eagl.graph.domain.model.enums.RdfMimeTypes;
 import com.bechtle.eagl.graph.domain.services.EntityServices;
@@ -14,10 +14,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.util.Assert;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.client.HttpClientErrorException;
 import reactor.core.publisher.Flux;
 
-import java.io.IOException;
 import java.util.Map;
 
 @RestController
@@ -43,7 +41,7 @@ public class Entities {
 
         return graphService.readEntity(id)
 
-                .flatMapIterable(AbstractModelWrapper::asStatements);
+                .flatMapIterable(AbstractModel::asStatements);
     }
 
     @ApiOperation(value = "Create entity", tags = {"v1"})
@@ -51,7 +49,7 @@ public class Entities {
             consumes = { RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.N3_VALUE },
             produces = { RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.NQUADS_VALUE, RdfMimeTypes.N3_VALUE })
     @ResponseStatus(HttpStatus.ACCEPTED)
-    Flux<NamespaceAwareStatement> createEntity(@RequestBody IncomingStatements request,
+    Flux<NamespaceAwareStatement> createEntity(@RequestBody Incoming request,
                                                @RequestParam(defaultValue = "false", value = "generate-identifier") boolean generateIdentifier) {
 
         if(log.isDebugEnabled()) log.debug("(Request) Create a new Entity");
@@ -59,7 +57,7 @@ public class Entities {
 
         Assert.isTrue(request.getModel().size() > 0, "No statements in request detected.");
         Map<String, String> parameter = Map.of(Parameters.FORCE_GENERATE_IDENTIFIER, Boolean.valueOf(generateIdentifier).toString());
-        return graphService.createEntity(request, parameter).flatMapIterable(AbstractModelWrapper::asStatements);
+        return graphService.createEntity(request, parameter).flatMapIterable(AbstractModel::asStatements);
     }
 
 
@@ -71,13 +69,13 @@ public class Entities {
     @ResponseStatus(HttpStatus.CREATED)
     Flux<NamespaceAwareStatement> createValue(@PathVariable String id, @PathVariable String prefixedKey, @RequestBody String value) {
 
-        if(log.isDebugEnabled()) log.debug("(Request) Set property '{}' of entity '{}' to value '{}'", value.length() > 64 ? value.substring(0, 64) : value, prefixedKey, id);
+        if(log.isDebugEnabled()) log.debug("(Request) Set property '{}' of entity '{}' to value '{}'", prefixedKey, id, value.length() > 64 ? value.substring(0, 64) : value);
 
         Assert.isTrue(! value.matches("(?s).*[\\n\\r].*"), "Newlines in request body are not supported");
 
         String[] property = splitPrefixedIdentifier(prefixedKey);
 
-        return graphService.setValue(id, property[0], property[1], value).flatMapIterable(AbstractModelWrapper::asStatements);
+        return graphService.setValue(id, property[0], property[1], value).flatMapIterable(AbstractModel::asStatements);
 
        /* } catch (InvalidObjectException e) {
             log.warn("Invalid request while saving value. ", e);
@@ -93,13 +91,13 @@ public class Entities {
             consumes = { RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE },
             produces = { RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE})
     @ResponseStatus(HttpStatus.CREATED)
-    Flux<NamespaceAwareStatement> createEmbedded(@PathVariable String id, @PathVariable String prefixedKey, @RequestBody IncomingStatements value)  {
+    Flux<NamespaceAwareStatement> createEmbedded(@PathVariable String id, @PathVariable String prefixedKey, @RequestBody Incoming value)  {
 
-        if(log.isTraceEnabled()) log.trace("(Request) Add embedded entity to property '{}' of entity '{}'", prefixedKey, id);
+        if(log.isTraceEnabled()) log.trace("(Request) Add embedded entity as property '{}' to entity '{}'", prefixedKey, id);
 
         String[] property = splitPrefixedIdentifier(prefixedKey);
 
-        return graphService.link(id, property[0], property[1], value).flatMapIterable(AbstractModelWrapper::asStatements);
+        return graphService.link(id, property[0], property[1], value).flatMapIterable(AbstractModel::asStatements);
 
 
     }

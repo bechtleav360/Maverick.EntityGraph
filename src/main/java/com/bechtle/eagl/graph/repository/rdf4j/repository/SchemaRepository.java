@@ -1,6 +1,7 @@
 package com.bechtle.eagl.graph.repository.rdf4j.repository;
 
 import com.bechtle.eagl.graph.domain.model.vocabulary.Local;
+import com.bechtle.eagl.graph.domain.model.vocabulary.SDO;
 import com.bechtle.eagl.graph.domain.model.vocabulary.Transactions;
 import com.bechtle.eagl.graph.repository.SchemaStore;
 import org.eclipse.rdf4j.model.Namespace;
@@ -16,7 +17,7 @@ import java.util.Set;
 @Component
 public class SchemaRepository implements SchemaStore {
 
-    private static Set<Namespace> namespaces;
+    private final static Set<Namespace> namespaces;
 
     static {
         namespaces = new HashSet<>(Namespaces.DEFAULT_RDF4J);
@@ -24,6 +25,7 @@ public class SchemaRepository implements SchemaStore {
         namespaces.add(Local.Entities.NS);
         namespaces.add(Local.Transactions.NS);
         namespaces.add(Local.Versions.NS);
+        namespaces.add(SDO.NS);
     }
 
     private final Repository repository;

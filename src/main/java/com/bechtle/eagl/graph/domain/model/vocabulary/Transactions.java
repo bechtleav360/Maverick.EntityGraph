@@ -8,7 +8,7 @@ import org.eclipse.rdf4j.model.vocabulary.PROV;
 public class Transactions {
 
         public static final String NAMESPACE = "http://www.av360.io/schema/transactions#";
-        public static final String PREFIX = "tract";
+        public static final String PREFIX = "transaction";
         // FIXME: make configurable
         public static final Namespace NS = EntityNamespace.of(PREFIX, NAMESPACE);
         public static final IRI TRANSACTION = PROV.ACTIVITY;

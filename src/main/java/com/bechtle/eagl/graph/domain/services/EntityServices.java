@@ -1,19 +1,18 @@
 package com.bechtle.eagl.graph.domain.services;
 
 import com.bechtle.eagl.graph.domain.model.errors.EntityNotFound;
+import com.bechtle.eagl.graph.domain.model.errors.UnknownPrefix;
 import com.bechtle.eagl.graph.domain.model.extensions.EntityIRI;
+import com.bechtle.eagl.graph.domain.model.extensions.NamespaceAwareStatement;
 import com.bechtle.eagl.graph.domain.model.wrapper.Entity;
-import com.bechtle.eagl.graph.domain.model.wrapper.IncomingStatements;
+import com.bechtle.eagl.graph.domain.model.wrapper.Incoming;
 import com.bechtle.eagl.graph.domain.model.wrapper.Transaction;
 import com.bechtle.eagl.graph.domain.services.handler.Transformers;
 import com.bechtle.eagl.graph.domain.services.handler.Validators;
 import com.bechtle.eagl.graph.repository.EntityStore;
 import com.bechtle.eagl.graph.repository.SchemaStore;
 import lombok.extern.slf4j.Slf4j;
-import org.eclipse.rdf4j.model.IRI;
-import org.eclipse.rdf4j.model.Resource;
-import org.eclipse.rdf4j.model.Value;
-import org.eclipse.rdf4j.model.ValueFactory;
+import org.eclipse.rdf4j.model.*;
 import org.eclipse.rdf4j.model.util.ModelBuilder;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
@@ -46,8 +45,13 @@ public class EntityServices {
     }
 
 
-    public Mono<Transaction> createEntity(IncomingStatements triples, Map<String, String> parameters) {
+    public Mono<Transaction> createEntity(Incoming triples, Map<String, String> parameters) {
+        return this.createEntity(triples, parameters, new Transaction());
+    }
+
+    public Mono<Transaction> createEntity(Incoming triples, Map<String, String> parameters, Transaction transaction) {
         if(log.isDebugEnabled()) log.debug("(Service) {} statements incoming for creating new entity. Parameters: {}", triples.stream().count(),  parameters.size() > 0 ? parameters : "none");
+
 
         return Mono.just(triples)
                 .flatMap(sts -> {
@@ -63,7 +67,11 @@ public class EntityServices {
 
                 })
 
-                .flatMap(incomingStatements -> graph.store(triples.getModel()));
+                .flatMap(sts ->graph.store(sts.getModel(), transaction))
+                .map(trx -> {
+
+                    return trx;
+                });
     }
 
     /**
@@ -78,7 +86,7 @@ public class EntityServices {
     public Mono<Transaction> setValue(String id, String predicatePrefix, String predicateKey, String value) {
         ValueFactory vf = this.graph.getValueFactory();
         EntityIRI entityIdentifier = EntityIRI.withDefaultNamespace(id);
-        String namespace = schema.getNamespaceFor(predicatePrefix).orElseThrow().getName();
+        String namespace = schema.getNamespaceFor(predicatePrefix).orElseThrow(() -> new UnknownPrefix(predicatePrefix)).getName();
 
         return this.addStatement(entityIdentifier,
                 EntityIRI.withDefinedNamespace(namespace, predicateKey),
@@ -89,17 +97,17 @@ public class EntityServices {
     /**
      * Adds a statement
      */
-    public Mono<Transaction> addStatement(Resource subj, org.eclipse.rdf4j.model.IRI predicate, Value value) {
+    public Mono<Transaction> addStatement(IRI subj, org.eclipse.rdf4j.model.IRI predicate, Value value) {
         return this.addStatement(subj, predicate, value, new Transaction());
     }
 
     /**
      * Adds a statement. Fails if no entity exists with the given subject
      */
-    public Mono<Transaction> addStatement(Resource entityIdentifier, org.eclipse.rdf4j.model.IRI predicate, Value value, Transaction transaction) {
-        return this.graph.type(entityIdentifier)
+    public Mono<Transaction> addStatement(IRI entityIdentifier, IRI predicate, Value value, Transaction transaction) {
+        return this.graph.get(entityIdentifier)
                 .switchIfEmpty(Mono.error(new EntityNotFound(entityIdentifier.stringValue())))
-                .flatMap(type -> this.graph.store(entityIdentifier, predicate, value, transaction));
+                .flatMap(entity -> this.graph.store(entityIdentifier, predicate, value, transaction.with(entity)));
     }
 
 
@@ -115,10 +123,10 @@ public class EntityServices {
      * @param linkedEntities  value
      * @return transaction model
      */
-    public Mono<Transaction> link(String id, String predicatePrefix, String predicateKey, IncomingStatements linkedEntities)  {
+    public Mono<Transaction> link(String id, String predicatePrefix, String predicateKey, Incoming linkedEntities)  {
 
         EntityIRI entityIdentifier = EntityIRI.withDefaultNamespace(id);
-        String namespace = schema.getNamespaceFor(predicatePrefix).orElseThrow().getName();
+        String namespace = schema.getNamespaceFor(predicatePrefix).orElseThrow(() -> new UnknownPrefix(predicatePrefix)).getName();
         IRI predicate = EntityIRI.withDefinedNamespace(namespace, predicateKey);
 
         /*
@@ -129,16 +137,20 @@ public class EntityServices {
 
          */
 
-        return this.graph.type(entityIdentifier)
+        return this.graph.get(entityIdentifier)
                 .switchIfEmpty(Mono.error(new EntityNotFound(id)))
-                .flatMap(type -> this.createEntity(linkedEntities, new HashMap<>()))
+
+                /* store the new entities */
+                .flatMap(entity -> this.createEntity(linkedEntities, new HashMap<>(), new Transaction().with(entity)))
+
+                /* store the links */
                 .flatMap(transaction -> {
                     ModelBuilder modelBuilder = new ModelBuilder();
-                    transaction.listModifiedResources()
-                            .forEach(value -> modelBuilder.add(entityIdentifier, predicate, value));
+                    transaction.listModifiedResources().forEach(value -> modelBuilder.add(entityIdentifier, predicate, value));
 
                     return this.graph.store(modelBuilder.build(), transaction);
                 });
+
 
 
 

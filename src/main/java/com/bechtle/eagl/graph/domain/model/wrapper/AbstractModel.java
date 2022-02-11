@@ -2,19 +2,23 @@ package com.bechtle.eagl.graph.domain.model.wrapper;
 
 import com.bechtle.eagl.graph.domain.model.extensions.NamespaceAwareStatement;
 import com.bechtle.eagl.graph.domain.model.extensions.NamespacedModelBuilder;
+import org.apache.logging.log4j.util.StringBuilders;
 import org.eclipse.rdf4j.model.*;
-import org.eclipse.rdf4j.model.util.ModelBuilder;
 
 import java.io.Serializable;
 import java.util.Set;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
-public class AbstractModelWrapper implements NamespaceAware, Serializable {
+public class AbstractModel implements NamespaceAware, Serializable {
 
-    private ModelBuilder modelBuilder;
+    private NamespacedModelBuilder modelBuilder;
 
-    protected AbstractModelWrapper() {
+    protected AbstractModel(Model model) {
+        this.modelBuilder = new NamespacedModelBuilder(model, Set.of());
+    }
+
+    protected AbstractModel() {
         this.modelBuilder = new NamespacedModelBuilder();
     }
 
@@ -24,7 +28,7 @@ public class AbstractModelWrapper implements NamespaceAware, Serializable {
         return this.getModel().getNamespaces();
     }
 
-    public ModelBuilder getBuilder() {
+    public NamespacedModelBuilder getBuilder() {
         return modelBuilder;
     }
 
@@ -51,8 +55,12 @@ public class AbstractModelWrapper implements NamespaceAware, Serializable {
 
     @Override
     public String toString() {
-        return this.getModel().toString();
+        StringBuilder sb = new StringBuilder();
+        this.getModel().forEach(statement -> sb.append(statement).append('\n'));
+        return sb.toString();
     }
+
+
 
 
 

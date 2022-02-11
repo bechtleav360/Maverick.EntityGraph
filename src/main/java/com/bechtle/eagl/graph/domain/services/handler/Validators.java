@@ -1,6 +1,6 @@
 package com.bechtle.eagl.graph.domain.services.handler;
 
-import com.bechtle.eagl.graph.domain.model.wrapper.AbstractModelWrapper;
+import com.bechtle.eagl.graph.domain.model.wrapper.AbstractModel;
 import com.bechtle.eagl.graph.domain.services.handler.validators.TypeIsRequired;
 import com.bechtle.eagl.graph.repository.EntityStore;
 import org.springframework.stereotype.Component;
@@ -19,7 +19,7 @@ public class Validators {
         );
     }
 
-    public Mono<? extends AbstractModelWrapper> delegate(Mono<? extends AbstractModelWrapper> triples, EntityStore graph, Map<String, String> parameters) {
+    public Mono<? extends AbstractModel> delegate(Mono<? extends AbstractModel> triples, EntityStore graph, Map<String, String> parameters) {
         for(AbstractTypeHandler handler : registeredHandlers) {
             triples = handler.handle(graph, triples, parameters);
         }

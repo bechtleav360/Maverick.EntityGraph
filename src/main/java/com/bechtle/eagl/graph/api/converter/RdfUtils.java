@@ -1,6 +1,6 @@
 package com.bechtle.eagl.graph.api.converter;
 
-import com.bechtle.eagl.graph.domain.model.wrapper.IncomingStatements;
+import com.bechtle.eagl.graph.domain.model.wrapper.Incoming;
 import org.eclipse.rdf4j.common.exception.RDF4JException;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
@@ -24,12 +24,11 @@ public class RdfUtils {
 
     public static Optional<RDFParserFactory> getParserFactory(MimeType mimeType) {
         assert mimeType != null;
-        Optional<RDFParserFactory> fact = getAvailableParserFactories()
+
+        return getAvailableParserFactories()
                 .parallelStream()
                 .filter(rdfParserFactory -> rdfParserFactory.getRDFFormat().hasMIMEType(mimeType.toString()))
                 .findFirst();
-
-        return fact;
     }
 
     public static Optional<RDFWriterFactory> getWriterFactory(MimeType mimeType) {
@@ -67,15 +66,15 @@ public class RdfUtils {
 
 
     public static class TriplesCollector extends AbstractRDFInserter {
-        private final IncomingStatements model;
+        private final Incoming model;
 
         public TriplesCollector() {
             super(SimpleValueFactory.getInstance());
-            this.model = new IncomingStatements();
+            this.model = new Incoming();
         }
 
 
-        public IncomingStatements getModel() {
+        public Incoming getModel() {
             return model;
         }
 
