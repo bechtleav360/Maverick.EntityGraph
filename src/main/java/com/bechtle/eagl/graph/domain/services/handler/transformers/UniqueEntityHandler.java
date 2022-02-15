@@ -6,7 +6,7 @@ import com.bechtle.eagl.graph.domain.model.wrapper.AbstractModel;
 import com.bechtle.eagl.graph.domain.services.handler.AbstractTypeHandler;
 import com.bechtle.eagl.graph.repository.EntityStore;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.tuple.Pair;
+import net.bytebuddy.ClassFileVersion;
 import org.apache.commons.lang3.tuple.Triple;
 import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.Resource;
@@ -15,6 +15,14 @@ import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.impl.LinkedHashModel;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.model.vocabulary.RDFS;
+import org.eclipse.rdf4j.query.TupleQueryResult;
+import org.eclipse.rdf4j.sparqlbuilder.core.SparqlBuilder;
+import org.eclipse.rdf4j.sparqlbuilder.core.Variable;
+import org.eclipse.rdf4j.sparqlbuilder.core.query.Queries;
+import org.eclipse.rdf4j.sparqlbuilder.core.query.SelectQuery;
+import org.eclipse.rdf4j.sparqlbuilder.rdf.Rdf;
+import org.eclipse.rdf4j.sparqlbuilder.rdf.RdfObject;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.*;
@@ -23,14 +31,50 @@ import java.util.stream.Collectors;
 @Slf4j
 public class UniqueEntityHandler extends AbstractTypeHandler {
 
+
+    /**
+     * Records with
+     * - type: the type of the linked entity
+     * - label: the label associated with linked entity
+     * - localIdentifier: the identifier within the incoming model
+     */
+    private record LocalEntity(Value type, Value label, Resource localIdentifier) {
+    }
+
+    /**
+     * Records with
+     * - duplicate: parameters of the duplicate in current model
+     * - origin: the entity which should be used instead
+     */
+    private record ResolvedDuplicate(LocalEntity duplicate, Value origin) {
+    }
+
+
     @Override
     public Mono<? extends AbstractModel> handle(EntityStore graph, Mono<? extends AbstractModel> model, Map<String, String> parameters) {
+
+
+        return Mono.from(model)
+                .doOnSubscribe(c -> log.debug("(Transformer/Unique) Check if linked entities already exist and reroute if needed"))
+                .doFinally(signalType -> log.trace("(Transformer/Unique) Finished checks for unique entity constraints"))
+                .filter(this::checkForEmbeddedAnonymousEntities)
+                .flatMap(this::mergeDuplicatedWithinModel)
+                .flatMap(triples -> mergeDuplicatesInEntityGraph(graph, triples))
+                .switchIfEmpty(Mono.from(model))    // reset to model parameter if no anomyous existed
+                .filter(this::checkForEmbeddedNamedEntities)
+                .flatMap(triples -> checkIfLinkedNamedEntityExistsInGraph(graph, triples))
+                .switchIfEmpty(Mono.from(model));
+
+
+        /*
         return model.map(triples -> {
             log.debug("(Transformer) Check if linked entities already exist and reroute if needed");
 
+
+
             if (this.checkForEmbeddedAnonymousEntities(triples)) {
-                this.checkByLabelAndType(triples);
-                this.checkIfLinkedEntityExistsInGraph(graph, triples);
+                this.mergeDuplicatedWithinModel(triples);
+                this.mergeDuplicatesInEntityGraph(graph, triples);
             }
 
             if (this.checkForEmbeddedNamedEntities(triples)) {
@@ -40,7 +84,7 @@ public class UniqueEntityHandler extends AbstractTypeHandler {
 
             return triples;
         });
-
+*/
     }
 
     /**
@@ -49,13 +93,9 @@ public class UniqueEntityHandler extends AbstractTypeHandler {
      * @return true, if named embedded entities are in payload
      */
     private boolean checkForEmbeddedNamedEntities(AbstractModel triples) {
-        return triples.getModel().stream()
-                .filter(statement -> {
-                    boolean objectIsNamed = (statement.getObject().isIRI()) && (!(statement.getObject() instanceof GeneratedIdentifier));
-                    boolean objectIsNotType = statement.getPredicate() != RDF.TYPE;
-                    return objectIsNamed && objectIsNotType;
-                })
-                .peek(object -> log.trace("Found linked named entity: {}", object)).findAny().isPresent();
+        return triples.embeddedObjects()
+                .stream()
+                .anyMatch(object -> object.isIRI() && (!(object instanceof GeneratedIdentifier)));
     }
 
     /**
@@ -64,11 +104,10 @@ public class UniqueEntityHandler extends AbstractTypeHandler {
      * @return true, if anonymous embedded entities are in payload
      */
     private boolean checkForEmbeddedAnonymousEntities(AbstractModel triples) {
+        return triples.embeddedObjects()
+                .stream()
+                .anyMatch(object -> object.isBNode() || object instanceof GeneratedIdentifier);
 
-        return triples.getModel().stream()
-                .anyMatch(statement -> {
-                    return statement.getObject().isBNode() || statement.getObject() instanceof GeneratedIdentifier;
-                });
 
     }
 
@@ -82,11 +121,13 @@ public class UniqueEntityHandler extends AbstractTypeHandler {
      * (or even better rdfs:prefLabel) should merge to one.
      * <p>
      * Scenario: Request contains multiple entities, each with share embedded and anonymous entities
+     * <p>
+     * If duplicates exist in the model, they are converged (the duplicate is removed)
      *
      * @param triples
      */
-    public void checkByLabelAndType(AbstractModel triples) {
-        log.trace("(Transformer) Anonymous embedded entities detected, checking for redundant definitions");
+    public Mono<AbstractModel> mergeDuplicatedWithinModel(AbstractModel triples) {
+        log.trace("(Transformer) Merging duplicates within the model");
         Model unmodifiable = new LinkedHashModel(triples.getModel()).unmodifiable();
 
         /*
@@ -109,55 +150,116 @@ public class UniqueEntityHandler extends AbstractTypeHandler {
 
         for (Resource anonymous : anonymousObjects) {
             Iterator<Statement> typeStatement = unmodifiable.getStatements(anonymous, RDF.TYPE, null).iterator();
-            if (! typeStatement.hasNext()) throw new MissingType(anonymous);
+            if (!typeStatement.hasNext()) throw new MissingType(anonymous);
 
             Iterator<Statement> labelStatement = unmodifiable.getStatements(anonymous, RDFS.LABEL, null).iterator();
-            if (! labelStatement.hasNext()) continue;
+            if (!labelStatement.hasNext()) continue;
 
-            Triple<Resource, Value, Value> current = Triple.of(anonymous, typeStatement.next().getObject(), labelStatement.next().getObject());
-            Optional<Triple<Resource, Value, Value>> duplicate = foundTypeAndLabel.stream()
-                    .filter(triple -> triple.getMiddle().equals(current.getMiddle()) && triple.getRight().equals(current.getRight())).findAny();
+            Triple<Resource, Value, Value> possibleDuplicate = Triple.of(anonymous, typeStatement.next().getObject(), labelStatement.next().getObject());
+            Optional<Triple<Resource, Value, Value>> original = foundTypeAndLabel.stream()
+                    .filter(triple -> triple.getMiddle().equals(possibleDuplicate.getMiddle()) && triple.getRight().equals(possibleDuplicate.getRight())).findAny();
 
-            if(duplicate.isPresent()) {
-                log.debug("Duplicate identified, rerouting the entity '{}' with type {} and label {}", current.getLeft(), current.getMiddle(), current.getRight());
-
-                // remove all statement from the current (since we keep the duplicate)
-                unmodifiable.getStatements(current.getLeft(), null, null).forEach(statement -> triples.getModel().remove(statement));
-
-                // change link to from current to duplicate
-                unmodifiable.getStatements(null, null, current.getLeft()).forEach(statement -> {
-                    triples.getModel().remove(statement);
-                    triples.getModel().add(statement.getSubject(), statement.getPredicate(), duplicate.get().getLeft());
-                });
+            if (original.isPresent()) {
+                this.reroute(triples, possibleDuplicate.getLeft(), original.get().getLeft());
             } else {
-                foundTypeAndLabel.add(current);
-
+                foundTypeAndLabel.add(possibleDuplicate);
             }
 
         }
-        log.trace("(Transformer) Anonymous embedded entities merged");
+        log.trace("(Transformer/Unique) Anonymous embedded entities merged");
+        return Mono.just(triples);
 
     }
+
+    public void reroute(AbstractModel triples, Resource duplicateIdentifier, Resource originalIdentifier) {
+        log.debug("(Transformer/Unique) Duplicate '{}' identified, removing it and rerouting all links to origin '{}' ", duplicateIdentifier, originalIdentifier);
+        Model unmodifiable = new LinkedHashModel(triples.getModel()).unmodifiable();
+
+        // remove all statement from the possibleDuplicate (since we keep the original)
+        unmodifiable.getStatements(duplicateIdentifier, null, null).forEach(statement -> triples.getModel().remove(statement));
+
+        // change link to from possibleDuplicate to original
+        unmodifiable.getStatements(null, null, duplicateIdentifier).forEach(statement -> {
+            triples.getModel().remove(statement);
+            triples.getModel().add(statement.getSubject(), statement.getPredicate(), originalIdentifier);
+        });
+
+    }
+
+    /**
+     * Scenario: Request contains embedded entity, which already exists in Graph
+     * <p>
+     * Two entities are duplicates, if they have equal Type (RDF) and Label (RDFS). If the incoming model has a definition,
+     * which already exists in the graph, it will be removed (and the edge rerouted to the entity in the graph)
+     *
+     * @param graph, connection to the entity graph
+     * @param model, the current model
+     */
+    public Mono<AbstractModel> mergeDuplicatesInEntityGraph(EntityStore graph, AbstractModel model) {
+        return Mono.just(model)
+                .doOnSubscribe(subscription -> log.trace("(Transformer/Unique) Check if anonymous embedded entities already exist in graph."))
+                .flatMapMany(triples -> {
+                    // collect types and labels of embedded objects
+                    return Flux.<LocalEntity>create(c -> {
+                        triples.embeddedObjects().forEach(resource -> {
+
+                            Value type = triples.streamStatements(resource, RDF.TYPE, null)
+                                    .findFirst()
+                                    .orElseThrow(() -> new MissingType(resource)).getObject();
+                            triples.streamStatements(resource, RDFS.LABEL, null)
+                                    .findFirst()
+                                    .ifPresent(statement -> c.next(new LocalEntity(type, statement.getObject(), resource)));
+                        });
+                        c.complete();
+                    });
+                })
+                .flatMap(localEntity -> {
+                    // build sparql query to check, if an entity with this type and label exists already
+                    Variable id = SparqlBuilder.var("id");
+                    RdfObject type = Rdf.object(localEntity.type());
+                    RdfObject label = Rdf.object(localEntity.label());
+                    SelectQuery all = Queries.SELECT(id).where(id.isA(type).andHas(RDFS.LABEL, label)).all();
+                    return Mono.zip(Mono.just(localEntity), graph.queryValues(all));
+                })
+                .doOnNext(pair -> {
+                    // if we found query results, relink local entity and remove duplicate from model
+                    LocalEntity localEntity = pair.getT1();
+                    TupleQueryResult queryResult = pair.getT2();
+                    if (queryResult.hasNext()) {
+                        log.trace("(Transformer) Linked entity exists already in graph, rerouting.");
+                        this.reroute(model, localEntity.localIdentifier(), (Resource) queryResult.next().getValue("id"));
+                    }
+                })
+                .then(Mono.just(model));
+
+
+
+
+
+        /*  Find embedded entities in model
+            SELECT * WHERE
+                ?entity ?pred ?linkedEntity .
+                ?linkedEntity a ?type ;
+                       RDFS.label ?label
+
+         */
+
+        // for each embedded object
+
+    }
+
 
     /**
      * Scenario: Request contains embedded entity
      *
      * @param graph
-     * @param model
+     * @param triples
      */
-    public void checkIfLinkedEntityExistsInGraph(EntityStore graph, AbstractModel model) {
-        log.trace("(Transformer) Handle anonymous embedded entity, check if it supposed to be unique and already exists in graph.");
-    }
-
-
-    /**
-     * Scenario: Request contains embedded entity
-     *
-     * @param graph
-     * @param model
-     */
-    public void checkIfLinkedNamedEntityExistsInGraph(EntityStore graph, AbstractModel model) {
+    public Mono<AbstractModel> checkIfLinkedNamedEntityExistsInGraph(EntityStore graph, AbstractModel triples) {
         log.trace("(Transformer) Handle linked named entity, check if is supposed to be unique and already exists in graph.");
+
+        return Mono.just(triples);
     }
+
 
 }

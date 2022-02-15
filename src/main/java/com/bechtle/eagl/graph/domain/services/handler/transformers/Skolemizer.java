@@ -56,7 +56,7 @@ public class Skolemizer extends AbstractTypeHandler {
 
         IRI identifier = new GeneratedIdentifier(Local.Entities.NS);
 
-        List<NamespaceAwareStatement> copy = Collections.unmodifiableList(triples.stream().toList());
+        List<NamespaceAwareStatement> copy = Collections.unmodifiableList(triples.streamNamespaceAwareStatements().toList());
 
         triples.reset();
 

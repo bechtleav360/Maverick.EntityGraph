@@ -23,6 +23,7 @@ public class Transformers {
     }
 
     public Mono<? extends AbstractModel> delegate(Mono<? extends AbstractModel> triples, EntityStore graph, Map<String, String> parameters) {
+
         for(AbstractTypeHandler handler : registeredHandlers) {
             triples = handler.handle(graph, triples, parameters);
         }

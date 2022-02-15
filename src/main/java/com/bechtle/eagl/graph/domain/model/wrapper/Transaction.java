@@ -1,6 +1,5 @@
 package com.bechtle.eagl.graph.domain.model.wrapper;
 
-import com.bechtle.eagl.graph.domain.model.errors.InvalidEntityModel;
 import com.bechtle.eagl.graph.domain.model.extensions.GeneratedIdentifier;
 import com.bechtle.eagl.graph.domain.model.extensions.NamespaceAwareStatement;
 import com.bechtle.eagl.graph.domain.model.vocabulary.Local;
@@ -11,7 +10,6 @@ import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.vocabulary.PROV;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 
-import javax.naming.Name;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -41,7 +39,7 @@ public class Transaction extends AbstractModel {
 
 
     public Transaction with(AbstractModel model) {
-        return this.with(model.stream());
+        return this.with(model.streamNamespaceAwareStatements());
     }
 
     public Transaction with(Model model) {
@@ -81,7 +79,7 @@ public class Transaction extends AbstractModel {
 
     @Override
     public Iterable<? extends NamespaceAwareStatement> asStatements() {
-        return this.affectedModel == null ? super.asStatements() : Stream.concat(super.stream(), this.affectedModel.stream()).distinct().toList();
+        return this.affectedModel == null ? super.asStatements() : Stream.concat(super.streamNamespaceAwareStatements(), this.affectedModel.stream()).distinct().toList();
     }
 
 

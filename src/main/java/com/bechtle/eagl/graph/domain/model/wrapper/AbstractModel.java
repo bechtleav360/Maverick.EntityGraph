@@ -2,10 +2,11 @@ package com.bechtle.eagl.graph.domain.model.wrapper;
 
 import com.bechtle.eagl.graph.domain.model.extensions.NamespaceAwareStatement;
 import com.bechtle.eagl.graph.domain.model.extensions.NamespacedModelBuilder;
-import org.apache.logging.log4j.util.StringBuilders;
 import org.eclipse.rdf4j.model.*;
+import org.eclipse.rdf4j.model.vocabulary.RDF;
 
 import java.io.Serializable;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -40,18 +41,13 @@ public class AbstractModel implements NamespaceAware, Serializable {
         this.modelBuilder = new NamespacedModelBuilder();
     }
 
-    public Stream<NamespaceAwareStatement> stream() {
-        return this.getModel().stream().map(sts -> NamespaceAwareStatement.wrap(sts, getNamespaces()));
-    }
+
 
     public Iterable<? extends NamespaceAwareStatement> asStatements() {
-        return this.stream().toList();
+        return this.streamNamespaceAwareStatements().toList();
     }
 
-    public Stream<Value> streamValues(Resource subject, IRI predicate) {
-        Iterable<Statement> statements = this.getModel().getStatements(subject, predicate, null);
-        return StreamSupport.stream(statements.spliterator(), true).map(Statement::getObject);
-    }
+
 
     @Override
     public String toString() {
@@ -61,7 +57,35 @@ public class AbstractModel implements NamespaceAware, Serializable {
     }
 
 
+    /**
+     * Returns a list of object identifiers, which are embedded (means there is another object (entity)
+     * within the model pointing to it
+     */
+    public Set<Resource> embeddedObjects() {
+        Set<Resource> result = new HashSet<>();
+        this.getModel().unmodifiable().objects().forEach(object -> {
+                    this.getModel().stream()
+                            .filter(statement -> statement.getObject().equals(object))
+                            .filter(statement -> ! statement.getPredicate().equals(RDF.TYPE))
+                            .findFirst()
+                            .ifPresent(statement -> result.add(statement.getSubject()));
+                }
+        );
+        return result;
+    }
+
+    public Stream<NamespaceAwareStatement> streamNamespaceAwareStatements() {
+        return this.getModel().stream().map(sts -> NamespaceAwareStatement.wrap(sts, getNamespaces()));
+    }
+
+    public Stream<Statement> streamStatements(Resource subject, IRI predicate, Value object) {
+        Iterable<Statement> statements = this.getModel().getStatements(subject, predicate, object);
+        return StreamSupport.stream(statements.spliterator(), true);
+    }
 
 
+    public Stream<Value> streamValues(Resource subject, IRI predicate) {
+        return this.streamStatements(subject, predicate, null).map(Statement::getObject);
+    }
 
 }

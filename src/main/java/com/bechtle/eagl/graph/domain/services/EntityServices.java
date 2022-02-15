@@ -3,7 +3,6 @@ package com.bechtle.eagl.graph.domain.services;
 import com.bechtle.eagl.graph.domain.model.errors.EntityNotFound;
 import com.bechtle.eagl.graph.domain.model.errors.UnknownPrefix;
 import com.bechtle.eagl.graph.domain.model.extensions.EntityIRI;
-import com.bechtle.eagl.graph.domain.model.extensions.NamespaceAwareStatement;
 import com.bechtle.eagl.graph.domain.model.wrapper.Entity;
 import com.bechtle.eagl.graph.domain.model.wrapper.Incoming;
 import com.bechtle.eagl.graph.domain.model.wrapper.Transaction;
@@ -50,7 +49,7 @@ public class EntityServices {
     }
 
     public Mono<Transaction> createEntity(Incoming triples, Map<String, String> parameters, Transaction transaction) {
-        if(log.isDebugEnabled()) log.debug("(Service) {} statements incoming for creating new entity. Parameters: {}", triples.stream().count(),  parameters.size() > 0 ? parameters : "none");
+        if(log.isDebugEnabled()) log.debug("(Service) {} statements incoming for creating new entity. Parameters: {}", triples.streamNamespaceAwareStatements().count(),  parameters.size() > 0 ? parameters : "none");
 
 
         return Mono.just(triples)

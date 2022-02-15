@@ -16,6 +16,7 @@ import org.eclipse.rdf4j.repository.RepositoryResult;
 import org.eclipse.rdf4j.repository.util.RDFInserter;
 import org.eclipse.rdf4j.rio.RDFParser;
 import org.eclipse.rdf4j.rio.RDFParserFactory;
+import org.eclipse.rdf4j.sparqlbuilder.core.query.SelectQuery;
 import org.reactivestreams.Publisher;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.io.buffer.DataBuffer;
@@ -179,6 +180,11 @@ public class EntityRepository implements EntityStore {
                 m.error(e);
             }
         });
+    }
+
+    @Override
+    public Mono<TupleQueryResult> queryValues(SelectQuery all) {
+        return this.queryValues(all.getQueryString());
     }
 
     @Override

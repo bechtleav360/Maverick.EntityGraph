@@ -5,6 +5,7 @@ import com.bechtle.eagl.graph.domain.model.wrapper.Entity;
 import com.bechtle.eagl.graph.domain.model.wrapper.Transaction;
 import org.eclipse.rdf4j.model.*;
 import org.eclipse.rdf4j.query.TupleQueryResult;
+import org.eclipse.rdf4j.sparqlbuilder.core.query.SelectQuery;
 import org.reactivestreams.Publisher;
 import org.springframework.core.io.buffer.DataBuffer;
 import reactor.core.publisher.Flux;
@@ -37,6 +38,8 @@ public interface EntityStore {
 
     Mono<TupleQueryResult> queryValues(String query);
 
+    Mono<TupleQueryResult> queryValues(SelectQuery all);
+
     Flux<NamespaceAwareStatement> queryStatements(String query);
 
     ValueFactory getValueFactory();
@@ -65,4 +68,6 @@ public interface EntityStore {
     Mono<Void> reset();
 
     Mono<Void> importStatements(Publisher<DataBuffer> bytes, String mimetype);
+
+
 }

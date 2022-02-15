@@ -1,16 +1,21 @@
 package com.bechtle.eagl.graph.api.v1.jsonld;
 
 import com.bechtle.eagl.graph.api.v1.EntitiesTest;
+import com.bechtle.eagl.graph.domain.model.vocabulary.SDO;
 import config.TestConfigurations;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.ValueFactory;
-import org.eclipse.rdf4j.model.impl.SimpleIRI;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.model.vocabulary.RDFS;
 import org.eclipse.rdf4j.rio.RDFFormat;
+import org.eclipse.rdf4j.sparqlbuilder.core.SparqlBuilder;
+import org.eclipse.rdf4j.sparqlbuilder.core.Variable;
+import org.eclipse.rdf4j.sparqlbuilder.core.query.Queries;
+import org.eclipse.rdf4j.sparqlbuilder.core.query.SelectQuery;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,13 +27,11 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.event.RecordApplicationEvents;
 import org.springframework.test.web.reactive.server.WebTestClient;
-import org.springframework.util.StreamUtils;
 import org.springframework.web.reactive.function.BodyInserters;
+import utils.CsvConsumer;
 import utils.RdfConsumer;
 
 import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 
@@ -45,6 +48,14 @@ public class TurtleTests implements EntitiesTest {
     @Autowired
     private WebTestClient webClient;
 
+
+    @AfterEach
+    public void resetRepository() {
+        webClient.get()
+                .uri("/api/admin/reset")
+                .exchange()
+                .expectStatus().isAccepted();
+    }
 
     @Override
     @Test
@@ -292,12 +303,81 @@ public class TurtleTests implements EntitiesTest {
 
         statements.forEach(System.out::println);
 
-        long videos = StreamSupport.stream(statements.getStatements(null, RDF.TYPE, vf.createIRI("http://schema.org/", "video")).spliterator(), false).count();
+        long videos = StreamSupport.stream(statements.getStatements(null, RDF.TYPE, vf.createIRI("http://schema.org/", "VideoObject")).spliterator(), false).count();
         Assertions.assertEquals(2, videos);
 
         List<Statement> collect = StreamSupport.stream(statements.getStatements(null, RDFS.LABEL, vf.createLiteral("Term 1")).spliterator(), false).toList();
         Assertions.assertEquals(1, collect.size());
+    }
 
+
+    @Test
+    public void createEmbeddedEntitiesWithSharedItemsInSeparateRequests() {
+        RdfConsumer rdfConsumer = new RdfConsumer(RDFFormat.TURTLE);
+
+        webClient.post()
+                .uri("/api/entities")
+                .contentType(MediaType.parseMediaType("text/turtle"))
+                .body(BodyInserters.fromResource(new ClassPathResource("data/v1/requests/create-valid_withEmbedded.ttl")))
+                .exchange()
+                .expectStatus().isAccepted()
+                .expectBody();
+
+        webClient.post()
+                .uri("/api/entities")
+                .contentType(MediaType.parseMediaType("text/turtle"))
+                .body(BodyInserters.fromResource(new ClassPathResource("data/v1/requests/create-valid_withEmbedded_second.ttl")))
+                .exchange()
+                .expectStatus().isAccepted()
+                .expectBody();
+
+
+        /**
+         * SELECT DISTINCT * WHERE {
+         *   ?id a <http://schema.org/VideoObject> ;
+         * 		 <http://schema.org/hasDefinedTerm> ?term .
+         *   ?term  <http://www.w3.org/2000/01/rdf-schema#label> "Term 1" .
+         * }
+         * LIMIT 10
+         *
+         * SELECT *
+         * WHERE { ?id a <http://schema.org/VideoObject> ;
+         *     <http://schema.org/hasDefinedTerm> ?term .
+         * ?term <http://www.w3.org/2000/01/rdf-schema#label> "Term 1" . }
+         */
+
+        CsvConsumer csvConsumer = new CsvConsumer();
+        Variable id = SparqlBuilder.var("id");
+        Variable term = SparqlBuilder.var("term");
+        // SelectQuery all = Queries.SELECT(id).where(id.isA(SDO.VIDEO_OBJECT).andHas(SDO.HAS_DEFINED_TERM, term)).where(term.has(RDFS.LABEL, "Term 1")).all();
+        SelectQuery all = Queries.SELECT(id).where(term.has(RDFS.LABEL, "Term 1")).all();
+        webClient.post()
+                .uri("/api/query/select")
+                .contentType(MediaType.parseMediaType("text/plain"))
+                .accept(MediaType.parseMediaType("text/csv"))
+                .body(BodyInserters.fromValue(all.getQueryString()))
+                .exchange()
+                .expectStatus().isAccepted()
+                .expectBody()
+                .consumeWith(csvConsumer);
+
+        Assertions.assertEquals(1, csvConsumer.getRows().size());
+
+        //FIXME: now check if count distinct of binding "term" == 1
+        /*
+                .json()
+                .
+
+
+        Model statements = rdfConsumer.asModel();
+
+        statements.forEach(System.out::println);
+
+        long videos = StreamSupport.stream(statements.getStatements(null, RDF.TYPE, vf.createIRI("http://schema.org/", "video")).spliterator(), false).count();
+        Assertions.assertEquals(2, videos);
+
+        List<Statement> collect = StreamSupport.stream(statements.getStatements(null, RDFS.LABEL, vf.createLiteral("Term 1")).spliterator(), false).toList();
+        Assertions.assertEquals(1, collect.size());*/
     }
 
     @Override

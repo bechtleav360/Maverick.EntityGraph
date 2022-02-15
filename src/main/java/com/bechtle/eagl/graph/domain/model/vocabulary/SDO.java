@@ -14,7 +14,9 @@ public class SDO {
         public static final Namespace NS = EntityNamespace.of(PREFIX, NAMESPACE);
 
         public static final IRI DEFINED_TERM = EntityIRI.from(NAMESPACE, "DefinedTerm");
+        public static final IRI VIDEO_OBJECT = EntityIRI.from(NAMESPACE, "VideoObject");
 
+        public static final IRI HAS_DEFINED_TERM = EntityIRI.from(NAMESPACE, "hasDefinedTerm");
         public SDO() {
         }
 }

@@ -1,3 +1,5 @@
+
+
 # Versioning through transactions
 
 We can and should represent an entity as graph
