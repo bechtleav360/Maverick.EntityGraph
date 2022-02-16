@@ -1,7 +1,9 @@
 package com.bechtle.eagl.graph.domain.model.extensions;
 
 import org.apache.commons.text.RandomStringGenerator;
+import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Namespace;
+import org.eclipse.rdf4j.model.Resource;
 
 import java.security.SecureRandom;
 import java.util.Base64;
@@ -37,6 +39,17 @@ public class GeneratedIdentifier extends EntityIRI {
         this(defaultNamespace.getName());
     }
 
+    /**
+     *
+     * @param obj, the IRI to check
+     * @return true, if the given resource conforms to a local identifier
+     */
+    public static boolean is(IRI obj, String ns) {
+        return (obj instanceof GeneratedIdentifier)
+                ||
+               (obj.getNamespace().equalsIgnoreCase(ns))  && (obj.getLocalName().length() == LENGTH);
+    }
+
 
     private String generateSecureRandom() {
         byte[] token = new byte[LENGTH];
@@ -49,7 +62,7 @@ public class GeneratedIdentifier extends EntityIRI {
     }
 
 
-    public static org.eclipse.rdf4j.model.IRI get(String namespace) {
+    public static IRI get(String namespace) {
         return new GeneratedIdentifier(namespace);
 
     }

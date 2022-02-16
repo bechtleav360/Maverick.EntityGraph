@@ -55,12 +55,12 @@ public class EntityServices {
         return Mono.just(triples)
                 .flatMap(sts -> {
                     /* validate */
-                    return validators.delegate(Mono.just(sts), graph, parameters);
+                    return validators.delegate(sts, graph, parameters);
                 })
 
                 .flatMap(sts -> {
                     /* transform */
-                    return transformers.delegate(Mono.just(sts), graph, parameters);
+                    return transformers.delegate(sts, graph, parameters);
 
                     /* TODO: check if create of resource of given type is supported or is it delegated to connector */
 

@@ -1,5 +1,6 @@
 package com.bechtle.eagl.graph.api.v1.jsonld;
 
+import com.bechtle.eagl.graph.api.converter.RdfUtils;
 import com.bechtle.eagl.graph.api.v1.EntitiesTest;
 import com.bechtle.eagl.graph.domain.model.vocabulary.SDO;
 import config.TestConfigurations;
@@ -8,6 +9,7 @@ import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
+import org.eclipse.rdf4j.model.vocabulary.DC;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.model.vocabulary.RDFS;
 import org.eclipse.rdf4j.rio.RDFFormat;
@@ -31,6 +33,7 @@ import org.springframework.web.reactive.function.BodyInserters;
 import utils.CsvConsumer;
 import utils.RdfConsumer;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.stream.StreamSupport;
 
@@ -101,12 +104,20 @@ public class TurtleTests implements EntitiesTest {
     @Test
     public void createEntityWithValidId() {
         Resource file = new ClassPathResource("data/v1/requests/create-validWithId.ttl");
+        RdfConsumer rdfConsumer = new RdfConsumer(RDFFormat.TURTLE, true);
+
         webClient.post()
                 .uri("/api/entities")
-                .contentType(MediaType.parseMediaType("text/turtle"))
+                .contentType(RdfUtils.getMediaType(RDFFormat.TURTLE))
+                .accept(RdfUtils.getMediaType(RDFFormat.TURTLE))
                 .body(BodyInserters.fromResource(file))
                 .exchange()
-                .expectStatus().isAccepted();
+                .expectStatus().isAccepted()
+                .expectBody()
+                .consumeWith(rdfConsumer);
+
+        Collection<Statement> statements = rdfConsumer.getStatements();
+        Assertions.assertTrue(rdfConsumer.hasStatement(null, DC.IDENTIFIER, null));
 
     }
 

@@ -52,7 +52,12 @@ public class AbstractModel implements NamespaceAware, Serializable {
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
-        this.getModel().forEach(statement -> sb.append(statement).append('\n'));
+        this.getModel().forEach(statement -> {
+            sb.append(statement.getSubject()).append("  -  ");
+            sb.append(statement.getPredicate()).append("  -  ");
+            sb.append(statement.getObject()).append("  -  ");
+            sb.append('\n');
+        });
         return sb.toString();
     }
 

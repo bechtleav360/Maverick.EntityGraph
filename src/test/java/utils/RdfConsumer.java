@@ -1,5 +1,6 @@
 package utils;
 
+import lombok.extern.slf4j.Slf4j;
 import org.eclipse.rdf4j.model.*;
 import org.eclipse.rdf4j.model.impl.LinkedHashModel;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
@@ -17,14 +18,20 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.function.Consumer;
 
+@Slf4j
 public class RdfConsumer implements Consumer<EntityExchangeResult<byte[]>> {
 
     private final RDFParser parser;
+    private boolean printStatements = false;
     private  ContextStatementCollector collector;
 
     public RdfConsumer(RDFFormat format) {
         parser = Rio.createParser(format);
+    }
 
+    public RdfConsumer(RDFFormat format, boolean printStatements) {
+        this(format);
+        this.printStatements = printStatements;
     }
 
     @Override
@@ -43,6 +50,12 @@ public class RdfConsumer implements Consumer<EntityExchangeResult<byte[]>> {
             e.printStackTrace();
         }
 
+
+        if(printStatements) {
+            StringBuilder sb = new StringBuilder();
+            collector.getStatements().forEach(statement -> sb.append(statement).append('\n'));
+            log.trace("Statements in model: \n {}", sb.toString());
+        }
     }
 
     public Collection<Statement> getStatements() {

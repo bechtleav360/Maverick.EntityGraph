@@ -2,31 +2,31 @@ package com.bechtle.eagl.graph.domain.services.handler.validators;
 
 import com.bechtle.eagl.graph.domain.model.errors.MissingType;
 import com.bechtle.eagl.graph.domain.model.wrapper.AbstractModel;
-import com.bechtle.eagl.graph.domain.services.handler.AbstractTypeHandler;
 import com.bechtle.eagl.graph.repository.EntityStore;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
+import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 
 import java.util.Map;
 
 @Slf4j
-public class TypeIsRequired extends AbstractTypeHandler {
+@Component
+public class TypeIsRequired implements Validator {
 
     @Override
-    public Mono<? extends AbstractModel> handle(EntityStore graph, Mono<? extends AbstractModel> mono, Map<String, String> parameters) {
-        return mono.flatMap(model -> {
-            log.trace("(Validator) Checking if type is defined");
+    public Mono<? extends AbstractModel> handle(EntityStore graph, AbstractModel model, Map<String, String> parameters) {
+        log.trace("(Validator) Checking if type is defined");
 
-            for (Resource obj : model.getModel().subjects()) {
-                /* check if each node object has a valid type definition */
-                if (!model.getModel().contains(obj, RDF.TYPE, null)) {
-                    log.error("(Validator) The object {} is missing a type", obj);
-                    return Mono.error(new MissingType("Missing type definition for object"));
-                }
+        for (Resource obj : model.getModel().subjects()) {
+            /* check if each node object has a valid type definition */
+            if (!model.getModel().contains(obj, RDF.TYPE, null)) {
+                log.error("(Validator) The object {} is missing a type", obj);
+                return Mono.error(new MissingType("Missing type definition for object"));
             }
-            return Mono.just(model);
-        });
+        }
+        return Mono.just(model);
     }
+
 }

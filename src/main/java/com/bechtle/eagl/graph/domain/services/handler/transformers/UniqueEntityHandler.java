@@ -3,10 +3,8 @@ package com.bechtle.eagl.graph.domain.services.handler.transformers;
 import com.bechtle.eagl.graph.domain.model.errors.MissingType;
 import com.bechtle.eagl.graph.domain.model.extensions.GeneratedIdentifier;
 import com.bechtle.eagl.graph.domain.model.wrapper.AbstractModel;
-import com.bechtle.eagl.graph.domain.services.handler.AbstractTypeHandler;
 import com.bechtle.eagl.graph.repository.EntityStore;
 import lombok.extern.slf4j.Slf4j;
-import net.bytebuddy.ClassFileVersion;
 import org.apache.commons.lang3.tuple.Triple;
 import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.Resource;
@@ -22,6 +20,7 @@ import org.eclipse.rdf4j.sparqlbuilder.core.query.Queries;
 import org.eclipse.rdf4j.sparqlbuilder.core.query.SelectQuery;
 import org.eclipse.rdf4j.sparqlbuilder.rdf.Rdf;
 import org.eclipse.rdf4j.sparqlbuilder.rdf.RdfObject;
+import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -29,7 +28,8 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @Slf4j
-public class UniqueEntityHandler extends AbstractTypeHandler {
+@Component
+public class UniqueEntityHandler implements Transformer {
 
 
     /**
@@ -51,40 +51,18 @@ public class UniqueEntityHandler extends AbstractTypeHandler {
 
 
     @Override
-    public Mono<? extends AbstractModel> handle(EntityStore graph, Mono<? extends AbstractModel> model, Map<String, String> parameters) {
+    public Mono<? extends AbstractModel> handle(EntityStore graph, AbstractModel model, Map<String, String> parameters) {
 
-
-        return Mono.from(model)
+        return Mono.just(model)
                 .doOnSubscribe(c -> log.debug("(Transformer/Unique) Check if linked entities already exist and reroute if needed"))
                 .doFinally(signalType -> log.trace("(Transformer/Unique) Finished checks for unique entity constraints"))
                 .filter(this::checkForEmbeddedAnonymousEntities)
                 .flatMap(this::mergeDuplicatedWithinModel)
                 .flatMap(triples -> mergeDuplicatesInEntityGraph(graph, triples))
-                .switchIfEmpty(Mono.from(model))    // reset to model parameter if no anomyous existed
+                .switchIfEmpty(Mono.just(model))    // reset to model parameter if no anomyous existed
                 .filter(this::checkForEmbeddedNamedEntities)
                 .flatMap(triples -> checkIfLinkedNamedEntityExistsInGraph(graph, triples))
-                .switchIfEmpty(Mono.from(model));
-
-
-        /*
-        return model.map(triples -> {
-            log.debug("(Transformer) Check if linked entities already exist and reroute if needed");
-
-
-
-            if (this.checkForEmbeddedAnonymousEntities(triples)) {
-                this.mergeDuplicatedWithinModel(triples);
-                this.mergeDuplicatesInEntityGraph(graph, triples);
-            }
-
-            if (this.checkForEmbeddedNamedEntities(triples)) {
-                this.checkIfLinkedNamedEntityExistsInGraph(graph, triples);
-            }
-
-
-            return triples;
-        });
-*/
+                .switchIfEmpty(Mono.just(model));
     }
 
     /**

@@ -33,7 +33,7 @@ public class Entities {
     }
 
     @ApiOperation(value = "Read entity", tags = {"v1"})
-    @GetMapping(value = "/{id:[\\w|\\d|-|_]+}", produces = { RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.NQUADS_VALUE, RdfMimeTypes.N3_VALUE })
+    @GetMapping(value = "/{id:[\\w|\\d|-|_]+}", produces = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.N3_VALUE})
     @ResponseStatus(HttpStatus.OK)
     Flux<NamespaceAwareStatement> read(@PathVariable String id) {
         log.trace("(Request) Reading Entity with id: {}", id);
@@ -46,54 +46,47 @@ public class Entities {
 
     @ApiOperation(value = "Create entity", tags = {"v1"})
     @PostMapping(value = "",
-            consumes = { RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.N3_VALUE },
-            produces = { RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.NQUADS_VALUE, RdfMimeTypes.N3_VALUE })
+            consumes = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.N3_VALUE},
+            produces = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.N3_VALUE})
     @ResponseStatus(HttpStatus.ACCEPTED)
-    Flux<NamespaceAwareStatement> createEntity(@RequestBody Incoming request,
-                                               @RequestParam(defaultValue = "false", value = "generate-identifier") boolean generateIdentifier) {
+    Flux<NamespaceAwareStatement> createEntity(@RequestBody Incoming request) {
 
-        if(log.isDebugEnabled()) log.debug("(Request) Create a new Entity");
-        if(log.isTraceEnabled()) log.trace("(Request) Payload: \n {}", request.toString());
+        if (log.isDebugEnabled()) log.debug("(Request) Create a new Entity");
+        if (log.isTraceEnabled()) log.trace("(Request) Payload: \n {}", request.toString());
 
         Assert.isTrue(request.getModel().size() > 0, "No statements in request detected.");
-        Map<String, String> parameter = Map.of(Parameters.FORCE_GENERATE_IDENTIFIER, Boolean.valueOf(generateIdentifier).toString());
+        Map<String, String> parameter = Map.of();
         return graphService.createEntity(request, parameter).flatMapIterable(AbstractModel::asStatements);
     }
-
 
 
     @ApiOperation(value = "Create value or relation", tags = {"v1"})
     @PostMapping(value = "/{id:[\\w|\\d|-|_]+}/{prefixedKey:[\\w|\\d]+\\.[\\w|\\d]+}",
             consumes = MediaType.TEXT_PLAIN_VALUE,
-            produces = { RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE})
+            produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE})
     @ResponseStatus(HttpStatus.CREATED)
     Flux<NamespaceAwareStatement> createValue(@PathVariable String id, @PathVariable String prefixedKey, @RequestBody String value) {
 
-        if(log.isDebugEnabled()) log.debug("(Request) Set property '{}' of entity '{}' to value '{}'", prefixedKey, id, value.length() > 64 ? value.substring(0, 64) : value);
+        if (log.isDebugEnabled())
+            log.debug("(Request) Set property '{}' of entity '{}' to value '{}'", prefixedKey, id, value.length() > 64 ? value.substring(0, 64) : value);
 
-        Assert.isTrue(! value.matches("(?s).*[\\n\\r].*"), "Newlines in request body are not supported");
+        Assert.isTrue(!value.matches("(?s).*[\\n\\r].*"), "Newlines in request body are not supported");
 
         String[] property = splitPrefixedIdentifier(prefixedKey);
 
         return graphService.setValue(id, property[0], property[1], value).flatMapIterable(AbstractModel::asStatements);
 
-       /* } catch (InvalidObjectException e) {
-            log.warn("Invalid request while saving value. ", e);
-            return Flux.error(new HttpClientErrorException(HttpStatus.BAD_REQUEST));
-        } catch (IOException e) {
-            log.error("Exception while saving value. ", e);
-            return Flux.error(new HttpClientErrorException(HttpStatus.INTERNAL_SERVER_ERROR));
-        }*/
     }
 
     @ApiOperation(value = "Create value or relation", tags = {"v1"})
     @PostMapping(value = "/{id:[\\w|\\d|-|_]+}/{prefixedKey:[\\w|\\d]+\\.[\\w|\\d]+}",
-            consumes = { RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE },
-            produces = { RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE})
+            consumes = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE},
+            produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE})
     @ResponseStatus(HttpStatus.CREATED)
-    Flux<NamespaceAwareStatement> createEmbedded(@PathVariable String id, @PathVariable String prefixedKey, @RequestBody Incoming value)  {
+    Flux<NamespaceAwareStatement> createEmbedded(@PathVariable String id, @PathVariable String prefixedKey, @RequestBody Incoming value) {
 
-        if(log.isTraceEnabled()) log.trace("(Request) Add embedded entity as property '{}' to entity '{}'", prefixedKey, id);
+        if (log.isDebugEnabled())
+            log.debug("(Request) Add embedded entity as property '{}' to entity '{}'", prefixedKey, id);
 
         String[] property = splitPrefixedIdentifier(prefixedKey);
 
@@ -104,7 +97,7 @@ public class Entities {
 
     private String[] splitPrefixedIdentifier(String prefixedKey) {
         String[] property = prefixedKey.split("\\.");
-        Assert.isTrue(property.length == 2, "Failed to extract prefix and name from path parameter "+ prefixedKey);
+        Assert.isTrue(property.length == 2, "Failed to extract prefix and name from path parameter " + prefixedKey);
         return property;
     }
 

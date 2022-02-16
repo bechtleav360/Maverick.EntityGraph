@@ -5,12 +5,12 @@ import com.bechtle.eagl.graph.domain.model.extensions.GeneratedIdentifier;
 import com.bechtle.eagl.graph.domain.model.extensions.NamespaceAwareStatement;
 import com.bechtle.eagl.graph.domain.model.vocabulary.Local;
 import com.bechtle.eagl.graph.domain.model.wrapper.AbstractModel;
-import com.bechtle.eagl.graph.domain.services.handler.AbstractTypeHandler;
 import com.bechtle.eagl.graph.repository.EntityStore;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Statement;
+import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 
 import java.util.ArrayList;
@@ -28,28 +28,26 @@ import java.util.Map;
  * All systems performing skolemisation SHOULD do so in a way that they can recognise the constants once skolemised, and map back to the source bNodes where possible.
  */
 @Slf4j
-public class Skolemizer extends AbstractTypeHandler {
+@Component
+public class Skolemizer implements Transformer {
+
 
     @Override
-    public Mono<? extends AbstractModel> handle(EntityStore graph, Mono<? extends AbstractModel> model, Map<String, String> parameters) {
-        return model.map(triples -> {
-            log.trace("(Transformer) Skolemizing identifiers");
+    public Mono<? extends AbstractModel> handle(EntityStore graph, AbstractModel triples, Map<String, String> parameters) {
+        log.trace("(Transformer) Skolemizing identifiers");
 
-            for (Resource obj : new ArrayList<>(triples.getModel().subjects())) {
-                /* Handle Ids */
-                if (obj.isBNode()) {
-                    // generate a new qualified identifier if it is an anonymous node
-                    this.skolemize(obj, triples);
+        for (Resource obj : new ArrayList<>(triples.getModel().subjects())) {
+            /* Handle Ids */
+            if (obj.isBNode()) {
+                // generate a new qualified identifier if it is an anonymous node
+                this.skolemize(obj, triples);
 
 
-                } else if (parameters.containsKey(Parameters.FORCE_GENERATE_IDENTIFIER) && Boolean.parseBoolean(parameters.get(Parameters.FORCE_GENERATE_IDENTIFIER))) {
-                    this.skolemize(obj, triples);
-                }
+            } else if (parameters.containsKey(Parameters.FORCE_GENERATE_IDENTIFIER) && Boolean.parseBoolean(parameters.get(Parameters.FORCE_GENERATE_IDENTIFIER))) {
+                this.skolemize(obj, triples);
             }
-            return triples;
-        });
-
-
+        }
+        return Mono.just(triples);
     }
 
     public void skolemize(Resource subj, AbstractModel triples) {

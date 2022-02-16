@@ -7,10 +7,7 @@ import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.repository.util.AbstractRDFInserter;
-import org.eclipse.rdf4j.rio.RDFParserFactory;
-import org.eclipse.rdf4j.rio.RDFParserRegistry;
-import org.eclipse.rdf4j.rio.RDFWriterFactory;
-import org.eclipse.rdf4j.rio.RDFWriterRegistry;
+import org.eclipse.rdf4j.rio.*;
 import org.springframework.http.MediaType;
 import org.springframework.util.MimeType;
 
@@ -88,5 +85,9 @@ public class RdfUtils {
             this.model.getBuilder().add(subj, pred, obj);
 
         }
+    }
+
+    public static MediaType getMediaType(RDFFormat format) {
+        return MediaType.parseMediaType(format.getDefaultMIMEType());
     }
 }
