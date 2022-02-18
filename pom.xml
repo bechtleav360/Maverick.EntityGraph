@@ -104,6 +104,14 @@
             <scope>runtime</scope>
         </dependency>
 
+<!--
+        <dependency>
+            <groupId>org.lwjgl</groupId>
+            <artifactId>lwjgl-lmdb</artifactId>
+            <classifier>natives-windows</classifier>
+            <scope>runtime</scope>
+        </dependency>
+-->
         <dependency>
             <groupId>org.eclipse.rdf4j</groupId>
             <artifactId>rdf4j-sparqlbuilder</artifactId>

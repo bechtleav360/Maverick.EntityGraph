@@ -9,6 +9,13 @@ spring:
       name: "xxx"
       password: "xxx"
 
+storage:
+  entities:
+    path: "/var/data/entities"
+  transactions:
+    path: "/var/data/transactions"
+  schema:
+    path: "/var/data/schema"
 
 logging:
   file:

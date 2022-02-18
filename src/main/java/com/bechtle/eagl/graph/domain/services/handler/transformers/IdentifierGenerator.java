@@ -21,6 +21,13 @@ import java.util.stream.Collectors;
 
 /**
  * Will check any entity IRI in the model, if doesn't conform to the internal schema, a new identifier is generated (we keep the old one)
+ *
+ * Potential for conflict:
+ *
+ * the new identifier is a hash of the old identifier to have reproducible results. If the identifier is reused (e.g. example.org/identifier), all
+ * new statements are aggregated to one big entity. We could add a random see into it, but that means we cannot reproduce it anymore
+ *
+ *
  */
 @Slf4j
 @Component
@@ -37,7 +44,7 @@ public class IdentifierGenerator implements Transformer {
         Map<Resource, GeneratedIdentifier> mappings = triples.getModel().subjects().stream()
                 .filter(Value::isIRI)
                 .filter(iri -> !GeneratedIdentifier.is((IRI) iri, Local.Entities.NAMESPACE))
-                .map(iri -> Pair.of(iri, new GeneratedIdentifier(Local.Entities.NS)))
+                .map(iri -> Pair.of(iri, new GeneratedIdentifier(Local.Entities.NAMESPACE, iri)))
                 .collect(Collectors.toMap(Pair::getKey, Pair::getValue));
         triples.reset();
 

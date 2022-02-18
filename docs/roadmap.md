@@ -13,8 +13,10 @@
 
 # 2 - EAGL MVP
 
-- [ ] Read entity
-- [ ] Read value or relation
+- [x] Read entity
+- [ 
+- 
+- ] Read value or relation
 - [ ] Delete entity
 - [ ] Delete value or relation
 - [ ] Update value

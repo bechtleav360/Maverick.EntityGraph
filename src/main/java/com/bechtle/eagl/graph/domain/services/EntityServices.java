@@ -10,6 +10,7 @@ import com.bechtle.eagl.graph.domain.services.handler.Transformers;
 import com.bechtle.eagl.graph.domain.services.handler.Validators;
 import com.bechtle.eagl.graph.repository.EntityStore;
 import com.bechtle.eagl.graph.repository.SchemaStore;
+import com.bechtle.eagl.graph.repository.TransactionsStore;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.rdf4j.model.*;
 import org.eclipse.rdf4j.model.util.ModelBuilder;
@@ -17,6 +18,7 @@ import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Slf4j
@@ -24,15 +26,18 @@ import java.util.Map;
 public class EntityServices {
 
     private final EntityStore graph;
+    private final TransactionsStore trxStore;
     private final SchemaStore schema;
     private final Validators validators;
     private final Transformers transformers;
 
     public EntityServices(EntityStore graph,
+                          TransactionsStore trxStore,
                           SchemaStore schema,
                           Validators validators,
                           Transformers transformers) {
         this.graph = graph;
+        this.trxStore = trxStore;
         this.schema = schema;
         this.validators = validators;
         this.transformers = transformers;
@@ -45,12 +50,21 @@ public class EntityServices {
 
 
     public Mono<Transaction> createEntity(Incoming triples, Map<String, String> parameters) {
-        return this.createEntity(triples, parameters, new Transaction());
+        return this.createEntity(triples, parameters, new Transaction())
+                // FIXME: should be handled async through application event (since it is just for browsing versions)
+                .flatMap(trxStore::store);
+
     }
 
-    public Mono<Transaction> createEntity(Incoming triples, Map<String, String> parameters, Transaction transaction) {
+
+    /*
+        Make sure you store the transaction once you are finished
+     */
+    private Mono<Transaction> createEntity(Incoming triples, Map<String, String> parameters, Transaction transaction) {
         if(log.isDebugEnabled()) log.debug("(Service) {} statements incoming for creating new entity. Parameters: {}", triples.streamNamespaceAwareStatements().count(),  parameters.size() > 0 ? parameters : "none");
 
+        // TODO: perform validation via sha
+        // https://rdf4j.org/javadoc/3.2.0/org/eclipse/rdf4j/sail/shacl/ShaclSail.html
 
         return Mono.just(triples)
                 .flatMap(sts -> {
@@ -68,7 +82,6 @@ public class EntityServices {
 
                 .flatMap(sts ->graph.store(sts.getModel(), transaction))
                 .map(trx -> {
-
                     return trx;
                 });
     }
@@ -97,7 +110,8 @@ public class EntityServices {
      * Adds a statement
      */
     public Mono<Transaction> addStatement(IRI subj, org.eclipse.rdf4j.model.IRI predicate, Value value) {
-        return this.addStatement(subj, predicate, value, new Transaction());
+        return this.addStatement(subj, predicate, value, new Transaction())
+                .flatMap(trxStore::store);
     }
 
     /**
@@ -145,6 +159,8 @@ public class EntityServices {
                 /* store the links */
                 .flatMap(transaction -> {
                     ModelBuilder modelBuilder = new ModelBuilder();
+
+                    List<Value> values = transaction.listModifiedResources();
                     transaction.listModifiedResources().forEach(value -> modelBuilder.add(entityIdentifier, predicate, value));
 
                     return this.graph.store(modelBuilder.build(), transaction);

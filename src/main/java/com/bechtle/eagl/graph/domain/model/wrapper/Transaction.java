@@ -34,7 +34,7 @@ public class Transaction extends AbstractModel {
                 .setNamespace(Local.Transactions.NS)
                 .subject(transactionIdentifier)
                 .add(RDF.TYPE, Transactions.TRANSACTION)
-                .add(Transactions.TRANSACTION_TIME, SimpleValueFactory.getInstance().createLiteral(new Date()));
+                .add(Transactions.AT, SimpleValueFactory.getInstance().createLiteral(new Date()));
     }
 
 
@@ -68,12 +68,25 @@ public class Transaction extends AbstractModel {
     }
 
 
-    public void addModifiedResource(Resource resource) {
-        this.getBuilder().add(Transactions.MODIFIED_RESOURCE, resource);
+    public void hasCreated(Resource resource) {
+        this.getBuilder().add(Transactions.CREATED, resource);
+    }
+
+    public void hasUpdated(Resource resource) {
+        this.getBuilder().add(Transactions.UPDATED, resource);
+    }
+
+    public void hasDeleted(Resource resource) {
+        this.getBuilder().add(Transactions.DELETED, resource);
     }
 
     public List<Value> listModifiedResources() {
-        return super.streamValues(transactionIdentifier, Transactions.MODIFIED_RESOURCE).collect(Collectors.toList());
+        return super.streamStatements(transactionIdentifier, null, null)
+                .filter(statement -> statement.getPredicate().equals(Transactions.CREATED) ||
+                        statement.getPredicate().equals(Transactions.UPDATED) ||
+                        statement.getPredicate().equals(Transactions.DELETED))
+                .map(Statement::getObject)
+                .collect(Collectors.toList());
     }
 
 

@@ -3,13 +3,7 @@
 #    url: jdbc:h2:file:/data/demo
 
 
-storage:
-  entities:
-    path: "/var/data/entities"
-  transactions:
-    path: "/var/data/transactions"
-  schema:
-    path: "/var/data/schema"
+
 
 server:
   port : 8070

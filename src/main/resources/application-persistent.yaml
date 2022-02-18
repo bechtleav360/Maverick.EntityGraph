@@ -1,31 +1,34 @@
-## All XXX fields are provisioned through environment variables
+#spring:
+#  datasource:
+#    url: jdbc:h2:file:/data/demo
 
 security:
-  api-key: "XXX"
+  apiKey: "1234"
+  basic:
+    enabled: false
+
+storage:
+  entities:
+    path: "D:/Graphen/entities"
+  transactions:
+    path: "D:/Graphen/transactions"
+  schema:
+    path: "D:/Graphen/schema"
 
 spring:
   security:
     user:
-      name: "xxx"
-      password: "xxx"
-
-storage:
-  entities:
-    path: "/var/data/entities"
-  transactions:
-    path: "/var/data/transactions"
-  schema:
-    path: "/var/data/schema"
+      name: "user"
+      password: "password"
 
 logging:
-  file:
-    name: server.log
   level:
     com:
-      bechtle: DEBUG
+      bechtle: TRACE
     org:
       springframework:
         security: INFO
+
 
 management:
   endpoints:

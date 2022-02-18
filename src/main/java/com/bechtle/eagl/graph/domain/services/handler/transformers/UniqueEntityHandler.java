@@ -31,6 +31,7 @@ import java.util.stream.Collectors;
 @Component
 public class UniqueEntityHandler implements Transformer {
 
+    // FIXME: should only operate on local model -> the rerouting to existing entity should happen through scheduler
 
     /**
      * Records with

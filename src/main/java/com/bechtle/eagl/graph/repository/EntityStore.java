@@ -11,6 +11,8 @@ import org.springframework.core.io.buffer.DataBuffer;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.util.List;
+
 public interface EntityStore {
 
 
@@ -70,4 +72,9 @@ public interface EntityStore {
     Mono<Void> importStatements(Publisher<DataBuffer> bytes, String mimetype);
 
 
+    Mono<List<Statement>> listStatements(Resource value, IRI predicate, Value object);
+
+    Mono<Transaction> deleteStatements(List<Statement> subjectStatements);
+
+    Mono<Transaction> deleteStatements(List<Statement> statements, Transaction transaction);
 }

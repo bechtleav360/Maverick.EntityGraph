@@ -4,7 +4,9 @@ import org.apache.commons.text.RandomStringGenerator;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Namespace;
 import org.eclipse.rdf4j.model.Resource;
+import org.springframework.util.DigestUtils;
 
+import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.util.Base64;
 
@@ -35,6 +37,20 @@ public class GeneratedIdentifier extends EntityIRI {
         super.setLocalName(this.generateRandomString());
     }
 
+
+    public GeneratedIdentifier(String namespace, Resource oldIdentifier) {
+        super(namespace);
+
+        if(oldIdentifier.isIRI()) {
+            super.setLocalName(this.generateDerivedIdentifier(((IRI) oldIdentifier).getLocalName()));
+        } else {
+            super.setLocalName(this.generateRandomString());
+        }
+
+    }
+
+
+
     public GeneratedIdentifier(Namespace defaultNamespace) {
         this(defaultNamespace.getName());
     }
@@ -61,6 +77,11 @@ public class GeneratedIdentifier extends EntityIRI {
         return randomStringGenerator.generate(LENGTH);
     }
 
+
+    private String generateDerivedIdentifier(String localName) {
+        byte[] token = DigestUtils.md5DigestAsHex(localName.getBytes()).substring(0,LENGTH-1).getBytes(StandardCharsets.UTF_8);
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(token); //base64 encoding
+    }
 
     public static IRI get(String namespace) {
         return new GeneratedIdentifier(namespace);

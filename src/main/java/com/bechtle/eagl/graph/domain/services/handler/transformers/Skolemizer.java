@@ -41,10 +41,6 @@ public class Skolemizer implements Transformer {
             if (obj.isBNode()) {
                 // generate a new qualified identifier if it is an anonymous node
                 this.skolemize(obj, triples);
-
-
-            } else if (parameters.containsKey(Parameters.FORCE_GENERATE_IDENTIFIER) && Boolean.parseBoolean(parameters.get(Parameters.FORCE_GENERATE_IDENTIFIER))) {
-                this.skolemize(obj, triples);
             }
         }
         return Mono.just(triples);

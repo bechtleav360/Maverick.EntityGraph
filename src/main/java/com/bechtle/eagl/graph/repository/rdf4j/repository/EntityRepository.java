@@ -60,7 +60,7 @@ public class EntityRepository implements EntityStore {
                     connection.add(statement);
                     connection.commit();
 
-                    finalTransaction.addModifiedResource(subject);
+                    finalTransaction.hasCreated(subject);
                     finalTransaction.with(NamespaceAwareStatement.wrap(statement, Collections.emptySet()));
                     if (log.isDebugEnabled()) log.debug("(Store) Transaction completed for storing one statement.");
 
@@ -84,39 +84,24 @@ public class EntityRepository implements EntityStore {
         return Mono.create(c -> {
             // Rio.write(triples.getStatements(), Rio.createWriter(RDFFormat.NQUADS, System.out));
 
-            // TODO: perform validation via sha
-            // https://rdf4j.org/javadoc/3.2.0/org/eclipse/rdf4j/sail/shacl/ShaclSail.html
-
-
             // get statements and load into repo
             try (RepositoryConnection connection = repository.getConnection()) {
                 try {
 
-
-                    List<Resource> modifiedResources = new ArrayList<>();
-
+                    /* each linked data fragment (sharing the same subject) is stored within the same transaction */
                     for (Resource obj : new ArrayList<>(model.subjects())) {
+                        connection.begin();
+                        Iterable<Statement> statements = model.getStatements(obj, null, null);
+                        connection.add(model.getStatements(obj, null, null));
+                        connection.commit();
 
-                        if (obj.isIRI()) {
+                        transaction.hasCreated(obj);
+                        transaction.with(statements); // we hold all statements in the transaction
 
-                            connection.begin();
-                            Iterable<Statement> statements = model.getStatements(obj, null, null);
-                            connection.add(statements);
-                            connection.commit();
-
-                            transaction.addModifiedResource(obj);
-                            transaction.with(statements);
-                        }
-
-                        modifiedResources.add(obj);
                     }
 
-
-                    modifiedResources.forEach(transaction::addModifiedResource);
-                    transaction.with(model);
-
-                    if (log.isDebugEnabled())
-                        log.debug("(Store) Transaction completed for storing a model with {} statements.", (long) model.size());
+                    if (log.isTraceEnabled())
+                        log.trace("(Store) Transaction completed for storing a model with {} statements.", (long) model.size());
                     c.success(transaction);
 
                 } catch (Exception e) {
@@ -287,7 +272,8 @@ public class EntityRepository implements EntityStore {
 
         return joined.flatMap(bytes -> {
             try (RepositoryConnection connection = repository.getConnection()) {
-                parser.setRDFHandler(new RDFInserter(connection));
+                RDFInserter rdfInserter = new RDFInserter(connection);
+                parser.setRDFHandler(rdfInserter);
                 try (InputStream bais = bytes.asInputStream(true)) {
                     parser.parse(bais);
                 } catch (Exception e) {
@@ -298,10 +284,49 @@ public class EntityRepository implements EntityStore {
                 return Mono.error(e);
             }
 
-        }).thenEmpty(Mono.empty());
+        }).then();
 
 
     }
 
+    @Override
+    public Mono<List<Statement>> listStatements(Resource value, IRI predicate, Value object) {
+        try (RepositoryConnection connection = repository.getConnection()) {
+            List<Statement> statements = connection.getStatements(value, predicate, object).stream().toList();
+            return Mono.just(statements);
+        } catch (Exception e) {
+            return Mono.error(e);
+        }
+    }
+
+    @Override
+    public Mono<Transaction> deleteStatements(List<Statement> statements) {
+       return this.deleteStatements(statements, new Transaction());
+    }
+
+
+    @Override
+    public Mono<Transaction> deleteStatements(List<Statement> statements, Transaction transaction) {
+        return Mono.create(c -> {
+            try (RepositoryConnection connection = repository.getConnection()) {
+
+                try {
+                    connection.begin();
+                    connection.remove(statements);
+                    connection.commit();
+
+                    if (log.isTraceEnabled())
+                        log.trace("(Store) Transaction completed for removing {} statements.", (long) statements.size());
+                    statements.stream().map(Statement::getSubject).forEach(transaction::hasDeleted);
+
+                    c.success(transaction);
+                } catch (Exception e) {
+                    log.trace("(Store) Failed to remove {} statements.", (long) statements.size(), e);
+                    connection.rollback();
+                    c.error(e);
+                }
+            }
+        });
+    }
 
 }
