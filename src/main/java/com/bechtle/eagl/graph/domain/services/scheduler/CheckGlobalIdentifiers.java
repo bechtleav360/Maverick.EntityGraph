@@ -2,9 +2,7 @@ package com.bechtle.eagl.graph.domain.services.scheduler;
 
 import com.bechtle.eagl.graph.domain.model.extensions.GeneratedIdentifier;
 import com.bechtle.eagl.graph.domain.model.vocabulary.Local;
-import com.bechtle.eagl.graph.domain.model.vocabulary.Transactions;
 import com.bechtle.eagl.graph.domain.model.wrapper.Transaction;
-import com.bechtle.eagl.graph.domain.services.EntityServices;
 import com.bechtle.eagl.graph.domain.services.QueryServices;
 import com.bechtle.eagl.graph.repository.EntityStore;
 import com.bechtle.eagl.graph.repository.TransactionsStore;
@@ -14,7 +12,6 @@ import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.util.ModelBuilder;
 import org.eclipse.rdf4j.model.vocabulary.DC;
-import org.reactivestreams.Publisher;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
@@ -39,29 +36,36 @@ import java.util.List;
 @Component
 public class CheckGlobalIdentifiers {
 
-    private final EntityServices entityServices;
+    // FIXME: should not directly access the services
     private final QueryServices queryServices;
+
+
     private final EntityStore store;
     private final TransactionsStore trxStore;
 
 
-    public CheckGlobalIdentifiers(EntityServices entityServices, QueryServices queryServices, EntityStore store, TransactionsStore trxStore) {
-        this.entityServices = entityServices;
+    public CheckGlobalIdentifiers( QueryServices queryServices, EntityStore store, TransactionsStore trxStore) {
         this.queryServices = queryServices;
         this.store = store;
         this.trxStore = trxStore;
     }
 
 
-    @Scheduled(fixedDelay = 6000)
+    @Scheduled(fixedDelay = 5000)
     public void checkForGlobalIdentifiers() {
-        // run sparql query
-        // delete all statements
         findGlobalIdentifiers()
                 .flatMap(this::getOldStatements)
                 .flatMap(this::storeNewStatements)
                 .flatMap(this::deleteOldStatements)
                 .flatMap(this::storeTransaction)
+                .collectList()
+                .doOnSubscribe(s -> log.trace("Starting"))
+                .doOnSuccess(list -> {
+                    Integer reduce = list.stream()
+                            .map(transaction -> transaction.listModifiedResources().size())
+                            .reduce(0, Integer::sum);
+                    log.debug("(Scheduled) Checking for invalided identifiers completed, {} resources were updated.", reduce);
+                })
                 .subscribe();
 
 
@@ -76,7 +80,7 @@ public class CheckGlobalIdentifiers {
         ArrayList<Statement> statements = new ArrayList<>(statementsBag.subjectStatements());
         statements.addAll(statementsBag.objectStatements());
 
-        return store.deleteStatements(statements, statementsBag.transaction());
+        return store.deleteModel(statements, statementsBag.transaction());
     }
 
     private Mono<StatementsBag> storeNewStatements(StatementsBag statements) {
@@ -93,7 +97,7 @@ public class CheckGlobalIdentifiers {
         });
 
         builder.add(generatedIdentifier, DC.IDENTIFIER, statements.globalIdentifier());
-        return store.store(builder.build(), statements.transaction())
+        return store.insertModel(builder.build(), statements.transaction())
                 .map(transaction -> statements);
     }
 

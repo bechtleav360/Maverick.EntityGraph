@@ -43,9 +43,6 @@ public class AbstractModel implements NamespaceAware, Serializable {
 
 
 
-    public Iterable<? extends NamespaceAwareStatement> asStatements() {
-        return this.streamNamespaceAwareStatements().toList();
-    }
 
 
 
@@ -87,6 +84,28 @@ public class AbstractModel implements NamespaceAware, Serializable {
         Iterable<Statement> statements = this.getModel().getStatements(subject, predicate, object);
         return StreamSupport.stream(statements.spliterator(), true);
     }
+
+    public Stream<Statement> streamStatements(Resource subject, IRI predicate, Value object, Resource ... contexts) {
+        Iterable<Statement> statements = this.getModel().getStatements(subject, predicate, object, contexts);
+        return StreamSupport.stream(statements.spliterator(), true);
+    }
+
+    public Stream<Statement> streamStatements() {
+        return this.streamStatements(null, null, null);
+    }
+
+    public Stream<Statement> streamStatements(Resource ... contexts) {
+        return this.streamStatements(null, null, null, contexts);
+    }
+
+    public Iterable<NamespaceAwareStatement> asStatements() {
+        return this.streamStatements().map(statement ->  NamespaceAwareStatement.wrap(statement, this.getNamespaces())).toList();
+    }
+
+    public Iterable<NamespaceAwareStatement> asStatements(Resource ... context) {
+        return this.streamStatements(context).map(statement ->  NamespaceAwareStatement.wrap(statement, this.getNamespaces())).toList();
+    }
+
 
 
     public Stream<Value> streamValues(Resource subject, IRI predicate) {

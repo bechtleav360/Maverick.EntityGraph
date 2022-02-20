@@ -1,4 +1,7 @@
+# Requirements for Versioning
 
+* Implement the memento pattern: don't use explicit versioning, but show the entity state at the given time
+* Don't have explicit version (or revision) links as part of the entity (since 99% of the time client's are not interested in the history). 
 
 # Versioning through transactions
 
@@ -37,14 +40,14 @@ We can and should represent an entity as graph
 }
 ````
 
-The graph is a collection of statements which together draw a complete picture of an entity. 
+The graph is a collection of statements (a linked data fragment) which together draw a complete picture of an entity. 
 
 
 ## Forming the entity
 We consider everything having the same id with in the entities namespace to be one particular entity. In this case, the entity in question
 is a Meeting invitation for Bob. The graph representation includes the meeting, but also the FOAF representation as Bob as attendee. 
 
-## Adding Provenance
+## Adding Provenance 
 Definition according to W3C: 
 
 > Provenance of a resource is a record that describes entities and processes involved in producing and delivering or otherwise influencing that resource.

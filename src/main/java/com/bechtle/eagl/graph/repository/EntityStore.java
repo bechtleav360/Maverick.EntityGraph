@@ -11,7 +11,9 @@ import org.springframework.core.io.buffer.DataBuffer;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.util.Collection;
 import java.util.List;
+
 
 public interface EntityStore {
 
@@ -24,16 +26,12 @@ public interface EntityStore {
      * @param model the statements to store
      * @return  Returns the transaction statements
      */
-    Mono<Transaction> store(Model model, Transaction transaction);
+    Mono<Transaction> insertModel(Model model, Transaction transaction);
 
-    default  Mono<Transaction> store(Model model) {
-        return this.store(model, new Transaction());
-    }
+    Mono<Transaction> addStatement(Resource subject, IRI predicate, Value literal, Transaction transaction);
 
-    Mono<Transaction> store(Resource subject, IRI predicate, Value literal, Transaction transaction);
-
-    default Mono<Transaction> store(Resource subject, IRI predicate, Value literal) {
-        return this.store(subject, predicate, literal, new Transaction());
+    default Mono<Transaction> addStatement(Resource subject, IRI predicate, Value literal) {
+        return this.addStatement(subject, predicate, literal, new Transaction());
     }
 
     Mono<Entity> get(IRI id);
@@ -71,10 +69,17 @@ public interface EntityStore {
 
     Mono<Void> importStatements(Publisher<DataBuffer> bytes, String mimetype);
 
-
     Mono<List<Statement>> listStatements(Resource value, IRI predicate, Value object);
 
-    Mono<Transaction> deleteStatements(List<Statement> subjectStatements);
+    Mono<Transaction> removeStatement(Resource subject, IRI predicate, Value value, Transaction transaction);
 
-    Mono<Transaction> deleteStatements(List<Statement> statements, Transaction transaction);
+    Mono<Transaction> deleteModel(List<Statement> subjectStatements);
+
+    Mono<Transaction> deleteModel(List<Statement> statements, Transaction transaction);
+
+    Flux<Transaction> commit(Collection<Transaction> transactions);
+
+    default Mono<Transaction> commit(Transaction transaction) {
+        return this.commit(List.of(transaction)).singleOrEmpty();
+    }
 }

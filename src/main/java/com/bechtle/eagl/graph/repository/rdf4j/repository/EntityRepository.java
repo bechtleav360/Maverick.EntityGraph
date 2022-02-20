@@ -1,7 +1,9 @@
 package com.bechtle.eagl.graph.repository.rdf4j.repository;
 
 import com.bechtle.eagl.graph.api.converter.RdfUtils;
+import com.bechtle.eagl.graph.domain.model.enums.Activity;
 import com.bechtle.eagl.graph.domain.model.extensions.NamespaceAwareStatement;
+import com.bechtle.eagl.graph.domain.model.vocabulary.Transactions;
 import com.bechtle.eagl.graph.domain.model.wrapper.Entity;
 import com.bechtle.eagl.graph.domain.model.wrapper.Transaction;
 import com.bechtle.eagl.graph.repository.EntityStore;
@@ -22,7 +24,6 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.core.io.buffer.DataBufferUtils;
 import org.springframework.http.HttpStatus;
-import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 import org.springframework.util.MimeType;
@@ -34,6 +35,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 @Slf4j
 @Component
@@ -46,6 +48,8 @@ public class EntityRepository implements EntityStore {
     }
 
 
+
+    /*
     @Override
     public Mono<Transaction> store(Resource subject, IRI predicate, Value literal, @Nullable Transaction transaction) {
         if (transaction == null) transaction = new Transaction();
@@ -60,8 +64,8 @@ public class EntityRepository implements EntityStore {
                     connection.add(statement);
                     connection.commit();
 
-                    finalTransaction.hasCreated(subject);
-                    finalTransaction.with(NamespaceAwareStatement.wrap(statement, Collections.emptySet()));
+                    finalTransaction.withInsertedResource(subject);
+                    finalTransaction.affected(NamespaceAwareStatement.wrap(statement, Collections.emptySet()));
                     if (log.isDebugEnabled()) log.debug("(Store) Transaction completed for storing one statement.");
 
                     c.success(finalTransaction);
@@ -75,28 +79,36 @@ public class EntityRepository implements EntityStore {
         });
 
     }
+     */
 
 
+    /*
     @Override
     public Mono<Transaction> store(Model model, Transaction transaction) {
-        /* create a new transaction node with some metadata, which is returned as object */
 
         return Mono.create(c -> {
             // Rio.write(triples.getStatements(), Rio.createWriter(RDFFormat.NQUADS, System.out));
+
+
+            // each linked data fragment (sharing the same subject) is stored within the same transaction
+            for (Resource obj : new ArrayList<>(model.subjects())) {
+                transaction.withInsertedResource(obj);
+            }
+
 
             // get statements and load into repo
             try (RepositoryConnection connection = repository.getConnection()) {
                 try {
 
-                    /* each linked data fragment (sharing the same subject) is stored within the same transaction */
+                    // each linked data fragment (sharing the same subject) is stored within the same transaction
                     for (Resource obj : new ArrayList<>(model.subjects())) {
                         connection.begin();
                         Iterable<Statement> statements = model.getStatements(obj, null, null);
                         connection.add(model.getStatements(obj, null, null));
                         connection.commit();
 
-                        transaction.hasCreated(obj);
-                        transaction.with(statements); // we hold all statements in the transaction
+                        transaction.withInsertedResource(obj);
+                        transaction.affected(statements); // we hold all statements in the transaction
 
                     }
 
@@ -113,6 +125,7 @@ public class EntityRepository implements EntityStore {
 
         });
     }
+    */
 
 
     @Override
@@ -300,13 +313,56 @@ public class EntityRepository implements EntityStore {
     }
 
     @Override
-    public Mono<Transaction> deleteStatements(List<Statement> statements) {
-       return this.deleteStatements(statements, new Transaction());
+    public Mono<Transaction> addStatement(Resource subject, IRI predicate, Value value, Transaction transaction) {
+        Assert.notNull(transaction, "Transaction cannot be null");
+
+        return transaction
+                .insert(subject, predicate, value, Activity.UPDATED)
+                .affected(subject, predicate, value)
+                .asMono();
+
     }
 
 
     @Override
-    public Mono<Transaction> deleteStatements(List<Statement> statements, Transaction transaction) {
+    public Mono<Transaction> insertModel(Model model, Transaction transaction) {
+        Assert.notNull(transaction, "Transaction cannot be null");
+
+        transaction = transaction
+                .insert(model, Activity.INSERTED)
+                .affected(model);
+
+
+        return transaction.asMono();
+    }
+
+
+    @Override
+    public Mono<Transaction> removeStatement(Resource subject, IRI predicate, Value value, Transaction transaction) {
+        Assert.notNull(transaction, "Transaction cannot be null");
+
+        return transaction
+                .remove(subject, predicate, value, Activity.UPDATED)
+                .affected(subject, predicate, value)
+                .asMono();
+    }
+
+
+    @Override
+    public Mono<Transaction> deleteModel(List<Statement> statements) {
+        return this.deleteModel(statements, new Transaction());
+    }
+
+
+    @Override
+    public Mono<Transaction> deleteModel(List<Statement> statements, Transaction transaction) {
+        Assert.notNull(transaction, "Transaction cannot be null");
+
+        return transaction
+                .remove(statements, Activity.REMOVED)
+                .asMono();
+
+        /*
         return Mono.create(c -> {
             try (RepositoryConnection connection = repository.getConnection()) {
 
@@ -317,7 +373,7 @@ public class EntityRepository implements EntityStore {
 
                     if (log.isTraceEnabled())
                         log.trace("(Store) Transaction completed for removing {} statements.", (long) statements.size());
-                    statements.stream().map(Statement::getSubject).forEach(transaction::hasDeleted);
+                    statements.stream().map(Statement::getSubject).forEach(transaction::withDeletedResource);
 
                     c.success(transaction);
                 } catch (Exception e) {
@@ -327,6 +383,42 @@ public class EntityRepository implements EntityStore {
                 }
             }
         });
+         */
     }
+
+    @Override
+    public Flux<Transaction> commit(Collection<Transaction> transactions) {
+        return Flux.create(c -> {
+            try (RepositoryConnection connection = repository.getConnection()) {
+                transactions.forEach(trx -> {
+                    Model insertModel = trx.getModel().filter(null, null, null, Transactions.GRAPH_CREATED);
+                    Model removeModel = trx.getModel().filter(null, null, null, Transactions.GRAPH_DELETED);
+
+                    try {
+                        connection.begin();
+                        connection.add(insertModel);
+                        connection.remove(removeModel);
+                        connection.commit();
+
+                        trx.setCompleted();
+                        c.next(trx);
+                    } catch (Exception e) {
+                        log.error("(Store) Failed to complete transaction .", e);
+                        log.trace("(Store) Insert Statements in this transaction: \n {}", insertModel);
+                        log.trace("(Store) Remove Statements in this transaction: \n {}", removeModel);
+
+                        connection.rollback();
+                        trx.setFailed(e.getMessage());
+                        c.next(trx);
+                    }
+
+
+                });
+
+                c.complete();
+            }
+        });
+    }
+
 
 }

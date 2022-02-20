@@ -7,6 +7,7 @@ import org.eclipse.rdf4j.model.util.ModelBuilder;
 import org.eclipse.rdf4j.model.util.Namespaces;
 
 import java.util.*;
+import java.util.stream.Stream;
 
 /**
  *
@@ -37,12 +38,24 @@ public class NamespacedModelBuilder extends ModelBuilder {
 
     public NamespacedModelBuilder with(Model model) {
         model.getNamespaces().forEach(super::setNamespace);
-        model.forEach(st -> super.build().add(st));
+        super.build().addAll(model);
+        return this;
+    }
+
+    public NamespacedModelBuilder add(Collection<Statement> statements) {
+        super.build().addAll(statements);
+        return this;
+    }
+
+    public NamespacedModelBuilder add(Collection<Statement> statements, Resource ... contexts) {
+        statements.forEach(sts -> {
+            super.build().add(sts.getSubject(), sts.getPredicate(), sts.getObject(), contexts);
+        });
         return this;
     }
 
     public NamespacedModelBuilder add(Statement st) {
-        super.build().add(st.getSubject(), st.getPredicate(), st.getObject());
+        super.build().add(st);
         return this;
     }
 
@@ -64,6 +77,7 @@ public class NamespacedModelBuilder extends ModelBuilder {
     private void registerNamespace(String namespace) {
         if(namespaceMap.containsKey(namespace)) super.setNamespace(namespaceMap.get(namespace));
     }
+
 
 
 }

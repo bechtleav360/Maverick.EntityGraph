@@ -3,6 +3,7 @@ package com.bechtle.eagl.graph.api.v1.jsonld;
 import com.bechtle.eagl.graph.api.converter.RdfUtils;
 import com.bechtle.eagl.graph.api.v1.EntitiesTest;
 import com.bechtle.eagl.graph.domain.model.vocabulary.SDO;
+import com.bechtle.eagl.graph.domain.model.vocabulary.Transactions;
 import config.TestConfigurations;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.rdf4j.model.Model;
@@ -52,6 +53,7 @@ public class TurtleTests implements EntitiesTest {
     private WebTestClient webClient;
 
 
+
     @AfterEach
     public void resetRepository() {
         webClient.get()
@@ -64,13 +66,11 @@ public class TurtleTests implements EntitiesTest {
     @Test
     public void createEntity() {
         Resource file = new ClassPathResource("data/v1/requests/create-valid.ttl");
-        webClient.post()
-                .uri("/api/entities")
-                .contentType(MediaType.parseMediaType("text/turtle"))
-                .body(BodyInserters.fromResource(file))
-                .exchange()
-                .expectStatus().isAccepted();
+        RdfConsumer rdfConsumer = this.create(file);
 
+
+        Collection<Statement> statements = rdfConsumer.getStatements();
+        Assertions.assertTrue(rdfConsumer.hasStatement(null, Transactions.STATUS, Transactions.SUCCESS));
 
         // check if correct application events have been recorded
 
@@ -97,6 +97,7 @@ public class TurtleTests implements EntitiesTest {
                 .contentType(MediaType.parseMediaType("text/turtle"))
                 .body(BodyInserters.fromResource(file))
                 .exchange()
+
                 .expectStatus().isBadRequest();
     }
 
@@ -104,34 +105,24 @@ public class TurtleTests implements EntitiesTest {
     @Test
     public void createEntityWithValidId() {
         Resource file = new ClassPathResource("data/v1/requests/create-validWithId.ttl");
-        RdfConsumer rdfConsumer = new RdfConsumer(RDFFormat.TURTLE, true);
-
-        webClient.post()
-                .uri("/api/entities")
-                .contentType(RdfUtils.getMediaType(RDFFormat.TURTLE))
-                .accept(RdfUtils.getMediaType(RDFFormat.TURTLE))
-                .body(BodyInserters.fromResource(file))
-                .exchange()
-                .expectStatus().isAccepted()
-                .expectBody()
-                .consumeWith(rdfConsumer);
+        RdfConsumer rdfConsumer = this.create(file);
 
         Collection<Statement> statements = rdfConsumer.getStatements();
-        Assertions.assertTrue(rdfConsumer.hasStatement(null, DC.IDENTIFIER, null));
+        Assertions.assertFalse(rdfConsumer.hasStatement(null, Transactions.STATUS, Transactions.RUNNING));
 
     }
 
     @Test
     public void createEntityWithValidIdAndBase() {
         Resource file = new ClassPathResource("data/v1/requests/create-validWithIdAndBase.ttl");
-        webClient.post()
-                .uri("/api/entities")
-                .contentType(MediaType.parseMediaType("text/turtle"))
-                .body(BodyInserters.fromResource(file))
-                .exchange()
-                .expectStatus().isAccepted();
+        RdfConsumer rdfConsumer = create(file);
+
+        Collection<Statement> statements = rdfConsumer.getStatements();
+        Assertions.assertFalse(rdfConsumer.hasStatement(null, Transactions.STATUS, Transactions.RUNNING));
 
     }
+
+
 
     @Test
     @Override
@@ -151,13 +142,16 @@ public class TurtleTests implements EntitiesTest {
     @Override
     @Test
     public void createMultipleEntities() {
+
         Resource file = new ClassPathResource("data/v1/requests/create-valid_multiple.ttl");
-        webClient.post()
-                .uri("/api/entities")
-                .contentType(MediaType.parseMediaType("text/turtle"))
-                .body(BodyInserters.fromResource(file))
-                .exchange()
-                .expectStatus().isAccepted();
+        RdfConsumer rdfConsumer = this.create(file);
+
+        Collection<Statement> statements = rdfConsumer.getStatements();
+
+        Assertions.assertFalse(rdfConsumer.hasStatement(null, Transactions.STATUS, Transactions.RUNNING));;
+
+        Assertions.assertTrue(rdfConsumer.hasStatement(null, SDO.IDENTIFIER, SimpleValueFactory.getInstance().createLiteral("_a")));
+        Assertions.assertTrue(rdfConsumer.hasStatement(null, RDF.TYPE, SDO.VIDEO_OBJECT));
     }
 
 
@@ -184,18 +178,9 @@ public class TurtleTests implements EntitiesTest {
     @Test
     public void createValue() {
         Resource file = new ClassPathResource("data/v1/requests/create-valid.ttl");
-        RdfConsumer rdfConsumer = new RdfConsumer(RDFFormat.TURTLE);
+        RdfConsumer rdfConsumer = this.create(file);
 
-        webClient.post()
-                .uri("/api/entities")
-                .contentType(MediaType.parseMediaType("text/turtle"))
-                .accept(MediaType.parseMediaType("text/turtle"))
-                .body(BodyInserters.fromResource(file))
-                .exchange()
 
-                .expectStatus().isAccepted()
-                .expectBody()
-                .consumeWith(rdfConsumer);
 
         Model statements = rdfConsumer.asModel();
         Statement video = StreamSupport.stream(statements.getStatements(null, RDF.TYPE, vf.createIRI("http://schema.org/", "video")).spliterator(), false).findFirst().orElseThrow();
@@ -258,21 +243,16 @@ public class TurtleTests implements EntitiesTest {
     @Test
     public void createEmbeddedEntity() {
         Resource file = new ClassPathResource("data/v1/requests/create-valid.ttl");
-        RdfConsumer rdfConsumer = new RdfConsumer(RDFFormat.TURTLE);
 
-        webClient.post()
-                .uri("/api/entities")
-                .contentType(MediaType.parseMediaType("text/turtle"))
-                .accept(MediaType.parseMediaType("text/turtle"))
-                .body(BodyInserters.fromResource(file))
-                .exchange()
-
-                .expectStatus().isAccepted()
-                .expectBody()
-                .consumeWith(rdfConsumer);
+        RdfConsumer rdfConsumer = this.create(file);
 
         Model statements = rdfConsumer.asModel();
+        Assertions.assertTrue(rdfConsumer.hasStatement(null, Transactions.STATUS, Transactions.SUCCESS));
+
         Statement video = StreamSupport.stream(statements.getStatements(null, RDF.TYPE, vf.createIRI("http://schema.org/", "video")).spliterator(), false).findFirst().orElseThrow();
+
+
+
         Resource embedded = new ClassPathResource("data/v1/requests/create-valid_embedded.ttl");
 
         webClient.post()
@@ -404,5 +384,21 @@ public class TurtleTests implements EntitiesTest {
     @Override
     public void createEdgeWithInvalidDestinationId() {
 
+    }
+
+    private RdfConsumer create(Resource file) {
+        RdfConsumer rdfConsumer = new RdfConsumer(RDFFormat.TURTLE, true);
+
+        webClient.post()
+                .uri("/api/entities")
+                .contentType(RdfUtils.getMediaType(RDFFormat.TURTLE))
+                .accept(RdfUtils.getMediaType(RDFFormat.TURTLE))
+                .body(BodyInserters.fromResource(file))
+                .exchange()
+                .expectStatus().isAccepted()
+                .expectBody()
+                .consumeWith(rdfConsumer);
+
+        return rdfConsumer;
     }
 }

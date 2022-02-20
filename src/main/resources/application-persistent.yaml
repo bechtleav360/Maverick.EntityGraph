@@ -9,11 +9,11 @@ security:
 
 storage:
   entities:
-    path: "D:/Graphen/entities"
+    path: "/mnt/d/Graphen/entities"
   transactions:
-    path: "D:/Graphen/transactions"
+    path: "/mnt/d/Graphen/transactions"
   schema:
-    path: "D:/Graphen/schema"
+    path: "/mnt/d/Graphen/schema"
 
 spring:
   security:
@@ -24,7 +24,7 @@ spring:
 logging:
   level:
     com:
-      bechtle: TRACE
+      bechtle: DEBUG
     org:
       springframework:
         security: INFO

@@ -19,7 +19,7 @@ import java.util.Base64;
  * FIXME: should require the current id (either bnode or externally set) to create reproducible ids
  * FIXME: should also keep track of the original id (we should store this in the provenance)
  */
-public class GeneratedIdentifier extends EntityIRI {
+public class GeneratedIdentifier extends LocalIRI {
     private static final SecureRandom secureRandom;
     private static final RandomStringGenerator randomStringGenerator;
     private static final char[][] range = { {'a', 'z'}, {'0', '9'} };

@@ -40,7 +40,6 @@ public class Entities {
         Assert.isTrue(id.length() == GeneratedIdentifier.LENGTH, "Incorrect length for identifier.");
 
         return graphService.readEntity(id)
-
                 .flatMapIterable(AbstractModel::asStatements);
     }
 

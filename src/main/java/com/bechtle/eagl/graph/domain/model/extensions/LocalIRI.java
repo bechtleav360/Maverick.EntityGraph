@@ -3,39 +3,39 @@ package com.bechtle.eagl.graph.domain.model.extensions;
 import com.bechtle.eagl.graph.domain.model.vocabulary.Local;
 import org.eclipse.rdf4j.model.base.AbstractIRI;
 
-public class EntityIRI extends AbstractIRI {
+public class LocalIRI extends AbstractIRI {
 
 
     private String namespace;
     private String localName;
 
-    protected EntityIRI(String namespace, String localName) {
+    protected LocalIRI(String namespace, String localName) {
         this.namespace = namespace;
         this.localName = localName;
     }
 
-    public EntityIRI(org.eclipse.rdf4j.model.IRI iri) {
+    public LocalIRI(org.eclipse.rdf4j.model.IRI iri) {
         this(iri.getNamespace(), iri.getLocalName());
     }
 
-    protected EntityIRI(String namespace) {
+    protected LocalIRI(String namespace) {
         this.namespace = namespace;
     }
 
-    public static EntityIRI from(org.eclipse.rdf4j.model.IRI iri) {
-        return new EntityIRI(iri.getNamespace(), iri.getLocalName());
+    public static LocalIRI from(org.eclipse.rdf4j.model.IRI iri) {
+        return new LocalIRI(iri.getNamespace(), iri.getLocalName());
     }
 
-    public static EntityIRI from(String namespace, String localName) {
-        return new EntityIRI(namespace, localName);
+    public static LocalIRI from(String namespace, String localName) {
+        return new LocalIRI(namespace, localName);
     }
 
-    public static EntityIRI withDefaultNamespace(String localname) {
-        return new EntityIRI(Local.Entities.NAMESPACE, localname);
+    public static LocalIRI withDefaultNamespace(String localname) {
+        return new LocalIRI(Local.Entities.NAMESPACE, localname);
     }
 
-    public static EntityIRI withDefinedNamespace(String namespace, String localname) {
-        return new EntityIRI(namespace, localname);
+    public static LocalIRI withDefinedNamespace(String namespace, String localname) {
+        return new LocalIRI(namespace, localname);
     }
 
 
