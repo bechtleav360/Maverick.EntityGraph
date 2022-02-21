@@ -56,6 +56,7 @@ public class TransactionsRepository implements TransactionsStore {
 
 
                 });
+                c.complete();
 
 
             }

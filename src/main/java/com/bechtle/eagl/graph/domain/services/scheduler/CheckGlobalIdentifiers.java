@@ -54,7 +54,7 @@ public class CheckGlobalIdentifiers {
     }
 
 
-    @Scheduled(fixedDelay = 10000)
+    @Scheduled(fixedDelay = 60000)
     public void checkForGlobalIdentifiersScheduled() {
         this.checkForGlobalIdentifiers()
                 .collectList()
@@ -91,7 +91,7 @@ public class CheckGlobalIdentifiers {
     }
 
     private Flux<Transaction> commit(List<Transaction> transactions) {
-        log.trace("Committing {} transactions", transactions.size());
+        // log.trace("Committing {} transactions", transactions.size());
         return this.entityStore.commit(transactions);
     }
 
@@ -169,7 +169,7 @@ public class CheckGlobalIdentifiers {
                 .flatMapMany(queryResult -> {
                     return Flux.create(c -> {
                         queryResult.forEach(bindings -> {
-                            log.trace("Found global identifier '{}', transform to local identifier", bindings.getValue("a"));
+                            // log.trace("Found global identifier '{}', transform to local identifier", bindings.getValue("a"));
                             c.next(bindings.getValue("a"));
                         });
                         c.complete();
