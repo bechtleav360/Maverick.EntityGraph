@@ -7,7 +7,11 @@ import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+
+import java.util.Collection;
+import java.util.List;
 
 @Slf4j
 @Component
@@ -21,29 +25,41 @@ public class TransactionsRepository implements TransactionsStore {
 
     @Override
     public Mono<Transaction> store(Transaction transaction) {
+        return  this.store(List.of(transaction)).singleOrEmpty();
+    }
 
 
-        return Mono.create(c -> {
-            if (transaction == null) c.success();
+    @Override
+    public Flux<Transaction> store(Collection<Transaction> transactions) {
 
+        return Flux.create(c -> {
             try (RepositoryConnection connection = repository.getConnection()) {
-                assert transaction != null;
+                transactions.forEach(trx -> {
+                    if (trx == null) {
+                        log.trace("Trying to store an empty transaction.");
+                    } else {
 
-                try {
+                        try {
 
-                    connection.begin();
-                    connection.add(transaction.getModel());
-                    connection.commit();
+                            connection.begin();
+                            connection.add(trx.getModel());
+                            connection.commit();
 
-                    c.success(transaction);
-                } catch (Exception e) {
-                    log.error("Error while storing transaction, performing rollback.", e);
-                    connection.rollback();
-                    c.error(e);
-                }
+                            c.next(trx);
+                        } catch (Exception e) {
+                            log.error("Error while storing transaction, performing rollback.", e);
+                            connection.rollback();
+                            c.error(e);
+                        }
+                    }
+
+
+
+                });
+
+
             }
 
         });
-
     }
 }

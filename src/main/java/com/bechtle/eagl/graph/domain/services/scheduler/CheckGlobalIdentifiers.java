@@ -2,6 +2,7 @@ package com.bechtle.eagl.graph.domain.services.scheduler;
 
 import com.bechtle.eagl.graph.domain.model.extensions.GeneratedIdentifier;
 import com.bechtle.eagl.graph.domain.model.vocabulary.Local;
+import com.bechtle.eagl.graph.domain.model.vocabulary.Transactions;
 import com.bechtle.eagl.graph.domain.model.wrapper.Transaction;
 import com.bechtle.eagl.graph.domain.services.QueryServices;
 import com.bechtle.eagl.graph.repository.EntityStore;
@@ -14,10 +15,12 @@ import org.eclipse.rdf4j.model.util.ModelBuilder;
 import org.eclipse.rdf4j.model.vocabulary.DC;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import org.springframework.util.Assert;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -40,47 +43,68 @@ public class CheckGlobalIdentifiers {
     private final QueryServices queryServices;
 
 
-    private final EntityStore store;
+    private final EntityStore entityStore;
     private final TransactionsStore trxStore;
 
 
     public CheckGlobalIdentifiers( QueryServices queryServices, EntityStore store, TransactionsStore trxStore) {
         this.queryServices = queryServices;
-        this.store = store;
+        this.entityStore = store;
         this.trxStore = trxStore;
     }
 
 
-    @Scheduled(fixedDelay = 5000)
-    public void checkForGlobalIdentifiers() {
-        findGlobalIdentifiers()
-                .flatMap(this::getOldStatements)
-                .flatMap(this::storeNewStatements)
-                .flatMap(this::deleteOldStatements)
-                .flatMap(this::storeTransaction)
+    @Scheduled(fixedDelay = 10000)
+    public void checkForGlobalIdentifiersScheduled() {
+        this.checkForGlobalIdentifiers()
                 .collectList()
-                .doOnSubscribe(s -> log.trace("Starting"))
+                .doOnError(throwable -> log.error("(Scheduled) Checking for invalided identifiers failed. ", throwable))
                 .doOnSuccess(list -> {
                     Integer reduce = list.stream()
                             .map(transaction -> transaction.listModifiedResources().size())
                             .reduce(0, Integer::sum);
-                    log.debug("(Scheduled) Checking for invalided identifiers completed, {} resources were updated.", reduce);
-                })
-                .subscribe();
+                    if(reduce > 0) {
+                        log.debug("(Scheduled) Checking for invalided identifiers completed, {} resources were updated.", reduce);
+                    } else {
+                        log.debug("(Scheduled) No invalided identifiers found");
+                    }
 
-
+                }).subscribe();
     }
 
-    private Mono<Transaction> storeTransaction(Transaction transaction) {
+    public Flux<Transaction> checkForGlobalIdentifiers() {
+        return findGlobalIdentifiers()
+                .flatMap(this::getOldStatements)
+                .flatMap(this::storeNewStatements)
+                .flatMap(this::deleteOldStatements)
+                .buffer(50)
+                .flatMap(this::commit)
+                .doOnNext(transaction -> {
+                    Assert.isTrue(transaction.hasStatement(null, Transactions.STATUS, Transactions.SUCCESS), "Failed transaction: \n"+transaction);
+                })
+                .buffer(50)
+                .flatMap(this::storeTransactions)
+                .doOnError(throwable -> {
+                    log.error("Exception during check: {}",throwable.getMessage());
+                })
+                ;
+    }
+
+    private Flux<Transaction> commit(List<Transaction> transactions) {
+        log.trace("Committing {} transactions", transactions.size());
+        return this.entityStore.commit(transactions);
+    }
+
+    private Flux<Transaction> storeTransactions(Collection<Transaction> transactions) {
         //FIXME: through event
-        return this.trxStore.store(transaction);
+        return this.trxStore.store(transactions);
     }
 
     private Mono<Transaction> deleteOldStatements(StatementsBag statementsBag) {
         ArrayList<Statement> statements = new ArrayList<>(statementsBag.subjectStatements());
         statements.addAll(statementsBag.objectStatements());
 
-        return store.deleteModel(statements, statementsBag.transaction());
+        return entityStore.deleteModel(statements, statementsBag.transaction());
     }
 
     private Mono<StatementsBag> storeNewStatements(StatementsBag statements) {
@@ -97,7 +121,7 @@ public class CheckGlobalIdentifiers {
         });
 
         builder.add(generatedIdentifier, DC.IDENTIFIER, statements.globalIdentifier());
-        return store.insertModel(builder.build(), statements.transaction())
+        return entityStore.insertModel(builder.build(), statements.transaction())
                 .map(transaction -> statements);
     }
 
@@ -111,9 +135,9 @@ public class CheckGlobalIdentifiers {
 
         if (value.isResource()) {
             return Mono.zip(
-                    this.store.listStatements((Resource) value, null, null),
+                    this.entityStore.listStatements((Resource) value, null, null),
                             //.map(statements -> statements.stream().filter(statement -> !statement.getPredicate().equals(RDF.TYPE)).toList()),
-                    this.store.listStatements(null, null, value)
+                    this.entityStore.listStatements(null, null, value)
             ).map(pair -> new StatementsBag(pair.getT1(), pair.getT2(), (Resource) value, new Transaction()));
         }
         return Mono.empty();
@@ -145,7 +169,7 @@ public class CheckGlobalIdentifiers {
                 .flatMapMany(queryResult -> {
                     return Flux.create(c -> {
                         queryResult.forEach(bindings -> {
-                            //log.trace("Found global identifier '{}', transform to local identifier", bindings.getValue("a"));
+                            log.trace("Found global identifier '{}', transform to local identifier", bindings.getValue("a"));
                             c.next(bindings.getValue("a"));
                         });
                         c.complete();

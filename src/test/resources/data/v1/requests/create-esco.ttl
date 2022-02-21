@@ -1,0 +1,43 @@
+@prefix skos-xl: <http://www.w3.org/2008/05/skos-xl#> .
+@prefix dct:   <http://purl.org/dc/terms/> .
+@prefix adms:  <http://www.w3.org/ns/adms#> .
+@prefix esco:  <http://data.europa.eu/esco/model#> .
+@prefix rdf:   <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix org:   <http://www.w3.org/ns/org#> .
+@prefix iso-thes: <http://purl.org/iso25964/skos-thes#> .
+@prefix xsd:   <http://www.w3.org/2001/XMLSchema#> .
+@prefix skos:  <http://www.w3.org/2004/02/skos/core#> .
+@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix prov:  <http://www.w3.org/ns/prov#> .
+@prefix foaf:  <http://xmlns.com/foaf/0.1/> .
+
+
+<http://data.europa.eu/esco/skill/1a4cc54f-1e53-442b-a6d2-1682dc8ef8f9>
+        a                       esco:Skill , skos:Concept , esco:MemberConcept ;
+        esco:referenceLanguage  "en"^^xsd:language ;
+        esco:skillReuseLevel    <http://data.europa.eu/esco/skill-reuse-level/transversal> ;
+        esco:skillType          <http://data.europa.eu/esco/skill-type/skill> ;
+        dct:description         <http://data.europa.eu/esco/node-literal/7d44a65e-ca7d-4631-a5ce-b33223f383ed> , <http://data.europa.eu/esco/node-literal/059327cb-5ded-4a22-89c5-f0950a69d9d0> ;
+        iso-thes:status         "released" ;
+        skos:broader            <http://data.europa.eu/esco/skill/7e5147d1-60b1-4a68-804b-1f5cb0396b91> ;
+        skos:broaderTransitive  <http://data.europa.eu/esco/skill/7e5147d1-60b1-4a68-804b-1f5cb0396b91> ;
+        skos:inScheme           <http://data.europa.eu/esco/concept-scheme/skill-ict-groups> ;
+        skos:prefLabel           "creatively use digital technologies"@en  .
+
+
+<http://data.europa.eu/esco/node-literal/7d44a65e-ca7d-4631-a5ce-b33223f383ed>
+        a                 esco:NodeLiteral ;
+        esco:language     "en-us"^^xsd:language ;
+        esco:nodeLiteral  "Use digital tools and technologies to create knowledge and to innovate processes and products. Engage individually and collectively in cognitive processing to understand and resolve conceptual problems and problem situations in digital environments." .
+
+<http://data.europa.eu/esco/node-literal/059327cb-5ded-4a22-89c5-f0950a69d9d0>
+        a                 esco:NodeLiteral ;
+        esco:language     "en" ;
+        esco:nodeLiteral  "Use digital tools and technologies to create knowledge and to innovate processes and products. Engage individually and collectively in cognitive processing to understand and resolve conceptual problems and problem situations in digital environments." .
+
+<http://data.europa.eu/esco/skill/7e5147d1-60b1-4a68-804b-1f5cb0396b91>
+        a                  skos:Concept ;
+        dct:description    <http://data.europa.eu/esco/node-literal/ad0be65f-313f-4085-8eb5-ce9d646d8b6d> , <http://data.europa.eu/esco/node-literal/7fbd6a0c-59d9-4c13-af8c-bd670c883454> ;
+        skos:inScheme      <http://data.europa.eu/esco/concept-scheme/skill-ict-groups> ;
+        skos:prefLabel      "Problemlösung mit IKT-Instrumenten und Hardware"@de ;
+        skos:topConceptOf  <http://data.europa.eu/esco/concept-scheme/skill-ict-groups> .

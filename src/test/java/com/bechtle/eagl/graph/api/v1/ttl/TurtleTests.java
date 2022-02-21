@@ -1,4 +1,4 @@
-package com.bechtle.eagl.graph.api.v1.jsonld;
+package com.bechtle.eagl.graph.api.v1.ttl;
 
 import com.bechtle.eagl.graph.api.converter.RdfUtils;
 import com.bechtle.eagl.graph.api.v1.EntitiesTest;
@@ -73,7 +73,6 @@ public class TurtleTests implements EntitiesTest {
         Assertions.assertTrue(rdfConsumer.hasStatement(null, Transactions.STATUS, Transactions.SUCCESS));
 
         // check if correct application events have been recorded
-
     }
 
     @Override

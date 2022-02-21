@@ -112,4 +112,7 @@ public class AbstractModel implements NamespaceAware, Serializable {
         return this.streamStatements(subject, predicate, null).map(Statement::getObject);
     }
 
+    public boolean hasStatement(Resource obj, IRI pred, Value val) {
+        return this.getModel().getStatements(obj, pred, val).iterator().hasNext();
+    }
 }

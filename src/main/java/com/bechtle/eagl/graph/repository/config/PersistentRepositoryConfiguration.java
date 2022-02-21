@@ -1,5 +1,6 @@
 package com.bechtle.eagl.graph.repository.config;
 
+import lombok.extern.slf4j.Slf4j;
 import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
@@ -26,6 +27,7 @@ import java.nio.file.Paths;
 
 @Configuration
 @Profile({"prod", "stage", "it", "persistent"})
+@Slf4j
 public class PersistentRepositoryConfiguration {
 
 
@@ -34,8 +36,10 @@ public class PersistentRepositoryConfiguration {
     @Scope(ConfigurableBeanFactory.SCOPE_SINGLETON)
     public Repository createEntitiesRepository(@Value("${storage.entities.path}") String storagePath) throws IOException {
         // FIXME:
-        Resource file = new FileSystemResource(Paths.get(storagePath, "entities"));
+        Resource file = new FileSystemResource(Paths.get(storagePath, "lmdb"));
         LmdbStoreConfig config = new LmdbStoreConfig();
+
+        log.debug("Initializing persistent entity repository in path '{}'", file.getFile().toPath());
 
         return new SailRepository(new LmdbStore(file.getFile(), config));
     }
@@ -45,8 +49,10 @@ public class PersistentRepositoryConfiguration {
     @Scope(ConfigurableBeanFactory.SCOPE_SINGLETON)
     public Repository createTransactionsRepository(@Value("${storage.transactions.path}") String storagePath) throws IOException {
         // FIXME:
-        Resource file = new FileSystemResource(Paths.get(storagePath, "entities"));
+        Resource file = new FileSystemResource(Paths.get(storagePath, "lmdb"));
         LmdbStoreConfig config = new LmdbStoreConfig();
+
+        log.debug("Initializing persistent transactions repository in path '{}'", file.getFile().toPath());
 
         return new SailRepository(new LmdbStore(file.getFile(), config));
     }
@@ -55,8 +61,10 @@ public class PersistentRepositoryConfiguration {
     @Scope(ConfigurableBeanFactory.SCOPE_SINGLETON)
     public Repository createSchemaRepository(@Value("${storage.schema.path}") String storagePath) throws IOException {
         // FIXME:
-        Resource file = new FileSystemResource(Paths.get(storagePath, "entities"));
+        Resource file = new FileSystemResource(Paths.get(storagePath, "lmdb"));
         LmdbStoreConfig config = new LmdbStoreConfig();
+
+        log.debug("Initializing persistent schema repository in path '{}'", file.getFile().toPath());
 
         return new SailRepository(new LmdbStore(file.getFile(), config));
     }

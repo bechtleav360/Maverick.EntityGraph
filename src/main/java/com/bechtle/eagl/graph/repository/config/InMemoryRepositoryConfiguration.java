@@ -1,5 +1,6 @@
 package com.bechtle.eagl.graph.repository.config;
 
+import lombok.extern.slf4j.Slf4j;
 import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
@@ -19,23 +20,29 @@ import java.nio.file.Paths;
 
 @Configuration
 @Profile({"test", "dev"})
+@Slf4j
 public class InMemoryRepositoryConfiguration {
 
 
 
     @Bean("entities-storage")
     public Repository createEntitiesRepository() throws IOException {
+        log.debug("Initializing volative entities repository");
         return new SailRepository(new MemoryStore());
     }
 
 
     @Bean("transactions-storage")
     public Repository createTransactionsRepository() throws IOException {
+        log.debug("Initializing transactions entities repository");
+
         return new SailRepository(new MemoryStore());
     }
 
     @Bean("schema-storage")
     public Repository createSchemaRepository() throws IOException {
+        log.debug("Initializing volatile schema repository");
+
         return new SailRepository(new MemoryStore());
     }
 }

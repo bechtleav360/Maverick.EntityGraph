@@ -10,6 +10,7 @@ import com.bechtle.eagl.graph.repository.EntityStore;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.rdf4j.model.*;
 import org.eclipse.rdf4j.model.impl.SimpleNamespace;
+import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.query.*;
 import org.eclipse.rdf4j.repository.Repository;
@@ -358,6 +359,23 @@ public class EntityRepository implements EntityStore {
     public Mono<Transaction> deleteModel(List<Statement> statements, Transaction transaction) {
         Assert.notNull(transaction, "Transaction cannot be null");
 
+        // FIXME
+        /*
+        actor.core.Exceptions$ErrorCallbackNotImplemented: java.lang.NullPointerException: Cannot invoke "String.hashCode()" because the return value of "org.eclipse.rdf4j.model.base.AbstractIRI.stringValue()" is null
+Caused by: java.lang.NullPointerException: Cannot invoke "String.hashCode()" because the return value of "org.eclipse.rdf4j.model.base.AbstractIRI.stringValue()" is null
+        at org.eclipse.rdf4j.model.base.AbstractIRI.hashCode(AbstractIRI.java:39) ~[rdf4j-model-api-4.0.0-M2.jar:4.0.0-M2]
+        at java.base/java.util.HashMap.hash(HashMap.java:338) ~[na:na]
+        at java.base/java.util.HashMap.getNode(HashMap.java:568) ~[na:na]
+        at java.base/java.util.HashMap.get(HashMap.java:556) ~[na:na]
+        at org.eclipse.rdf4j.model.impl.LinkedHashModel.asNode(LinkedHashModel.java:554) ~[rdf4j-model-4.0.0-M2.jar:4.0.0-M2]
+        at org.eclipse.rdf4j.model.impl.LinkedHashModel.add(LinkedHashModel.java:170) ~[rdf4j-model-4.0.0-M2.jar:4.0.0-M2]
+        at com.bechtle.eagl.graph.domain.model.extensions.NamespacedModelBuilder.lambda$add$3(NamespacedModelBuilder.java:52) ~[classes/:na]
+        at java.base/java.util.ArrayList.forEach(ArrayList.java:1511) ~[na:na]
+        at com.bechtle.eagl.graph.domain.model.extensions.NamespacedModelBuilder.add(NamespacedModelBuilder.java:51) ~[classes/:na]
+        at com.bechtle.eagl.graph.domain.model.wrapper.Transaction.remove(Transaction.java:54) ~[classes/:na]
+        at com.bechtle.eagl.graph.repository.rdf4j.repository.EntityRepository.deleteModel(EntityRepository.java:
+         */
+
         return transaction
                 .remove(statements, Activity.REMOVED)
                 .asMono();
@@ -391,16 +409,24 @@ public class EntityRepository implements EntityStore {
         return Flux.create(c -> {
             try (RepositoryConnection connection = repository.getConnection()) {
                 transactions.forEach(trx -> {
+                    // FIXME: the approach based on the context works only as long as the statements in the graph are all within the global context only
+                    // with this approach, we cannot insert a statement to a context (since it is already in GRAPH_CREATED), every st can only be in one context
                     Model insertModel = trx.getModel().filter(null, null, null, Transactions.GRAPH_CREATED);
                     Model removeModel = trx.getModel().filter(null, null, null, Transactions.GRAPH_DELETED);
 
+                    // we have to get rid of the context
+                    SimpleValueFactory vf = SimpleValueFactory.getInstance();
+                    List<Statement> insertStatements = insertModel.stream().map(s -> vf.createStatement(s.getSubject(), s.getPredicate(), s.getObject())).toList();
+                    List<Statement> removeStatements = removeModel.stream().map(s -> vf.createStatement(s.getSubject(), s.getPredicate(), s.getObject())).toList();
+
                     try {
                         connection.begin();
-                        connection.add(insertModel);
-                        connection.remove(removeModel);
+                        connection.add(insertStatements);
+                        connection.remove(removeStatements);
                         connection.commit();
 
                         trx.setCompleted();
+                        log.trace("(Store) Transaction completed with {} inserted statements and {} removed statements.", insertModel.size(), removeModel.size());
                         c.next(trx);
                     } catch (Exception e) {
                         log.error("(Store) Failed to complete transaction .", e);

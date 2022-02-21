@@ -24,7 +24,7 @@ spring:
 logging:
   level:
     com:
-      bechtle: DEBUG
+      bechtle: TRACE
     org:
       springframework:
         security: INFO
