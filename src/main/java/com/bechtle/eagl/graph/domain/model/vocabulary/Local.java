@@ -1,6 +1,8 @@
 package com.bechtle.eagl.graph.domain.model.vocabulary;
 
 import com.bechtle.eagl.graph.domain.model.extensions.EntityNamespace;
+import com.bechtle.eagl.graph.domain.model.extensions.LocalIRI;
+import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Namespace;
 
 /**

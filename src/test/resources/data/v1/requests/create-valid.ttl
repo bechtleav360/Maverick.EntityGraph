@@ -5,5 +5,5 @@
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
 [] a ns1:video ;
-    ns1:identifier "_a" ;
+    ns1:identifier "_a1234" ;
     ns1:title "Video 1" .

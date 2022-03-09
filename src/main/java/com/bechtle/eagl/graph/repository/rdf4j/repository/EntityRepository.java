@@ -181,6 +181,8 @@ public class EntityRepository implements EntityStore {
         });
     }
 
+
+
     @Override
     public Mono<TupleQueryResult> queryValues(SelectQuery all) {
         return this.queryValues(all.getQueryString());

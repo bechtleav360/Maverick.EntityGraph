@@ -6,6 +6,6 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 
 @Configuration
 @EnableScheduling
-@Profile({"prod", "stage", "it", "persistent"})
+//@Profile({"prod", "stage", "it", "persistent"})
 public class SchedulerConfiguration {
 }

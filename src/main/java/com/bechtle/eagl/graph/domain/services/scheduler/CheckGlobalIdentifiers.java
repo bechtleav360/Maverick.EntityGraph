@@ -13,6 +13,7 @@ import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.util.ModelBuilder;
 import org.eclipse.rdf4j.model.vocabulary.DC;
+import org.springframework.context.annotation.Profile;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
@@ -37,6 +38,7 @@ import java.util.List;
  */
 @Slf4j
 @Component
+@Profile({"check-global-identifiers"})
 public class CheckGlobalIdentifiers {
 
     // FIXME: should not directly access the services

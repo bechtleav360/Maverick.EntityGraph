@@ -45,6 +45,7 @@ public class EntityServices {
 
     public Mono<Entity> readEntity(String identifier) {
         return graph.get(LocalIRI.withDefaultNamespace(identifier))
+                //.switchIfEmpty()        // check if param identifier has been a duplicate identifier and is stored in dc.identifier
                 .switchIfEmpty(Mono.error(new EntityNotFound(identifier)));
     }
 

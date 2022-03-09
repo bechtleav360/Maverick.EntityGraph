@@ -29,6 +29,10 @@ import java.util.stream.Collectors;
 
 @Slf4j
 @Component
+/**
+ * Checks whether duplicates exist in the incoming model. Does not check within the repository (this is delegated to a
+ * scheduled job)
+ */
 public class UniqueEntityHandler implements Transformer {
 
     // FIXME: should only operate on local model -> the rerouting to existing entity should happen through scheduler
@@ -71,7 +75,7 @@ public class UniqueEntityHandler implements Transformer {
      *
      * @return true, if named embedded entities are in payload
      */
-    private boolean checkForEmbeddedNamedEntities(AbstractModel triples) {
+    private boolean     checkForEmbeddedNamedEntities(AbstractModel triples) {
         return triples.embeddedObjects()
                 .stream()
                 .anyMatch(object -> object.isIRI() && (!(object instanceof GeneratedIdentifier)));
@@ -235,7 +239,7 @@ public class UniqueEntityHandler implements Transformer {
      * @param triples
      */
     public Mono<AbstractModel> checkIfLinkedNamedEntityExistsInGraph(EntityStore graph, AbstractModel triples) {
-        log.trace("(Transformer) Handle linked named entity, check if is supposed to be unique and already exists in graph.");
+        log.trace("(Transformer) Checking for duplicates in graph skipped");
 
         return Mono.just(triples);
     }
