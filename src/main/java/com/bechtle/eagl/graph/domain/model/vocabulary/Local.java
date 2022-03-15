@@ -31,4 +31,10 @@ public class Local {
         public static Namespace NS = EntityNamespace.of(PREFIX, NAMESPACE);
     }
 
+    public static class Subscriptions {
+        public static String NAMESPACE = "http://graphs.azurewebsites.net/api/subscriptions/";
+        public static String PREFIX = "subs";
+        public static Namespace NS = EntityNamespace.of(PREFIX, NAMESPACE);
+    }
+
 }

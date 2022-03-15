@@ -15,13 +15,9 @@ import reactor.core.publisher.Mono;
 public class AdminServices {
 
     private final EntityStore graph;
-    private final Validators validators;
-    private final Transformers transformers;
 
-    public AdminServices(EntityStore graph, Validators validators, Transformers transformers) {
+    public AdminServices(EntityStore graph) {
         this.graph = graph;
-        this.validators = validators;
-        this.transformers = transformers;
     }
 
 

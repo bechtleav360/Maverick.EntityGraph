@@ -69,6 +69,17 @@ public class PersistentRepositoryConfiguration {
         return new SailRepository(new LmdbStore(file.getFile(), config));
     }
 
+    @Bean("subscriptions-storage")
+    public Repository createSubscriptionsRepository(@Value("${storage.subscriptions.path}") String storagePath) throws IOException {
+        Resource file = new FileSystemResource(Paths.get(storagePath, "lmdb"));
+        LmdbStoreConfig config = new LmdbStoreConfig();
+
+        log.debug("Initializing persistent subscriptions repository in path '{}'", file.getFile().toPath());
+
+
+        return new SailRepository(new LmdbStore(file.getFile(), config));
+    }
+
 
 
 }

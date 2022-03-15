@@ -12,21 +12,18 @@ import org.eclipse.rdf4j.sparqlbuilder.core.SparqlBuilder;
 import org.eclipse.rdf4j.sparqlbuilder.core.Variable;
 import org.eclipse.rdf4j.sparqlbuilder.core.query.Queries;
 import org.eclipse.rdf4j.sparqlbuilder.core.query.SelectQuery;
-import org.springframework.context.annotation.Profile;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
-import java.util.Set;
-import java.util.SortedSet;
 import java.util.TreeSet;
-import java.util.stream.Collectors;
 
 @Component
 @Slf4j
-@Profile({"detect-duplicates"})
+@ConditionalOnProperty(name = "features.schedulers.detectDuplicates", havingValue = "true")
 public class DetectDuplicates {
 
 
@@ -67,7 +64,7 @@ public class DetectDuplicates {
                 idVariable.isA(this.valueFactory.createIRI(duplicate.type())),
                 idVariable.has(SDO.IDENTIFIER, this.valueFactory.createLiteral(duplicate.originalIdentifier()))
         );
-        this.repository.queryValues(findDuplicates)
+        this.repository.select(findDuplicates)
                 .map(tupleQueryResult -> tupleQueryResult.stream().map(bindings -> {
                         Value date = bindings.getValue("date");
                         Value id = bindings.getValue("identifier");
@@ -96,6 +93,7 @@ public class DetectDuplicates {
                 }
         );
 
+        return Mono.empty();
 
 
 
@@ -123,7 +121,7 @@ having (count(?thing) > 1)
 
 
 
-        Mono<TupleQueryResult> result = repository.queryValues(findDuplicates);
+        Mono<TupleQueryResult> result = repository.select(findDuplicates);
         return result.flatMapMany(res ->
                 Flux.<DuplicateCandidate>create(c -> {
             res.forEach(bindings -> {

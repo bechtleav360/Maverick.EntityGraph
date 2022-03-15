@@ -13,6 +13,8 @@ import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.util.ModelBuilder;
 import org.eclipse.rdf4j.model.vocabulary.DC;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Profile;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -25,21 +27,21 @@ import java.util.Collection;
 import java.util.List;
 
 /**
+ * If we have any global identifiers (externally set) in the repo, we have to replace them with our internal identifiers.
+ * Otherwise we cannot address the entities through our API.
+ *
  * Periodically runs the following sparql queries, grabs the entity definition for it and regenerates the identifiers
  * <p>
- * <p>
- SELECT ?a WHERE {
- ?a a ?c .
- FILTER NOT EXISTS {
- FILTER STRSTARTS(str(?a), "http://graphs.azurewebsites.net/api/entities/").
- }
-
- } LIMIT 100
+ * SELECT ?a WHERE { ?a a ?c . }
+ * FILTER NOT EXISTS {
+ *    FILTER STRSTARTS(str(?a), "http://graphs.azurewebsites.net/api/entities/").
+ * }
+ * LIMIT 100
  */
 @Slf4j
 @Component
-@Profile({"check-global-identifiers"})
-public class CheckGlobalIdentifiers {
+@ConditionalOnProperty(name = "features.schedulers.replaceGlobalIdentifiers", havingValue = "true")
+public class ReplaceGlobalIdentifiers {
 
     // FIXME: should not directly access the services
     private final QueryServices queryServices;
@@ -49,7 +51,7 @@ public class CheckGlobalIdentifiers {
     private final TransactionsStore trxStore;
 
 
-    public CheckGlobalIdentifiers( QueryServices queryServices, EntityStore store, TransactionsStore trxStore) {
+    public ReplaceGlobalIdentifiers(QueryServices queryServices, EntityStore store, TransactionsStore trxStore) {
         this.queryServices = queryServices;
         this.entityStore = store;
         this.trxStore = trxStore;
@@ -106,7 +108,7 @@ public class CheckGlobalIdentifiers {
         ArrayList<Statement> statements = new ArrayList<>(statementsBag.subjectStatements());
         statements.addAll(statementsBag.objectStatements());
 
-        return entityStore.deleteModel(statements, statementsBag.transaction());
+        return entityStore.delete(statements, statementsBag.transaction());
     }
 
     private Mono<StatementsBag> storeNewStatements(StatementsBag statements) {
@@ -123,7 +125,7 @@ public class CheckGlobalIdentifiers {
         });
 
         builder.add(generatedIdentifier, DC.IDENTIFIER, statements.globalIdentifier());
-        return entityStore.insertModel(builder.build(), statements.transaction())
+        return entityStore.insert(builder.build(), statements.transaction())
                 .map(transaction -> statements);
     }
 

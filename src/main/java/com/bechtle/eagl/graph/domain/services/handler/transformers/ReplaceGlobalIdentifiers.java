@@ -13,6 +13,7 @@ import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.vocabulary.DC;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 
@@ -31,7 +32,8 @@ import java.util.stream.Collectors;
  */
 @Slf4j
 @Component
-public class IdentifierGenerator implements Transformer {
+@ConditionalOnProperty(name = "features.transformers.replaceGlobalIdentifiers", havingValue = "true")
+public class ReplaceGlobalIdentifiers implements Transformer {
 
     @Override
     public Mono<? extends AbstractModel> handle(EntityStore graph, AbstractModel triples, Map<String, String> parameters) {

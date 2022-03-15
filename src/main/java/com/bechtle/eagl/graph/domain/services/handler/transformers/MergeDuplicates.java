@@ -20,6 +20,7 @@ import org.eclipse.rdf4j.sparqlbuilder.core.query.Queries;
 import org.eclipse.rdf4j.sparqlbuilder.core.query.SelectQuery;
 import org.eclipse.rdf4j.sparqlbuilder.rdf.Rdf;
 import org.eclipse.rdf4j.sparqlbuilder.rdf.RdfObject;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -33,7 +34,8 @@ import java.util.stream.Collectors;
  * Checks whether duplicates exist in the incoming model. Does not check within the repository (this is delegated to a
  * scheduled job)
  */
-public class UniqueEntityHandler implements Transformer {
+@ConditionalOnProperty(name = "features.transformers.mergeDuplicates", havingValue = "true")
+public class MergeDuplicates implements Transformer {
 
     // FIXME: should only operate on local model -> the rerouting to existing entity should happen through scheduler
 
@@ -202,7 +204,7 @@ public class UniqueEntityHandler implements Transformer {
                     RdfObject type = Rdf.object(localEntity.type());
                     RdfObject label = Rdf.object(localEntity.label());
                     SelectQuery all = Queries.SELECT(id).where(id.isA(type).andHas(RDFS.LABEL, label)).all();
-                    return Mono.zip(Mono.just(localEntity), graph.queryValues(all));
+                    return Mono.zip(Mono.just(localEntity), graph.select(all));
                 })
                 .doOnNext(pair -> {
                     // if we found query results, relink local entity and remove duplicate from model

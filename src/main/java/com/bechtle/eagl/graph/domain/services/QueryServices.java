@@ -19,11 +19,11 @@ public class QueryServices {
 
 
     public Mono<TupleQueryResult> queryValues(String query) {
-        return this.graph.queryValues(query);
+        return this.graph.select(query);
     }
 
 
     public Flux<NamespaceAwareStatement> queryGraph(String query) {
-        return this.graph.queryStatements(query);
+        return this.graph.constructQuery(query);
     }
 }

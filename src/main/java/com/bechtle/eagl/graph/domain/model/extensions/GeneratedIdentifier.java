@@ -1,10 +1,10 @@
 package com.bechtle.eagl.graph.domain.model.extensions;
 
+import com.google.common.hash.Hashing;
 import org.apache.commons.text.RandomStringGenerator;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Namespace;
 import org.eclipse.rdf4j.model.Resource;
-import org.springframework.util.DigestUtils;
 
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
@@ -23,7 +23,7 @@ public class GeneratedIdentifier extends LocalIRI {
     private static final SecureRandom secureRandom;
     private static final RandomStringGenerator randomStringGenerator;
     private static final char[][] range = { {'a', 'z'}, {'0', '9'} };
-    public static int LENGTH = 16;
+    public static int LENGTH = 12;
 
     static {
         secureRandom = new SecureRandom();
@@ -34,7 +34,7 @@ public class GeneratedIdentifier extends LocalIRI {
 
     public GeneratedIdentifier(String namespace) {
         super(namespace);
-        super.setLocalName(this.generateRandomString());
+        super.setLocalName(generateRandomKey());
     }
 
 
@@ -42,10 +42,16 @@ public class GeneratedIdentifier extends LocalIRI {
         super(namespace);
 
         if(oldIdentifier.isIRI()) {
-            super.setLocalName(this.generateDerivedIdentifier(((IRI) oldIdentifier).getLocalName()));
+            super.setLocalName(generateDerivedIdentifier(((IRI) oldIdentifier).getLocalName()));
         } else {
-            super.setLocalName(this.generateRandomString());
+            super.setLocalName(generateRandomKey());
         }
+
+    }
+
+    public GeneratedIdentifier(String namespace, String oldIdentifier) {
+        super(namespace);
+        super.setLocalName(generateDerivedIdentifier(oldIdentifier));
 
     }
 
@@ -67,24 +73,32 @@ public class GeneratedIdentifier extends LocalIRI {
     }
 
 
+
     private String generateSecureRandom() {
         byte[] token = new byte[LENGTH];
         secureRandom.nextBytes(token);
         return Base64.getUrlEncoder().withoutPadding().encodeToString(token); //base64 encoding
     }
 
-    private String generateRandomString() {
+    public synchronized static String generateRandomKey() {
         return randomStringGenerator.generate(LENGTH);
     }
 
+    public synchronized static String generateRandomKey(int length) {
+        return randomStringGenerator.generate(length);
+    }
 
-    private String generateDerivedIdentifier(String localName) {
-        byte[] token = DigestUtils.md5DigestAsHex(localName.getBytes()).substring(0,LENGTH-1).getBytes(StandardCharsets.UTF_8);
-        return Base64.getUrlEncoder().withoutPadding().encodeToString(token); //base64 encoding
+    public synchronized static String generateDerivedIdentifier(String localName) {
+        String s = Hashing.fingerprint2011().hashString(localName, StandardCharsets.UTF_8).toString();
+
+        if(s.length() < LENGTH) s = s.concat(s);
+        return s.substring(0, LENGTH);
     }
 
     public static IRI get(String namespace) {
         return new GeneratedIdentifier(namespace);
 
     }
+
+
 }

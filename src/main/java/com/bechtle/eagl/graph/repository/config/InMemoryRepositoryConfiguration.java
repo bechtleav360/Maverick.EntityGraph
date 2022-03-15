@@ -34,7 +34,7 @@ public class InMemoryRepositoryConfiguration {
 
     @Bean("transactions-storage")
     public Repository createTransactionsRepository() throws IOException {
-        log.debug("Initializing transactions entities repository");
+        log.debug("Initializing volatile transactions repository");
 
         return new SailRepository(new MemoryStore());
     }
@@ -43,6 +43,12 @@ public class InMemoryRepositoryConfiguration {
     public Repository createSchemaRepository() throws IOException {
         log.debug("Initializing volatile schema repository");
 
+        return new SailRepository(new MemoryStore());
+    }
+
+    @Bean("subscriptions-storage")
+    public Repository createSubscriptionsRepository() throws IOException {
+        log.debug("Initializing volative subscriptions repository");
         return new SailRepository(new MemoryStore());
     }
 }

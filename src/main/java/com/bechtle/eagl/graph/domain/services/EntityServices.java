@@ -169,6 +169,6 @@ public class EntityServices {
 
                 })
 
-                .flatMap(sts ->graph.insertModel(sts.getModel(), transaction));
+                .flatMap(sts ->graph.insert(sts.getModel(), transaction));
     }
 }

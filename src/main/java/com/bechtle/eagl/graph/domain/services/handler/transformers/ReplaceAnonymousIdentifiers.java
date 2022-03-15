@@ -1,6 +1,5 @@
 package com.bechtle.eagl.graph.domain.services.handler.transformers;
 
-import com.bechtle.eagl.graph.api.controller.Parameters;
 import com.bechtle.eagl.graph.domain.model.extensions.GeneratedIdentifier;
 import com.bechtle.eagl.graph.domain.model.extensions.NamespaceAwareStatement;
 import com.bechtle.eagl.graph.domain.model.vocabulary.Local;
@@ -10,6 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Statement;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 
@@ -29,7 +29,8 @@ import java.util.Map;
  */
 @Slf4j
 @Component
-public class Skolemizer implements Transformer {
+@ConditionalOnProperty(name = "features.transformers.replaceAnonymousIdentifiers", havingValue = "true")
+public class ReplaceAnonymousIdentifiers implements Transformer {
 
 
     @Override

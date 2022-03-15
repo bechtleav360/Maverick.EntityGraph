@@ -6,6 +6,7 @@ import com.bechtle.eagl.graph.repository.EntityStore;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 
@@ -13,7 +14,8 @@ import java.util.Map;
 
 @Slf4j
 @Component
-public class TypeIsRequired implements Validator {
+@ConditionalOnProperty(name = "features.validators.checkRequiredType", havingValue = "true")
+public class CheckRequiredType implements Validator {
 
     @Override
     public Mono<? extends AbstractModel> handle(EntityStore graph, AbstractModel model, Map<String, String> parameters) {

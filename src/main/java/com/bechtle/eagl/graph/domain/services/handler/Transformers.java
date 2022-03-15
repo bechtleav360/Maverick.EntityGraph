@@ -1,9 +1,7 @@
 package com.bechtle.eagl.graph.domain.services.handler;
 
 import com.bechtle.eagl.graph.domain.model.wrapper.AbstractModel;
-import com.bechtle.eagl.graph.domain.services.handler.transformers.Skolemizer;
 import com.bechtle.eagl.graph.domain.services.handler.transformers.Transformer;
-import com.bechtle.eagl.graph.domain.services.handler.transformers.UniqueEntityHandler;
 import com.bechtle.eagl.graph.repository.EntityStore;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -12,7 +10,6 @@ import reactor.core.publisher.Mono;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 @Component
 public class Transformers {

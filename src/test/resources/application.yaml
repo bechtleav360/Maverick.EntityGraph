@@ -12,6 +12,16 @@ spring:
     exclude:
       - org.springframework.boot.autoconfigure.security.SecurityAutoConfiguration
 
+features:
+  schedulers:
+    detectDuplicates: false
+    replaceGlobalIdentifiers: false
+  transformers:
+    replaceGlobalIdentifiers: true
+    replaceAnonymousIdentifiers: true
+    mergeDuplicates: true
+  validators:
+    checkRequiredType: true
 
 logging:
   level:

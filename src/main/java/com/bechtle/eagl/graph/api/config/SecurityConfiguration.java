@@ -42,6 +42,7 @@ public class SecurityConfiguration {
                 .authorizeExchange()
                     .matchers(EndpointRequest.to("info","env", "logfile", "loggers", "metrics", "scheduledTasks")).hasAuthority("ADMIN")
                     .matchers(EndpointRequest.to("health")).permitAll()
+                    .pathMatchers("/api/admin/**").hasAuthority("ADMIN")
                     .pathMatchers("/api/**").authenticated()
                     .anyExchange().permitAll()
                 .and()
