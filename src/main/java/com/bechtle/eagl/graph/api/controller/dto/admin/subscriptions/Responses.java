@@ -1,9 +1,11 @@
 package com.bechtle.eagl.graph.api.controller.dto.admin.subscriptions;
 
+import com.bechtle.eagl.graph.domain.services.SubscriptionsService;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -14,6 +16,7 @@ public class Responses {
     public record Subscription(String identifier) {}
 
 
-    public record SubscriptionWithKey(String identifier, List<String> key) {
+    public record SubscriptionWithKey(String identifier, List<SubscriptionsService.NamedKey> keys) {
     }
+
 }

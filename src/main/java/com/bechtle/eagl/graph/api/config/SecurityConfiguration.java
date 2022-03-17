@@ -1,5 +1,6 @@
 package com.bechtle.eagl.graph.api.config;
 
+import com.bechtle.eagl.graph.api.security.ApiKeyAuthentication;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.actuate.autoconfigure.security.reactive.EndpointRequest;
 import org.springframework.context.annotation.Bean;
@@ -23,8 +24,6 @@ import java.util.List;
 @Profile({"prod", "stage", "it", "dev", "persistent"})
 public class SecurityConfiguration {
 
-    @Value("${security.apiKey}")
-    String key;
 
     private static final String API_KEY_HEADER = "X-API-KEY";
 
@@ -57,24 +56,7 @@ public class SecurityConfiguration {
 
 
 
-    @Bean
-    public ReactiveAuthenticationManager buildAuthenticationManager() {
-        return authentication -> {
-            if (authentication == null) return Mono.empty();
 
-            if(authentication instanceof UsernamePasswordAuthenticationToken) {
-                return Mono.just(authentication);
-            }
-
-            if (authentication.getPrincipal() != null
-                    && authentication.getCredentials().toString().equalsIgnoreCase(this.key)
-            ) {
-                authentication.setAuthenticated(true);
-            }
-
-            return Mono.just(authentication);
-        };
-    }
 
     @Bean
     ServerAuthenticationConverter buildAuthenticationConverter() {
@@ -91,24 +73,6 @@ public class SecurityConfiguration {
 
 
 
-    private static class ApiKeyAuthentication extends AbstractAuthenticationToken {
 
-        private final String apiKey;
-
-        public ApiKeyAuthentication(String apiKey) {
-            super(null);
-            this.apiKey = apiKey;
-        }
-
-        @Override
-        public Object getCredentials() {
-            return this.apiKey;
-        }
-
-        @Override
-        public Object getPrincipal() {
-            return "api_user";
-        }
-    }
 
 }

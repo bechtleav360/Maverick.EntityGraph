@@ -77,6 +77,11 @@ public class GlobalExceptionHandler extends DefaultErrorAttributes {
             errorAttributes.put("reason", ((MalformedQueryException) error).getMessage());
             errorAttributes.remove("exception");
             errorAttributes.remove("trace");
+        } else if (error instanceof SecurityException) {
+            errorAttributes.replace("status", HttpStatus.UNAUTHORIZED.value());
+            errorAttributes.replace("error", HttpStatus.UNAUTHORIZED.getReasonPhrase());
+            errorAttributes.remove("exception");
+            errorAttributes.remove("trace");
         }
 
 

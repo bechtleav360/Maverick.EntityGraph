@@ -14,7 +14,6 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
-import java.util.Set;
 
 @RestController
 @RequestMapping(path = "/api/admin/subscriptions")
@@ -35,7 +34,7 @@ public class Subscriptions {
     Mono<Responses.Subscription> createSubscription(Requests.CreateSubscriptionRequest request) {
         log.info("(Request) Create a new subscription");
         return this.subscriptionsService
-                .create()
+                .createSubscription()
                 .map(Responses.Subscription::new);
     }
 
@@ -72,6 +71,7 @@ public class Subscriptions {
         log.info("(Request) List api keys for subscription {}", subscriptionId);
         return this.subscriptionsService
                 .getKeysForSubscription(subscriptionId)
+                .map(SubscriptionsService.ApiKeyDefinition::key)
                 .collectList()
                 .map(keys -> new Responses.SubscriptionWithKey(subscriptionId, keys));
 

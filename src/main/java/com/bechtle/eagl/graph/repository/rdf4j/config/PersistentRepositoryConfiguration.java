@@ -1,4 +1,4 @@
-package com.bechtle.eagl.graph.repository.config;
+package com.bechtle.eagl.graph.repository.rdf4j.config;
 
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.rdf4j.repository.Repository;

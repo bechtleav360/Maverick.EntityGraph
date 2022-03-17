@@ -4,6 +4,7 @@
 
 security:
   ignored: /**
+  apiKey: "1234"
 
 spring:
   profiles:
