@@ -2,6 +2,7 @@ package com.bechtle.eagl.graph.repository.behaviours;
 
 import com.bechtle.eagl.graph.domain.model.enums.Activity;
 import com.bechtle.eagl.graph.domain.model.wrapper.Transaction;
+import lombok.extern.slf4j.Slf4j;
 import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Statement;
@@ -9,7 +10,9 @@ import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.springframework.util.Assert;
 import reactor.core.publisher.Mono;
 
+import java.io.IOException;
 import java.util.Collection;
+
 
 public interface ModelUpdates extends RepositoryBehaviour {
 
@@ -30,6 +33,8 @@ public interface ModelUpdates extends RepositoryBehaviour {
                     connection.rollback();
                     c.error(e);
                 }
+            } catch (IOException e) {
+                c.error(e);
             }
         });
     }
@@ -76,6 +81,8 @@ public interface ModelUpdates extends RepositoryBehaviour {
                     connection.rollback();
                     c.error(e);
                 }
+            } catch (IOException e) {
+                c.error(e);
             }
         });
     }

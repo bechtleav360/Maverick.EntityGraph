@@ -1,38 +1,24 @@
 package com.bechtle.eagl.graph.repository.rdf4j.repository;
 
-import com.bechtle.eagl.graph.api.converter.RdfUtils;
 import com.bechtle.eagl.graph.domain.model.enums.Activity;
 import com.bechtle.eagl.graph.domain.model.extensions.NamespaceAwareStatement;
-import com.bechtle.eagl.graph.domain.model.vocabulary.Transactions;
 import com.bechtle.eagl.graph.domain.model.wrapper.Entity;
 import com.bechtle.eagl.graph.domain.model.wrapper.Transaction;
 import com.bechtle.eagl.graph.repository.EntityStore;
+import com.bechtle.eagl.graph.repository.rdf4j.config.RepositoryConfiguration;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.rdf4j.model.*;
 import org.eclipse.rdf4j.model.impl.SimpleNamespace;
-import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
-import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.query.*;
-import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.RepositoryResult;
-import org.eclipse.rdf4j.repository.util.RDFInserter;
-import org.eclipse.rdf4j.rio.RDFParser;
-import org.eclipse.rdf4j.rio.RDFParserFactory;
-import org.reactivestreams.Publisher;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.core.io.buffer.DataBuffer;
-import org.springframework.core.io.buffer.DataBufferUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
-import org.springframework.util.MimeType;
 import org.springframework.web.client.HttpClientErrorException;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -41,15 +27,16 @@ import java.util.stream.Collectors;
 public class EntityRepository extends AbstractRepository implements EntityStore {
 
 
-    public EntityRepository(@Qualifier("entities-storage") Repository repository) {
-        super(repository);
+    public EntityRepository() {
+        super(RepositoryConfiguration.RepositoryType.ENTITIES);
     }
 
 
 
     @Override
     public Mono<Entity> get(IRI id) {
-        try (RepositoryConnection connection = repository.getConnection()) {
+        try (RepositoryConnection connection = super.getRepository().getConnection()) {
+            log.trace("(Store) Loading entity from repository {}", getRepository().toString());
 
             RepositoryResult<Statement> statements = connection.getStatements(id, null, null);
             if (!statements.hasNext()) {
@@ -83,7 +70,7 @@ public class EntityRepository extends AbstractRepository implements EntityStore 
     public Flux<NamespaceAwareStatement> constructQuery(String query) {
 
         return Flux.create(c -> {
-            try (RepositoryConnection connection = repository.getConnection()) {
+            try (RepositoryConnection connection = getRepository().getConnection()) {
                 GraphQuery q = connection.prepareGraphQuery(QueryLanguage.SPARQL, query);
                 try (GraphQueryResult result = q.evaluate()) {
                     Set<Namespace> namespaces = result.getNamespaces().entrySet().stream()
@@ -112,7 +99,7 @@ public class EntityRepository extends AbstractRepository implements EntityStore 
 
     @Override
     public Mono<List<Statement>> listStatements(Resource value, IRI predicate, Value object) {
-        try (RepositoryConnection connection = repository.getConnection()) {
+        try (RepositoryConnection connection = getRepository().getConnection()) {
             List<Statement> statements = connection.getStatements(value, predicate, object).stream().toList();
             return Mono.just(statements);
         } catch (Exception e) {

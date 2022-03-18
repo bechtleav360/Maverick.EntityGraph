@@ -388,12 +388,12 @@ See also the <a href="/docs/hotels.html">dedicated document on the use of schema
 :Brand a rdfs:Class ;
     rdfs:label "Brand" ;
     :source <http://www.w3.org/wiki/WebSchemas/SchemaDotOrgSources#source_GoodRelationsClass> ;
-    rdfs:comment "A brand is a name used by an organization or business person for labeling a product, product group, or similar." ;
+    rdfs:comment "A brand is a label used by an organization or business person for labeling a product, product group, or similar." ;
     rdfs:subClassOf :Intangible .
 
 :BreadcrumbList a rdfs:Class ;
     rdfs:label "BreadcrumbList" ;
-    rdfs:comment """A BreadcrumbList is an ItemList consisting of a chain of linked Web pages, typically described using at least their URL and their name, and typically ending with the current page.\\n\\nThe [[position]] property is used to reconstruct the order of the items in a BreadcrumbList The convention is that a breadcrumb list has an [[itemListOrder]] of [[ItemListOrderAscending]] (lower values listed first), and that the first items in this list correspond to the "top" or beginning of the breadcrumb trail, e.g. with a site or section homepage. The specific values of 'position' are not assigned meaning for a BreadcrumbList, but they should be integers, e.g. beginning with '1' for the first item in the list.
+    rdfs:comment """A BreadcrumbList is an ItemList consisting of a chain of linked Web pages, typically described using at least their URL and their label, and typically ending with the current page.\\n\\nThe [[position]] property is used to reconstruct the order of the items in a BreadcrumbList The convention is that a breadcrumb list has an [[itemListOrder]] of [[ItemListOrderAscending]] (lower values listed first), and that the first items in this list correspond to the "top" or beginning of the breadcrumb trail, e.g. with a site or section homepage. The specific values of 'position' are not assigned meaning for a BreadcrumbList, but they should be integers, e.g. beginning with '1' for the first item in the list.
       """ ;
     rdfs:subClassOf :ItemList .
 
@@ -659,7 +659,7 @@ See also the dedicated [document on the use of schema.org for marking up hotels 
 :CompoundPriceSpecification a rdfs:Class ;
     rdfs:label "CompoundPriceSpecification" ;
     :source <http://www.w3.org/wiki/WebSchemas/SchemaDotOrgSources#source_GoodRelationsClass> ;
-    rdfs:comment "A compound price specification is one that bundles multiple prices that all apply in combination for different dimensions of consumption. Use the name property of the attached unit price specification for indicating the dimension of a price component (e.g. \"electricity\" or \"final cleaning\")." ;
+    rdfs:comment "A compound price specification is one that bundles multiple prices that all apply in combination for different dimensions of consumption. Use the label property of the attached unit price specification for indicating the dimension of a price component (e.g. \"electricity\" or \"final cleaning\")." ;
     rdfs:subClassOf :PriceSpecification .
 
 :ComputerLanguage a rdfs:Class ;
@@ -775,7 +775,7 @@ See also the dedicated [document on the use of schema.org for marking up hotels 
     rdfs:label "CreditCard" ;
     :source <http://www.w3.org/wiki/WebSchemas/SchemaDotOrgSources#FIBO>,
         <http://www.w3.org/wiki/WebSchemas/SchemaDotOrgSources#source_GoodRelationsClass> ;
-    rdfs:comment """A card payment method of a particular brand or name.  Used to mark up a particular payment method and/or the financial product/service that supplies the card account.\\n\\nCommonly used values:\\n\\n* http://purl.org/goodrelations/v1#AmericanExpress\\n* http://purl.org/goodrelations/v1#DinersClub\\n* http://purl.org/goodrelations/v1#Discover\\n* http://purl.org/goodrelations/v1#JCB\\n* http://purl.org/goodrelations/v1#MasterCard\\n* http://purl.org/goodrelations/v1#VISA
+    rdfs:comment """A card payment method of a particular brand or label.  Used to mark up a particular payment method and/or the financial product/service that supplies the card account.\\n\\nCommonly used values:\\n\\n* http://purl.org/goodrelations/v1#AmericanExpress\\n* http://purl.org/goodrelations/v1#DinersClub\\n* http://purl.org/goodrelations/v1#Discover\\n* http://purl.org/goodrelations/v1#JCB\\n* http://purl.org/goodrelations/v1#MasterCard\\n* http://purl.org/goodrelations/v1#VISA
        """ ;
     rdfs:subClassOf :LoanOrCredit,
         :PaymentCard .
@@ -2374,7 +2374,7 @@ The place is __open__ if the [[opens]] property is specified, and __closed__ oth
 :PropertyValue a rdfs:Class ;
     rdfs:label "PropertyValue" ;
     :source <http://www.w3.org/wiki/WebSchemas/SchemaDotOrgSources#source_GoodRelationsClass> ;
-    rdfs:comment """A property-value pair, e.g. representing a feature of a product or place. Use the 'name' property for the name of the property. If there is an additional human-readable version of the value, put that into the 'description' property.\\n\\n Always use specific schema.org properties when a) they exist and b) you can populate them. Using PropertyValue as a substitute will typically not trigger the same effect as using the original, specific property.
+    rdfs:comment """A property-value pair, e.g. representing a feature of a product or place. Use the 'label' property for the label of the property. If there is an additional human-readable version of the value, put that into the 'description' property.\\n\\n Always use specific schema.org properties when a) they exist and b) you can populate them. Using PropertyValue as a substitute will typically not trigger the same effect as using the original, specific property.
     """ ;
     rdfs:subClassOf :StructuredValue .
 
@@ -4019,7 +4019,7 @@ See also the <a href="/docs/hotels.html">dedicated document on the use of schema
     rdfs:label "additionalName" ;
     :domainIncludes :Person ;
     :rangeIncludes :Text ;
-    rdfs:comment "An additional name for a Person, can be used for a middle name." .
+    rdfs:comment "An additional label for a Person, can be used for a middle label." .
 
 :additionalNumberOfGuests a rdf:Property ;
     rdfs:label "additionalNumberOfGuests" ;
@@ -4228,7 +4228,7 @@ See also the <a href="/docs/hotels.html">dedicated document on the use of schema
     rdfs:label "applicationSuite" ;
     :domainIncludes :SoftwareApplication ;
     :rangeIncludes :Text ;
-    rdfs:comment "The name of the application suite to which the application belongs (e.g. Excel belongs to Office)." .
+    rdfs:comment "The label of the application suite to which the application belongs (e.g. Excel belongs to Office)." .
 
 :appliesToDeliveryMethod a rdf:Property ;
     rdfs:label "appliesToDeliveryMethod" ;
@@ -4333,7 +4333,7 @@ See also the <a href="/docs/hotels.html">dedicated document on the use of schema
     :domainIncludes :APIReference ;
     :rangeIncludes :Text ;
     :supersededBy :executableLibraryName ;
-    rdfs:comment "Library file name e.g., mscorlib.dll, system.web.dll." .
+    rdfs:comment "Library file label e.g., mscorlib.dll, system.web.dll." .
 
 :assemblyVersion a rdf:Property ;
     rdfs:label "assemblyVersion" ;
@@ -4677,7 +4677,7 @@ See also the <a href="/docs/hotels.html">dedicated document on the use of schema
     rdfs:label "broadcastDisplayName" ;
     :domainIncludes :BroadcastService ;
     :rangeIncludes :Text ;
-    rdfs:comment "The name displayed in the channel guide. For many US affiliates, it is the network name." .
+    rdfs:comment "The label displayed in the channel guide. For many US affiliates, it is the network label." .
 
 :broadcastFrequency a rdf:Property ;
     rdfs:label "broadcastFrequency" ;
@@ -4730,7 +4730,7 @@ See also the <a href="/docs/hotels.html">dedicated document on the use of schema
     rdfs:label "busName" ;
     :domainIncludes :BusTrip ;
     :rangeIncludes :Text ;
-    rdfs:comment "The name of the bus (e.g. Bolt Express)." .
+    rdfs:comment "The label of the bus (e.g. Bolt Express)." .
 
 :busNumber a rdf:Property ;
     rdfs:label "busNumber" ;
@@ -4863,7 +4863,7 @@ See also the <a href="/docs/hotels.html">dedicated document on the use of schema
     rdfs:label "characterName" ;
     :domainIncludes :PerformanceRole ;
     :rangeIncludes :Text ;
-    rdfs:comment "The name of a character played in some acting or performing role, i.e. in a PerformanceRole." .
+    rdfs:comment "The label of a character played in some acting or performing role, i.e. in a PerformanceRole." .
 
 :cheatCode a rdf:Property ;
     rdfs:label "cheatCode" ;
@@ -5459,7 +5459,7 @@ Dateline summaries are oriented more towards human readers than towards automate
     rdfs:label "disambiguatingDescription" ;
     :domainIncludes :Thing ;
     :rangeIncludes :Text ;
-    rdfs:comment "A sub property of description. A short description of the item used to disambiguate from other, similar items. Information from other properties (in particular, name) may be necessary for the description to be useful for disambiguation." ;
+    rdfs:comment "A sub property of description. A short description of the item used to disambiguate from other, similar items. Information from other properties (in particular, label) may be necessary for the description to be useful for disambiguation." ;
     rdfs:subPropertyOf :description .
 
 :discount a rdf:Property ;
@@ -5858,7 +5858,7 @@ This property should not be used where the nature of the alignment can be descri
     rdfs:label "familyName" ;
     :domainIncludes :Person ;
     :rangeIncludes :Text ;
-    rdfs:comment "Family name. In the U.S., the last name of a Person." .
+    rdfs:comment "Family label. In the U.S., the last label of a Person." .
 
 :fatContent a rdf:Property ;
     rdfs:label "fatContent" ;
@@ -6117,7 +6117,7 @@ Typical unit code(s): MTK for square meter, FTK for square foot, or YDK for squa
     rdfs:label "givenName" ;
     :domainIncludes :Person ;
     :rangeIncludes :Text ;
-    rdfs:comment "Given name. In the U.S., the first name of a Person." .
+    rdfs:comment "Given label. In the U.S., the first label of a Person." .
 
 :globalLocationNumber a rdf:Property ;
     rdfs:label "globalLocationNumber" ;
@@ -6289,13 +6289,13 @@ Typical unit code(s): MTK for square meter, FTK for square foot, or YDK for squa
     rdfs:label "honorificPrefix" ;
     :domainIncludes :Person ;
     :rangeIncludes :Text ;
-    rdfs:comment "An honorific prefix preceding a Person's name such as Dr/Mrs/Mr." .
+    rdfs:comment "An honorific prefix preceding a Person's label such as Dr/Mrs/Mr." .
 
 :honorificSuffix a rdf:Property ;
     rdfs:label "honorificSuffix" ;
     :domainIncludes :Person ;
     :rangeIncludes :Text ;
-    rdfs:comment "An honorific suffix following a Person's name such as M.D. /PhD/MSCSW." .
+    rdfs:comment "An honorific suffix following a Person's label such as M.D. /PhD/MSCSW." .
 
 :hostingOrganization a rdf:Property ;
     rdfs:label "hostingOrganization" ;
@@ -6373,7 +6373,7 @@ Typical unit code(s): MTK for square meter, FTK for square foot, or YDK for squa
     :domainIncludes :Dataset ;
     :rangeIncludes :DataCatalog ;
     :supersededBy :includedInDataCatalog ;
-    rdfs:comment "A data catalog which contains this dataset (this property was previously 'catalog', preferred name is now 'includedInDataCatalog')." .
+    rdfs:comment "A data catalog which contains this dataset (this property was previously 'catalog', preferred label is now 'includedInDataCatalog')." .
 
 :includesObject a rdf:Property ;
     rdfs:label "includesObject" ;
@@ -6713,7 +6713,7 @@ Typical unit code(s): MTK for square meter, FTK for square foot, or YDK for squa
     rdfs:label "legalName" ;
     :domainIncludes :Organization ;
     :rangeIncludes :Text ;
-    rdfs:comment "The official name of the organization, e.g. the registered company name." .
+    rdfs:comment "The official label of the organization, e.g. the registered company label." .
 
 :leiCode a rdf:Property ;
     rdfs:label "leiCode" ;
@@ -7078,10 +7078,10 @@ Typical unit code(s): MTK for square meter, FTK for square foot, or YDK for squa
     rdfs:comment "The North American Industry Classification System (NAICS) code for a particular organization or business person." .
 
 :name a rdf:Property ;
-    rdfs:label "name" ;
+    rdfs:label "label" ;
     :domainIncludes :Thing ;
     :rangeIncludes :Text ;
-    rdfs:comment "The name of the item." ;
+    rdfs:comment "The label of the item." ;
     rdfs:subPropertyOf rdfs:label ;
     owl:equivalentProperty dc:title .
 
@@ -7544,7 +7544,7 @@ Note: for historical reasons, any textual label and formal code provided as a li
     :domainIncludes :Invoice,
         :Order ;
     :rangeIncludes :PaymentMethod ;
-    rdfs:comment "The name of the credit card or other method of payment for the order." .
+    rdfs:comment "The label of the credit card or other method of payment for the order." .
 
 :paymentMethodId a rdf:Property ;
     rdfs:label "paymentMethodId" ;
@@ -7809,7 +7809,7 @@ Note: for historical reasons, any textual label and formal code provided as a li
     rdfs:label "printPage" ;
     :domainIncludes :NewsArticle ;
     :rangeIncludes :Text ;
-    rdfs:comment "If this NewsArticle appears in print, this field indicates the name of the page on which the article is found. Please note that this field is intended for the exact page name (e.g. A5, B18)." .
+    rdfs:comment "If this NewsArticle appears in print, this field indicates the label of the page on which the article is found. Please note that this field is intended for the exact page label (e.g. A5, B18)." .
 
 :printSection a rdf:Property ;
     rdfs:label "printSection" ;
@@ -8707,7 +8707,7 @@ we define a supporting type, [[SpeakableSpecification]]  which is defined to be 
         :LodgingBusiness ;
     :rangeIncludes :Rating ;
     :source <https://www.w3.org/wiki/WebSchemas/SchemaDotOrgSources#STI_Accommodation_Ontology> ;
-    rdfs:comment "An official rating for a lodging business or food establishment, e.g. from national associations or standards bodies. Use the author property to indicate the rating organization, e.g. as an Organization with name such as (e.g. HOTREC, DEHOGA, WHR, or Hotelstars)." .
+    rdfs:comment "An official rating for a lodging business or food establishment, e.g. from national associations or standards bodies. Use the author property to indicate the rating organization, e.g. as an Organization with label such as (e.g. HOTREC, DEHOGA, WHR, or Hotelstars)." .
 
 :startDate a rdf:Property ;
     rdfs:label "startDate" ;
@@ -8857,7 +8857,7 @@ we define a supporting type, [[SpeakableSpecification]]  which is defined to be 
     rdfs:label "targetName" ;
     :domainIncludes :AlignmentObject ;
     :rangeIncludes :Text ;
-    rdfs:comment "The name of a node in an established educational framework." .
+    rdfs:comment "The label of a node in an established educational framework." .
 
 :targetPlatform a rdf:Property ;
     rdfs:label "targetPlatform" ;
@@ -8869,7 +8869,7 @@ we define a supporting type, [[SpeakableSpecification]]  which is defined to be 
     rdfs:label "targetProduct" ;
     :domainIncludes :SoftwareSourceCode ;
     :rangeIncludes :SoftwareApplication ;
-    rdfs:comment "Target Operating System / Product to which the code applies.  If applies to several versions, just the product name can be used." .
+    rdfs:comment "Target Operating System / Product to which the code applies.  If applies to several versions, just the product label can be used." .
 
 :targetUrl a rdf:Property ;
     rdfs:label "targetUrl" ;
@@ -8925,7 +8925,7 @@ we define a supporting type, [[SpeakableSpecification]]  which is defined to be 
     rdfs:label "tickerSymbol" ;
     :domainIncludes :Corporation ;
     :rangeIncludes :Text ;
-    rdfs:comment "The exchange traded instrument associated with a Corporation object. The tickerSymbol is expressed as an exchange and an instrument name separated by a space character. For the exchange component of the tickerSymbol attribute, we recommend using the controlled vocabulary of Market Identifier Codes (MIC) specified in ISO15022." .
+    rdfs:comment "The exchange traded instrument associated with a Corporation object. The tickerSymbol is expressed as an exchange and an instrument label separated by a space character. For the exchange component of the tickerSymbol attribute, we recommend using the controlled vocabulary of Market Identifier Codes (MIC) specified in ISO15022." .
 
 :ticketNumber a rdf:Property ;
     rdfs:label "ticketNumber" ;
@@ -9056,7 +9056,7 @@ we define a supporting type, [[SpeakableSpecification]]  which is defined to be 
     rdfs:label "trainName" ;
     :domainIncludes :TrainTrip ;
     :rangeIncludes :Text ;
-    rdfs:comment "The name of the train (e.g. The Orient Express)." .
+    rdfs:comment "The label of the train (e.g. The Orient Express)." .
 
 :trainNumber a rdf:Property ;
     rdfs:label "trainNumber" ;
@@ -9249,7 +9249,7 @@ we define a supporting type, [[SpeakableSpecification]]  which is defined to be 
     rdfs:label "valueName" ;
     :domainIncludes :PropertyValueSpecification ;
     :rangeIncludes :Text ;
-    rdfs:comment "Indicates the name of the PropertyValueSpecification to be used in URL templates and form encoding in a manner analogous to HTML's input@name." .
+    rdfs:comment "Indicates the label of the PropertyValueSpecification to be used in URL templates and form encoding in a manner analogous to HTML's input@label." .
 
 :valuePattern a rdf:Property ;
     rdfs:label "valuePattern" ;
@@ -9776,7 +9776,7 @@ Unregistered or niche encoding and file formats can be indicated instead via the
     rdfs:label "executableLibraryName" ;
     :domainIncludes :APIReference ;
     :rangeIncludes :Text ;
-    rdfs:comment "Library file name e.g., mscorlib.dll, system.web.dll." .
+    rdfs:comment "Library file label e.g., mscorlib.dll, system.web.dll." .
 
 :exerciseCourse a rdf:Property ;
     rdfs:label "exerciseCourse" ;

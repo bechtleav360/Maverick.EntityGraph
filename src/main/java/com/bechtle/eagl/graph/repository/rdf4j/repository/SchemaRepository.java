@@ -4,10 +4,9 @@ import com.bechtle.eagl.graph.domain.model.vocabulary.Local;
 import com.bechtle.eagl.graph.domain.model.vocabulary.SDO;
 import com.bechtle.eagl.graph.domain.model.vocabulary.Transactions;
 import com.bechtle.eagl.graph.repository.SchemaStore;
+import com.bechtle.eagl.graph.repository.rdf4j.config.RepositoryConfiguration;
 import org.eclipse.rdf4j.model.Namespace;
 import org.eclipse.rdf4j.model.util.Namespaces;
-import org.eclipse.rdf4j.repository.Repository;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 import java.util.HashSet;
@@ -15,7 +14,7 @@ import java.util.Optional;
 import java.util.Set;
 
 @Component
-public class SchemaRepository implements SchemaStore {
+public class SchemaRepository extends AbstractRepository implements SchemaStore {
 
     private final static Set<Namespace> namespaces;
 
@@ -28,12 +27,10 @@ public class SchemaRepository implements SchemaStore {
         namespaces.add(SDO.NS);
     }
 
-    private final Repository repository;
 
-    public SchemaRepository(@Qualifier("schema-storage") Repository repository) {
-        this.repository = repository;
+    public SchemaRepository() {
+        super(RepositoryConfiguration.RepositoryType.SCHEMA);
     }
-
 
 
     @Override

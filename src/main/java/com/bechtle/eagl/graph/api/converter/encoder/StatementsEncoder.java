@@ -47,9 +47,11 @@ public class StatementsEncoder implements Encoder<NamespaceAwareStatement> {
 
     @Override
     public Flux<DataBuffer> encode(Publisher<? extends NamespaceAwareStatement> inputStream, DataBufferFactory bufferFactory, ResolvableType elementType, MimeType mimeType, Map<String, Object> hints) {
-        log.debug("(Decoder) Trying to write statements stream response with mimetype '{}'", mimeType != null ? mimeType.toString() : "unset");
 
-        return Flux.from(inputStream)
+
+        return Flux
+                .from(inputStream)
+                .doOnSubscribe(c -> log.debug("(Decoder) Trying to write statements stream response with mimetype '{}'", mimeType != null ? mimeType.toString() : "unset"))
                 .collectList()
                 .flatMapMany(statement -> {
                     try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {

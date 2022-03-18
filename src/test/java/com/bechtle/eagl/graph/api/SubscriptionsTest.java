@@ -1,7 +1,7 @@
 package com.bechtle.eagl.graph.api;
 
-import com.bechtle.eagl.graph.api.controller.dto.admin.subscriptions.Requests;
-import com.bechtle.eagl.graph.api.controller.dto.admin.subscriptions.Responses;
+import com.bechtle.eagl.graph.subscriptions.api.dto.Requests;
+import com.bechtle.eagl.graph.subscriptions.api.dto.Responses;
 import config.TestConfigurations;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -73,19 +73,19 @@ class SubscriptionsTest {
                 .expectBody(Responses.Subscription.class)
                 .returnResult()
                 .getResponseBody();
-        Assertions.assertNotNull(re.identifier());
+        Assertions.assertNotNull(re.key());
 
         Requests.CreateApiKeyRequest request = new Requests.CreateApiKeyRequest("test");
 
         webClient.post()
                 .uri(uriBuilder -> uriBuilder
                         .path("/api/admin/subscriptions/{id}/keys")
-                        .build(re.identifier())
+                        .build(re.key())
                 )
                 .bodyValue(request)
                 .exchange()
                 .expectStatus().isCreated()
-                .expectBody(Responses.SubscriptionWithKey.class);
+                .expectBody(Responses.ApiKey.class);
     }
 
     @Test

@@ -25,11 +25,11 @@ import java.util.Map;
 public class Entities {
 
     protected final ObjectMapper objectMapper;
-    protected final EntityServices graphService;
+    protected final EntityServices entityServices;
 
     public Entities(ObjectMapper objectMapper, EntityServices graphService) {
         this.objectMapper = objectMapper;
-        this.graphService = graphService;
+        this.entityServices = graphService;
     }
 
     @ApiOperation(value = "Read entity", tags = {"v1"})
@@ -39,7 +39,7 @@ public class Entities {
         log.trace("(Request) Reading Entity with id: {}", id);
         Assert.isTrue(id.length() == GeneratedIdentifier.LENGTH, "Incorrect length for identifier.");
 
-        return graphService.readEntity(id)
+        return entityServices.readEntity(id)
                 .flatMapIterable(AbstractModel::asStatements);
     }
 
@@ -55,7 +55,7 @@ public class Entities {
 
         Assert.isTrue(request.getModel().size() > 0, "No statements in request detected.");
         Map<String, String> parameter = Map.of();
-        return graphService.createEntity(request, parameter).flatMapIterable(AbstractModel::asStatements);
+        return entityServices.createEntity(request, parameter).flatMapIterable(AbstractModel::asStatements);
     }
 
 
@@ -73,7 +73,11 @@ public class Entities {
 
         String[] property = splitPrefixedIdentifier(prefixedKey);
 
-        return graphService.setValue(id, property[0], property[1], value).flatMapIterable(AbstractModel::asStatements);
+        return entityServices.setValue(id, property[0], property[1], value)
+                .map(transaction -> {
+                    return transaction;
+                })
+                .flatMapIterable(AbstractModel::asStatements);
 
     }
 
@@ -89,14 +93,14 @@ public class Entities {
 
         String[] property = splitPrefixedIdentifier(prefixedKey);
 
-        return graphService.link(id, property[0], property[1], value).flatMapIterable(AbstractModel::asStatements);
+        return entityServices.link(id, property[0], property[1], value).flatMapIterable(AbstractModel::asStatements);
 
 
     }
 
     private String[] splitPrefixedIdentifier(String prefixedKey) {
         String[] property = prefixedKey.split("\\.");
-        Assert.isTrue(property.length == 2, "Failed to extract prefix and name from path parameter " + prefixedKey);
+        Assert.isTrue(property.length == 2, "Failed to extract prefix and label from path parameter " + prefixedKey);
         return property;
     }
 

@@ -1,14 +1,10 @@
-package com.bechtle.eagl.graph.api.config;
+package com.bechtle.eagl.graph.api.security;
 
-import com.bechtle.eagl.graph.api.security.ApiKeyAuthentication;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.actuate.autoconfigure.security.reactive.EndpointRequest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
-import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.authentication.ReactiveAuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
 import org.springframework.security.config.web.server.SecurityWebFiltersOrder;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
@@ -39,10 +35,10 @@ public class SecurityConfiguration {
 
         return http
                 .authorizeExchange()
-                    .matchers(EndpointRequest.to("info","env", "logfile", "loggers", "metrics", "scheduledTasks")).hasAuthority("ADMIN")
+                    .matchers(EndpointRequest.to("info","env", "logfile", "loggers", "metrics", "scheduledTasks")).hasAuthority(AdminAuthentication.ADMIN_AUTHORITY)
                     .matchers(EndpointRequest.to("health")).permitAll()
-                    .pathMatchers("/api/admin/**").hasAuthority("ADMIN")
-                    .pathMatchers("/api/**").authenticated()
+                    .pathMatchers("/api/admin/**").hasAuthority(AdminAuthentication.ADMIN_AUTHORITY)
+                    .pathMatchers("/api/**").hasAuthority(SubscriptionAuthentication.USER_AUTHORITY)
                     .anyExchange().permitAll()
                 .and()
                 .addFilterAt(authenticationWebFilter, SecurityWebFiltersOrder.AUTHENTICATION)
@@ -67,7 +63,7 @@ public class SecurityConfiguration {
                 return Mono.empty();
             }
 
-            return Mono.just(new ApiKeyAuthentication(headers.get(0)));
+            return Mono.just(new ApiKeyToken(headers.get(0)));
         };
     }
 

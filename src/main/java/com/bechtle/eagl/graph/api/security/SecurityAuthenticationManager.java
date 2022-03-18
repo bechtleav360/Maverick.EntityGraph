@@ -3,14 +3,13 @@ package com.bechtle.eagl.graph.api.security;
 import com.bechtle.eagl.graph.api.security.errors.NoSubscriptionFound;
 import com.bechtle.eagl.graph.api.security.errors.RevokedApiKeyUsed;
 import com.bechtle.eagl.graph.api.security.errors.UnknownApiKey;
-import com.bechtle.eagl.graph.domain.services.SubscriptionsService;
+import com.bechtle.eagl.graph.subscriptions.domain.SubscriptionsService;
+import com.bechtle.eagl.graph.subscriptions.domain.model.ApiKey;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.access.intercept.RunAsUserToken;
 import org.springframework.security.authentication.ReactiveAuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 import reactor.core.publisher.Mono;
@@ -38,8 +37,8 @@ public class SecurityAuthenticationManager implements ReactiveAuthenticationMana
                     .map(auth -> (Authentication) auth);
         }
 
-        if (authentication instanceof ApiKeyAuthentication) {
-            return handleApiKeyAuthentication((ApiKeyAuthentication) authentication)
+        if (authentication instanceof ApiKeyToken) {
+            return handleApiKeyAuthentication((ApiKeyToken) authentication)
                     .map(auth -> (Authentication) auth);
 
         }
@@ -48,22 +47,20 @@ public class SecurityAuthenticationManager implements ReactiveAuthenticationMana
         return Mono.just(authentication);
     }
 
-    private Mono<? extends Authentication> handleApiKeyAuthentication(ApiKeyAuthentication authentication) {
+    private Mono<? extends Authentication> handleApiKeyAuthentication(ApiKeyToken authentication) {
         // check if this is the admin user
         if(authentication.getApiKey().equalsIgnoreCase(this.key)) {
-
-            RunAsUserToken runAsUserToken = new RunAsUserToken("admin", authentication.getApiKey(), authentication.getCredentials(), AuthorityUtils.createAuthorityList("ADMIN"), authentication.getClass());
-            return Mono.just(runAsUserToken);
+            return Mono.just(new AdminAuthentication());
         }
 
         // check if we can find the api key in one of our subscriptions
         return this.subscriptionsService.getKey(authentication.getApiKey())
                 .switchIfEmpty(Mono.error(new UnknownApiKey(authentication.getApiKey())))
-                .filter(SubscriptionsService.ApiKeyDefinition::active)
+                .filter(ApiKey::active)
                 .switchIfEmpty(Mono.error(new RevokedApiKeyUsed(authentication.getApiKey())))
                 .map(SubscriptionAuthentication::new)
                 .map(auth -> {
-                    log.trace("(Security) Request with Api Key '{}' (and name '{}') is active and belongs to subscription '{}'", auth.getApiKey().key(), auth.getApiKey().name(), auth.getSubscription());
+                    log.trace("(Security) Request with Api Key '{}' (and label '{}') is active and belongs to subscription '{}'", auth.getApiKey().key(), auth.getApiKey().label(), auth.getSubscription().key());
                     return auth;
                 })
                 .switchIfEmpty(Mono.error(new NoSubscriptionFound(authentication.getApiKey())));

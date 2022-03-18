@@ -57,7 +57,7 @@ public class TurtleTests implements EntitiesTest {
     @AfterEach
     public void resetRepository() {
         webClient.get()
-                .uri("/api/admin/reset")
+                .uri("/api/admin/bulk/reset")
                 .exchange()
                 .expectStatus().isAccepted();
     }

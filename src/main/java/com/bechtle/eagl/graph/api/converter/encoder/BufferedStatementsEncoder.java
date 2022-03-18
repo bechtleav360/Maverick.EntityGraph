@@ -49,9 +49,9 @@ public class BufferedStatementsEncoder implements Encoder<Statement> {
 
     @Override
     public Flux<DataBuffer> encode(Publisher<? extends Statement> inputStream, DataBufferFactory bufferFactory, ResolvableType elementType, MimeType mimeType, Map<String, Object> hints) {
-        log.debug("(Decoder) Trying to write buffered statements response with mimetype '{}'", mimeType != null ? mimeType.toString() : "unset");
 
         return Flux.from(inputStream)
+                .doOnSubscribe(c -> log.debug("(Decoder) Trying to write buffered statements stream response with mimetype '{}'", mimeType != null ? mimeType.toString() : "unset"))
                 .map(statement -> (Statement) statement)
                 .collectList()
                 .flatMapMany(statements -> {

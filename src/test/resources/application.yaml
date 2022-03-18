@@ -13,6 +13,11 @@ spring:
     exclude:
       - org.springframework.boot.autoconfigure.security.SecurityAutoConfiguration
 
+storage:
+  default:
+    path: ""
+
+
 features:
   schedulers:
     detectDuplicates: false

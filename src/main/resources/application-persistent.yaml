@@ -8,6 +8,8 @@ security:
     enabled: false
 
 storage:
+  default:
+    path: "/mnt/d/repositories"
   entities:
     path: "/mnt/d/Graphen/entities"
   transactions:

@@ -10,6 +10,8 @@ spring:
       password: "xxx"
 
 storage:
+  default:
+    path: "/var/data/repositories"
   entities:
     path: "/var/data/entities"
   transactions:

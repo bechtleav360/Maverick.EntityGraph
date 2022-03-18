@@ -4,7 +4,6 @@ import com.bechtle.eagl.graph.domain.model.enums.Activity;
 import com.bechtle.eagl.graph.domain.model.errors.EntityNotFound;
 import com.bechtle.eagl.graph.domain.model.errors.UnknownPrefix;
 import com.bechtle.eagl.graph.domain.model.extensions.LocalIRI;
-import com.bechtle.eagl.graph.domain.model.vocabulary.Transactions;
 import com.bechtle.eagl.graph.domain.model.wrapper.Entity;
 import com.bechtle.eagl.graph.domain.model.wrapper.Incoming;
 import com.bechtle.eagl.graph.domain.model.wrapper.Transaction;
@@ -25,7 +24,7 @@ import java.util.Map;
 @Service
 public class EntityServices {
 
-    private final EntityStore graph;
+    private final EntityStore entityStore;
     private final TransactionsStore trxStore;
     private final SchemaStore schema;
     private final Validators validators;
@@ -36,7 +35,7 @@ public class EntityServices {
                           SchemaStore schema,
                           Validators validators,
                           Transformers transformers) {
-        this.graph = graph;
+        this.entityStore = graph;
         this.trxStore = trxStore;
         this.schema = schema;
         this.validators = validators;
@@ -44,7 +43,7 @@ public class EntityServices {
     }
 
     public Mono<Entity> readEntity(String identifier) {
-        return graph.get(LocalIRI.withDefaultNamespace(identifier))
+        return entityStore.get(LocalIRI.withDefaultNamespace(identifier))
                 //.switchIfEmpty()        // check if param identifier has been a duplicate identifier and is stored in dc.identifier
                 .switchIfEmpty(Mono.error(new EntityNotFound(identifier)));
     }
@@ -52,7 +51,7 @@ public class EntityServices {
 
     public Mono<Transaction> createEntity(Incoming triples, Map<String, String> parameters) {
         return this.createEntity(triples, parameters, new Transaction())
-                .flatMap(graph::commit);
+                .flatMap(entityStore::commit);
     }
 
 
@@ -66,7 +65,7 @@ public class EntityServices {
      * @return transaction model
      */
     public Mono<Transaction> setValue(String id, String predicatePrefix, String predicateKey, String value) {
-        ValueFactory vf = this.graph.getValueFactory();
+        ValueFactory vf = this.entityStore.getValueFactory();
         LocalIRI entityIdentifier = LocalIRI.withDefaultNamespace(id);
         String namespace = schema.getNamespaceFor(predicatePrefix).orElseThrow(() -> new UnknownPrefix(predicatePrefix)).getName();
 
@@ -87,9 +86,10 @@ public class EntityServices {
      * Adds a statement. Fails if no entity exists with the given subject
      */
     public Mono<Transaction> addStatement(IRI entityIdentifier, IRI predicate, Value value, Transaction transaction) {
-        return this.graph.get(entityIdentifier)
+        return this.entityStore.get(entityIdentifier)
                 .switchIfEmpty(Mono.error(new EntityNotFound(entityIdentifier.stringValue())))
-                .flatMap(entity -> this.graph.addStatement(entityIdentifier, predicate, value, transaction.affected(entity)));
+                .flatMap(entity -> this.entityStore.addStatement(entityIdentifier, predicate, value, transaction.affected(entity)))
+                .flatMap(this.entityStore::commit);
     }
 
 
@@ -119,7 +119,7 @@ public class EntityServices {
 
          */
 
-        return this.graph.get(entityIdentifier)
+        return this.entityStore.get(entityIdentifier)
                 .switchIfEmpty(Mono.error(new EntityNotFound(id)))
 
                 /* store the new entities */
@@ -137,7 +137,7 @@ public class EntityServices {
                     return transaction;
 
                 })
-                .flatMap(this.graph::commit);
+                .flatMap(this.entityStore::commit);
 
 
 
@@ -158,17 +158,17 @@ public class EntityServices {
         return Mono.just(triples)
                 .flatMap(sts -> {
                     /* validate */
-                    return validators.delegate(sts, graph, parameters);
+                    return validators.delegate(sts, entityStore, parameters);
                 })
 
                 .flatMap(sts -> {
                     /* transform */
-                    return transformers.delegate(sts, graph, parameters);
+                    return transformers.delegate(sts, entityStore, parameters);
 
                     /* TODO: check if create of resource of given type is supported or is it delegated to connector */
 
                 })
 
-                .flatMap(sts ->graph.insert(sts.getModel(), transaction));
+                .flatMap(sts -> entityStore.insert(sts.getModel(), transaction));
     }
 }

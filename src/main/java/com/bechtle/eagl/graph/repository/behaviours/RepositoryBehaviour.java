@@ -6,6 +6,7 @@ import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.ValueFactory;
+import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
@@ -19,11 +20,15 @@ import java.util.List;
 
 public interface RepositoryBehaviour {
 
-    Repository getRepository();
+    Repository getRepository() throws IOException;
 
 
     default ValueFactory getValueFactory() {
-        return getRepository().getValueFactory();
+        try {
+            return getRepository().getValueFactory();
+        } catch (IOException e) {
+            return SimpleValueFactory.getInstance();
+        }
     }
 
     /**
