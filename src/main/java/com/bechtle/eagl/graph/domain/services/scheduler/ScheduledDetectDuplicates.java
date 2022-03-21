@@ -24,13 +24,13 @@ import java.util.TreeSet;
 @Component
 @Slf4j
 @ConditionalOnProperty(name = "features.schedulers.detectDuplicates", havingValue = "true")
-public class DetectDuplicates {
+public class ScheduledDetectDuplicates {
 
 
     private final EntityRepository repository;
     private final SimpleValueFactory valueFactory;
 
-    public DetectDuplicates(EntityRepository repository) {
+    public ScheduledDetectDuplicates(EntityRepository repository) {
         this.repository = repository;
         this.valueFactory = SimpleValueFactory.getInstance();
     }

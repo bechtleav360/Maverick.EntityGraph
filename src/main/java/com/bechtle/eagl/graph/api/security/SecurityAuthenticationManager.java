@@ -3,10 +3,10 @@ package com.bechtle.eagl.graph.api.security;
 import com.bechtle.eagl.graph.api.security.errors.NoSubscriptionFound;
 import com.bechtle.eagl.graph.api.security.errors.RevokedApiKeyUsed;
 import com.bechtle.eagl.graph.api.security.errors.UnknownApiKey;
-import com.bechtle.eagl.graph.subscriptions.domain.SubscriptionsService;
-import com.bechtle.eagl.graph.subscriptions.domain.model.ApiKey;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Primary;
+import org.springframework.context.annotation.Profile;
 import org.springframework.security.authentication.ReactiveAuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -16,16 +16,12 @@ import reactor.core.publisher.Mono;
 
 @Component
 @Slf4j
+@Primary
 public class SecurityAuthenticationManager implements ReactiveAuthenticationManager {
 
     @Value("${security.apiKey}")
     String key;
 
-    private final SubscriptionsService subscriptionsService;
-
-    public SecurityAuthenticationManager(SubscriptionsService subscriptionsService) {
-        this.subscriptionsService = subscriptionsService;
-    }
 
 
     @Override
@@ -53,19 +49,8 @@ public class SecurityAuthenticationManager implements ReactiveAuthenticationMana
             return Mono.just(new AdminAuthentication());
         }
 
-        // check if we can find the api key in one of our subscriptions
-        return this.subscriptionsService.getKey(authentication.getApiKey())
-                .switchIfEmpty(Mono.error(new UnknownApiKey(authentication.getApiKey())))
-                .filter(ApiKey::active)
-                .switchIfEmpty(Mono.error(new RevokedApiKeyUsed(authentication.getApiKey())))
-                .map(SubscriptionAuthentication::new)
-                .map(auth -> {
-                    log.trace("(Security) Request with Api Key '{}' (and label '{}') is active and belongs to subscription '{}'", auth.getApiKey().key(), auth.getApiKey().label(), auth.getSubscription().key());
-                    return auth;
-                })
-                .switchIfEmpty(Mono.error(new NoSubscriptionFound(authentication.getApiKey())));
+        return Mono.just(authentication);
 
-        // FIXME: build new authentication object with tenant authority, information which repos to use, etc.
     }
 
     private Mono<? extends Authentication> handleBasicAuthentication(UsernamePasswordAuthenticationToken authentication) {

@@ -1,8 +1,8 @@
 package com.bechtle.eagl.graph.repository.rdf4j.config;
 
 import com.bechtle.eagl.graph.api.security.AdminAuthentication;
-import com.bechtle.eagl.graph.api.security.SubscriptionAuthentication;
-import com.bechtle.eagl.graph.subscriptions.domain.model.Subscription;
+import com.bechtle.eagl.graph.features.multitenancy.security.ApplicationAuthentication;
+import com.bechtle.eagl.graph.features.multitenancy.domain.model.Application;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import lombok.extern.slf4j.Slf4j;
@@ -11,9 +11,6 @@ import org.eclipse.rdf4j.repository.sail.SailRepository;
 import org.eclipse.rdf4j.sail.lmdb.LmdbStore;
 import org.eclipse.rdf4j.sail.lmdb.config.LmdbStoreConfig;
 import org.eclipse.rdf4j.sail.memory.MemoryStore;
-import org.springframework.beans.BeansException;
-import org.springframework.beans.factory.BeanFactory;
-import org.springframework.beans.factory.BeanFactoryAware;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.Cacheable;
@@ -85,11 +82,11 @@ public class RepositoryConfiguration {
             };
         }
 
-        if (authentication instanceof SubscriptionAuthentication) {
+        if (authentication instanceof ApplicationAuthentication) {
             return switch (repositoryType) {
-                case ENTITIES -> this.getEntityRepository(((SubscriptionAuthentication) authentication).getSubscription());
-                case TRANSACTIONS -> this.getTransactionsRepository(((SubscriptionAuthentication) authentication).getSubscription());
-                case SCHEMA -> this.getSchemaRepository(((SubscriptionAuthentication) authentication).getSubscription());
+                case ENTITIES -> this.getEntityRepository(((ApplicationAuthentication) authentication).getSubscription());
+                case TRANSACTIONS -> this.getTransactionsRepository(((ApplicationAuthentication) authentication).getSubscription());
+                case SCHEMA -> this.getSchemaRepository(((ApplicationAuthentication) authentication).getSubscription());
                 default -> throw new IOException(String.format("Invalid Repository Type '%s' for subscription context", repositoryType));
             };
 
@@ -99,7 +96,7 @@ public class RepositoryConfiguration {
 
     }
 
-    private Repository getDefaultRepository(Subscription subscription, String label) {
+    private Repository getDefaultRepository(Application subscription, String label) {
         if (!subscription.persistent() || !StringUtils.hasLength(this.defaultPath)) {
             log.debug("(Store) Initializing volatile {} repository for subscription '{}' [{}]", label, subscription.label(), subscription.key());
             return new SailRepository(new MemoryStore());
@@ -121,18 +118,18 @@ public class RepositoryConfiguration {
     }
 
     @Cacheable
-    private Repository getSchemaRepository(Subscription subscription) {
+    private Repository getSchemaRepository(Application subscription) {
         return this.cache.get("schema:" + subscription.key(), s -> this.getDefaultRepository(subscription, "schema"));
     }
 
 
     @Cacheable
-    public Repository getEntityRepository(Subscription subscription) throws IOException {
+    public Repository getEntityRepository(Application subscription) throws IOException {
         return this.cache.get("entities:" + subscription.key(), s -> this.getDefaultRepository(subscription, "entities"));
     }
 
     @Cacheable
-    public Repository getTransactionsRepository(Subscription subscription) throws IOException {
+    public Repository getTransactionsRepository(Application subscription) throws IOException {
         return this.cache.get("transactions:" + subscription.key(), s -> this.getDefaultRepository(subscription, "transactions"));
     }
 

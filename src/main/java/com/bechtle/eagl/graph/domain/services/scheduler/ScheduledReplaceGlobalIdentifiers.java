@@ -14,8 +14,6 @@ import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.util.ModelBuilder;
 import org.eclipse.rdf4j.model.vocabulary.DC;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.context.annotation.Conditional;
-import org.springframework.context.annotation.Profile;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
@@ -41,7 +39,7 @@ import java.util.List;
 @Slf4j
 @Component
 @ConditionalOnProperty(name = "features.schedulers.replaceGlobalIdentifiers", havingValue = "true")
-public class ReplaceGlobalIdentifiers {
+public class ScheduledReplaceGlobalIdentifiers {
 
     // FIXME: should not directly access the services
     private final QueryServices queryServices;
@@ -51,7 +49,7 @@ public class ReplaceGlobalIdentifiers {
     private final TransactionsStore trxStore;
 
 
-    public ReplaceGlobalIdentifiers(QueryServices queryServices, EntityStore store, TransactionsStore trxStore) {
+    public ScheduledReplaceGlobalIdentifiers(QueryServices queryServices, EntityStore store, TransactionsStore trxStore) {
         this.queryServices = queryServices;
         this.entityStore = store;
         this.trxStore = trxStore;

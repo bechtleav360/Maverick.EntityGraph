@@ -9,6 +9,8 @@ spring:
       name: "xxx"
       password: "xxx"
 
+
+
 storage:
   default:
     path: "/var/data/repositories"

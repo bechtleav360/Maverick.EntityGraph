@@ -2,6 +2,9 @@ package com.bechtle.eagl.graph.domain.services.scheduler;
 
 import com.bechtle.eagl.graph.domain.model.wrapper.Transaction;
 import com.bechtle.eagl.graph.domain.services.AdminServices;
+import com.bechtle.eagl.graph.domain.services.QueryServices;
+import com.bechtle.eagl.graph.repository.EntityStore;
+import com.bechtle.eagl.graph.repository.TransactionsStore;
 import config.TestConfigurations;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
@@ -33,16 +36,24 @@ class CheckGlobalIdentifiersTest {
     @Autowired
     private WebTestClient webClient;
 
-    @Autowired
-    private ReplaceGlobalIdentifiers scheduled;
+    private ScheduledReplaceGlobalIdentifiers scheduled;
 
     @Autowired
     private AdminServices adminServices;
 
+    @Autowired
+    EntityStore entityStore;
+
+    @Autowired
+    QueryServices queryServices;
+
+    @Autowired
+    TransactionsStore transactionsStore;
 
     @Test
     void checkForGlobalIdentifiers() {
         createEntities();
+        scheduled = new ScheduledReplaceGlobalIdentifiers(queryServices, entityStore, transactionsStore);
 
         Flux<Transaction> action = scheduled.checkForGlobalIdentifiers().doOnNext(transaction -> {
             log.trace("Completed transaction");

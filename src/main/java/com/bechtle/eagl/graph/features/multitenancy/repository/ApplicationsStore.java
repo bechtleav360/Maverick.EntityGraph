@@ -1,8 +1,8 @@
-package com.bechtle.eagl.graph.subscriptions.repository;
+package com.bechtle.eagl.graph.features.multitenancy.repository;
 
 import com.bechtle.eagl.graph.repository.behaviours.ModelUpdates;
 import com.bechtle.eagl.graph.repository.behaviours.Selectable;
 
-public interface SubscriptionsStore extends Selectable, ModelUpdates {
+public interface ApplicationsStore extends Selectable, ModelUpdates {
 
 }

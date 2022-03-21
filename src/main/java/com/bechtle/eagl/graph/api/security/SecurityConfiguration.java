@@ -1,9 +1,12 @@
 package com.bechtle.eagl.graph.api.security;
 
+import com.bechtle.eagl.graph.features.multitenancy.security.ApplicationAuthentication;
 import org.springframework.boot.actuate.autoconfigure.security.reactive.EndpointRequest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.DelegatingReactiveAuthenticationManager;
 import org.springframework.security.authentication.ReactiveAuthenticationManager;
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
 import org.springframework.security.config.web.server.SecurityWebFiltersOrder;
@@ -24,13 +27,13 @@ public class SecurityConfiguration {
     private static final String API_KEY_HEADER = "X-API-KEY";
 
 
-
-
     @Bean
     public SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity http,
-                                                         ReactiveAuthenticationManager authenticationManager,
+                                                         List<ReactiveAuthenticationManager> authenticationManager,
                                                          ServerAuthenticationConverter authenticationConverter) {
-        final AuthenticationWebFilter authenticationWebFilter = new AuthenticationWebFilter(authenticationManager);
+        final ReactiveAuthenticationManager authenticationManagers = new DelegatingReactiveAuthenticationManager(authenticationManager);
+        final AuthenticationWebFilter authenticationWebFilter = new AuthenticationWebFilter(authenticationManagers);
+
         authenticationWebFilter.setServerAuthenticationConverter(authenticationConverter);
 
         return http
@@ -38,7 +41,7 @@ public class SecurityConfiguration {
                     .matchers(EndpointRequest.to("info","env", "logfile", "loggers", "metrics", "scheduledTasks")).hasAuthority(AdminAuthentication.ADMIN_AUTHORITY)
                     .matchers(EndpointRequest.to("health")).permitAll()
                     .pathMatchers("/api/admin/**").hasAuthority(AdminAuthentication.ADMIN_AUTHORITY)
-                    .pathMatchers("/api/**").hasAuthority(SubscriptionAuthentication.USER_AUTHORITY)
+                    .pathMatchers("/api/**").hasAuthority(ApplicationAuthentication.USER_AUTHORITY)
                     .anyExchange().permitAll()
                 .and()
                 .addFilterAt(authenticationWebFilter, SecurityWebFiltersOrder.AUTHENTICATION)

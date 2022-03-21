@@ -9,14 +9,13 @@
 - [x] Create relation to existing entity
 - [x] Service configuration with working swagger UI
 - [x] Instance on cloud with persistent storage
-- [ ] Preloaded videos 
+- [x] Preloaded videos 
 
 # 2 - EAGL MVP
 
 - [x] Read entity
-- [ 
-- 
-- ] Read value or relation
+- [x] Multitenancy API
+- [ ] Read value or relation
 - [ ] Delete entity
 - [ ] Delete value or relation
 - [ ] Update value
@@ -25,7 +24,6 @@
 
 
 # 3 - Entity API complete
-
 
 - [ ] Patch entity
 - [ ] Query parameter

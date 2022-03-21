@@ -1,12 +1,12 @@
-package com.bechtle.eagl.graph.subscriptions.domain;
+package com.bechtle.eagl.graph.features.multitenancy.domain;
 
 import com.bechtle.eagl.graph.domain.model.errors.DuplicateRecordsException;
 import com.bechtle.eagl.graph.domain.model.extensions.GeneratedIdentifier;
 import com.bechtle.eagl.graph.domain.model.vocabulary.Local;
 import com.bechtle.eagl.graph.repository.rdf4j.extensions.BindingsAccessor;
-import com.bechtle.eagl.graph.subscriptions.domain.model.ApiKey;
-import com.bechtle.eagl.graph.subscriptions.domain.model.Subscription;
-import com.bechtle.eagl.graph.subscriptions.repository.SubscriptionsStore;
+import com.bechtle.eagl.graph.features.multitenancy.domain.model.ApiKey;
+import com.bechtle.eagl.graph.features.multitenancy.domain.model.Application;
+import com.bechtle.eagl.graph.features.multitenancy.repository.ApplicationsStore;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.NotImplementedException;
 import org.eclipse.rdf4j.model.IRI;
@@ -30,22 +30,22 @@ import java.util.List;
 
 @Service
 @Slf4j
-public class SubscriptionsService {
+public class ApplicationsService {
 
-    private final SubscriptionsStore store;
+    private final ApplicationsStore store;
     private final ValueFactory valueFactory;
 
-    public SubscriptionsService(SubscriptionsStore store) {
+    public ApplicationsService(ApplicationsStore store) {
         this.store = store;
         this.valueFactory = SimpleValueFactory.getInstance();
     }
 
-    public Mono<Subscription> createSubscription(String label, boolean persistent) {
+    public Mono<Application> createSubscription(String label, boolean persistent) {
         // generate subscription identifier
         String subscriptionIdentifier = GeneratedIdentifier.generateRandomKey(16);
         GeneratedIdentifier subject = new GeneratedIdentifier(Local.Subscriptions.NAMESPACE, subscriptionIdentifier);
 
-        Subscription subscription = new Subscription(
+        Application subscription = new Application(
                 subject,
                 label,
                 subscriptionIdentifier,
@@ -56,10 +56,10 @@ public class SubscriptionsService {
         ModelBuilder modelBuilder = new ModelBuilder();
 
         modelBuilder.subject(subscription.iri());
-        modelBuilder.add(RDF.TYPE, Subscription.TYPE);
-        modelBuilder.add(Subscription.HAS_KEY, subscription.key());
-        modelBuilder.add(Subscription.HAS_LABEL, subscription.label());
-        modelBuilder.add(Subscription.IS_PERSISTENT, subscription.persistent());
+        modelBuilder.add(RDF.TYPE, Application.TYPE);
+        modelBuilder.add(Application.HAS_KEY, subscription.key());
+        modelBuilder.add(Application.HAS_LABEL, subscription.label());
+        modelBuilder.add(Application.IS_PERSISTENT, subscription.persistent());
 
 
         return this.store.insert(modelBuilder.build())
@@ -85,9 +85,9 @@ public class SubscriptionsService {
                         .andHas(ApiKey.HAS_ISSUE_DATE, keyDate)
                         .andHas(ApiKey.IS_ACTIVE, keyActive)
                         .andHas(ApiKey.OF_SUBSCRIPTION, nodeSubscription)
-                        .and(nodeSubscription.has(Subscription.HAS_KEY, subscriptionIdentifier)
-                                .andHas(Subscription.IS_PERSISTENT, subActive)
-                                .andHas(Subscription.HAS_LABEL, sublabel)
+                        .and(nodeSubscription.has(Application.HAS_KEY, subscriptionIdentifier)
+                                .andHas(Application.IS_PERSISTENT, subActive)
+                                .andHas(Application.HAS_LABEL, sublabel)
                         )
                 );
         String qs = q.getQueryString();
@@ -109,7 +109,7 @@ public class SubscriptionsService {
                                 keyIdentifier,
                                 ba.asBoolean(keyActive),
                                 ba.asString(keyDate),
-                                new Subscription(
+                                new Application(
                                         ba.asIRI(nodeSubscription),
                                         ba.asString(sublabel),
                                         ba.asString(subscriptionIdentifier),
@@ -140,9 +140,9 @@ public class SubscriptionsService {
                         .andHas(ApiKey.HAS_ISSUE_DATE, keyDate)
                         .andHas(ApiKey.IS_ACTIVE, keyActive)
                         .andHas(ApiKey.OF_SUBSCRIPTION, nodeSubscription)
-                        .and(nodeSubscription.has(Subscription.HAS_KEY, subscriptionIdentifier)
-                                .andHas(Subscription.IS_PERSISTENT, subPersistent)
-                                .andHas(Subscription.HAS_LABEL, sublabel)
+                        .and(nodeSubscription.has(Application.HAS_KEY, subscriptionIdentifier)
+                                .andHas(Application.IS_PERSISTENT, subPersistent)
+                                .andHas(Application.HAS_LABEL, sublabel)
                         )
 
                 );
@@ -158,7 +158,7 @@ public class SubscriptionsService {
                                 ba.asString(keyIdentifier),
                                 ba.asBoolean(keyActive),
                                 ba.asString(keyDate),
-                                new Subscription(
+                                new Application(
                                         ba.asIRI(nodeSubscription),
                                         ba.asString(sublabel),
                                         subscriptionIdentifier,
@@ -170,7 +170,7 @@ public class SubscriptionsService {
     }
 
 
-    public Flux<Subscription> getSubscriptions() {
+    public Flux<Application> getSubscriptions() {
         Variable node = SparqlBuilder.var("n");
         Variable key = SparqlBuilder.var("a");
         Variable label = SparqlBuilder.var("b");
@@ -178,10 +178,10 @@ public class SubscriptionsService {
 
 
         SelectQuery q = Queries.SELECT()
-                .where(node.isA(Subscription.TYPE)
-                        .andHas(Subscription.HAS_KEY, key)
-                        .andHas(Subscription.HAS_LABEL, label)
-                        .andHas(Subscription.IS_PERSISTENT, persistent)
+                .where(node.isA(Application.TYPE)
+                        .andHas(Application.HAS_KEY, key)
+                        .andHas(Application.HAS_LABEL, label)
+                        .andHas(Application.IS_PERSISTENT, persistent)
                 )
                 .limit(100);
 
@@ -189,7 +189,7 @@ public class SubscriptionsService {
                 .flatMapMany(Flux::fromIterable)
                 .map(BindingsAccessor::new)
                 .map(ba ->
-                        new Subscription(
+                        new Application(
                                 ba.asIRI(node),
                                 ba.asString(label),
                                 ba.asString(key),
@@ -205,10 +205,10 @@ public class SubscriptionsService {
         Variable sublabel = SparqlBuilder.var("g");
 
         SelectQuery q = Queries.SELECT()
-                .where(node.isA(Subscription.TYPE)
-                        .andHas(Subscription.HAS_KEY, subscriptionIdentifier)
-                        .andHas(Subscription.HAS_LABEL, sublabel)
-                        .andHas(Subscription.IS_PERSISTENT, subPersistent)
+                .where(node.isA(Application.TYPE)
+                        .andHas(Application.HAS_KEY, subscriptionIdentifier)
+                        .andHas(Application.HAS_LABEL, sublabel)
+                        .andHas(Application.IS_PERSISTENT, subPersistent)
                 )
 
                 .limit(2);
@@ -218,7 +218,7 @@ public class SubscriptionsService {
                 .flatMap(this::getUniqueBindingSet)
                 .map(BindingsAccessor::new)
                 .map(ba ->
-                        new Subscription(
+                        new Application(
                                 ba.asIRI(node),
                                 ba.asString(sublabel),
                                 subscriptionIdentifier,
@@ -244,7 +244,7 @@ public class SubscriptionsService {
                     modelBuilder.add(ApiKey.HAS_ISSUE_DATE, apiKey.issueDate());
                     modelBuilder.add(ApiKey.IS_ACTIVE, apiKey.active());
                     modelBuilder.add(ApiKey.OF_SUBSCRIPTION, apiKey.subscription().key());
-                    modelBuilder.add(apiKey.subscription().iri(), Subscription.HAS_API_KEY, apiKey.iri());
+                    modelBuilder.add(apiKey.subscription().iri(), Application.HAS_API_KEY, apiKey.iri());
 
                     return this.store.insert(modelBuilder.build()).then(Mono.just(apiKey));
                 });

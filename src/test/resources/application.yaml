@@ -21,7 +21,7 @@ storage:
 features:
   schedulers:
     detectDuplicates: false
-    replaceGlobalIdentifiers: false
+    replaceGlobalIdentifiers: true
   transformers:
     replaceGlobalIdentifiers: true
     replaceAnonymousIdentifiers: true

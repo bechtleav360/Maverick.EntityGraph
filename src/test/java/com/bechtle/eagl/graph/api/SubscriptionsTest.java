@@ -1,7 +1,7 @@
 package com.bechtle.eagl.graph.api;
 
-import com.bechtle.eagl.graph.subscriptions.api.dto.Requests;
-import com.bechtle.eagl.graph.subscriptions.api.dto.Responses;
+import com.bechtle.eagl.graph.features.multitenancy.api.dto.Requests;
+import com.bechtle.eagl.graph.features.multitenancy.api.dto.Responses;
 import config.TestConfigurations;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -12,6 +12,8 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.event.RecordApplicationEvents;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import org.springframework.util.StringUtils;
+import org.springframework.web.reactive.function.BodyInserters;
+import reactor.core.publisher.Mono;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ContextConfiguration(classes = TestConfigurations.class)
@@ -25,13 +27,16 @@ class SubscriptionsTest {
     @Test
     void createSubscription() {
 
+        Requests.RegisterApplicationRequest req = new Requests.RegisterApplicationRequest("test", false);
+
         webClient.post()
                 .uri("/api/admin/subscriptions")
+                .body(BodyInserters.fromValue(req))
                 .exchange()
                 .expectStatus().isCreated()
                 //.expectBody(Responses.CreateSubscriptionResponse.class)
                 .expectBody()
-                .jsonPath("$.identifier").isNotEmpty();
+                .jsonPath("$.key").isNotEmpty();
                 /*.consumeWith(res -> {
                     String str = new String(res.getResponseBody());
                     Assertions.assertTrue(StringUtils.hasLength(str));
@@ -65,12 +70,16 @@ class SubscriptionsTest {
 
     @Test
     void generateKey() {
-        Responses.Subscription re = webClient.post()
+
+        Requests.RegisterApplicationRequest req = new Requests.RegisterApplicationRequest("test", false);
+
+        Responses.ApplicationResponse re = webClient.post()
                 .uri("/api/admin/subscriptions")
+                .bodyValue(req)
                 .exchange()
                 .expectStatus().isCreated()
                 //.expectBody(Responses.CreateSubscriptionResponse.class)
-                .expectBody(Responses.Subscription.class)
+                .expectBody(Responses.ApplicationResponse.class)
                 .returnResult()
                 .getResponseBody();
         Assertions.assertNotNull(re.key());
@@ -85,7 +94,7 @@ class SubscriptionsTest {
                 .bodyValue(request)
                 .exchange()
                 .expectStatus().isCreated()
-                .expectBody(Responses.ApiKey.class);
+                .expectBody(Responses.ApiKeyResponse.class);
     }
 
     @Test

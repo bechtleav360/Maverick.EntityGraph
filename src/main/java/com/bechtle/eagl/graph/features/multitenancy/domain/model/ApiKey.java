@@ -1,4 +1,4 @@
-package com.bechtle.eagl.graph.subscriptions.domain.model;
+package com.bechtle.eagl.graph.features.multitenancy.domain.model;
 
 import com.bechtle.eagl.graph.domain.model.extensions.EntityNamespace;
 import com.bechtle.eagl.graph.domain.model.extensions.LocalIRI;
@@ -7,10 +7,10 @@ import org.eclipse.rdf4j.model.Namespace;
 import org.eclipse.rdf4j.model.vocabulary.DC;
 import org.eclipse.rdf4j.model.vocabulary.RDFS;
 
-public record ApiKey(IRI iri, String label, String key, boolean active, String issueDate, Subscription subscription) {
+public record ApiKey(IRI iri, String label, String key, boolean active, String issueDate, Application subscription) {
 
-    public static final String NAMESPACE = Subscription.NAMESPACE;
-    public static final String PREFIX = Subscription.PREFIX;
+    public static final String NAMESPACE = Application.NAMESPACE;
+    public static final String PREFIX = Application.PREFIX;
     public static final Namespace NS = EntityNamespace.of(PREFIX, NAMESPACE);
 
     public static final IRI TYPE = LocalIRI.from(NAMESPACE, "ApiKey");

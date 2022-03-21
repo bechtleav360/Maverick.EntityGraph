@@ -1,11 +1,11 @@
-package com.bechtle.eagl.graph.api.config;
+package com.bechtle.eagl.graph.features.multitenancy.api.config;
 
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.reactive.function.server.RouterFunction;
 import org.springframework.web.reactive.function.server.ServerResponse;
 import springfox.documentation.builders.ApiInfoBuilder;
-import springfox.documentation.builders.PathSelectors;
 import springfox.documentation.builders.RequestHandlerSelectors;
 import springfox.documentation.service.ApiKey;
 import springfox.documentation.service.AuthorizationScope;
@@ -21,22 +21,17 @@ import static org.springframework.web.reactive.function.server.RequestPredicates
 import static org.springframework.web.reactive.function.server.RouterFunctions.route;
 
 @Configuration
-class OpenApiConfiguration {
+class ApplicationOpenApiConfiguration {
+
+
 
     @Bean
-    RouterFunction<ServerResponse> routerFunction() {
-        return route(GET("/"), req ->
-                ServerResponse.temporaryRedirect(URI.create("/swagger-ui/")).build()
-        );
-    }
-
-    @Bean
-    public Docket docket() {
+    public Docket applicationApiDocket() {
         return new Docket(DocumentationType.OAS_30)
-                .groupName("Graph API")
+                .groupName("Multitenancy API")
                 .apiInfo(new ApiInfoBuilder()
-                        .title("Graph Service API")
-                        .description("API to access the graph.")
+                        .title("EAGL Multitenancy Service API")
+                        .description("API to register applications and generate Api Keys.")
                         .version("0.0.1-SNAPSHOT")
                         .license("Apache 2.0")
                         .licenseUrl("https://opensource.org/licenses/Apache-2.0")
@@ -45,15 +40,14 @@ class OpenApiConfiguration {
                 .securitySchemes(List.of(apiKey()))
                 .securityContexts(List.of(securityContext()))
                 .select()
-                .apis(RequestHandlerSelectors.basePackage("com.bechtle.eagl.graph.api.controller"))
+                .apis(RequestHandlerSelectors.basePackage("com.bechtle.eagl.graph.features.multitenancy.api"))
                 // .paths(PathSelectors.ant("/api/**"))
                 .build();
     }
-
+    
 
     private SecurityContext securityContext() {
         return SecurityContext.builder().securityReferences(defaultAuth()).build();
-        //.operationSelector(operationContext -> true)
     }
 
     private List<SecurityReference> defaultAuth() {
