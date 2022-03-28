@@ -26,7 +26,7 @@ public class DefaultPersistentRepositoryConfiguration {
 
     @Bean("schema-storage")
     @Scope(ConfigurableBeanFactory.SCOPE_SINGLETON)
-    public Repository createSchemaRepository(@Value("${storage.default.path}") String storagePath) throws IOException {
+    public Repository createSchemaRepository(@Value("${application.storage.default.path}") String storagePath) throws IOException {
         // FIXME:
         Resource file = new FileSystemResource(Paths.get(storagePath, "schema", "lmdb"));
         LmdbStoreConfig config = new LmdbStoreConfig();
@@ -37,7 +37,7 @@ public class DefaultPersistentRepositoryConfiguration {
     }
 
     @Bean("subscriptions-storage")
-    public Repository createSubscriptionsRepository(@Value("${storage.default.path}") String storagePath) throws IOException {
+    public Repository createSubscriptionsRepository(@Value("${application.storage.default.path}") String storagePath) throws IOException {
         Resource file = new FileSystemResource(Paths.get(storagePath, "subscriptions", "lmdb"));
         LmdbStoreConfig config = new LmdbStoreConfig();
 

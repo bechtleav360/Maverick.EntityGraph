@@ -43,7 +43,7 @@ public class RepositoryConfiguration {
         SUBSCRIPTIONS
     }
 
-    public RepositoryConfiguration(@Value("${storage.default.path:#{null}}") String defaultPath,
+    public RepositoryConfiguration(@Value("${application.storage.default.path:#{null}}") String defaultPath,
                                    @Qualifier("schema-storage") Repository schemaRepository,
                                    @Qualifier("subscriptions-storage") Repository subscriptionsRepository) {
         this.defaultPath = defaultPath;

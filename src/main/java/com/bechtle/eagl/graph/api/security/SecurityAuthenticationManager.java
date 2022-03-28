@@ -19,7 +19,7 @@ import reactor.core.publisher.Mono;
 @Primary
 public class SecurityAuthenticationManager implements ReactiveAuthenticationManager {
 
-    @Value("${security.apiKey}")
+    @Value("${application.security.apiKey}")
     String key;
 
 

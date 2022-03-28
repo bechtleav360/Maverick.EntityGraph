@@ -38,7 +38,7 @@ import java.util.List;
  */
 @Slf4j
 @Component
-@ConditionalOnProperty(name = "features.schedulers.replaceGlobalIdentifiers", havingValue = "true")
+@ConditionalOnProperty(name = "application.features.schedulers.replaceGlobalIdentifiers", havingValue = "true")
 public class ScheduledReplaceGlobalIdentifiers {
 
     // FIXME: should not directly access the services

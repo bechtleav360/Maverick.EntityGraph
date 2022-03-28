@@ -2,6 +2,7 @@ package com.bechtle.eagl.graph.api.security;
 
 import com.bechtle.eagl.graph.features.multitenancy.security.ApplicationAuthentication;
 import org.springframework.boot.actuate.autoconfigure.security.reactive.EndpointRequest;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -20,7 +21,7 @@ import java.util.List;
 
 @Configuration
 @EnableWebFluxSecurity
-@Profile({"prod", "stage", "it", "dev", "persistent"})
+@ConditionalOnProperty(name = "application.security.enabled", havingValue = "true")
 public class SecurityConfiguration {
 
 

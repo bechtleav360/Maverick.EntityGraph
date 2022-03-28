@@ -23,7 +23,7 @@ import java.util.TreeSet;
 
 @Component
 @Slf4j
-@ConditionalOnProperty(name = "features.schedulers.detectDuplicates", havingValue = "true")
+@ConditionalOnProperty(name = "application.features.schedulers.detectDuplicates", havingValue = "true")
 public class ScheduledDetectDuplicates {
 
 

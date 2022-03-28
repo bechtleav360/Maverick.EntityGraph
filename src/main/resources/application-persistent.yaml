@@ -2,26 +2,37 @@
 #  datasource:
 #    url: jdbc:h2:file:/data/demo
 
-security:
-  apiKey: "1234"
-  basic:
-    enabled: false
-
-storage:
-  default:
-    path: "/mnt/d/repositories"
-  entities:
-    path: "/mnt/d/Graphen/entities"
-  transactions:
-    path: "/mnt/d/Graphen/transactions"
-  schema:
-    path: "/mnt/d/Graphen/schema"
+application: 
+  security:
+    enabled: true
+    apiKey: "xxx"
+    basic:
+      enabled: false
+  features:
+    schedulers:
+      detectDuplicates: false
+      replaceGlobalIdentifiers: true
+    transformers:
+      replaceGlobalIdentifiers: true
+      replaceAnonymousIdentifiers: true
+      mergeDuplicates: true
+    validators:
+      checkRequiredType: true
+  storage:
+    default:
+      path: "/var/data/repositories"
+    entities:
+      path: "/var/data/entities"
+    transactions:
+      path: "/var/data/transactions"
+    schema:
+      path: "/var/data/schema"
 
 spring:
   security:
     user:
-      name: "user"
-      password: "password"
+      name: "xxx"
+      password: "xx"
 
 logging:
   level:
