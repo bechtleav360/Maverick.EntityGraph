@@ -14,7 +14,7 @@ import java.util.Map;
 
 @Slf4j
 @Component
-@ConditionalOnProperty(name = "features.validators.checkRequiredType", havingValue = "true")
+@ConditionalOnProperty(name = "application.features.validators.checkRequiredType", havingValue = "true")
 public class CheckRequiredType implements Validator {
 
     @Override

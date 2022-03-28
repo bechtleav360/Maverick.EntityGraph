@@ -21,7 +21,7 @@ import java.util.List;
 
 @Configuration
 @EnableWebFluxSecurity
-@ConditionalOnProperty(name = "application.security.enabled", havingValue = "true")
+@Profile("! test")
 public class SecurityConfiguration {
 
 
@@ -29,6 +29,7 @@ public class SecurityConfiguration {
 
 
     @Bean
+    @ConditionalOnProperty(name = "application.security.enabled", havingValue = "true")
     public SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity http,
                                                          List<ReactiveAuthenticationManager> authenticationManager,
                                                          ServerAuthenticationConverter authenticationConverter) {
@@ -59,6 +60,7 @@ public class SecurityConfiguration {
 
 
     @Bean
+    @ConditionalOnProperty(name = "application.security.enabled", havingValue = "true")
     ServerAuthenticationConverter buildAuthenticationConverter() {
         return exchange -> {
             List<String> headers = exchange.getRequest().getHeaders().get(API_KEY_HEADER);

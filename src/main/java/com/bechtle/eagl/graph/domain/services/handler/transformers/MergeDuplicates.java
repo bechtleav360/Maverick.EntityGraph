@@ -34,7 +34,7 @@ import java.util.stream.Collectors;
  * Checks whether duplicates exist in the incoming model. Does not check within the repository (this is delegated to a
  * scheduled job)
  */
-@ConditionalOnProperty(name = "features.transformers.mergeDuplicates", havingValue = "true")
+@ConditionalOnProperty(name = "application.features.transformers.mergeDuplicates", havingValue = "true")
 public class MergeDuplicates implements Transformer {
 
     // FIXME: should only operate on local model -> the rerouting to existing entity should happen through scheduler

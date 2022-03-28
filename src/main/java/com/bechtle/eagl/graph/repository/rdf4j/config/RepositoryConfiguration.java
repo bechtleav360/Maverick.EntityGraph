@@ -82,6 +82,7 @@ public class RepositoryConfiguration {
             };
         }
 
+        // FIXME: Dependency into feature.. can we maybe delegate this?
         if (authentication instanceof ApplicationAuthentication) {
             return switch (repositoryType) {
                 case ENTITIES -> this.getEntityRepository(((ApplicationAuthentication) authentication).getSubscription());

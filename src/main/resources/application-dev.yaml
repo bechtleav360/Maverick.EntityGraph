@@ -1,0 +1,59 @@
+#spring:
+#  datasource:
+#    url: jdbc:h2:file:/data/demo
+
+application:
+  security:
+    enabled: true
+    apiKey: "xxx"
+    basic:
+      enabled: false
+  features:
+    schedulers:
+      detectDuplicates: false
+      replaceGlobalIdentifiers: false
+    transformers:
+      replaceGlobalIdentifiers: true
+      replaceAnonymousIdentifiers: true
+      mergeDuplicates: true
+    validators:
+      checkRequiredType: true
+  storage:
+    default:
+      path: "/var/data/repositories"
+
+spring:
+  security:
+    user:
+      name: "user"
+      password: "password"
+
+logging:
+  level:
+    com:
+      bechtle: TRACE
+    org:
+      springframework:
+        security: INFO
+
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "health, info, env, loggers, metrics, scheduledTasks, logfile, mappings"
+  endpoint:
+    health:
+      enabled: true
+    info:
+      enabled: true
+    env:
+      enabled: true
+    loggers:
+      enabled: true
+    metrics:
+      enabled: true
+    scheduledTasks:
+      enabled: true
+    logfile:
+      enabled: true
