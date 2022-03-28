@@ -17,7 +17,7 @@ public class Transformers {
 
     private List<Transformer> transformers;
 
-    @Autowired
+    @Autowired(required = false)
     public void setRegisteredBeans(List<Transformer> transformers) {
         this.transformers = transformers;
     }

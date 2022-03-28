@@ -15,7 +15,7 @@ import java.util.Map;
 public class Validators {
     private List<Validator> validators;
 
-    @Autowired
+    @Autowired(required = false)
     public void setRegisteredBeans(List<Validator> validators) {
         this.validators = validators;
     }
