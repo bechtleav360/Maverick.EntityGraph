@@ -47,6 +47,14 @@ spec:
               port: http
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+          - name: spring-application-config
+            mountPath: /workspace/config
+      volumes: 
+      - name: spring-application-config
+        configMap:
+          name: {{ include "cougar.fullname" . }}-application-properties
+
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

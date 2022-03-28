@@ -1,0 +1,5 @@
+security.apiKey: "xxx"
+spring.profiles.active: "stage"
+spring.security.user.name: "xxx"
+spring.security.user.password: "xxx"
+logging.level.com.bechtle: TRACE

@@ -6,9 +6,7 @@ image:
   # Overrides the image tag whose default is the chart appVersion.
   tag: "latest"
 
-imagePullSecrets: 
- - name: ghcr-patrickmaue
-
+imagePullSecrets: []
 nameOverride: ""
 fullnameOverride: ""
 
@@ -39,7 +37,8 @@ service:
   port: 80
 
 route: 
- host: "graph-dev-ai.apps.mgmt.env.av360.org"
+ enabled: true
+ host: "place your route here"
 
 ingress:
   enabled: false
@@ -63,11 +62,11 @@ resources:
   # resources, such as Minikube. If you do want to specify resources, uncomment the following
   # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
   limits:
-    cpu: 2
-    memory: 4096Mi
-  requests:
-    cpu: 1
+    cpu: 400m
     memory: 2048Mi
+  requests:
+    cpu: 200m
+    memory: 1024Mi
 
 autoscaling:
   enabled: false

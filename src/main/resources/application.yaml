@@ -16,6 +16,16 @@ logging:
       springframework:
         security: INFO
 
+features:
+  schedulers:
+    detectDuplicates: false
+    replaceGlobalIdentifiers: false
+  transformers:
+    replaceGlobalIdentifiers: true
+    replaceAnonymousIdentifiers: true
+    mergeDuplicates: true
+  validators:
+    checkRequiredType: true
 
 
 
