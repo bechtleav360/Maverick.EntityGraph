@@ -2,7 +2,7 @@ replicaCount: 1
 
 image:
   repository: ghcr.io/bechtleav360/eagl-service-graph
-  pullPolicy: IfNotPresent
+  pullPolicy: Always
   # Overrides the image tag whose default is the chart appVersion.
   tag: "latest"
 
@@ -39,6 +39,7 @@ service:
   port: 80
 
 route: 
+ enabled: true
  host: "graph-dev-ai.apps.mgmt.env.av360.org"
 
 ingress:
@@ -63,11 +64,11 @@ resources:
   # resources, such as Minikube. If you do want to specify resources, uncomment the following
   # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
   limits:
-    cpu: 2
-    memory: 4096Mi
+    cpu: 1500m
+    memory: 4096Mi  
   requests:
-    cpu: 1
-    memory: 2048Mi
+    cpu: 1000m
+    memory: 1024Mi
 
 autoscaling:
   enabled: false
