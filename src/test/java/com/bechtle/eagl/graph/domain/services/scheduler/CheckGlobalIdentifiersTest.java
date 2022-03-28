@@ -25,6 +25,7 @@ import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
 import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -52,6 +53,11 @@ class CheckGlobalIdentifiersTest {
 
     @Test
     void checkForGlobalIdentifiers() {
+        webClient.get()
+                .uri("/api/admin/bulk/reset")
+                .exchange()
+                .expectStatus().isAccepted();
+
         createEntities();
         scheduled = new ScheduledReplaceGlobalIdentifiers(queryServices, entityStore, transactionsStore);
 
@@ -60,6 +66,7 @@ class CheckGlobalIdentifiersTest {
         });
 
         Duration duration = StepVerifier.create(action)
+                .thenAwait(Duration.of(2, ChronoUnit.SECONDS))
                 .assertNext(transaction -> {
                     Assert.notNull(transaction, "transaction is null");
                 })
