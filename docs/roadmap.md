@@ -15,31 +15,33 @@
 
 - [x] Read entity
 - [x] Multitenancy API
+- [ ] K8S Deployment Pipeline (via Helm chart)
 - [ ] Read value or relation
 - [ ] Delete entity
 - [ ] Delete value or relation
 - [ ] Update value
-- [ ] HATEOAS navigation
 - [ ] Paging support 
 
+# 3 - Data Sync Strategy
 
-# 3 - Entity API complete
 
+# 4 - Entity API complete
+- [ ] HATEOAS navigation
 - [ ] Patch entity
 - [ ] Query parameter
 
-# 4 - Schema aware
+# 5 - Schema aware
 
 - [ ] a
 - [ ] a
 
-# 5 - Frames
+# 6 - Frames
 
 - [ ] Support presentation query param in GetEntity-Operation
 - [ ] Query by example
 
-# 6 - Proof
+# 7 - Proof
 
 - [ ] Support proof query parameter
 
-# 7 - JSON only mode
+# 8 - JSON only mode
