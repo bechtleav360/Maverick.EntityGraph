@@ -24,6 +24,16 @@ podAnnotations: {}
 podSecurityContext: {}
   # fsGroup: 2000
 
+persistence: 
+  enabled: true
+  accessMode: ReadWriteOnce
+  entities: 
+    size: 2Gi
+  transactions: 
+    size: 2Gi    
+  application: 
+    size: 500Mi
+
 securityContext: {}
   # capabilities:
   #   drop:

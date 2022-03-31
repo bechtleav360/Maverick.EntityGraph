@@ -8,6 +8,7 @@ import org.springframework.stereotype.Component;
 
 @Slf4j
 @Component
+@Deprecated
 public class RepositoryProvider implements ObjectProvider<Repository> {
     @Override
     public Repository getObject(Object... objects) throws BeansException {

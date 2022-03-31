@@ -20,13 +20,14 @@ application:
       checkRequiredType: true
   storage:
     default:
-      path: "/var/data/repositories"
+      persistent: true    
+      path: "/var/data/application"
     entities:
+      persistent: true        
       path: "/var/data/entities"
     transactions:
+      persistent: true        
       path: "/var/data/transactions"
-    schema:
-      path: "/var/data/schema"
 
 spring:
   security:

@@ -31,7 +31,8 @@ import java.util.concurrent.TimeUnit;
 public class RepositoryConfiguration {
 
 
-    private final String defaultPath;
+    private final String entitiesPath;
+    private final String transactionsPath;
     private final Repository schemaRepository;
     private final Repository subscriptionsRepository;
     private final Cache<String, Repository> cache;
@@ -43,10 +44,12 @@ public class RepositoryConfiguration {
         SUBSCRIPTIONS
     }
 
-    public RepositoryConfiguration(@Value("${application.storage.default.path:#{null}}") String defaultPath,
+    public RepositoryConfiguration(@Value("${application.storage.entities.path:#{null}}") String entitiesPath,
+                                   @Value("${application.storage.transactions.path:#{null}}") String transactionsPath,
                                    @Qualifier("schema-storage") Repository schemaRepository,
                                    @Qualifier("subscriptions-storage") Repository subscriptionsRepository) {
-        this.defaultPath = defaultPath;
+        this.entitiesPath = entitiesPath;
+        this.transactionsPath = transactionsPath;
         this.schemaRepository = schemaRepository;
         this.subscriptionsRepository = subscriptionsRepository;
 
@@ -97,12 +100,12 @@ public class RepositoryConfiguration {
 
     }
 
-    private Repository getDefaultRepository(Application subscription, String label) {
-        if (!subscription.persistent() || !StringUtils.hasLength(this.defaultPath)) {
+    private Repository getDefaultRepository(Application subscription, String label, String basePath) {
+        if (!subscription.persistent() || !StringUtils.hasLength(basePath)) {
             log.debug("(Store) Initializing volatile {} repository for subscription '{}' [{}]", label, subscription.label(), subscription.key());
             return new SailRepository(new MemoryStore());
         } else {
-            Resource file = new FileSystemResource(Paths.get(this.defaultPath, subscription.key(), label, "lmdb"));
+            Resource file = new FileSystemResource(Paths.get(basePath, subscription.key(), label, "lmdb"));
             Assert.notNull(file, "Invalid path to repository: " + file);
             try {
                 LmdbStoreConfig config = new LmdbStoreConfig();
@@ -120,18 +123,18 @@ public class RepositoryConfiguration {
 
     @Cacheable
     private Repository getSchemaRepository(Application subscription) {
-        return this.cache.get("schema:" + subscription.key(), s -> this.getDefaultRepository(subscription, "schema"));
+        return this.schemaRepository; 
     }
 
 
     @Cacheable
     public Repository getEntityRepository(Application subscription) throws IOException {
-        return this.cache.get("entities:" + subscription.key(), s -> this.getDefaultRepository(subscription, "entities"));
+        return this.cache.get("entities:" + subscription.key(), s -> this.getDefaultRepository(subscription, "entities", this.entitiesPath));
     }
 
     @Cacheable
     public Repository getTransactionsRepository(Application subscription) throws IOException {
-        return this.cache.get("transactions:" + subscription.key(), s -> this.getDefaultRepository(subscription, "transactions"));
+        return this.cache.get("transactions:" + subscription.key(), s -> this.getDefaultRepository(subscription, "transactions", this.transactionsPath));
     }
 
 

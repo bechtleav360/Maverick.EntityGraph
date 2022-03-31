@@ -25,7 +25,7 @@ public class DefaultVolatileRepositoryConfiguration {
 
     @Bean("subscriptions-storage")
     public Repository createSubscriptionsRepository() throws IOException {
-        log.debug("Initializing volative subscriptions repository");
+        log.debug("Initializing volative application repository");
         return new SailRepository(new MemoryStore());
     }
 }
