@@ -7,4 +7,4 @@ Copy file `application-properties.json.template` to `application-properties.json
 
 Run command to install
 
-`> helm upgrade -f values.yaml name-of-your-deployment .`
+`> helm upgrade -f values.yaml name-of-your-deployment .`   

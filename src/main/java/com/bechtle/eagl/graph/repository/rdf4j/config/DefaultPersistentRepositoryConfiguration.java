@@ -24,6 +24,7 @@ import java.nio.file.Paths;
 @Slf4j
 public class DefaultPersistentRepositoryConfiguration {
 
+    // FIXME: Should not be configured through profiles, but as a flag in the applicaation2
     @Bean("schema-storage")
     @Scope(ConfigurableBeanFactory.SCOPE_SINGLETON)
     public Repository createSchemaRepository(@Value("${application.storage.default.path}") String storagePath) throws IOException {
@@ -41,7 +42,7 @@ public class DefaultPersistentRepositoryConfiguration {
         Resource file = new FileSystemResource(Paths.get(storagePath, "subscriptions", "lmdb"));
         LmdbStoreConfig config = new LmdbStoreConfig();
 
-        log.debug("Initializing persistent subscriptions repository in path '{}'", file.getFile().toPath());
+        log.debug("Initializing persistent application repository in path '{}'", file.getFile().toPath());
 
 
         return new SailRepository(new LmdbStore(file.getFile(), config));
