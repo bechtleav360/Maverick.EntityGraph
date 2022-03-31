@@ -2,9 +2,23 @@
 #  datasource:
 #    url: jdbc:h2:file:/data/demo
 
-security:
-  ignored: /**
-  apiKey: "1234"
+application:
+  security:
+    enabled: false
+    apiKey: "xxx"
+  features:
+    schedulers:
+      detectDuplicates: false
+      replaceGlobalIdentifiers: true
+    transformers:
+      replaceGlobalIdentifiers: true
+      replaceAnonymousIdentifiers: true
+      mergeDuplicates: true
+    validators:
+      checkRequiredType: true
+  storage:
+    default:
+      path: ""
 
 spring:
   profiles:
@@ -17,17 +31,6 @@ storage:
   default:
     path: ""
 
-
-features:
-  schedulers:
-    detectDuplicates: false
-    replaceGlobalIdentifiers: true
-  transformers:
-    replaceGlobalIdentifiers: true
-    replaceAnonymousIdentifiers: true
-    mergeDuplicates: true
-  validators:
-    checkRequiredType: true
 
 logging:
   level:

@@ -43,7 +43,7 @@ public class RepositoryConfiguration {
         SUBSCRIPTIONS
     }
 
-    public RepositoryConfiguration(@Value("${storage.default.path:#{null}}") String defaultPath,
+    public RepositoryConfiguration(@Value("${application.storage.default.path:#{null}}") String defaultPath,
                                    @Qualifier("schema-storage") Repository schemaRepository,
                                    @Qualifier("subscriptions-storage") Repository subscriptionsRepository) {
         this.defaultPath = defaultPath;
@@ -82,6 +82,7 @@ public class RepositoryConfiguration {
             };
         }
 
+        // FIXME: Dependency into feature.. can we maybe delegate this?
         if (authentication instanceof ApplicationAuthentication) {
             return switch (repositoryType) {
                 case ENTITIES -> this.getEntityRepository(((ApplicationAuthentication) authentication).getSubscription());

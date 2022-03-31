@@ -2,7 +2,7 @@
 #  datasource:
 #    url: jdbc:h2:file:/data/demo
 
-application: 
+application:
   security:
     enabled: true
     apiKey: "xxx"
@@ -11,7 +11,7 @@ application:
   features:
     schedulers:
       detectDuplicates: false
-      replaceGlobalIdentifiers: true
+      replaceGlobalIdentifiers: false
     transformers:
       replaceGlobalIdentifiers: true
       replaceAnonymousIdentifiers: true
@@ -21,18 +21,12 @@ application:
   storage:
     default:
       path: "/var/data/repositories"
-    entities:
-      path: "/var/data/entities"
-    transactions:
-      path: "/var/data/transactions"
-    schema:
-      path: "/var/data/schema"
 
 spring:
   security:
     user:
-      name: "xxx"
-      password: "xx"
+      name: "user"
+      password: "password"
 
 logging:
   level:

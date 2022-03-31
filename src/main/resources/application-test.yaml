@@ -1,25 +1,36 @@
 ## All XXX fields are provisioned through environment variables
 
-security:
-  api-key: "XXX"
 
+application: 
+  security:
+    enabled: true
+    apiKey: "xxx"
+  features:
+    schedulers:
+      detectDuplicates: false
+      replaceGlobalIdentifiers: true
+    transformers:
+      replaceGlobalIdentifiers: true
+      replaceAnonymousIdentifiers: true
+      mergeDuplicates: true
+    validators:
+      checkRequiredType: true
+  storage:
+    default:
+      path: "/var/data/repositories"
+    entities:
+      path: "/var/data/entities"
+    transactions:
+      path: "/var/data/transactions"
+    schema:
+      path: "/var/data/schema"
+      
 spring:
   security:
     user:
       name: "xxx"
       password: "xxx"
 
-
-
-storage:
-  default:
-    path: "/var/data/repositories"
-  entities:
-    path: "/var/data/entities"
-  transactions:
-    path: "/var/data/transactions"
-  schema:
-    path: "/var/data/schema"
 
 logging:
   file:

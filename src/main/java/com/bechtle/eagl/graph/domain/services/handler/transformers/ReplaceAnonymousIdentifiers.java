@@ -29,7 +29,7 @@ import java.util.Map;
  */
 @Slf4j
 @Component
-@ConditionalOnProperty(name = "features.transformers.replaceAnonymousIdentifiers", havingValue = "true")
+@ConditionalOnProperty(name = "application.features.transformers.replaceAnonymousIdentifiers", havingValue = "true")
 public class ReplaceAnonymousIdentifiers implements Transformer {
 
 

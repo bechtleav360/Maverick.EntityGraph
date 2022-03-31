@@ -32,7 +32,7 @@ import java.util.stream.Collectors;
  */
 @Slf4j
 @Component
-@ConditionalOnProperty(name = "features.transformers.replaceGlobalIdentifiers", havingValue = "true")
+@ConditionalOnProperty(name = "application.features.transformers.replaceGlobalIdentifiers", havingValue = "true")
 public class ReplaceGlobalIdentifiers implements Transformer {
 
     @Override

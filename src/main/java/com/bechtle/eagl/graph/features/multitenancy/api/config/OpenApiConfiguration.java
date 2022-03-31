@@ -1,10 +1,10 @@
 package com.bechtle.eagl.graph.features.multitenancy.api.config;
 
-import org.springframework.beans.factory.annotation.Qualifier;
+import java.util.List;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.web.reactive.function.server.RouterFunction;
-import org.springframework.web.reactive.function.server.ServerResponse;
+
 import springfox.documentation.builders.ApiInfoBuilder;
 import springfox.documentation.builders.RequestHandlerSelectors;
 import springfox.documentation.service.ApiKey;
@@ -14,16 +14,8 @@ import springfox.documentation.spi.DocumentationType;
 import springfox.documentation.spi.service.contexts.SecurityContext;
 import springfox.documentation.spring.web.plugins.Docket;
 
-import java.net.URI;
-import java.util.List;
-
-import static org.springframework.web.reactive.function.server.RequestPredicates.GET;
-import static org.springframework.web.reactive.function.server.RouterFunctions.route;
-
 @Configuration
 class ApplicationOpenApiConfiguration {
-
-
 
     @Bean
     public Docket applicationApiDocket() {
@@ -44,7 +36,6 @@ class ApplicationOpenApiConfiguration {
                 // .paths(PathSelectors.ant("/api/**"))
                 .build();
     }
-    
 
     private SecurityContext securityContext() {
         return SecurityContext.builder().securityReferences(defaultAuth()).build();
@@ -60,6 +51,5 @@ class ApplicationOpenApiConfiguration {
     private ApiKey apiKey() {
         return new ApiKey("X-API-KEY", "X-API-KEY", "header");
     }
-
 
 }
