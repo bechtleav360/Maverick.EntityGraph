@@ -15,6 +15,7 @@ import java.io.IOException;
 
 @Component
 @Slf4j
+@Deprecated
 public class RepositoryFactory  {
     private ObjectProvider<Repository> provider;
 

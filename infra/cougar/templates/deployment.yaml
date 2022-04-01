@@ -52,12 +52,29 @@ spec:
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           volumeMounts:
-          - name: spring-application-config
+          - name: {{ .Release.Name }}-spring-application-config
             mountPath: /workspace/config
+          - name: {{ .Release.Name }}-vol-application
+            mountPath: "/var/data/application"
+          - name: {{ .Release.Name }}-vol-entities
+            mountPath: "/var/data/entities"
+          - name: {{ .Release.Name }}-vol-transactions
+            mountPath: "/var/data/transactions"                        
+                            
       volumes: 
-      - name: spring-application-config
+      - name: {{ .Release.Name }}-spring-application-config
         configMap:
           name: {{ include "cougar.fullname" . }}-application-properties
+      - name: {{ .Release.Name }}-vol-application
+        persistentVolumeClaim:
+          claimName: {{ .Release.Name }}-pvc-application          
+      - name: {{ .Release.Name }}-vol-entities
+        persistentVolumeClaim:
+          claimName: {{ .Release.Name }}-pvc-entities
+      - name: {{ .Release.Name }}-vol-transactions
+        persistentVolumeClaim:
+          claimName: {{ .Release.Name }}-pvc-transactions  
+                    
 
       {{- with .Values.nodeSelector }}
       nodeSelector:

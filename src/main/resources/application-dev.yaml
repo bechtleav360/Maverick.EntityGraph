@@ -20,7 +20,14 @@ application:
       checkRequiredType: true
   storage:
     default:
-      path: "/var/data/repositories"
+      persistent: false
+      path: {}
+    entities:
+      persistent: false
+      path: {}
+    transactions:
+      persistent: false
+      path: {}
 
 spring:
   security:
