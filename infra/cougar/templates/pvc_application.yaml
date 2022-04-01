@@ -2,7 +2,7 @@
 kind: PersistentVolumeClaim
 apiVersion: v1
 metadata:
-  name: {{ .Release.Name }}-data-application-pvc
+  name: {{ .Release.Name }}-pvc-application
   namespace: {{ .Release.Namespace }}  
   labels:
     {{- include "cougar.labels" . | nindent 4 }}

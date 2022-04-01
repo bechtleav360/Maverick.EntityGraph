@@ -59,7 +59,7 @@ spec:
           - name: {{ .Release.Name }}-vol-entities
             mountPath: "/var/data/entities"
           - name: {{ .Release.Name }}-vol-transactions
-            mountPath: "/var/data/transactions<"                        
+            mountPath: "/var/data/transactions"                        
                             
       volumes: 
       - name: {{ .Release.Name }}-spring-application-config
