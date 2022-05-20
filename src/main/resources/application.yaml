@@ -3,7 +3,31 @@
 #    url: jdbc:h2:file:/data/demo
 
 
-
+application:
+  security:
+    enabled: true
+    basic:
+      enabled: false
+  features:
+    schedulers:
+      detectDuplicates: false
+      replaceGlobalIdentifiers: false
+    transformers:
+      replaceGlobalIdentifiers: false
+      replaceAnonymousIdentifiers: false
+      mergeDuplicates: false
+    validators:
+      checkRequiredType: false
+  storage:
+    default:
+      persistent: false
+      path: ~
+    entities:
+      persistent: false
+      path: ~
+    transactions:
+      persistent: false
+      path: ~
 
 server:
   port : 8070
@@ -14,7 +38,7 @@ logging:
       bechtle: INFO
     org:
       springframework:
-        security: INFO
+        security: TRACE
 
 features:
   schedulers:

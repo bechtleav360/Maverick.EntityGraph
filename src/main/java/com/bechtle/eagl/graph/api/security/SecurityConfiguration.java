@@ -43,7 +43,7 @@ public class SecurityConfiguration {
                     .matchers(EndpointRequest.to("info","env", "logfile", "loggers", "metrics", "scheduledTasks")).hasAuthority(AdminAuthentication.ADMIN_AUTHORITY)
                     .matchers(EndpointRequest.to("health")).permitAll()
                     .pathMatchers("/api/admin/**").hasAuthority(AdminAuthentication.ADMIN_AUTHORITY)
-                    .pathMatchers("/api/**").hasAuthority(ApplicationAuthentication.USER_AUTHORITY)
+                    .pathMatchers("/api/**").hasAnyAuthority(ApplicationAuthentication.USER_AUTHORITY, AdminAuthentication.ADMIN_AUTHORITY)
                     .anyExchange().permitAll()
                 .and()
                 .addFilterAt(authenticationWebFilter, SecurityWebFiltersOrder.AUTHENTICATION)
@@ -54,9 +54,6 @@ public class SecurityConfiguration {
                 .build();
 
     }
-
-
-
 
 
     @Bean

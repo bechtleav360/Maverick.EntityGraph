@@ -4,7 +4,7 @@
 application: 
   security:
     enabled: true
-    apiKey: "xxx"
+    apiKey: ""
   features:
     schedulers:
       detectDuplicates: false

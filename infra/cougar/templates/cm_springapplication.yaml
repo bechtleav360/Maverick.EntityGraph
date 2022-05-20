@@ -5,3 +5,5 @@ metadata:
 data:
   application.properties: |-
 {{ .Files.Get "application.properties" | indent 4 }}
+  application-properties.json: |-
+{{ .Files.Get "application-properties.json" | indent 4 }}

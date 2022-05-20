@@ -59,18 +59,15 @@ public class RepositoryConfiguration {
 
 
     /**
-     * Initializes the connection to a repository. The repository are cached
+     * Initializes the connection to a repository. The repositories are cached
      *
      * @param repositoryType
      * @return
      * @throws IOException
      */
-    public Repository getRepository(RepositoryType repositoryType) throws IOException {
-
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+    public Repository getRepository(RepositoryType repositoryType, Authentication authentication) throws IOException {
 
         if (authentication == null) {
-
             return this.cache.get("none", s -> {
                 log.warn("(Store) No authentication set, using in memory store for type {}", repositoryType);
                 return new SailRepository(new MemoryStore());
@@ -97,7 +94,11 @@ public class RepositoryConfiguration {
         }
 
         throw new IOException(String.format("Cannot resolve repository of type '%s' for authentication of type '%s'", repositoryType, authentication.getClass()));
+    }
 
+    public Repository getRepository(RepositoryType repositoryType) throws IOException {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        return this.getRepository(repositoryType, authentication);
     }
 
     private Repository getDefaultRepository(Application subscription, String label, String basePath) {

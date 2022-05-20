@@ -5,7 +5,7 @@
 application:
   security:
     enabled: true
-    apiKey: "xxx"
+    apiKey: ""
     basic:
       enabled: false
   features:

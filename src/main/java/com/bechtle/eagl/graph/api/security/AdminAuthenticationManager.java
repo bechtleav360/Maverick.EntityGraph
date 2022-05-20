@@ -1,14 +1,9 @@
 package com.bechtle.eagl.graph.api.security;
 
-import com.bechtle.eagl.graph.api.security.errors.NoSubscriptionFound;
-import com.bechtle.eagl.graph.api.security.errors.RevokedApiKeyUsed;
-import com.bechtle.eagl.graph.api.security.errors.UnknownApiKey;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.text.RandomStringGenerator;
-import org.eclipse.rdf4j.query.algebra.Str;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Primary;
-import org.springframework.context.annotation.Profile;
 import org.springframework.security.authentication.ReactiveAuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -22,7 +17,7 @@ import javax.annotation.PostConstruct;
 @Component
 @Slf4j
 @Primary
-public class SecurityAuthenticationManager implements ReactiveAuthenticationManager {
+public class AdminAuthenticationManager implements ReactiveAuthenticationManager {
 
     @Value("${application.security.apiKey:}")
     String key;
@@ -32,7 +27,7 @@ public class SecurityAuthenticationManager implements ReactiveAuthenticationMana
     public void checkKey() {
         if(! StringUtils.hasLength(key)) {
             this.key = new RandomStringGenerator.Builder().withinRange('a', 'z').build().generate(16);
-            log.info("No admin key set, using the following randomly generated key for this session: {} ", this.key);
+            log.info("No admin key set, using the following randomly generated api key for this session: '{}' ", this.key);
         }
     }
 
@@ -48,7 +43,14 @@ public class SecurityAuthenticationManager implements ReactiveAuthenticationMana
 
         if (authentication instanceof ApiKeyToken) {
             return handleApiKeyAuthentication((ApiKeyToken) authentication)
-                    .map(auth -> (Authentication) auth);
+                    .map(auth -> (Authentication) auth)
+                    .map(auth -> {
+                        if(! auth.isAuthenticated()) {
+                            log.warn("API Key was found, but no authentication manager confirm it.");
+                        }
+
+                        return auth;
+                    });
 
         }
 
@@ -57,9 +59,12 @@ public class SecurityAuthenticationManager implements ReactiveAuthenticationMana
     }
 
     private Mono<? extends Authentication> handleApiKeyAuthentication(ApiKeyToken authentication) {
+        log.trace("Handling request with API Key authentication");
         // check if this is the admin user
         if(StringUtils.hasLength(this.key) && (authentication.getApiKey().equalsIgnoreCase(this.key))) {
-            return Mono.just(new AdminAuthentication());
+            AdminAuthentication adminAuthentication = new AdminAuthentication();
+            adminAuthentication.setAuthenticated(true);
+            return Mono.just(adminAuthentication);
         }
 
         return Mono.just(authentication);
