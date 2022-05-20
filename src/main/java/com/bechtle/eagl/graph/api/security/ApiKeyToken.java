@@ -9,13 +9,16 @@ import org.springframework.security.core.authority.AuthorityUtils;
  */
 public class ApiKeyToken extends AbstractAuthenticationToken {
 
+    private String apiKey;
+
     public ApiKeyToken(String apiKey) {
         super(AuthorityUtils.NO_AUTHORITIES);
+        this.apiKey = apiKey;
     }
 
 
     public String getApiKey() {
-        return String.valueOf(this.getPrincipal());
+        return this.apiKey;
     }
 
     @Override
