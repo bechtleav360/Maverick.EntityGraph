@@ -12,7 +12,7 @@ public class SubscriptionsRepository extends AbstractRepository implements Appli
 
 
     public SubscriptionsRepository() {
-        super(RepositoryConfiguration.RepositoryType.SUBSCRIPTIONS);
+        super(RepositoryConfiguration.RepositoryType.APPLICATION);
     }
 
 

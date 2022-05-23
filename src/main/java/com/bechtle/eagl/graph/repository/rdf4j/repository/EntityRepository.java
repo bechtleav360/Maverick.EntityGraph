@@ -32,79 +32,82 @@ public class EntityRepository extends AbstractRepository implements EntityStore 
     }
 
 
-
     @Override
     public Mono<Entity> get(IRI id) {
-        try (RepositoryConnection connection = super.getRepository().getConnection()) {
-            log.trace("(Store) Loading entity from repository {}", getRepository().toString());
+        return super.getRepository().flatMap(repository -> {
+            try (RepositoryConnection connection = repository.getConnection()) {
+                log.trace("(Store) Loading entity from repository {}", getRepository().toString());
 
-            RepositoryResult<Statement> statements = connection.getStatements(id, null, null);
-            if (!statements.hasNext()) {
-                if (log.isDebugEnabled()) log.debug("(Store) Found no statements for IRI: <{}>.", id);
-                return Mono.empty();
-            }
-
-
-            Entity entity = new Entity().withResult(statements);
-
-            // embedded level 1
-            entity.getModel().objects().stream()
-                    .filter(Value::isIRI)
-                    .map(value -> connection.getStatements((IRI) value, null, null))
-                    .toList()
-                    .forEach(entity::withResult);
-
-
-            if (log.isDebugEnabled())
-                log.debug("(Store) Loaded {} statements for entity with IRI: <{}>.", entity.getModel().size(), id);
-            return Mono.just(entity);
-
-        } catch (Exception e) {
-            log.error("Unknown error while running query", e);
-            return Mono.error(e);
-        }
-    }
-
-
-    @Override
-    public Flux<NamespaceAwareStatement> constructQuery(String query) {
-
-        return Flux.create(c -> {
-            try (RepositoryConnection connection = getRepository().getConnection()) {
-                GraphQuery q = connection.prepareGraphQuery(QueryLanguage.SPARQL, query);
-                try (GraphQueryResult result = q.evaluate()) {
-                    Set<Namespace> namespaces = result.getNamespaces().entrySet().stream()
-                            .map(entry -> new SimpleNamespace(entry.getKey(), entry.getValue()))
-                            .collect(Collectors.toSet());
-
-                    result.forEach(statement -> c.next(NamespaceAwareStatement.wrap(statement, namespaces)));
-                } catch (Exception e) {
-                    log.warn("Error while running value query.", e);
-                    c.error(e);
+                RepositoryResult<Statement> statements = connection.getStatements(id, null, null);
+                if (!statements.hasNext()) {
+                    if (log.isDebugEnabled()) log.debug("(Store) Found no statements for IRI: <{}>.", id);
+                    return Mono.empty();
                 }
-            } catch (MalformedQueryException e) {
-                log.warn("Error while parsing query", e);
-                c.error(new HttpClientErrorException(HttpStatus.BAD_REQUEST, "Invalid query"));
+
+
+                Entity entity = new Entity().withResult(statements);
+
+                // embedded level 1
+                entity.getModel().objects().stream()
+                        .filter(Value::isIRI)
+                        .map(value -> connection.getStatements((IRI) value, null, null))
+                        .toList()
+                        .forEach(entity::withResult);
+
+
+                if (log.isDebugEnabled())
+                    log.debug("(Store) Loaded {} statements for entity with IRI: <{}>.", entity.getModel().size(), id);
+                return Mono.just(entity);
+
             } catch (Exception e) {
                 log.error("Unknown error while running query", e);
-                c.error(e);
-            } finally {
-                c.complete();
+                return Mono.error(e);
             }
         });
     }
 
 
+    @Override
+    public Flux<NamespaceAwareStatement> constructQuery(String query) {
+        return super.getRepository().flatMapMany(repository -> {
+            return Flux.create(c -> {
+                try (RepositoryConnection connection = repository.getConnection()) {
+                    GraphQuery q = connection.prepareGraphQuery(QueryLanguage.SPARQL, query);
+                    try (GraphQueryResult result = q.evaluate()) {
+                        Set<Namespace> namespaces = result.getNamespaces().entrySet().stream()
+                                .map(entry -> new SimpleNamespace(entry.getKey(), entry.getValue()))
+                                .collect(Collectors.toSet());
+
+                        result.forEach(statement -> c.next(NamespaceAwareStatement.wrap(statement, namespaces)));
+                    } catch (Exception e) {
+                        log.warn("Error while running value query.", e);
+                        c.error(e);
+                    }
+                } catch (MalformedQueryException e) {
+                    log.warn("Error while parsing query", e);
+                    c.error(new HttpClientErrorException(HttpStatus.BAD_REQUEST, "Invalid query"));
+                } catch (Exception e) {
+                    log.error("Unknown error while running query", e);
+                    c.error(e);
+                } finally {
+                    c.complete();
+                }
+            });
+        });
+    }
 
 
     @Override
     public Mono<List<Statement>> listStatements(Resource value, IRI predicate, Value object) {
-        try (RepositoryConnection connection = getRepository().getConnection()) {
-            List<Statement> statements = connection.getStatements(value, predicate, object).stream().toList();
-            return Mono.just(statements);
-        } catch (Exception e) {
-            return Mono.error(e);
-        }
+        return super.getRepository().flatMap(repository -> {
+            try (RepositoryConnection connection = repository.getConnection()) {
+                List<Statement> statements = connection.getStatements(value, predicate, object).stream().toList();
+                return Mono.just(statements);
+            } catch (Exception e) {
+                return Mono.error(e);
+            }
+        });
+
     }
 
     @Override

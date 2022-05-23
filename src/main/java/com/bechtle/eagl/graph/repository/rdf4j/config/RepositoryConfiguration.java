@@ -17,10 +17,13 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.ReactiveSecurityContextHolder;
+import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
+import reactor.core.publisher.Mono;
 
 import java.io.IOException;
 import java.nio.file.Paths;
@@ -34,24 +37,24 @@ public class RepositoryConfiguration {
     private final String entitiesPath;
     private final String transactionsPath;
     private final Repository schemaRepository;
-    private final Repository subscriptionsRepository;
+    private final Repository applicationRepository;
     private final Cache<String, Repository> cache;
 
     public enum RepositoryType {
         ENTITIES,
         SCHEMA,
         TRANSACTIONS,
-        SUBSCRIPTIONS
+        APPLICATION
     }
 
     public RepositoryConfiguration(@Value("${application.storage.entities.path:#{null}}") String entitiesPath,
                                    @Value("${application.storage.transactions.path:#{null}}") String transactionsPath,
                                    @Qualifier("schema-storage") Repository schemaRepository,
-                                   @Qualifier("subscriptions-storage") Repository subscriptionsRepository) {
+                                   @Qualifier("application-storage") Repository applicationRepository) {
         this.entitiesPath = entitiesPath;
         this.transactionsPath = transactionsPath;
         this.schemaRepository = schemaRepository;
-        this.subscriptionsRepository = subscriptionsRepository;
+        this.applicationRepository = applicationRepository;
 
 
         cache = Caffeine.newBuilder().expireAfterAccess(60, TimeUnit.MINUTES).build();
@@ -68,16 +71,14 @@ public class RepositoryConfiguration {
     public Repository getRepository(RepositoryType repositoryType, Authentication authentication) throws IOException {
 
         if (authentication == null) {
-            return this.cache.get("none", s -> {
-                log.warn("(Store) No authentication set, using in memory store for type {}", repositoryType);
-                return new SailRepository(new MemoryStore());
-            });
+            log.warn("(Store) No authentication set, using in memory store for type {}", repositoryType);
+            return this.cache.get("none", s -> new SailRepository(new MemoryStore()));
         }
 
         if (authentication instanceof AdminAuthentication) {
             return switch (repositoryType) {
-                case SUBSCRIPTIONS -> this.subscriptionsRepository;
-                case SCHEMA -> this.schemaRepository;
+                case APPLICATION ->this.applicationRepository;
+                case SCHEMA ->  this.schemaRepository;
                 default -> throw new IOException(String.format("Invalid Repository Type '%s' for admin context", repositoryType));
             };
         }
@@ -85,9 +86,9 @@ public class RepositoryConfiguration {
         // FIXME: Dependency into feature.. can we maybe delegate this?
         if (authentication instanceof ApplicationAuthentication) {
             return switch (repositoryType) {
-                case ENTITIES -> this.getEntityRepository(((ApplicationAuthentication) authentication).getSubscription());
+                case ENTITIES ->  this.getEntityRepository(((ApplicationAuthentication) authentication).getSubscription());
                 case TRANSACTIONS -> this.getTransactionsRepository(((ApplicationAuthentication) authentication).getSubscription());
-                case SCHEMA -> this.getSchemaRepository(((ApplicationAuthentication) authentication).getSubscription());
+                case SCHEMA ->  this.getSchemaRepository(((ApplicationAuthentication) authentication).getSubscription());
                 default -> throw new IOException(String.format("Invalid Repository Type '%s' for subscription context", repositoryType));
             };
 
@@ -96,9 +97,19 @@ public class RepositoryConfiguration {
         throw new IOException(String.format("Cannot resolve repository of type '%s' for authentication of type '%s'", repositoryType, authentication.getClass()));
     }
 
-    public Repository getRepository(RepositoryType repositoryType) throws IOException {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        return this.getRepository(repositoryType, authentication);
+    public Mono<Repository> getRepository(RepositoryType repositoryType)  {
+
+        return ReactiveSecurityContextHolder.getContext()
+                .map(SecurityContext::getAuthentication)
+                .flatMap(authentication -> {
+                    try {
+                        return Mono.just(this.getRepository(repositoryType, authentication));
+                    } catch (IOException e) {
+                        return Mono.error(e);
+                    }
+                });
+
+
     }
 
     private Repository getDefaultRepository(Application subscription, String label, String basePath) {

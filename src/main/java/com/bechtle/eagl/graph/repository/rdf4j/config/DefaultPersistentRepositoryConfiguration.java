@@ -5,10 +5,8 @@ import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
 import org.eclipse.rdf4j.sail.lmdb.LmdbStore;
 import org.eclipse.rdf4j.sail.lmdb.config.LmdbStoreConfig;
-import org.eclipse.rdf4j.sail.memory.MemoryStore;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
-import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -37,8 +35,8 @@ public class DefaultPersistentRepositoryConfiguration {
         return new SailRepository(new LmdbStore(file.getFile(), config));
     }
 
-    @Bean("subscriptions-storage")
-    public Repository createSubscriptionsRepository(@Value("${application.storage.default.path}") String storagePath) throws IOException {
+    @Bean("application-storage")
+    public Repository createApplicationRepository(@Value("${application.storage.default.path}") String storagePath) throws IOException {
         Resource file = new FileSystemResource(Paths.get(storagePath, "subscriptions", "lmdb"));
         LmdbStoreConfig config = new LmdbStoreConfig();
 

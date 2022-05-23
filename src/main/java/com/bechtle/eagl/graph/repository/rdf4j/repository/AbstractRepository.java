@@ -33,7 +33,7 @@ public class AbstractRepository implements RepositoryBehaviour {
     private RepositoryConfiguration repositoryConfiguration;
 
     public AbstractRepository(RepositoryConfiguration.RepositoryType repositoryType) {
-         this.repositoryType = repositoryType;
+        this.repositoryType = repositoryType;
     }
 
 
@@ -44,48 +44,46 @@ public class AbstractRepository implements RepositoryBehaviour {
 
 
 
+
     public Mono<Void> store(Model model) {
-        return Mono.create(c -> {
-            try (RepositoryConnection connection = getRepository().getConnection()) {
+        return this.getRepository().flatMap(repository -> {
+            try (RepositoryConnection connection = repository.getConnection()) {
                 try {
                     Resource[] contexts = model.contexts().toArray(new Resource[model.contexts().size()]);
                     connection.add(model, contexts);
                     connection.commit();
-                    c.success();
+                    return Mono.empty();
                 } catch (Exception e) {
                     connection.rollback();
-                    c.error(e);
+                    return Mono.error(e);
                 }
-            } catch (IOException e) {
+            } catch (Exception e) {
                 log.error("Failed to initialize repository connection");
-                c.error(e);
+                return Mono.error(e);
             }
         });
     }
-
-
 
 
     public Mono<TupleQueryResult> select(String query) {
-        return Mono.create(m -> {
-            try (RepositoryConnection connection = getRepository().getConnection()) {
+        return this.getRepository().map(repository -> {
+            try (RepositoryConnection connection = repository.getConnection()) {
                 TupleQuery q = connection.prepareTupleQuery(QueryLanguage.SPARQL, query);
                 try (TupleQueryResult result = q.evaluate()) {
-                    m.success(result);
+                    return result;
                 } catch (Exception e) {
                     log.warn("Error while running value query.", e);
-                    m.error(e);
+                    throw e;
                 }
             } catch (MalformedQueryException e) {
                 log.warn("Error while parsing query, reason: {}", e.getMessage());
-                m.error(e);
+                throw e;
             } catch (Exception e) {
                 log.error("Unknown error while running query", e);
-                m.error(e);
+                throw e;
             }
         });
     }
-
 
 
     public Mono<TupleQueryResult> select(SelectQuery all) {
@@ -94,16 +92,15 @@ public class AbstractRepository implements RepositoryBehaviour {
 
 
     @Override
-    public Repository getRepository() throws IOException {
+    public Mono<Repository> getRepository() {
         return this.repositoryConfiguration.getRepository(this.repositoryType);
     }
 
     @Override
     public Flux<Transaction> commit(Collection<Transaction> transactions) {
-        return Flux.create(c -> {
+        return this.getRepository().flatMapMany(repository -> Flux.create(c -> {
 
-
-            try (RepositoryConnection connection = getRepository().getConnection()) {
+            try (RepositoryConnection connection = repository.getConnection()) {
                 log.trace("(Store) Committing transaction to repository {}", getRepository().toString());
 
                 transactions.forEach(trx -> {
@@ -141,10 +138,10 @@ public class AbstractRepository implements RepositoryBehaviour {
                 });
 
                 c.complete();
-            } catch (IOException e) {
+            } catch (Exception e) {
                 log.error("Failed to initialize repository connection");
                 c.error(e);
             }
-        });
+        }));
     }
 }

@@ -20,15 +20,15 @@ import java.util.Optional;
 public interface Resettable extends RepositoryBehaviour {
 
     default Mono<Void> reset() {
-        return Mono.create(m -> {
-            try (RepositoryConnection connection = getRepository().getConnection()) {
+        return getRepository().flatMap(repository -> {
+            try (RepositoryConnection connection = repository.getConnection()) {
                 RepositoryResult<Statement> statements = connection.getStatements(null, null, null);
                 connection.remove(statements);
-                m.success();
+                return Mono.empty();
             } catch (Exception e) {
-                m.error(e);
+                return Mono.error(e);
             }
-        });
+        }).then();
     }
 
     default Mono<Void> importStatements(Publisher<DataBuffer> bytesPublisher, String mimetype) {
@@ -36,24 +36,21 @@ public interface Resettable extends RepositoryBehaviour {
         Assert.isTrue(parserFactory.isPresent(), "Unsupported mimetype for parsing the file.");
         RDFParser parser = parserFactory.orElseThrow().getParser();
 
+        return Mono.zip(getRepository(), DataBufferUtils.join(bytesPublisher))
+                .flatMap(tuple2 -> {
+                    try (RepositoryConnection connection = tuple2.getT1().getConnection()) {
+                        RDFInserter rdfInserter = new RDFInserter(connection);
+                        parser.setRDFHandler(rdfInserter);
+                        try (InputStream bais = tuple2.getT2().asInputStream(true)) {
+                            parser.parse(bais);
+                        } catch (Exception e) {
+                            return Mono.error(e);
+                        }
+                        return Mono.empty();
+                    } catch (Exception e) {
+                        return Mono.error(e);
+                    }
+                }).then();
 
-        Mono<DataBuffer> joined = DataBufferUtils.join(bytesPublisher);
-
-
-        return joined.flatMap(bytes -> {
-            try (RepositoryConnection connection = getRepository().getConnection()) {
-                RDFInserter rdfInserter = new RDFInserter(connection);
-                parser.setRDFHandler(rdfInserter);
-                try (InputStream bais = bytes.asInputStream(true)) {
-                    parser.parse(bais);
-                } catch (Exception e) {
-                    return Mono.error(e);
-                }
-                return Mono.empty();
-            } catch (Exception e) {
-                return Mono.error(e);
-            }
-
-        }).then();
     }
 }

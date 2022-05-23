@@ -5,6 +5,7 @@ import com.bechtle.eagl.graph.repository.TransactionsStore;
 import com.bechtle.eagl.graph.repository.rdf4j.config.RepositoryConfiguration;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
+import org.eclipse.rdf4j.repository.RepositoryException;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -30,39 +31,43 @@ public class TransactionsRepository extends AbstractRepository implements Transa
 
     @Override
     public Flux<Transaction> store(Collection<Transaction> transactions) {
+        return getRepository().flatMapMany(repository -> {
+            return Flux.create(c -> {
+                try (RepositoryConnection connection = repository.getConnection()) {
+                    transactions.forEach(trx -> {
+                        if (trx == null) {
+                            log.trace("Trying to store an empty transaction.");
+                        } else {
 
-        return Flux.create(c -> {
-            try (RepositoryConnection connection = getRepository().getConnection()) {
-                transactions.forEach(trx -> {
-                    if (trx == null) {
-                        log.trace("Trying to store an empty transaction.");
-                    } else {
+                            try {
 
-                        try {
+                                connection.begin();
+                                connection.add(trx.getModel());
+                                connection.commit();
 
-                            connection.begin();
-                            connection.add(trx.getModel());
-                            connection.commit();
-
-                            c.next(trx);
-                        } catch (Exception e) {
-                            log.error("Error while storing transaction, performing rollback.", e);
-                            connection.rollback();
-                            c.error(e);
+                                c.next(trx);
+                            } catch (Exception e) {
+                                log.error("Error while storing transaction, performing rollback.", e);
+                                connection.rollback();
+                                c.error(e);
+                            }
                         }
-                    }
 
 
 
-                });
-                c.complete();
+                    });
+                    c.complete();
 
 
-            } catch (IOException e) {
-                log.error("Failed to initialize repository connection");
-                c.error(e);
-            }
+                } catch (RepositoryException e) {
+                    log.error("Failed to initialize repository connection");
+                    c.error(e);
+                }
 
+            });
         });
+
+
+
     }
 }

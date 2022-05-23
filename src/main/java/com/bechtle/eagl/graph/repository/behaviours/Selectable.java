@@ -14,16 +14,16 @@ public interface Selectable extends RepositoryBehaviour {
 
 
     default Mono<TupleQueryResult> select(String query) {
-        return Mono.create(m -> {
-            try (RepositoryConnection connection = getRepository().getConnection()) {
+        return getRepository().map(repository -> {
+            try (RepositoryConnection connection = repository.getConnection()) {
                 TupleQuery q = connection.prepareTupleQuery(QueryLanguage.SPARQL, query);
                 try (TupleQueryResult result = q.evaluate()) {
-                    m.success(result);
+                    return result;
                 } catch (Exception e) {
-                    m.error(e);
+                    throw e;
                 }
             } catch (Exception e) {
-                m.error(e);
+                throw e;
             }
         });
     }

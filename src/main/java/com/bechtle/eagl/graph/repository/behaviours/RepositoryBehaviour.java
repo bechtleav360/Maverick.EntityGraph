@@ -20,57 +20,55 @@ import java.util.List;
 
 public interface RepositoryBehaviour {
 
-    Repository getRepository() throws IOException;
+    Mono<Repository> getRepository();
 
 
     default ValueFactory getValueFactory() {
-        try {
-            return getRepository().getValueFactory();
-        } catch (IOException e) {
-            return SimpleValueFactory.getInstance();
-        }
+        return getRepository()
+                .map(Repository::getValueFactory)
+                .switchIfEmpty(Mono.just(SimpleValueFactory.getInstance())).block();
     }
 
     /**
      * Checks whether an entity with the given identity exists, ie. we have an rdf:type statement.
+     *
      * @param subj the id of the entity
      * @return true if exists
      */
-    default Mono<Boolean> exists(Resource subj) {
-        return Mono.create(m -> {
-            try (RepositoryConnection connection = getRepository().getConnection()) {
-                boolean b = connection.hasStatement(subj, RDF.TYPE, null, false);
-                m.success(b);
-            } catch (Exception e) {
-                m.error(e);
+    default Mono<Boolean> exists(Resource subj) throws IOException {
+        return getRepository().map(repository -> {
+            try (RepositoryConnection connection = repository.getConnection()) {
+                return connection.hasStatement(subj, RDF.TYPE, null, false);
             }
         });
     }
 
     /**
      * Returns the type of the entity identified by the given id;
+     *
      * @param identifier the id of the entity
      * @return its type (or empty)
      */
     default Mono<Value> type(Resource identifier) {
-        return Mono.create(m -> {
-            try (RepositoryConnection connection = getRepository().getConnection()) {
+        return getRepository().flatMap(repository -> {
+            try (RepositoryConnection connection = repository.getConnection()) {
                 RepositoryResult<Statement> statements = connection.getStatements(identifier, RDF.TYPE, null, false);
 
                 Value result = null;
                 for (Statement st : statements) {
                     // FIXME: not sure if this is a domain exception (which mean it should not be handled here)
-                    if (result != null)
-                        m.error(new IOException("Duplicate type definitions for resource with identifier " + identifier.stringValue()));
-                    else result = st.getObject();
+                    if (result != null) {
+                        return Mono.error(new IOException("Duplicate type definitions for resource with identifier " + identifier.stringValue()));
+                    } else result = st.getObject();
                 }
-                if (result == null) m.success();
-                else m.success(result);
+                if (result == null) return Mono.empty();
+                else return Mono.just(result);
 
 
             } catch (Exception e) {
-                m.error(e);
+                return Mono.error(e);
             }
+
         });
     }
 

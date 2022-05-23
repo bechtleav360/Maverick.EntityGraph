@@ -2,12 +2,9 @@
 
 
 application: 
-  security:
-    enabled: true
-    apiKey: ""
   features:
     schedulers:
-      detectDuplicates: false
+      detectDuplicates: true
       replaceGlobalIdentifiers: true
     transformers:
       replaceGlobalIdentifiers: true
@@ -25,41 +22,6 @@ application:
     transactions:
       persistent: true        
       path: "/var/data/transactions"
-      
-spring:
-  security:
-    user:
-      name: "xxx"
-      password: "xxx"
 
 
-logging:
-  file:
-    name: server.log
-  level:
-    com:
-      bechtle: TRACE
-    org:
-      springframework:
-        security: INFO
 
-management:
-  endpoints:
-    web:
-      exposure:
-        include: "health, info, env, loggers, metrics, scheduledTasks, logfile, mappings"
-  endpoint:
-    health:
-      enabled: true
-    info:
-      enabled: true
-    env:
-      enabled: true
-    loggers:
-      enabled: true
-    metrics:
-      enabled: true
-    scheduledTasks:
-      enabled: true
-    logfile:
-      enabled: true

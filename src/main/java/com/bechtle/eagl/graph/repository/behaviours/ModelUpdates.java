@@ -7,6 +7,7 @@ import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
+import org.eclipse.rdf4j.repository.RepositoryException;
 import org.springframework.util.Assert;
 import reactor.core.publisher.Mono;
 
@@ -22,8 +23,8 @@ public interface ModelUpdates extends RepositoryBehaviour {
      * @return
      */
     default Mono<Void> delete(Model model) {
-        return Mono.create(c -> {
-            try (RepositoryConnection connection = getRepository().getConnection()) {
+        return getRepository().flatMap(repository -> Mono.create(c -> {
+            try (RepositoryConnection connection = repository.getConnection()) {
                 try {
                     Resource[] contexts = model.contexts().toArray(new Resource[model.contexts().size()]);
                     connection.add(model, contexts);
@@ -33,10 +34,10 @@ public interface ModelUpdates extends RepositoryBehaviour {
                     connection.rollback();
                     c.error(e);
                 }
-            } catch (IOException e) {
+            } catch (RepositoryException e) {
                 c.error(e);
             }
-        });
+        }));
     }
 
     default Mono<Transaction> delete(Collection<Statement> statements, Transaction transaction) {
@@ -70,20 +71,21 @@ public interface ModelUpdates extends RepositoryBehaviour {
      *  Stores the triples directly (without transaction context)
      */
     default Mono<Void> insert(Model model) {
-        return Mono.create(c -> {
-            try (RepositoryConnection connection = getRepository().getConnection()) {
+        return getRepository().map(repository -> {
+            try (RepositoryConnection connection = repository.getConnection()) {
                 try {
                     Resource[] contexts = model.contexts().toArray(new Resource[model.contexts().size()]);
                     connection.add(model, contexts);
                     connection.commit();
-                    c.success();
+                    return null;
                 } catch (Exception e) {
                     connection.rollback();
-                    c.error(e);
+                    throw e;
                 }
-            } catch (IOException e) {
-                c.error(e);
+            } catch (RepositoryException e) {
+                throw e;
             }
-        });
+        }).then();
+
     }
 }
