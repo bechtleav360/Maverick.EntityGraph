@@ -97,11 +97,9 @@ public class ApplicationsService {
                 );
         String qs = q.getQueryString();
 
-        return this.store.select(q)
-
+        return this.store.query(q)
+                .collectList()
                 .flatMap(result -> {
-                    if (!result.hasNext()) return Mono.empty();
-
                     List<BindingSet> bindingSets = result.stream().toList();
                     Assert.isTrue(bindingSets.size() == 1, "Found multiple key definitions for id " + keyIdentifier);
                     return Mono.just(bindingSets.get(0));
@@ -160,8 +158,7 @@ public class ApplicationsService {
                 );
         String qs = q.getQueryString();
 
-        return this.store.select(q)
-                .flatMapMany(Flux::fromIterable)
+        return this.store.query(q)
                 .map(BindingsAccessor::new)
                 .map(ba ->
                         new ApiKey(
@@ -199,8 +196,7 @@ public class ApplicationsService {
                 )
                 .limit(100);
 
-        return this.store.select(q)
-                .flatMapMany(Flux::fromIterable)
+        return this.store.query(q)
                 .map(BindingsAccessor::new)
                 .map(ba ->
                         new Application(
@@ -230,7 +226,8 @@ public class ApplicationsService {
                     .limit(2);
 
 
-        return this.store.select(q)
+        return this.store.query(q)
+                .collectList()
                 .flatMap(this::getUniqueBindingSet)
                 .map(BindingsAccessor::new)
                 .map(ba ->
@@ -266,17 +263,15 @@ public class ApplicationsService {
                 });
     }
 
-    private Mono<BindingSet> getUniqueBindingSet(TupleQueryResult result) {
-        if (!result.hasNext()) return Mono.empty();
+    private Mono<BindingSet> getUniqueBindingSet(List<BindingSet> result) {
+        if (result.isEmpty()) return Mono.empty();
 
-        List<BindingSet> bindingSets = result.stream().toList();
-
-        if (bindingSets.size() > 1) {
+        if (result.size() > 1) {
             log.error("Found multiple results when expected exactly one");
             return Mono.error(new DuplicateRecordsException());
         }
 
-        return Mono.just(bindingSets.get(0));
+        return Mono.just(result.get(0));
 
     }
 

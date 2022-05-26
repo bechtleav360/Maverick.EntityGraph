@@ -22,7 +22,7 @@ import java.util.List;
 import java.util.TreeSet;
 
 @Component
-@Slf4j
+@Slf4j(topic = "cougar.graph.schedulers.duplicates")
 @ConditionalOnProperty(name = "application.features.schedulers.detectDuplicates", havingValue = "true")
 public class ScheduledDetectDuplicates {
 
@@ -65,15 +65,13 @@ public class ScheduledDetectDuplicates {
                 idVariable.has(SDO.IDENTIFIER, this.valueFactory.createLiteral(duplicate.originalIdentifier()))
         );
         this.repository.query(findDuplicates)
-                .map(tupleQueryResult -> tupleQueryResult.stream().map(bindings -> {
-                        Value date = bindings.getValue("date");
-                        Value id = bindings.getValue("identifier");
-                        return new Duplicate(id.stringValue(), date.stringValue());
-                        }).toList()
-                ).map(this::mergeDuplicates); 
-
-
-
+                .map(bindings -> {
+                    Value date = bindings.getValue("date");
+                    Value id = bindings.getValue("identifier");
+                    return new Duplicate(id.stringValue(), date.stringValue());
+                })
+                .collectList()
+                .map(this::mergeDuplicates);
 
 
         return Flux.just(duplicate);
@@ -82,19 +80,18 @@ public class ScheduledDetectDuplicates {
     private Mono<Void> mergeDuplicates(List<Duplicate> duplicates) {
         TreeSet<Duplicate> orderedDuplicates = new TreeSet<>(duplicates);
         Duplicate original = orderedDuplicates.first();
-        orderedDuplicates.tailSet(original).stream().forEach(duplicate ->  {
+        orderedDuplicates.tailSet(original).stream().forEach(duplicate -> {
 
-                // collect duplicate identifiers and store in original
+                    // collect duplicate identifiers and store in original
 
-                // save original
+                    // save original
 
-                // delete duplicates
+                    // delete duplicates
 
                 }
         );
 
         return Mono.empty();
-
 
 
     }
@@ -120,23 +117,19 @@ having (count(?thing) > 1)
         ).groupBy(id, type).having(Expressions.gt(Expressions.count(thing), 1));
 
 
-
-        Mono<TupleQueryResult> result = repository.query(findDuplicates);
-        return result.flatMapMany(res ->
-                Flux.<DuplicateCandidate>create(c -> {
-            res.forEach(bindings -> {
-                Value identifier = bindings.getValue("identifier");
-                Value type1 = bindings.getValue("type");
-                c.next(new DuplicateCandidate(type1.stringValue(), identifier.stringValue()));
-            });
-            c.complete();
-        }));
-
+        return repository.query(findDuplicates)
+                .map(binding -> {
+                    Value identifier = binding.getValue("identifier");
+                    Value type1 = binding.getValue("type");
+                    return new DuplicateCandidate(type1.stringValue(), identifier.stringValue());
+                });
 
     }
 
 
-    private record DuplicateCandidate(String type, String originalIdentifier) {   }
+    private record DuplicateCandidate(String type, String originalIdentifier) {
+    }
+
     private record Duplicate(String id, String creationDate) implements Comparable<Duplicate> {
         @Override
         public int compareTo(Duplicate o) {

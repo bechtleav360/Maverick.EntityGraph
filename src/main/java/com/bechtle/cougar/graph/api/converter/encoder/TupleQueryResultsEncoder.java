@@ -21,7 +21,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.*;
 
-@Slf4j
+@Slf4j(topic = "cougar.graph.api.encoder")
 public class TupleQueryResultsEncoder implements Encoder<TupleQueryResult> {
     private static final List<MimeType> mimeTypes;
 
@@ -35,19 +35,25 @@ public class TupleQueryResultsEncoder implements Encoder<TupleQueryResult> {
 
     @Override
     public boolean canEncode(ResolvableType elementType, MimeType mimeType) {
+        return false;
+        /*
         return mimeType != null
                 && TupleQueryResult.class.isAssignableFrom(elementType.toClass())
                 && mimeType.isPresentIn(mimeTypes);
+
+         */
     }
 
     @Override
     public List<MimeType> getEncodableMimeTypes() {
-        return mimeTypes;
+
+        return List.of();
+        // return mimeTypes;
     }
 
     @Override
     public Flux<DataBuffer> encode(Publisher<? extends TupleQueryResult> inputStream, DataBufferFactory bufferFactory, ResolvableType elementType, MimeType mimeType, Map<String, Object> hints) {
-        log.debug("(Decoder) Trying to write tuple query results response with mimetype '{}'", mimeType != null ? mimeType.toString() : "unset");
+
 
         Assert.notNull(mimeType, "No mimetype is set");
         Assert.isAssignable(TupleQueryResult.class, elementType.toClass(), "Invalid object definition");
@@ -57,6 +63,11 @@ public class TupleQueryResultsEncoder implements Encoder<TupleQueryResult> {
             QueryResultFormat format = QueryResultIO.getParserFormatForMIMEType(mimeType.toString()).orElseThrow();
 
             return Flux.from(inputStream)
+                    .doOnSubscribe(subscription -> log.debug("Writing tuple query results response with mimetype '{}'", mimeType))
+                    .doOnComplete(() -> {
+                        log.trace("Completed writing tuple query results response with mimetype '{}'", mimeType);
+
+                    })
                     .flatMap(bindings -> {
                         try {
                             QueryResultIO.writeTuple(bindings, format, baos);
@@ -71,12 +82,9 @@ public class TupleQueryResultsEncoder implements Encoder<TupleQueryResult> {
                     });
 
         } catch (IOException e) {
-            log.error("Failed to write into stream with mimetype '{}'", mimeType.toString(), e);
+            log.error("Failed to write into stream with mimetype '{}'", mimeType, e);
             return Flux.error(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to write response"));
-        } finally {
-            log.trace("(Decoder) Completed writing tuple query results response with mimetype '{}'", mimeType.toString());
         }
-
     }
 
 }

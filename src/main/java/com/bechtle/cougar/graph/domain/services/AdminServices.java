@@ -9,7 +9,7 @@ import reactor.core.publisher.Mono;
 
 
 @Service
-@Slf4j
+@Slf4j(topic = "cougar.graph.service.admin")
 public class AdminServices {
 
     private final EntityStore graph;

@@ -1,5 +1,6 @@
 package com.bechtle.cougar.graph.api.config;
 
+import com.bechtle.cougar.graph.api.converter.encoder.BindingSetEncoder;
 import com.bechtle.cougar.graph.api.converter.encoder.BufferedStatementsEncoder;
 import com.bechtle.cougar.graph.api.converter.decoder.StatementsDecoder;
 import com.bechtle.cougar.graph.api.converter.encoder.StatementsEncoder;
@@ -25,6 +26,7 @@ public class WebFluxConfiguration implements WebFluxConfigurer {
         configurer.customCodecs().register(new BufferedStatementsEncoder());
         configurer.customCodecs().register(new StatementsEncoder());
         configurer.customCodecs().register(new TupleQueryResultsEncoder());
+        configurer.customCodecs().register(new BindingSetEncoder());
 
         configurer.customCodecs().register(new StatementsDecoder());
 

@@ -36,7 +36,7 @@ import java.util.List;
  * }
  * LIMIT 100
  */
-@Slf4j
+@Slf4j(topic = "cougar.graph.schedulers.identifiers")
 @Component
 @ConditionalOnProperty(name = "application.features.schedulers.replaceGlobalIdentifiers", havingValue = "true")
 public class ScheduledReplaceGlobalIdentifiers {
@@ -168,16 +168,7 @@ public class ScheduledReplaceGlobalIdentifiers {
                 """;
         String query = String.format(tpl, Local.Entities.NAMESPACE);
         return queryServices.queryValues(query)
-                .flatMapMany(queryResult -> {
-                    return Flux.create(c -> {
-                        queryResult.forEach(bindings -> {
-                            // log.trace("Found global identifier '{}', transform to local identifier", bindings.getValue("a"));
-                            c.next(bindings.getValue("a"));
-                        });
-                        c.complete();
-                    });
-
-                });
+                .map(bindings -> bindings.getValue("a"));
     }
 
 

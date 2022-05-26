@@ -3,6 +3,7 @@
 #    url: jdbc:h2:file:/data/demo
 
 application:
+  test: "val"
   security:
     enabled: true
     apiKey: "test"
@@ -19,13 +20,13 @@ application:
   storage:
     default:
       persistent: false
-      path: {}
+      path: ~
     entities:
       persistent: false
-      path: {}
+      path: ~
     transactions:
       persistent: false
-      path: {}
+      path: ~
 
 spring:
   profiles:

@@ -19,9 +19,13 @@ public class CsvConsumer implements Consumer<EntityExchangeResult<byte[]>> {
     @Override
     public void accept(EntityExchangeResult<byte[]> entityExchangeResult) {
         Assertions.assertNotNull(entityExchangeResult);
-        Assertions.assertNotNull(entityExchangeResult.getResponseBody());
 
-        String result = new String(entityExchangeResult.getResponseBody());
+        byte[] responseBody = entityExchangeResult.getResponseBodyContent();
+        Assertions.assertNotNull(responseBody);
+
+
+
+        String result = new String(responseBody);
         String[] lines = result.split("\\n");
         String[] headers = lines[0].split(",");
 

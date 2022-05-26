@@ -14,6 +14,7 @@ import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.impl.LinkedHashModel;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.model.vocabulary.RDFS;
+import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.query.TupleQueryResult;
 import org.eclipse.rdf4j.sparqlbuilder.core.SparqlBuilder;
 import org.eclipse.rdf4j.sparqlbuilder.core.Variable;
@@ -29,7 +30,7 @@ import reactor.core.publisher.Mono;
 import java.util.*;
 import java.util.stream.Collectors;
 
-@Slf4j
+@Slf4j(topic = "cougar.graph.transformer.duplicates")
 @Component
 /**
  * Checks whether duplicates exist in the incoming model. Does not check within the repository (this is delegated to a
@@ -205,15 +206,15 @@ public class MergeDuplicates implements Transformer {
                     RdfObject type = Rdf.object(localEntity.type());
                     RdfObject label = Rdf.object(localEntity.label());
                     SelectQuery all = Queries.SELECT(id).where(id.isA(type).andHas(RDFS.LABEL, label)).all();
-                    return Mono.zip(Mono.just(localEntity), graph.select(all));
+                    return Mono.zip(Mono.just(localEntity), graph.query(all).collectList());
                 })
                 .doOnNext(pair -> {
                     // if we found query results, relink local entity and remove duplicate from model
                     LocalEntity localEntity = pair.getT1();
-                    TupleQueryResult queryResult = pair.getT2();
-                    if (queryResult.hasNext()) {
+                    List<BindingSet> queryResult = pair.getT2();
+                    if (queryResult.size() > 1) {
                         log.trace("(Transformer) Linked entity exists already in graph, rerouting.");
-                        this.reroute(model, localEntity.localIdentifier(), (Resource) queryResult.next().getValue("id"));
+                        this.reroute(model, localEntity.localIdentifier(), (Resource) queryResult.get(0).getValue("id"));
                     }
                 })
                 .then(Mono.just(model));

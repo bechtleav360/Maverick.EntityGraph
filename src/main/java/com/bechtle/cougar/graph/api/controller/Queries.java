@@ -5,6 +5,7 @@ import com.bechtle.cougar.graph.domain.services.QueryServices;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
+import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.query.TupleQueryResult;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -25,7 +26,7 @@ public class Queries {
     @ApiOperation(value = "Run a query", tags = {"v1"})
     @PostMapping(value = "/select", consumes = "text/plain", produces = {"text/csv", "application/sparql-results+json"})
     @ResponseStatus(HttpStatus.ACCEPTED)
-    Mono<TupleQueryResult> queryBindings(@RequestBody String query) {
+    Flux<BindingSet> queryBindings(@RequestBody String query) {
         log.trace("(Request) Search graph with tuples query: {}", query.toString());
         return queryServices.queryValues(query); // .map(ResponseEntity::ok);
     }

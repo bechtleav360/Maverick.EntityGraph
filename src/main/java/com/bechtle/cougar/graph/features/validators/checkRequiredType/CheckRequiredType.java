@@ -13,7 +13,7 @@ import reactor.core.publisher.Mono;
 
 import java.util.Map;
 
-@Slf4j
+@Slf4j(topic = "cougar.graph.validator.type")
 @Component
 @ConditionalOnProperty(name = "application.features.validators.checkRequiredType", havingValue = "true")
 public class CheckRequiredType implements Validator {

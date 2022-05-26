@@ -19,7 +19,7 @@ import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
 
-@Slf4j
+@Slf4j(topic = "cougar.graph.api.decoder")
 public class StatementsDecoder implements Decoder<Incoming> {
     private static final List<MimeType> mimeTypes;
 

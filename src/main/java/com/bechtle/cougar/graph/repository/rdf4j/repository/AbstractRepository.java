@@ -9,10 +9,7 @@ import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
-import org.eclipse.rdf4j.query.MalformedQueryException;
-import org.eclipse.rdf4j.query.QueryLanguage;
-import org.eclipse.rdf4j.query.TupleQuery;
-import org.eclipse.rdf4j.query.TupleQueryResult;
+import org.eclipse.rdf4j.query.*;
 import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.sparqlbuilder.core.query.SelectQuery;
@@ -20,6 +17,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
@@ -38,8 +36,6 @@ public class AbstractRepository implements RepositoryBehaviour {
     private void setConfig(RepositoryConfiguration repositoryConfiguration) {
         this.repositoryConfiguration = repositoryConfiguration;
     }
-
-
 
 
     public Mono<Void> store(Model model) {
@@ -63,23 +59,45 @@ public class AbstractRepository implements RepositoryBehaviour {
     }
 
 
-    public Mono<TupleQueryResult> query(String query) {
+    public Flux<BindingSet> query(String query) {
+        log.debug("XXXX");
+        return this.getRepository().flatMapMany(repository ->
+                Flux.create(c -> {
+                    try (RepositoryConnection connection = repository.getConnection()) {
+
+                        log.debug("ZZZZ");
+                        TupleQuery q = connection.prepareTupleQuery(QueryLanguage.SPARQL, query);
+
+                        try (TupleQueryResult result = q.evaluate()) {
+                            result.stream().forEach(c::next);
+                        } finally {
+                            c.complete();
+                        }
+
+                    } catch (MalformedQueryException e) {
+                        log.warn("Error while parsing query, reason: {}", e.getMessage());
+                        c.error(e);
+                    } catch (Exception e) {
+                        log.error("Unknown error while running query", e);
+                        c.error(e);
+                    }
+                }));
+    }
+
+    public Mono<TupleQueryResult> queryOld(String query) {
         return this.getRepository().map(repository -> {
             try (RepositoryConnection connection = repository.getConnection()) {
+
                 TupleQuery q = connection.prepareTupleQuery(QueryLanguage.SPARQL, query);
 
-                try (TupleQueryResult result = q.evaluate()) {
-
-
-                    if(! result.hasNext()) {
-                        log.debug("Query with no results: {}", query);
-                    }
-
-                    return result;
-                } catch (Exception e) {
-                    log.warn("Error while running value query.", e);
-                    throw e;
+                TupleQueryResult result = q.evaluate();
+                if (!result.hasNext()) {
+                    log.debug("Query with no results: {}", query);
+                } else {
+                    log.debug("Query has results: {}", query);
                 }
+                return result;
+
             } catch (MalformedQueryException e) {
                 log.warn("Error while parsing query, reason: {}", e.getMessage());
                 throw e;
@@ -91,9 +109,7 @@ public class AbstractRepository implements RepositoryBehaviour {
     }
 
 
-    public Mono<TupleQueryResult> query(SelectQuery all) {
-        return this.query(all.getQueryString());
-    }
+
 
 
     @Override

@@ -31,7 +31,7 @@ import java.util.stream.Collectors;
  *
  *
  */
-@Slf4j
+@Slf4j(topic = "cougar.graph.transformer.identifiers")
 @Component
 @ConditionalOnProperty(name = "application.features.transformers.replaceGlobalIdentifiers", havingValue = "true")
 public class ReplaceGlobalIdentifiers implements Transformer {

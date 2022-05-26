@@ -7,6 +7,7 @@ import org.eclipse.rdf4j.sail.lmdb.LmdbStore;
 import org.eclipse.rdf4j.sail.lmdb.config.LmdbStoreConfig;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -20,6 +21,7 @@ import java.nio.file.Paths;
 @Configuration
 @Profile({"prod", "stage", "it", "persistent"})
 @Slf4j
+
 public class DefaultPersistentRepositoryConfiguration {
 
     // FIXME: Should not be configured through profiles, but as a flag in the applicaation2

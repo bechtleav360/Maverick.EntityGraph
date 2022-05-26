@@ -21,7 +21,7 @@ import reactor.core.publisher.Mono;
 import java.util.HashMap;
 import java.util.Map;
 
-@Slf4j
+@Slf4j(topic = "cougar.graph.service.entity")
 @Service
 public class EntityServices {
 

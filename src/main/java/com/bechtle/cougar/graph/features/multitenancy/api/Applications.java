@@ -20,7 +20,7 @@ import java.util.List;
 @RestController
 @RequestMapping(path = "/api/admin/subscriptions")
 @Api(tags = "Admin")
-@Slf4j
+@Slf4j(topic = "cougar.graph.feature.subscriptions")
 public class Applications {
 
     private final ApplicationsService subscriptionsService;

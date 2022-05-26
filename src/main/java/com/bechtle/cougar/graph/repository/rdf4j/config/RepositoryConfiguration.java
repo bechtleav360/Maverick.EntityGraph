@@ -13,6 +13,8 @@ import org.eclipse.rdf4j.sail.lmdb.config.LmdbStoreConfig;
 import org.eclipse.rdf4j.sail.memory.MemoryStore;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.ConstructorBinding;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
@@ -27,10 +29,13 @@ import reactor.core.publisher.Mono;
 
 import java.io.IOException;
 import java.nio.file.Paths;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 @Component
 @Slf4j(topic = "cougar.graph.repository.configuration")
+@ConfigurationProperties(prefix = "application")
 public class RepositoryConfiguration {
 
 
@@ -39,6 +44,9 @@ public class RepositoryConfiguration {
     private final Repository schemaRepository;
     private final Repository applicationRepository;
     private final Cache<String, Repository> cache;
+    private Map<String, List<String>> storage;
+    private String test;
+    private Map<String, String> security;
 
     public enum RepositoryType {
         ENTITIES,
@@ -50,7 +58,8 @@ public class RepositoryConfiguration {
     public RepositoryConfiguration(@Value("${application.storage.entities.path:#{null}}") String entitiesPath,
                                    @Value("${application.storage.transactions.path:#{null}}") String transactionsPath,
                                    @Qualifier("schema-storage") Repository schemaRepository,
-                                   @Qualifier("application-storage") Repository applicationRepository) {
+                                   @Qualifier("application-storage") Repository applicationRepository,
+                                   @Value("${application.storage.entities:#{null}}") Map<String, String> storageConfiguration) {
 
         this.entitiesPath = entitiesPath;
         this.transactionsPath = transactionsPath;
@@ -72,12 +81,12 @@ public class RepositoryConfiguration {
     public Repository getRepository(RepositoryType repositoryType, Authentication authentication) throws IOException {
 
         if (authentication == null) {
-            log.warn("(Store) No authentication set, using in memory store for type {}", repositoryType);
-            return this.cache.get("none", s -> new SailRepository(new MemoryStore()));
+            log.error("No authentication set.");
+            throw new IOException("Failed to resolve repository due to missing authentication");
         }
 
         if (authentication instanceof TestingAuthenticationToken) {
-            return this.cache.get("none", s -> new SailRepository(new MemoryStore()));
+            return this.cache.get(repositoryType.name(), s -> new SailRepository(new MemoryStore()));
         }
 
         if (authentication instanceof AdminAuthentication) {
@@ -103,14 +112,16 @@ public class RepositoryConfiguration {
 
     private Repository resolveRepositoryForAdminAuthentication(RepositoryType repositoryType, AdminAuthentication authentication) throws IOException {
         if(repositoryType == RepositoryType.APPLICATION) {
-            return  this.applicationRepository;
+            return this.applicationRepository;
         }
 
         if(repositoryType == RepositoryType.SCHEMA) {
             return this.schemaRepository;
         }
 
-        if(authentication.getDetails().getApplication() != null) {
+
+
+        if(authentication.getDetails()  != null && authentication.getDetails().getApplication() != null) {
             if(repositoryType == RepositoryType.ENTITIES) {
                 return this.getEntityRepository(authentication.getDetails().getApplication().subscription());
             }
@@ -118,6 +129,9 @@ public class RepositoryConfiguration {
             if(repositoryType == RepositoryType.TRANSACTIONS) {
                 return this.getTransactionsRepository(authentication.getDetails().getApplication().subscription());
             }
+        } else {
+            log.warn("No valid application found for admin authentication, we assume this is for tests and return a memory store");
+            return this.cache.get(repositoryType.name(), s -> new SailRepository(new MemoryStore()));
         }
 
 
@@ -160,12 +174,6 @@ public class RepositoryConfiguration {
                 return new SailRepository(new MemoryStore());
             }
         }
-    }
-
-
-    @Cacheable
-    private Repository getVolatileRepository() {
-        return new SailRepository(new MemoryStore());
     }
 
     @Cacheable
