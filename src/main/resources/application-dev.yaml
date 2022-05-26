@@ -5,7 +5,7 @@
 application:
   security:
     enabled: true
-    apiKey: ""
+    apiKey: "12345"
     basic:
       enabled: false
   features:
@@ -21,13 +21,13 @@ application:
   storage:
     default:
       persistent: false
-      path: {}
+      path: ~
     entities:
       persistent: false
-      path: {}
+      path: ~
     transactions:
       persistent: false
-      path: {}
+      path: ~
 
 logging:
   level:
@@ -35,5 +35,5 @@ logging:
       bechtle: TRACE
     org:
       springframework:
-        security: TRACE
+        security: INFO
 

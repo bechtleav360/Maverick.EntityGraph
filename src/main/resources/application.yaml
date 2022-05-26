@@ -34,22 +34,13 @@ server:
 
 logging:
   level:
+    cougar:
+      graph: TRACE
     com:
       bechtle: INFO
     org:
       springframework:
-        security: TRACE
-
-features:
-  schedulers:
-    detectDuplicates: false
-    replaceGlobalIdentifiers: false
-  transformers:
-    replaceGlobalIdentifiers: true
-    replaceAnonymousIdentifiers: true
-    mergeDuplicates: true
-  validators:
-    checkRequiredType: true
+        security: INFO
 
 
 

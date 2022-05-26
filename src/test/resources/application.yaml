@@ -4,12 +4,12 @@
 
 application:
   security:
-    enabled: false
-    apiKey: "xxx"
+    enabled: true
+    apiKey: "test"
   features:
     schedulers:
       detectDuplicates: false
-      replaceGlobalIdentifiers: true
+      replaceGlobalIdentifiers: false
     transformers:
       replaceGlobalIdentifiers: true
       replaceAnonymousIdentifiers: true
@@ -41,6 +41,8 @@ storage:
 
 logging:
   level:
+    cougar:
+      graph: TRACE
     com:
       bechtle: TRACE
     org:
