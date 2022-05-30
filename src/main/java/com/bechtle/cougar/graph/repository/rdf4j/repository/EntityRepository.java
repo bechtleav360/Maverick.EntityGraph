@@ -1,10 +1,8 @@
 package com.bechtle.cougar.graph.repository.rdf4j.repository;
 
 import com.bechtle.cougar.graph.repository.rdf4j.config.RepositoryConfiguration;
-import com.bechtle.cougar.graph.domain.model.enums.Activity;
 import com.bechtle.cougar.graph.domain.model.extensions.NamespaceAwareStatement;
 import com.bechtle.cougar.graph.domain.model.wrapper.Entity;
-import com.bechtle.cougar.graph.domain.model.wrapper.Transaction;
 import com.bechtle.cougar.graph.repository.EntityStore;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.rdf4j.model.*;
@@ -13,8 +11,8 @@ import org.eclipse.rdf4j.query.*;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.RepositoryResult;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
-import org.springframework.util.Assert;
 import org.springframework.web.client.HttpClientErrorException;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -32,11 +30,9 @@ public class EntityRepository extends AbstractRepository implements EntityStore 
     }
 
 
-    @Override
-    public Mono<Entity> get(IRI id) {
-        return super.getRepository().flatMap(repository -> {
-            try (RepositoryConnection connection = repository.getConnection()) {
-                log.trace("(Store) Loading entity from repository {}", getRepository().toString());
+    public Mono<Entity> getEntity(IRI id, Authentication authentication) {
+            try (RepositoryConnection connection = getConnection(authentication)) {
+                log.trace("(Store) Loading entity from repository {}",connection.getRepository().toString());
 
                 RepositoryResult<Statement> statements = connection.getStatements(id, null, null);
                 if (!statements.hasNext()) {
@@ -63,73 +59,9 @@ public class EntityRepository extends AbstractRepository implements EntityStore 
                 log.error("Unknown error while running query", e);
                 return Mono.error(e);
             }
-        });
     }
 
 
-    @Override
-    public Flux<NamespaceAwareStatement> constructQuery(String query) {
-        return super.getRepository().flatMapMany(repository -> {
-            return Flux.create(c -> {
-                try (RepositoryConnection connection = repository.getConnection()) {
-                    GraphQuery q = connection.prepareGraphQuery(QueryLanguage.SPARQL, query);
-                    try (GraphQueryResult result = q.evaluate()) {
-                        Set<Namespace> namespaces = result.getNamespaces().entrySet().stream()
-                                .map(entry -> new SimpleNamespace(entry.getKey(), entry.getValue()))
-                                .collect(Collectors.toSet());
 
-                        result.forEach(statement -> c.next(NamespaceAwareStatement.wrap(statement, namespaces)));
-                    } catch (Exception e) {
-                        log.warn("Error while running value query.", e);
-                        c.error(e);
-                    }
-                } catch (MalformedQueryException e) {
-                    log.warn("Error while parsing query", e);
-                    c.error(new HttpClientErrorException(HttpStatus.BAD_REQUEST, "Invalid query"));
-                } catch (Exception e) {
-                    log.error("Unknown error while running query", e);
-                    c.error(e);
-                } finally {
-                    c.complete();
-                }
-            });
-        });
-    }
-
-
-    @Override
-    public Mono<List<Statement>> listStatements(Resource value, IRI predicate, Value object) {
-        return super.getRepository().flatMap(repository -> {
-            try (RepositoryConnection connection = repository.getConnection()) {
-                List<Statement> statements = connection.getStatements(value, predicate, object).stream().toList();
-                return Mono.just(statements);
-            } catch (Exception e) {
-                return Mono.error(e);
-            }
-        });
-
-    }
-
-    @Override
-    public Mono<Transaction> addStatement(Resource subject, IRI predicate, Value value, Transaction transaction) {
-        Assert.notNull(transaction, "Transaction cannot be null");
-
-        return transaction
-                .insert(subject, predicate, value, Activity.UPDATED)
-                .affected(subject, predicate, value)
-                .asMono();
-
-    }
-
-
-    @Override
-    public Mono<Transaction> removeStatement(Resource subject, IRI predicate, Value value, Transaction transaction) {
-        Assert.notNull(transaction, "Transaction cannot be null");
-
-        return transaction
-                .remove(subject, predicate, value, Activity.UPDATED)
-                .affected(subject, predicate, value)
-                .asMono();
-    }
 
 }

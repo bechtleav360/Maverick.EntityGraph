@@ -4,6 +4,8 @@ import com.bechtle.cougar.graph.repository.EntityStore;
 import lombok.extern.slf4j.Slf4j;
 import org.reactivestreams.Publisher;
 import org.springframework.core.io.buffer.DataBuffer;
+import org.springframework.security.core.context.ReactiveSecurityContextHolder;
+import org.springframework.security.core.context.SecurityContext;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
@@ -20,12 +22,19 @@ public class AdminServices {
 
 
     public Mono<Void> reset() {
-        return this.graph.reset();
+        return ReactiveSecurityContextHolder.getContext()
+                .map(SecurityContext::getAuthentication)
+                .map(this.graph::reset)
+                .then();
     }
 
     public Mono<Void> importEntities(Publisher<DataBuffer> bytes, String mimetype) {
         log.trace("Importing statements of type '{}' through admin services", mimetype);
-        return this.graph.importStatements(bytes, mimetype);
+
+        return ReactiveSecurityContextHolder.getContext().map(SecurityContext::getAuthentication)
+                .map(authentication -> this.graph.importStatements(bytes, mimetype, authentication))
+                .then();
+
 
 
 

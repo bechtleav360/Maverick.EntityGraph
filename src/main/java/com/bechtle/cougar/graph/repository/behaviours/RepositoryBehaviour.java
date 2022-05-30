@@ -1,16 +1,18 @@
 package com.bechtle.cougar.graph.repository.behaviours;
 
 
+import brave.internal.Nullable;
 import com.bechtle.cougar.graph.domain.model.wrapper.Transaction;
+import com.bechtle.cougar.graph.repository.rdf4j.config.RepositoryConfiguration;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
-import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.RepositoryResult;
+import org.springframework.security.core.Authentication;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -20,13 +22,15 @@ import java.util.List;
 
 public interface RepositoryBehaviour {
 
-    Mono<Repository> getRepository();
 
+    default ValueFactory getValueFactory() {
+        return SimpleValueFactory.getInstance();
+    }
 
-    default Mono<ValueFactory> getValueFactory() {
-        return getRepository()
-                .map(Repository::getValueFactory)
-                .switchIfEmpty(Mono.just(SimpleValueFactory.getInstance()));
+    default ValueFactory getValueFactory(@Nullable Authentication authentication) throws IOException {
+        if (authentication == null || !authentication.isAuthenticated()) return this.getValueFactory();
+
+        return getConfiguration().getRepository(this.getRepositoryType(), authentication).getValueFactory();
     }
 
     /**
@@ -35,12 +39,10 @@ public interface RepositoryBehaviour {
      * @param subj the id of the entity
      * @return true if exists
      */
-    default Mono<Boolean> exists(Resource subj) throws IOException {
-        return getRepository().map(repository -> {
-            try (RepositoryConnection connection = repository.getConnection()) {
-                return connection.hasStatement(subj, RDF.TYPE, null, false);
-            }
-        });
+    default Mono<Boolean> exists(Resource subj, Authentication authentication) throws IOException {
+        try (RepositoryConnection connection = getConnection(authentication)) {
+            return Mono.just(connection.hasStatement(subj, RDF.TYPE, null, false));
+        }
     }
 
     /**
@@ -49,33 +51,41 @@ public interface RepositoryBehaviour {
      * @param identifier the id of the entity
      * @return its type (or empty)
      */
-    default Mono<Value> type(Resource identifier) {
-        return getRepository().flatMap(repository -> {
-            try (RepositoryConnection connection = repository.getConnection()) {
-                RepositoryResult<Statement> statements = connection.getStatements(identifier, RDF.TYPE, null, false);
+    default Mono<Value> type(Resource identifier, Authentication authentication) {
+        try (RepositoryConnection connection = getConnection(authentication)) {
+            RepositoryResult<Statement> statements = connection.getStatements(identifier, RDF.TYPE, null, false);
 
-                Value result = null;
-                for (Statement st : statements) {
-                    // FIXME: not sure if this is a domain exception (which mean it should not be handled here)
-                    if (result != null) {
-                        return Mono.error(new IOException("Duplicate type definitions for resource with identifier " + identifier.stringValue()));
-                    } else result = st.getObject();
-                }
-                if (result == null) return Mono.empty();
-                else return Mono.just(result);
-
-
-            } catch (Exception e) {
-                return Mono.error(e);
+            Value result = null;
+            for (Statement st : statements) {
+                // FIXME: not sure if this is a domain exception (which mean it should not be handled here)
+                if (result != null) {
+                    return Mono.error(new IOException("Duplicate type definitions for resource with identifier " + identifier.stringValue()));
+                } else result = st.getObject();
             }
+            if (result == null) return Mono.empty();
+            else return Mono.just(result);
 
-        });
+
+        } catch (Exception e) {
+            return Mono.error(e);
+        }
+
     }
 
-    Flux<Transaction> commit(Collection<Transaction> transactions);
 
-    default Mono<Transaction> commit(Transaction transaction) {
-        return this.commit(List.of(transaction)).singleOrEmpty();
+    Flux<Transaction> commit(Collection<Transaction> transactions, Authentication authentication);
+
+    default Mono<Transaction> commit(Transaction transaction, Authentication authentication) {
+        return this.commit(List.of(transaction), authentication).singleOrEmpty();
     }
+
+
+    default RepositoryConnection getConnection(Authentication authentication) throws IOException {
+        return getConfiguration().getRepository(getRepositoryType(), authentication).getConnection();
+    }
+
+    RepositoryConfiguration.RepositoryType getRepositoryType();
+
+    RepositoryConfiguration getConfiguration();
 
 }

@@ -1,5 +1,6 @@
 package com.bechtle.cougar.graph.features.schedulers.replaceGlobalIdentifiers;
 
+import com.bechtle.cougar.graph.api.security.AdminAuthentication;
 import com.bechtle.cougar.graph.domain.model.extensions.GeneratedIdentifier;
 import com.bechtle.cougar.graph.domain.model.vocabulary.Local;
 import com.bechtle.cougar.graph.domain.model.vocabulary.Transactions;
@@ -8,6 +9,7 @@ import com.bechtle.cougar.graph.domain.services.QueryServices;
 import com.bechtle.cougar.graph.repository.EntityStore;
 import com.bechtle.cougar.graph.repository.TransactionsStore;
 import lombok.extern.slf4j.Slf4j;
+import org.checkerframework.checker.units.qual.A;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.Value;
@@ -15,6 +17,7 @@ import org.eclipse.rdf4j.model.util.ModelBuilder;
 import org.eclipse.rdf4j.model.vocabulary.DC;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 import reactor.core.publisher.Flux;
@@ -58,7 +61,10 @@ public class ScheduledReplaceGlobalIdentifiers {
 
     @Scheduled(fixedDelay = 60000)
     public void checkForGlobalIdentifiersScheduled() {
-        this.checkForGlobalIdentifiers()
+        AdminAuthentication authentication = new AdminAuthentication();
+        authentication.setAuthenticated(true);
+
+        this.checkForGlobalIdentifiers(authentication)
                 .collectList()
                 .doOnError(throwable -> log.error("(Scheduled) Checking for invalided identifiers failed. ", throwable))
                 .doOnSuccess(list -> {
@@ -74,32 +80,33 @@ public class ScheduledReplaceGlobalIdentifiers {
                 }).subscribe();
     }
 
-    public Flux<Transaction> checkForGlobalIdentifiers() {
-        return findGlobalIdentifiers()
-                .flatMap(this::getOldStatements)
+
+    public Flux<Transaction> checkForGlobalIdentifiers(Authentication authentication) {
+        return findGlobalIdentifiers(authentication)
+                .flatMap(value -> this.getOldStatements(value, authentication))
                 .flatMap(this::storeNewStatements)
                 .flatMap(this::deleteOldStatements)
                 .buffer(50)
-                .flatMap(this::commit)
+                .flatMap(transactions -> this.commit(transactions, authentication))
                 .doOnNext(transaction -> {
                     Assert.isTrue(transaction.hasStatement(null, Transactions.STATUS, Transactions.SUCCESS), "Failed transaction: \n"+transaction);
                 })
                 .buffer(50)
-                .flatMap(this::storeTransactions)
+                .flatMap(transactions -> this.storeTransactions(transactions, authentication))
                 .doOnError(throwable -> {
                     log.error("Exception during check: {}",throwable.getMessage());
                 })
                 ;
     }
 
-    private Flux<Transaction> commit(List<Transaction> transactions) {
+    private Flux<Transaction> commit(List<Transaction> transactions, Authentication authentication) {
         // log.trace("Committing {} transactions", transactions.size());
-        return this.entityStore.commit(transactions);
+        return this.entityStore.commit(transactions, authentication);
     }
 
-    private Flux<Transaction> storeTransactions(Collection<Transaction> transactions) {
+    private Flux<Transaction> storeTransactions(Collection<Transaction> transactions, Authentication authentication) {
         //FIXME: through event
-        return this.trxStore.store(transactions);
+        return this.trxStore.store(transactions, authentication);
     }
 
     private Mono<Transaction> deleteOldStatements(StatementsBag statementsBag) {
@@ -133,19 +140,19 @@ public class ScheduledReplaceGlobalIdentifiers {
      * @param value
      * @return
      */
-    private Mono<StatementsBag> getOldStatements(Value value) {
+    private Mono<StatementsBag> getOldStatements(Value value, Authentication authentication) {
 
         if (value.isResource()) {
             return Mono.zip(
-                    this.entityStore.listStatements((Resource) value, null, null),
+                    this.entityStore.listStatements((Resource) value, null, null, authentication),
                             //.map(statements -> statements.stream().filter(statement -> !statement.getPredicate().equals(RDF.TYPE)).toList()),
-                    this.entityStore.listStatements(null, null, value)
+                    this.entityStore.listStatements(null, null, value, authentication)
             ).map(pair -> new StatementsBag(pair.getT1(), pair.getT2(), (Resource) value, new Transaction()));
         }
         return Mono.empty();
     }
 
-    private Flux<Value> findGlobalIdentifiers() {
+    private Flux<Value> findGlobalIdentifiers(Authentication authentication) {
                 /*
         Variable id = SparqlBuilder.var("id");
         Variable type = SparqlBuilder.var("type")

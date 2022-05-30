@@ -1,6 +1,7 @@
 package com.bechtle.cougar.graph.domain.services.handler;
 
 import com.bechtle.cougar.graph.domain.model.wrapper.AbstractModel;
+import com.bechtle.cougar.graph.domain.services.EntityServices;
 import com.bechtle.cougar.graph.repository.EntityStore;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -20,13 +21,13 @@ public class DelegatingValidator implements Validator {
     }
 
     @Override
-    public Mono<? extends AbstractModel> handle(EntityStore graph, AbstractModel triples, Map<String, String> parameters) {
+    public Mono<? extends AbstractModel> handle(EntityServices entityServices, AbstractModel triples, Map<String, String> parameters) {
         if(this.validators == null) return Mono.just(triples);
 
         return Flux.fromIterable(validators)
                 .reduce(Mono.just(triples), (modelMono, validator) ->
                         modelMono.map(model ->
-                                validator.handle(graph, model, parameters)).flatMap(mono -> mono))
+                                validator.handle(entityServices, model, parameters)).flatMap(mono -> mono))
                 .flatMap(mono -> mono);
     }
 }

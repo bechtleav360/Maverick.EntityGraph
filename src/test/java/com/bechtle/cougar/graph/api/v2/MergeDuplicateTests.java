@@ -1,0 +1,195 @@
+package com.bechtle.cougar.graph.api.v2;
+
+import com.bechtle.cougar.graph.api.security.AdminAuthentication;
+import com.bechtle.cougar.graph.features.schedulers.detectDuplicates.ScheduledDetectDuplicates;
+import com.bechtle.cougar.graph.tests.config.TestConfigurations;
+import com.bechtle.cougar.graph.tests.utils.CsvConsumer;
+import com.bechtle.cougar.graph.tests.utils.RdfConsumer;
+import lombok.extern.slf4j.Slf4j;
+import org.eclipse.rdf4j.model.Model;
+import org.eclipse.rdf4j.model.Statement;
+import org.eclipse.rdf4j.model.ValueFactory;
+import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
+import org.eclipse.rdf4j.model.vocabulary.RDF;
+import org.eclipse.rdf4j.model.vocabulary.RDFS;
+import org.eclipse.rdf4j.rio.RDFFormat;
+import org.eclipse.rdf4j.sparqlbuilder.core.SparqlBuilder;
+import org.eclipse.rdf4j.sparqlbuilder.core.Variable;
+import org.eclipse.rdf4j.sparqlbuilder.core.query.Queries;
+import org.eclipse.rdf4j.sparqlbuilder.core.query.SelectQuery;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
+import org.springframework.http.MediaType;
+import org.springframework.security.authentication.TestingAuthenticationToken;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.event.RecordApplicationEvents;
+import org.springframework.test.web.reactive.server.WebTestClient;
+import org.springframework.web.reactive.function.BodyInserters;
+import reactor.test.StepVerifier;
+
+import java.util.List;
+import java.util.stream.StreamSupport;
+
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@ContextConfiguration(classes = TestConfigurations.class)
+@RecordApplicationEvents
+@ActiveProfiles("test")
+@Slf4j
+public class MergeDuplicateTests {
+
+    public static ValueFactory vf = SimpleValueFactory.getInstance();
+    @Autowired
+    private WebTestClient webClient;
+
+    @Autowired
+    private ScheduledDetectDuplicates scheduledDetectDuplicates;
+
+
+    /** Verify that embedded items in one request are merged */
+    @Test
+    public void createEmbeddedEntitiesWithSharedItems() {
+        Resource file = new ClassPathResource("data/v1/requests/create-valid_withEmbedded.ttl");
+        RdfConsumer rdfConsumer = new RdfConsumer(RDFFormat.TURTLE);
+
+        webClient.post()
+                .uri("/api/entities")
+                .contentType(MediaType.parseMediaType("text/turtle"))
+                .accept(MediaType.parseMediaType("text/turtle"))
+                .body(BodyInserters.fromResource(file))
+                .exchange()
+
+                .expectStatus().isAccepted()
+                .expectBody()
+                .consumeWith(rdfConsumer);
+
+        Model statements = rdfConsumer.asModel();
+
+        statements.forEach(System.out::println);
+
+        long videos = StreamSupport.stream(statements.getStatements(null, RDF.TYPE, vf.createIRI("http://schema.org/", "VideoObject")).spliterator(), false).count();
+        Assertions.assertEquals(2, videos);
+
+        List<Statement> collect = StreamSupport.stream(statements.getStatements(null, RDFS.LABEL, vf.createLiteral("Term 1")).spliterator(), false).toList();
+        Assertions.assertEquals(1, collect.size());
+    }
+
+
+    @Test
+    public void createEmbeddedEntitiesWithSharedItemsInSeparateRequests() throws InterruptedException {
+        RdfConsumer rdfConsumer = new RdfConsumer(RDFFormat.TURTLE);
+
+        webClient.post()
+                .uri("/api/entities")
+                .contentType(MediaType.parseMediaType("text/turtle"))
+                .body(BodyInserters.fromResource(new ClassPathResource("data/v1/requests/create-valid_withEmbedded.ttl")))
+                .exchange()
+                .expectStatus().isAccepted()
+                .expectBody();
+
+        webClient.post()
+                .uri("/api/entities")
+                .contentType(MediaType.parseMediaType("text/turtle"))
+                .body(BodyInserters.fromResource(new ClassPathResource("data/v1/requests/create-valid_withEmbedded_second.ttl")))
+                .exchange()
+                .expectStatus().isAccepted()
+                .expectBody();
+
+
+        StepVerifier.create(this.scheduledDetectDuplicates.checkForDuplicates(new TestingAuthenticationToken("", ""))).verifyComplete();
+
+        /**
+         * SELECT DISTINCT * WHERE {
+         *   ?id a <http://schema.org/VideoObject> ;
+         * 		 <http://schema.org/hasDefinedTerm> ?term .
+         *   ?term  <http://www.w3.org/2000/01/rdf-schema#label> "Term 1" .
+         * }
+         * LIMIT 10
+         *
+         * SELECT *
+         * WHERE { ?id a <http://schema.org/VideoObject> ;
+         *     <http://schema.org/hasDefinedTerm> ?term .
+         * ?term <http://www.w3.org/2000/01/rdf-schema#label> "Term 1" . }
+         */
+
+
+
+
+        CsvConsumer csvConsumer = new CsvConsumer();
+        Variable id = SparqlBuilder.var("id");
+        Variable term = SparqlBuilder.var("term");
+        // SelectQuery all = Queries.SELECT(id).where(id.isA(SDO.VIDEO_OBJECT).andHas(SDO.HAS_DEFINED_TERM, term)).where(term.has(RDFS.LABEL, "Term 1")).all();
+        SelectQuery all = Queries.SELECT(id).where(term.has(RDFS.LABEL, "Term 1")).all();
+        webClient.post()
+                .uri("/api/query/select")
+                .contentType(MediaType.parseMediaType("text/plain"))
+                .accept(MediaType.parseMediaType("text/csv"))
+                .body(BodyInserters.fromValue(all.getQueryString()))
+                .exchange()
+                .expectStatus().isAccepted()
+                .expectBody()
+                .consumeWith(csvConsumer);
+
+        Assertions.assertEquals(1, csvConsumer.getRows().size());
+
+    }
+
+
+    @Test
+    public void dump() throws InterruptedException {
+
+        RdfConsumer rdfConsumer = new RdfConsumer(RDFFormat.TURTLE);
+        webClient.post()
+                .uri("/api/entities")
+                .contentType(MediaType.parseMediaType("text/turtle"))
+                .accept(MediaType.parseMediaType("text/turtle"))
+                .body(BodyInserters.fromResource(new ClassPathResource("data/v1/requests/create-valid_withEmbedded.ttl")))
+                .exchange()
+                .expectStatus().isAccepted()
+                .expectBody()
+                .consumeWith(rdfConsumer);
+
+        System.out.println(rdfConsumer.dump(RDFFormat.TURTLE));
+        /*
+        webClient.post()
+                .uri("/api/entities")
+                .contentType(MediaType.parseMediaType("text/turtle"))
+                .body(BodyInserters.fromResource(new ClassPathResource("data/v1/requests/create-valid_withEmbedded_second.ttl")))
+                .exchange()
+                .expectStatus().isAccepted()
+                .expectBody();
+
+         */
+
+
+
+
+        CsvConsumer csvConsumer = new CsvConsumer();
+        webClient
+                .post()
+                .uri("/api/query/select")
+                .contentType(MediaType.parseMediaType("text/plain"))
+                .accept(MediaType.parseMediaType("text/csv"))
+                .body(BodyInserters.fromValue("SELECT DISTINCT * WHERE { ?s ?p ?o }"))
+                .exchange()
+                .expectStatus().isAccepted()
+                .expectBody()
+                .consumeWith(csvConsumer);
+
+        System.out.println(csvConsumer.getAsString());
+
+    }
+
+    @AfterEach
+    public void resetRepository() {
+        webClient.get()
+                .uri("/api/admin/bulk/reset")
+                .exchange()
+                .expectStatus().isAccepted();
+    }
+}

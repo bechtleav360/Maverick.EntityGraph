@@ -14,6 +14,7 @@ import org.springframework.util.Assert;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.util.Collection;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -34,6 +35,12 @@ public class RdfConsumer implements Consumer<EntityExchangeResult<byte[]>> {
         this.printStatements = printStatements;
     }
 
+
+    public String dump(RDFFormat rdfFormat) {
+        TestRepository testRepository = new TestRepository();
+        testRepository.load(this.asModel());
+        return testRepository.dump(rdfFormat);
+    }
     @Override
     public void accept(EntityExchangeResult<byte[]> entityExchangeResult) {
 

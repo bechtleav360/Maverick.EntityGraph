@@ -1,6 +1,8 @@
 package com.bechtle.cougar.graph.domain.model.vocabulary;
 
 import com.bechtle.cougar.graph.domain.model.extensions.EntityNamespace;
+import com.bechtle.cougar.graph.domain.model.extensions.LocalIRI;
+import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Namespace;
 
 /**
@@ -10,10 +12,18 @@ import org.eclipse.rdf4j.model.Namespace;
  */
 public class Local {
 
+    public static final String NAMESPACE = "http://bechtleav360.github.io/vocab/graph#";
+    public static final IRI ORIGINAL_IDENTIFIER = LocalIRI.from(NAMESPACE, "sourceId");
+
+
+
+
     public static class Entities {
         public static String NAMESPACE = "http://graphs.azurewebsites.net/api/entities/";
         public static String PREFIX = "entity";
         public static Namespace NS = EntityNamespace.of(PREFIX, NAMESPACE);
+
+
     }
 
 

@@ -4,6 +4,7 @@ import com.bechtle.cougar.graph.domain.model.extensions.GeneratedIdentifier;
 import com.bechtle.cougar.graph.domain.model.extensions.NamespaceAwareStatement;
 import com.bechtle.cougar.graph.domain.model.vocabulary.Local;
 import com.bechtle.cougar.graph.domain.model.wrapper.AbstractModel;
+import com.bechtle.cougar.graph.domain.services.EntityServices;
 import com.bechtle.cougar.graph.domain.services.handler.Transformer;
 import com.bechtle.cougar.graph.repository.EntityStore;
 import lombok.extern.slf4j.Slf4j;
@@ -35,7 +36,7 @@ public class ReplaceAnonymousIdentifiers implements Transformer {
 
 
     @Override
-    public Mono<? extends AbstractModel> handle(EntityStore graph, AbstractModel triples, Map<String, String> parameters) {
+    public Mono<? extends AbstractModel> handle(EntityServices entityServices, AbstractModel triples, Map<String, String> parameters) {
         log.trace("(Transformer) Skolemizing identifiers");
 
         for (Resource obj : new ArrayList<>(triples.getModel().subjects())) {

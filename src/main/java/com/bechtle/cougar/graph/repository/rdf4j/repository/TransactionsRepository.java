@@ -6,10 +6,12 @@ import com.bechtle.cougar.graph.repository.TransactionsStore;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.RepositoryException;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
 
@@ -23,16 +25,15 @@ public class TransactionsRepository extends AbstractRepository implements Transa
     }
 
     @Override
-    public Mono<Transaction> store(Transaction transaction) {
-        return  this.store(List.of(transaction)).singleOrEmpty();
+    public Mono<Transaction> store(Transaction transaction, Authentication authentication) {
+        return  this.store(List.of(transaction), authentication).singleOrEmpty();
     }
 
 
     @Override
-    public Flux<Transaction> store(Collection<Transaction> transactions) {
-        return getRepository().flatMapMany(repository -> {
+    public Flux<Transaction> store(Collection<Transaction> transactions, Authentication authentication) {
             return Flux.create(c -> {
-                try (RepositoryConnection connection = repository.getConnection()) {
+                try (RepositoryConnection connection = getConnection(authentication)) {
                     transactions.forEach(trx -> {
                         if (trx == null) {
                             log.trace("Trying to store an empty transaction.");
@@ -61,12 +62,11 @@ public class TransactionsRepository extends AbstractRepository implements Transa
                 } catch (RepositoryException e) {
                     log.error("Failed to initialize repository connection");
                     c.error(e);
+                } catch (IOException e) {
+                    c.error(e);
                 }
 
             });
-        });
-
-
 
     }
 }

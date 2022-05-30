@@ -1,6 +1,7 @@
 package com.bechtle.cougar.graph.domain.services.handler;
 
 import com.bechtle.cougar.graph.domain.model.wrapper.AbstractModel;
+import com.bechtle.cougar.graph.domain.services.EntityServices;
 import com.bechtle.cougar.graph.repository.EntityStore;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,7 +25,7 @@ public class DelegatingTransformer implements Transformer {
 
 
     @Override
-    public Mono<? extends AbstractModel> handle(EntityStore graph, AbstractModel triples, Map<String, String> parameters) {
+    public Mono<? extends AbstractModel> handle(EntityServices entityServices, AbstractModel triples, Map<String, String> parameters) {
         if (this.transformers == null) {
             log.trace("No transformers registered, skip.");
             return Mono.just(triples);
@@ -33,7 +34,7 @@ public class DelegatingTransformer implements Transformer {
         return Flux.fromIterable(transformers)
                 .reduce(Mono.just(triples), (modelMono, transformer) ->
                             modelMono
-                                    .map(model -> transformer.handle(graph, model, parameters))
+                                    .map(model -> transformer.handle(entityServices, model, parameters))
                                     .flatMap(mono -> mono))
                 .flatMap(mono -> mono);
     }

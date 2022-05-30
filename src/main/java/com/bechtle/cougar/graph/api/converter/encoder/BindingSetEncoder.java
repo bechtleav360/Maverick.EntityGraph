@@ -1,5 +1,6 @@
 package com.bechtle.cougar.graph.api.converter.encoder;
 
+import com.bechtle.cougar.graph.repository.rdf4j.api.StreamingTupleQueryResultsWriter;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.rdf4j.query.*;
 import org.eclipse.rdf4j.query.impl.TupleQueryResultBuilder;
@@ -9,6 +10,8 @@ import org.springframework.core.ResolvableType;
 import org.springframework.core.codec.Encoder;
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.core.io.buffer.DataBufferFactory;
+import org.springframework.core.io.buffer.DefaultDataBuffer;
+import org.springframework.core.io.buffer.DefaultDataBufferFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.util.Assert;
 import org.springframework.util.MimeType;
@@ -46,6 +49,8 @@ public class BindingSetEncoder implements Encoder<BindingSet> {
     }
 
 
+
+
     @Override
     public Flux<DataBuffer> encode(Publisher<? extends BindingSet> publisher, DataBufferFactory bufferFactory, ResolvableType elementType, MimeType mimeType, Map<String, Object> hints) {
 
@@ -59,8 +64,7 @@ public class BindingSetEncoder implements Encoder<BindingSet> {
 
         QueryResultFormat format = QueryResultIO.getParserFormatForMIMEType(mimeType.toString()).orElseThrow();
         TupleQueryResultWriterFactory tupleQueryResultWriterFactory = TupleQueryResultWriterRegistry.getInstance().get(format).orElseThrow();
-
-
+        DefaultDataBuffer dataBuffer = new DefaultDataBufferFactory().allocateBuffer();
         /*
             FIXME: we don't really stream the flux, we have to rebuild the tuplequeryresultwriter
 

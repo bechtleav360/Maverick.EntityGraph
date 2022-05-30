@@ -1,5 +1,6 @@
 package com.bechtle.cougar.graph.tests.utils;
 
+import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
@@ -13,9 +14,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringWriter;
 
-public class TestRepository implements AutoCloseable{
+public class TestRepository implements AutoCloseable {
 
-    private final Repository repository; 
+    private final Repository repository;
 
     public TestRepository() {
 
@@ -33,6 +34,12 @@ public class TestRepository implements AutoCloseable{
         }
     }
 
+    public void load(Model m) {
+        try (RepositoryConnection conn = this.repository.getConnection()) {
+            m.forEach(conn::add);
+        }
+    }
+
     public String dump(RDFFormat format) {
         try (RepositoryConnection conn = this.repository.getConnection()) {
             StringWriter sw = new StringWriter();
@@ -44,7 +51,7 @@ public class TestRepository implements AutoCloseable{
     }
 
     @Override
-    public void close()  {
+    public void close() {
         this.repository.shutDown();
     }
 
@@ -52,4 +59,6 @@ public class TestRepository implements AutoCloseable{
 
         return this.repository.getConnection();
     }
+
+
 }

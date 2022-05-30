@@ -7,6 +7,7 @@ import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.rdf4j.repository.Repository;
+import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
 import org.eclipse.rdf4j.sail.lmdb.LmdbStore;
 import org.eclipse.rdf4j.sail.lmdb.config.LmdbStoreConfig;
@@ -140,10 +141,9 @@ public class RepositoryConfiguration {
     }
 
     public Mono<Repository> getRepository(RepositoryType repositoryType)  {
-
         return ReactiveSecurityContextHolder.getContext()
                 .map(SecurityContext::getAuthentication)
-                .switchIfEmpty(Mono.just(new TestingAuthenticationToken("test", "test")))
+                .switchIfEmpty(Mono.just(new TestingAuthenticationToken("", "")))
                 .flatMap(authentication -> {
                     try {
                         return Mono.just(this.getRepository(repositoryType, authentication));
@@ -151,8 +151,19 @@ public class RepositoryConfiguration {
                         return Mono.error(e);
                     }
                 });
+    }
 
-
+    public Mono<RepositoryConnection> getConnection(RepositoryType repositoryType)  {
+        return ReactiveSecurityContextHolder.getContext()
+                .map(SecurityContext::getAuthentication)
+                .switchIfEmpty(Mono.just(new TestingAuthenticationToken("", "")))
+                .flatMap(authentication ->
+                        // See https://www.vinsguru.com/reactor-flux-file-reading/
+                        Mono.using(
+                            () -> this.getRepository(repositoryType, authentication).getConnection(),
+                            Mono::just,
+                            RepositoryConnection::close     // make sure it's closing at the end
+                    ));
     }
 
     private Repository getDefaultRepository(Application subscription, String label, String basePath) {

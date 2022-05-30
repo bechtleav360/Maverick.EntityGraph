@@ -1,12 +1,15 @@
 package com.bechtle.cougar.graph.features.schedulers.detectDuplicates;
 
 
+import com.bechtle.cougar.graph.api.security.AdminAuthentication;
+import com.bechtle.cougar.graph.repository.EntityStore;
+import com.bechtle.cougar.graph.repository.rdf4j.config.RepositoryConfiguration;
 import com.bechtle.cougar.graph.repository.rdf4j.repository.EntityRepository;
-import com.bechtle.cougar.graph.domain.model.vocabulary.SDO;
 import lombok.extern.slf4j.Slf4j;
+import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
-import org.eclipse.rdf4j.query.TupleQueryResult;
+import org.eclipse.rdf4j.model.vocabulary.RDFS;
 import org.eclipse.rdf4j.sparqlbuilder.constraint.Expressions;
 import org.eclipse.rdf4j.sparqlbuilder.core.SparqlBuilder;
 import org.eclipse.rdf4j.sparqlbuilder.core.Variable;
@@ -14,75 +17,110 @@ import org.eclipse.rdf4j.sparqlbuilder.core.query.Queries;
 import org.eclipse.rdf4j.sparqlbuilder.core.query.SelectQuery;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 import java.util.List;
+import java.util.SortedSet;
 import java.util.TreeSet;
 
+/**
+ * Regular check for duplicates in the entity stores.
+ *
+ * A typical example for a duplicate are the following two entities uploaded on different times
+ *
+ * [] a ns1:VideoObject ;
+ *     ns1:hasDefinedTerm [
+ *          a ns1:DefinedTerm ;
+ *          rdfs:label "Term 1"
+ *      ] .
+ *
+ *
+ * [] a ns1:VideoObject ;
+ *     ns1:hasDefinedTerm [
+ *          a ns1:DefinedTerm ;
+ *          rdfs:label "Term 1"
+ *      ] .
+ *
+ *  They both share the defined term "Term 1". Since they are uploaded in different requests, we don't check for duplicates. The (embedded) entity
+ *
+ *  x a DefinedTerm
+ *    label "Term 1"
+ *
+ *  is therefore a duplicate in the repository after the second upload. This scheduler will check for these duplicates by looking at objects which
+ *  - share the same label
+ *  - share the same original_identifier
+ *
+ *
+ *  TODO:
+ *      For now we keep the duplicate but reroute all links to the original.
+ */
 @Component
 @Slf4j(topic = "cougar.graph.schedulers.duplicates")
 @ConditionalOnProperty(name = "application.features.schedulers.detectDuplicates", havingValue = "true")
 public class ScheduledDetectDuplicates {
 
 
-    private final EntityRepository repository;
+    private final EntityStore entityStore;
     private final SimpleValueFactory valueFactory;
 
-    public ScheduledDetectDuplicates(EntityRepository repository) {
-        this.repository = repository;
+    public ScheduledDetectDuplicates(EntityStore repository) {
+        this.entityStore = repository;
         this.valueFactory = SimpleValueFactory.getInstance();
     }
 
-    @Scheduled(fixedDelay = 1000)
-    public void checkForDuplicates() {
-        log.info("Duplicate check started");
 
-        this.findCandidates()
+    // https://github.com/spring-projects/spring-framework/issues/23533
+    private boolean labelCheckRunning = false;
+
+    @Scheduled(fixedRate = 10000)
+    public void checkForDuplicatesScheduled() {
+        if (labelCheckRunning) return;
+
+        AdminAuthentication adminAuthentication = new AdminAuthentication();
+        adminAuthentication.setAuthenticated(true);
+
+        // FIXME: do this with all applicatations (run-as semantics)
+
+        this.checkForDuplicates(adminAuthentication).publishOn(Schedulers.single()).subscribe();
+    }
+
+    public Mono<Void> checkForDuplicates(Authentication authentication) {
+        return this.findCandidates(RDFS.LABEL, authentication)
                 .map(duplicate -> {
-                    log.info("Duplicated detected with type {} and id {}", duplicate.type(), duplicate.originalIdentifier());
+                    log.trace("Found multiple entities in store with shared type '{}' and label '{}'", duplicate.type(), duplicate.sharedValue());
                     return duplicate;
                 })
-                .map(this::findDuplicates)
-                .subscribe();
-    }
-
-    private Flux<DuplicateCandidate> findDuplicates(DuplicateCandidate duplicate) {
-
-        /*
-        select ?thing ?date where {
-  ?thing 	a <http://schema.org/video>.
-  ?thing 	<http://schema.org/identifier> "_a1238" .
-    ?thing 	<http://schema.org/dateCreated> ?date .
-}
-         */
-        Variable dateVariable = SparqlBuilder.var("date");
-        Variable idVariable = SparqlBuilder.var("identifier");
-
-        SelectQuery findDuplicates = Queries.SELECT(idVariable, dateVariable).where(
-                idVariable.isA(this.valueFactory.createIRI(duplicate.type())),
-                idVariable.has(SDO.IDENTIFIER, this.valueFactory.createLiteral(duplicate.originalIdentifier()))
-        );
-        this.repository.query(findDuplicates)
-                .map(bindings -> {
-                    Value date = bindings.getValue("date");
-                    Value id = bindings.getValue("identifier");
-                    return new Duplicate(id.stringValue(), date.stringValue());
-                })
+                .flatMap(duplicate -> this.findDuplicates(duplicate, authentication))
                 .collectList()
-                .map(this::mergeDuplicates);
+                .map(list -> {
+                    log.trace("Number of duplicates: {}", list.size());
+                    return list;
+                })
+                .flatMapMany(duplicates -> this.mergeDuplicates(duplicates, authentication))
+                .doOnSubscribe(sub -> {
+                    log.trace("Checking duplicates sharing the same label");
+                    labelCheckRunning = true;
 
+                })
+                .doOnComplete(() -> {
+                    labelCheckRunning = false;
+                }).thenEmpty(Mono.empty());
 
-        return Flux.just(duplicate);
     }
 
-    private Mono<Void> mergeDuplicates(List<Duplicate> duplicates) {
-        TreeSet<Duplicate> orderedDuplicates = new TreeSet<>(duplicates);
-        Duplicate original = orderedDuplicates.first();
-        orderedDuplicates.tailSet(original).stream().forEach(duplicate -> {
+    private Mono<Void> mergeDuplicateCandidates(List<DuplicateCandidate> duplicates) {
+        if(duplicates.isEmpty()) return Mono.empty();
+
+        TreeSet<DuplicateCandidate> orderedDuplicates = new TreeSet<>(duplicates);
+        DuplicateCandidate original = orderedDuplicates.first();
+        orderedDuplicates.tailSet(original).forEach(duplicate -> {
 
                     // collect duplicate identifiers and store in original
+                    log.trace("duplicate id: {}", duplicate.sharedValue());
 
                     // save original
 
@@ -93,47 +131,118 @@ public class ScheduledDetectDuplicates {
 
         return Mono.empty();
 
+    }
+
+    private Flux<Duplicate> findDuplicates(DuplicateCandidate duplicate, Authentication authentication) {
+
+        /*
+        select ?thing where {
+                ?thing 	a <http://schema.org/video>.
+  ?thing 	<http://schema.org/identifier> "_a1238" .
+    ?thing 	<http://schema.org/dateCreated> ?date .
+}
+         */
+        Variable idVariable = SparqlBuilder.var("identifier");
+
+        SelectQuery findDuplicates = Queries.SELECT(idVariable).where(
+                idVariable.isA(this.valueFactory.createIRI(duplicate.type())),
+                idVariable.has(duplicate.sharedProperty(), this.valueFactory.createLiteral(duplicate.sharedValue()))
+        );
+
+
+        return this.entityStore.query(findDuplicates, authentication)
+                .doOnSubscribe(subscription -> log.trace("Retrieving all duplicates of same type with value '{}' for property '{}' ", duplicate.sharedValue, duplicate.sharedProperty))
+                .map(bindings -> {
+                    Value id = bindings.getValue("identifier");
+                    return new Duplicate(id);
+                });
 
     }
 
-    private Flux<DuplicateCandidate> findCandidates() {
+    private Flux<Void> mergeDuplicates(List<Duplicate> duplicates, Authentication authentication) {
+        if(duplicates.isEmpty()) return Flux.empty();
+
+        TreeSet<Duplicate> orderedDuplicates = new TreeSet<>(duplicates);
+        Duplicate original = orderedDuplicates.first();
+        SortedSet<Duplicate> deletionCandidates = orderedDuplicates.tailSet(original, false);
+
+        return Flux.fromIterable(deletionCandidates)
+                .map(duplicate -> this.findStatementsPointingToDuplicate(duplicate, authentication))
+                .thenMany(Mono.empty());
+
+        // save original
+
+        // delete duplicates
+
+
+
+
+    }
+
+    private Flux<LostStatement> findStatementsPointingToDuplicate(Duplicate duplicate, Authentication authentication) {
 
         /*
-        select ?type ?id where {
-  ?thing 	a ?type .
-  ?thing 	<http://schema.org/identifier> ?id .
-} group by ?type ?id
-having (count(?thing) > 1)
+        SELECT * WHERE {
+          ?sub ?pre <duplicate id> .
+        }
+         */
+
+        Variable subject = SparqlBuilder.var("s");
+        Variable predicate = SparqlBuilder.var("p");
+
+        SelectQuery q = Queries.SELECT().where(subject.has(predicate, duplicate.id()));
+        log.trace("XXXXX - {}",q.getQueryString());
+        return entityStore.query(q, authentication)
+                .map(binding -> {
+                    Value pVal = binding.getValue(predicate.getVarName());
+                    Value sVal = binding.getValue(subject.getVarName());
+                    log.trace("lost statement with sub {} and pred {}", sVal.stringValue(), pVal.stringValue());
+                    return new LostStatement(sVal, pVal);
+                });
+
+    }
+
+    private Flux<DuplicateCandidate> findCandidates(IRI sharedProperty, Authentication authentication) {
+
+        /*
+        select ?type ?shared where {
+          ?thing 	a ?type .
+          ?thing 	<sharedProperty> ?value .
+        } group by ?type ?id
+        having (count(?thing) > 1)
 
          */
 
-        Variable id = SparqlBuilder.var("identifier");
+        Variable sharedValue = SparqlBuilder.var("s");
         Variable type = SparqlBuilder.var("type");
         Variable thing = SparqlBuilder.var("thing");
 
-        SelectQuery findDuplicates = Queries.SELECT(type, id).where(
-                thing.isA(type),
-                thing.has(SDO.IDENTIFIER, id)
-        ).groupBy(id, type).having(Expressions.gt(Expressions.count(thing), 1));
+        SelectQuery findDuplicates = Queries.SELECT(type, sharedValue)
+                .where(
+                    thing.isA(type),
+                    thing.has(sharedProperty, sharedValue)
+        ).groupBy(sharedValue, type).having(Expressions.gt(Expressions.count(thing), 1));
 
 
-        return repository.query(findDuplicates)
+        return entityStore.query(findDuplicates, authentication)
                 .map(binding -> {
-                    Value identifier = binding.getValue("identifier");
-                    Value type1 = binding.getValue("type");
-                    return new DuplicateCandidate(type1.stringValue(), identifier.stringValue());
+                    Value sharedValueVal = binding.getValue(sharedValue.getVarName());
+                    Value typeVal = binding.getValue(type.getVarName());
+                    return new DuplicateCandidate(sharedProperty, typeVal.stringValue(), sharedValueVal.stringValue());
                 });
 
     }
 
 
-    private record DuplicateCandidate(String type, String originalIdentifier) {
-    }
+    private record DuplicateCandidate(IRI sharedProperty, String type, String sharedValue) {}
 
-    private record Duplicate(String id, String creationDate) implements Comparable<Duplicate> {
+
+    private record LostStatement(Value sVal, Value pVal) {}
+
+    private record Duplicate(Value id) implements Comparable<Duplicate> {
         @Override
         public int compareTo(Duplicate o) {
-            return o.creationDate().compareTo(this.creationDate());
+            return o.id().stringValue().compareTo(this.id().stringValue());
         }
     }
 }

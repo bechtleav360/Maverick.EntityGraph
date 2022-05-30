@@ -4,6 +4,7 @@ import com.bechtle.cougar.graph.tests.config.TestConfigurations;
 import com.bechtle.cougar.graph.tests.utils.CsvConsumer;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.rdf4j.query.BindingSet;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -54,11 +55,19 @@ public class QueryTestsImpl implements QueriesTest{
 
 
 
-        Assertions.assertEquals(1, csvConsumer.getRows().size());
+        Assertions.assertEquals(6, csvConsumer.getRows().size());
     }
 
     @Override
     public void runInvalidSparqlQuery() {
 
+    }
+
+    @AfterEach
+    public void resetRepository() {
+        webClient.get()
+                .uri("/api/admin/bulk/reset")
+                .exchange()
+                .expectStatus().isAccepted();
     }
 }

@@ -2,6 +2,7 @@ package com.bechtle.cougar.graph.api.v1.ttl;
 
 import com.bechtle.cougar.graph.api.converter.RdfUtils;
 import com.bechtle.cougar.graph.api.v1.EntitiesTest;
+import com.bechtle.cougar.graph.domain.model.vocabulary.Local;
 import com.bechtle.cougar.graph.domain.model.vocabulary.SDO;
 import com.bechtle.cougar.graph.domain.model.vocabulary.Transactions;
 import com.bechtle.cougar.graph.tests.config.TestConfigurations;
@@ -148,7 +149,7 @@ public class TurtleTests implements EntitiesTest {
 
         Assertions.assertFalse(rdfConsumer.hasStatement(null, Transactions.STATUS, Transactions.RUNNING));;
 
-        Assertions.assertTrue(rdfConsumer.hasStatement(null, SDO.IDENTIFIER, SimpleValueFactory.getInstance().createLiteral("_a")));
+        Assertions.assertTrue(rdfConsumer.hasStatement(null, Local.ORIGINAL_IDENTIFIER, SimpleValueFactory.getInstance().createLiteral("_a")));
         Assertions.assertTrue(rdfConsumer.hasStatement(null, RDF.TYPE, SDO.VIDEO_OBJECT));
     }
 
@@ -272,102 +273,9 @@ public class TurtleTests implements EntitiesTest {
     }
 
 
-    @Test
-    public void createEmbeddedEntitiesWithSharedItems() {
-        Resource file = new ClassPathResource("data/v1/requests/create-valid_withEmbedded.ttl");
-        RdfConsumer rdfConsumer = new RdfConsumer(RDFFormat.TURTLE);
-
-        webClient.post()
-                .uri("/api/entities")
-                .contentType(MediaType.parseMediaType("text/turtle"))
-                .accept(MediaType.parseMediaType("text/turtle"))
-                .body(BodyInserters.fromResource(file))
-                .exchange()
-
-                .expectStatus().isAccepted()
-                .expectBody()
-                .consumeWith(rdfConsumer);
-
-        Model statements = rdfConsumer.asModel();
-
-        statements.forEach(System.out::println);
-
-        long videos = StreamSupport.stream(statements.getStatements(null, RDF.TYPE, vf.createIRI("http://schema.org/", "VideoObject")).spliterator(), false).count();
-        Assertions.assertEquals(2, videos);
-
-        List<Statement> collect = StreamSupport.stream(statements.getStatements(null, RDFS.LABEL, vf.createLiteral("Term 1")).spliterator(), false).toList();
-        Assertions.assertEquals(1, collect.size());
-    }
 
 
-    @Test
-    public void createEmbeddedEntitiesWithSharedItemsInSeparateRequests() {
-        RdfConsumer rdfConsumer = new RdfConsumer(RDFFormat.TURTLE);
 
-        webClient.post()
-                .uri("/api/entities")
-                .contentType(MediaType.parseMediaType("text/turtle"))
-                .body(BodyInserters.fromResource(new ClassPathResource("data/v1/requests/create-valid_withEmbedded.ttl")))
-                .exchange()
-                .expectStatus().isAccepted()
-                .expectBody();
-
-        webClient.post()
-                .uri("/api/entities")
-                .contentType(MediaType.parseMediaType("text/turtle"))
-                .body(BodyInserters.fromResource(new ClassPathResource("data/v1/requests/create-valid_withEmbedded_second.ttl")))
-                .exchange()
-                .expectStatus().isAccepted()
-                .expectBody();
-
-
-        /**
-         * SELECT DISTINCT * WHERE {
-         *   ?id a <http://schema.org/VideoObject> ;
-         * 		 <http://schema.org/hasDefinedTerm> ?term .
-         *   ?term  <http://www.w3.org/2000/01/rdf-schema#label> "Term 1" .
-         * }
-         * LIMIT 10
-         *
-         * SELECT *
-         * WHERE { ?id a <http://schema.org/VideoObject> ;
-         *     <http://schema.org/hasDefinedTerm> ?term .
-         * ?term <http://www.w3.org/2000/01/rdf-schema#label> "Term 1" . }
-         */
-
-        CsvConsumer csvConsumer = new CsvConsumer();
-        Variable id = SparqlBuilder.var("id");
-        Variable term = SparqlBuilder.var("term");
-        // SelectQuery all = Queries.SELECT(id).where(id.isA(SDO.VIDEO_OBJECT).andHas(SDO.HAS_DEFINED_TERM, term)).where(term.has(RDFS.LABEL, "Term 1")).all();
-        SelectQuery all = Queries.SELECT(id).where(term.has(RDFS.LABEL, "Term 1")).all();
-        webClient.post()
-                .uri("/api/query/select")
-                .contentType(MediaType.parseMediaType("text/plain"))
-                .accept(MediaType.parseMediaType("text/csv"))
-                .body(BodyInserters.fromValue(all.getQueryString()))
-                .exchange()
-                .expectStatus().isAccepted()
-                .expectBody()
-                .consumeWith(csvConsumer);
-
-        Assertions.assertEquals(1, csvConsumer.getRows().size());
-
-        //FIXME: now check if count distinct of binding "term" == 1
-        /*
-                .json()
-                .
-
-
-        Model statements = rdfConsumer.asModel();
-
-        statements.forEach(System.out::println);
-
-        long videos = StreamSupport.stream(statements.getStatements(null, RDF.TYPE, vf.createIRI("http://schema.org/", "video")).spliterator(), false).count();
-        Assertions.assertEquals(2, videos);
-
-        List<Statement> collect = StreamSupport.stream(statements.getStatements(null, RDFS.LABEL, vf.createLiteral("Term 1")).spliterator(), false).toList();
-        Assertions.assertEquals(1, collect.size());*/
-    }
 
     @Override
     public void createEdgeWithIdInPayload() {

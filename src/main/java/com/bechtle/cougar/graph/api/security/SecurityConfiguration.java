@@ -9,6 +9,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import org.springframework.security.authentication.DelegatingReactiveAuthenticationManager;
 import org.springframework.security.authentication.ReactiveAuthenticationManager;
+import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
 import org.springframework.security.config.web.server.SecurityWebFiltersOrder;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
@@ -75,7 +76,11 @@ public class SecurityConfiguration {
         };
     }
 
-
+    @Bean
+    @ConditionalOnProperty(name = "application.security.enabled", havingValue = "false")
+    ServerAuthenticationConverter buildTestingAuthenticationConverter() {
+        return exchange -> Mono.just(new TestingAuthenticationToken("test", "test"));
+    }
 
 
 

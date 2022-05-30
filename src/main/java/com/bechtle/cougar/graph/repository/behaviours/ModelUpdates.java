@@ -7,9 +7,11 @@ import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.RepositoryException;
+import org.springframework.security.core.Authentication;
 import org.springframework.util.Assert;
 import reactor.core.publisher.Mono;
 
+import java.io.IOException;
 import java.util.Collection;
 
 
@@ -20,22 +22,24 @@ public interface ModelUpdates extends RepositoryBehaviour {
      * @param model
      * @return
      */
-    default Mono<Void> delete(Model model) {
-        return getRepository().flatMap(repository -> Mono.create(c -> {
-            try (RepositoryConnection connection = repository.getConnection()) {
+    default Mono<Void> delete(Model model, Authentication authentication) {
+        return Mono.create(sink -> {
+            try (RepositoryConnection connection = getConnection(authentication)) {
                 try {
                     Resource[] contexts = model.contexts().toArray(new Resource[model.contexts().size()]);
                     connection.add(model, contexts);
                     connection.commit();
-                    c.success();
+                    sink.success();
                 } catch (Exception e) {
                     connection.rollback();
-                    c.error(e);
+                    sink.error(e);
                 }
             } catch (RepositoryException e) {
-                c.error(e);
+                sink.error(e);
+            } catch (IOException e) {
+                sink.error(e);
             }
-        }));
+        });
     }
 
     default Mono<Transaction> delete(Collection<Statement> statements, Transaction transaction) {
@@ -51,8 +55,9 @@ public interface ModelUpdates extends RepositoryBehaviour {
     /**
      * Adds the triples in the model to the transaction. Don't forget to commit the transaction.
      *
-     * @param model the statements to store
-     * @return  Returns the transaction statements
+     * @param model          the statements to store
+     * @param authentication
+     * @return Returns the transaction statements
      */
     default Mono<Transaction> insert(Model model, Transaction transaction) {
         Assert.notNull(transaction, "Transaction cannot be null");
@@ -68,11 +73,10 @@ public interface ModelUpdates extends RepositoryBehaviour {
     /**
      *  Stores the triples directly (without transaction context)
      */
-    default Mono<Void> insert(Model model) {
-        return getRepository().flatMap(repository -> {
+    default Mono<Void> insert(Model model, Authentication authentication) {
 
 
-            try (RepositoryConnection connection = repository.getConnection()) {
+            try (RepositoryConnection connection = this.getConnection(authentication)) {
                 try {
                     Resource[] contexts = model.contexts().toArray(new Resource[model.contexts().size()]);
                     connection.add(model, contexts);
@@ -84,8 +88,9 @@ public interface ModelUpdates extends RepositoryBehaviour {
                 }
             } catch (RepositoryException e) {
                 return Mono.error(e);
+            } catch (IOException e) {
+                return Mono.error(e);
             }
-        });
 
     }
 }

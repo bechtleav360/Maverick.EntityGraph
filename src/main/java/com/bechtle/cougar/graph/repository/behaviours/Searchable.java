@@ -1,20 +1,13 @@
 package com.bechtle.cougar.graph.repository.behaviours;
 
-import com.bechtle.cougar.graph.domain.model.wrapper.Entity;
-import org.eclipse.rdf4j.model.IRI;
-import org.eclipse.rdf4j.model.Resource;
-import org.eclipse.rdf4j.model.Statement;
-import org.eclipse.rdf4j.model.Value;
+import com.bechtle.cougar.graph.domain.model.extensions.NamespaceAwareStatement;
 import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.sparqlbuilder.core.query.SelectQuery;
 import org.springframework.security.core.Authentication;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
-
-import java.util.List;
 
 
-public interface Selectable extends RepositoryBehaviour {
+public interface Searchable extends RepositoryBehaviour {
 
 
     /*default Mono<TupleQueryResult> select(String query) {
@@ -32,5 +25,12 @@ public interface Selectable extends RepositoryBehaviour {
         });
     }*/
 
+    default Flux<BindingSet> query(SelectQuery all, Authentication authentication) {
+        return this.query(all.getQueryString(), authentication);
+    }
 
+    Flux<BindingSet> query(String queryString, Authentication authentication);
+
+
+    Flux<NamespaceAwareStatement> construct(String query, Authentication authentication);
 }

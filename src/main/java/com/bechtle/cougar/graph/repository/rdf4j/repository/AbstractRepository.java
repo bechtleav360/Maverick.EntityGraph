@@ -1,28 +1,36 @@
 package com.bechtle.cougar.graph.repository.rdf4j.repository;
 
-import com.bechtle.cougar.graph.repository.rdf4j.config.RepositoryConfiguration;
+import com.bechtle.cougar.graph.domain.model.enums.Activity;
+import com.bechtle.cougar.graph.domain.model.errors.EntityNotFound;
+import com.bechtle.cougar.graph.domain.model.extensions.NamespaceAwareStatement;
 import com.bechtle.cougar.graph.domain.model.vocabulary.Transactions;
 import com.bechtle.cougar.graph.domain.model.wrapper.Transaction;
 import com.bechtle.cougar.graph.repository.behaviours.RepositoryBehaviour;
+import com.bechtle.cougar.graph.repository.behaviours.Statements;
+import com.bechtle.cougar.graph.repository.rdf4j.config.RepositoryConfiguration;
 import lombok.extern.slf4j.Slf4j;
-import org.eclipse.rdf4j.model.Model;
-import org.eclipse.rdf4j.model.Resource;
-import org.eclipse.rdf4j.model.Statement;
+import org.eclipse.rdf4j.model.*;
+import org.eclipse.rdf4j.model.impl.SimpleNamespace;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.query.*;
 import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
-import org.eclipse.rdf4j.sparqlbuilder.core.query.SelectQuery;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
+import org.springframework.util.Assert;
+import org.springframework.web.client.HttpClientErrorException;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import java.util.ArrayList;
+import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Slf4j(topic = "cougar.graph.repository")
-public class AbstractRepository implements RepositoryBehaviour {
+public class AbstractRepository implements RepositoryBehaviour, Statements {
 
     private final RepositoryConfiguration.RepositoryType repositoryType;
     private RepositoryConfiguration repositoryConfiguration;
@@ -32,42 +40,120 @@ public class AbstractRepository implements RepositoryBehaviour {
     }
 
 
+    public RepositoryConfiguration.RepositoryType getRepositoryType() {
+        return this.repositoryType;
+    }
+
+    @Override
+    public RepositoryConfiguration getConfiguration() {
+        return this.repositoryConfiguration;
+    }
+
     @Autowired
-    private void setConfig(RepositoryConfiguration repositoryConfiguration) {
+    private void setConfiguration(RepositoryConfiguration repositoryConfiguration) {
         this.repositoryConfiguration = repositoryConfiguration;
     }
 
 
-    public Mono<Void> store(Model model) {
-        return this.getRepository().flatMap(repository -> {
-            try (RepositoryConnection connection = repository.getConnection()) {
-                try {
-                    Resource[] contexts = model.contexts().toArray(new Resource[model.contexts().size()]);
-                    connection.add(model, contexts);
-                    connection.commit();
-                    log.debug("Model was stored in repository '{}'", repository.toString());
-                    return Mono.empty();
-                } catch (Exception e) {
-                    connection.rollback();
-                    return Mono.error(e);
-                }
+    @Deprecated
+    public Mono<Void> store(Model model, Authentication authentication) {
+        try (RepositoryConnection connection = this.getConnection(authentication)) {
+            try {
+                Resource[] contexts = model.contexts().toArray(new Resource[model.contexts().size()]);
+                connection.add(model, contexts);
+                connection.commit();
+                log.debug("Model was stored in repository '{}'", connection.getRepository().toString());
+                return Mono.empty();
             } catch (Exception e) {
-                log.error("Failed to initialize repository connection");
+                connection.rollback();
                 return Mono.error(e);
+            }
+        } catch (Exception e) {
+            log.error("Failed to initialize repository connection");
+            return Mono.error(e);
+        }
+    }
+
+
+    public Flux<NamespaceAwareStatement> construct(String query, Authentication authentication) {
+        return Flux.create(c -> {
+            try (RepositoryConnection connection = getConnection(authentication)) {
+                GraphQuery q = connection.prepareGraphQuery(QueryLanguage.SPARQL, query);
+                try (GraphQueryResult result = q.evaluate()) {
+                    Set<Namespace> namespaces = result.getNamespaces().entrySet().stream()
+                            .map(entry -> new SimpleNamespace(entry.getKey(), entry.getValue()))
+                            .collect(Collectors.toSet());
+
+                    result.forEach(statement -> c.next(NamespaceAwareStatement.wrap(statement, namespaces)));
+                } catch (Exception e) {
+                    log.warn("Error while running value query.", e);
+                    c.error(e);
+                }
+            } catch (MalformedQueryException e) {
+                log.warn("Error while parsing query", e);
+                c.error(new HttpClientErrorException(HttpStatus.BAD_REQUEST, "Invalid query"));
+            } catch (Exception e) {
+                log.error("Unknown error while running query", e);
+                c.error(e);
+            } finally {
+                c.complete();
             }
         });
     }
 
+    public Flux<BindingSet> query(String query, Authentication authentication) {
+        return Flux.create(emitter -> {
+            try (RepositoryConnection connection = this.getConnection(authentication)) {
 
-    public Flux<BindingSet> query(String query) {
-        log.debug("XXXX");
+                TupleQuery q = connection.prepareTupleQuery(QueryLanguage.SPARQL, query);
+                log.trace("Runninq query: {}", query.trim());
+                try (TupleQueryResult result = q.evaluate()) {
+                    result.stream().forEach(emitter::next);
+                } finally {
+                    emitter.complete();
+                }
+
+            } catch (MalformedQueryException e) {
+                log.warn("Error while parsing query, reason: {}", e.getMessage());
+                emitter.error(e);
+            } catch (Exception e) {
+                log.error("Unknown error while running query", e);
+                emitter.error(e);
+            }
+        });
+
+ /*
+        return ReactiveSecurityContextHolder.getContext()
+                .map(SecurityContext::getAuthentication)
+                .switchIfEmpty(Mono.just(new TestingAuthenticationToken("", "")))
+                .flatMap(authentication ->
+                        // See https://www.vinsguru.com/reactor-flux-file-reading/
+                        Mono.using(
+                                () -> this.getRepository(repositoryType, authentication).getConnection(),
+                                Mono::just,
+                                RepositoryConnection::close     // make sure it's closing at the end
+                        ));
+
+        return this.getConnection().flatMapMany(connection -> Flux.create(c -> {
+
+            TupleQuery q = connection.prepareTupleQuery(QueryLanguage.SPARQL, query);
+            log.trace("Runninq query: {}", query.trim());
+            try (TupleQueryResult result = q.evaluate()) {
+                result.stream().forEach(c::next);
+            } finally {
+                c.complete();
+            }
+        }));
+
+        */
+        /*
+
         return this.getRepository().flatMapMany(repository ->
                 Flux.create(c -> {
                     try (RepositoryConnection connection = repository.getConnection()) {
 
-                        log.debug("ZZZZ");
                         TupleQuery q = connection.prepareTupleQuery(QueryLanguage.SPARQL, query);
-
+                        log.trace("Runninq query: {}", query.trim());
                         try (TupleQueryResult result = q.evaluate()) {
                             result.stream().forEach(c::next);
                         } finally {
@@ -81,10 +167,11 @@ public class AbstractRepository implements RepositoryBehaviour {
                         log.error("Unknown error while running query", e);
                         c.error(e);
                     }
-                }));
+                }));*/
     }
 
-    public Mono<TupleQueryResult> queryOld(String query) {
+
+    /*public Mono<TupleQueryResult> queryOld(String query) {
         return this.getRepository().map(repository -> {
             try (RepositoryConnection connection = repository.getConnection()) {
 
@@ -106,23 +193,16 @@ public class AbstractRepository implements RepositoryBehaviour {
                 throw e;
             }
         });
-    }
-
-
-
+    }*/
 
 
     @Override
-    public Mono<Repository> getRepository() {
-        return this.repositoryConfiguration.getRepository(this.repositoryType);
-    }
+    public Flux<Transaction> commit(Collection<Transaction> transactions, Authentication authentication) {
+        return Flux.create(c -> {
+            try (RepositoryConnection connection = this.getConnection(authentication)) {
 
-    @Override
-    public Flux<Transaction> commit(Collection<Transaction> transactions) {
-        return this.getRepository().flatMapMany(repository -> Flux.create(c -> {
 
-            try (RepositoryConnection connection = repository.getConnection()) {
-                log.trace("(Store) Committing transaction to repository {}", getRepository().toString());
+                log.trace("(Store) Committing transaction to repository {}", connection.getRepository().toString());
 
                 transactions.forEach(trx -> {
                     // FIXME: the approach based on the context works only as long as the statements in the graph are all within the global context only
@@ -163,6 +243,45 @@ public class AbstractRepository implements RepositoryBehaviour {
                 log.error("Failed to initialize repository connection");
                 c.error(e);
             }
-        }));
+        });
+    }
+
+
+    @Override
+    public Mono<List<Statement>> listStatements(Resource value, IRI predicate, Value object, Authentication authentication) {
+        try (RepositoryConnection connection = getConnection(authentication)) {
+            List<Statement> statements = connection.getStatements(value, predicate, object).stream().toList();
+            return Mono.just(statements);
+        } catch (Exception e) {
+            return Mono.error(e);
+        }
+
+    }
+
+    @Override
+    public Mono<Transaction> removeStatement(Resource subject, IRI predicate, Value value, Transaction transaction) {
+        Assert.notNull(transaction, "Transaction cannot be null");
+
+        return transaction
+                .remove(subject, predicate, value, Activity.UPDATED)
+                .affected(subject, predicate, value)
+                .asMono();
+    }
+
+    @Override
+    public Mono<Transaction> addStatement(Resource subject, IRI predicate, Value literal, Transaction transaction) {
+        Assert.notNull(transaction, "Transaction cannot be null");
+
+        return transaction
+                .insert(subject, predicate, literal, Activity.UPDATED)
+                .affected(subject, predicate, literal)
+                .asMono();
+
+    }
+
+
+    @Override
+    public Mono<Transaction> addStatement(Resource subject, IRI predicate, Value literal) {
+        return Statements.super.addStatement(subject, predicate, literal);
     }
 }

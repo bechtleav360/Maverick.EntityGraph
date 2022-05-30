@@ -5,6 +5,7 @@ import com.bechtle.cougar.graph.domain.model.extensions.NamespaceAwareStatement;
 import com.bechtle.cougar.graph.domain.model.extensions.NamespacedModelBuilder;
 import com.bechtle.cougar.graph.domain.model.vocabulary.Local;
 import com.bechtle.cougar.graph.domain.model.wrapper.AbstractModel;
+import com.bechtle.cougar.graph.domain.services.EntityServices;
 import com.bechtle.cougar.graph.domain.services.handler.Transformer;
 import com.bechtle.cougar.graph.repository.EntityStore;
 import lombok.extern.slf4j.Slf4j;
@@ -37,7 +38,7 @@ import java.util.stream.Collectors;
 public class ReplaceGlobalIdentifiers implements Transformer {
 
     @Override
-    public Mono<? extends AbstractModel> handle(EntityStore graph, AbstractModel triples, Map<String, String> parameters) {
+    public Mono<? extends AbstractModel> handle(EntityServices entityServices, AbstractModel triples, Map<String, String> parameters) {
 
 
         log.trace("(Transformer) Regenerating identifiers");
@@ -65,7 +66,7 @@ public class ReplaceGlobalIdentifiers implements Transformer {
 
         // preserve old ids
         mappings.forEach((key, value) -> {
-            builder.add(value, DC.IDENTIFIER, key);
+            builder.add(value, Local.ORIGINAL_IDENTIFIER, key);
         });
 
         return Mono.just(triples);

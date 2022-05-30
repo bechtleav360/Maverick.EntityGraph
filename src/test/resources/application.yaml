@@ -5,12 +5,12 @@
 application:
   test: "val"
   security:
-    enabled: true
+    enabled: false
     apiKey: "test"
   features:
     schedulers:
-      detectDuplicates: false
-      replaceGlobalIdentifiers: false
+      detectDuplicates: true
+      replaceGlobalIdentifiers: true
     transformers:
       replaceGlobalIdentifiers: true
       replaceAnonymousIdentifiers: true

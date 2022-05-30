@@ -16,6 +16,7 @@ import org.springframework.core.io.Resource;
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.core.io.buffer.DataBufferUtils;
 import org.springframework.core.io.buffer.DefaultDataBufferFactory;
+import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.event.RecordApplicationEvents;
@@ -62,7 +63,7 @@ class CheckGlobalIdentifiersTest {
         createEntities();
         scheduled = new ScheduledReplaceGlobalIdentifiers(queryServices, entityStore, transactionsStore);
 
-        Flux<Transaction> action = scheduled.checkForGlobalIdentifiers().doOnNext(transaction -> {
+        Flux<Transaction> action = scheduled.checkForGlobalIdentifiers(new TestingAuthenticationToken("", "")).doOnNext(transaction -> {
             log.trace("Completed transaction");
         });
 

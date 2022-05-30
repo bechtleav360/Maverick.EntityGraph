@@ -14,7 +14,11 @@ public class CsvConsumer implements Consumer<EntityExchangeResult<byte[]>> {
     }
 
     Set<Map<String, String>> rows = new HashSet<>();
+    String dump = "";
 
+    public String  getAsString() {
+        return this.dump;
+    }
 
     @Override
     public void accept(EntityExchangeResult<byte[]> entityExchangeResult) {
@@ -26,6 +30,7 @@ public class CsvConsumer implements Consumer<EntityExchangeResult<byte[]>> {
 
 
         String result = new String(responseBody);
+        dump = dump+=result;
         String[] lines = result.split("\\n");
         String[] headers = lines[0].split(",");
 

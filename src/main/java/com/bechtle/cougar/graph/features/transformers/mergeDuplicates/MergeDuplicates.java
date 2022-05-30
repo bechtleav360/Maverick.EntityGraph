@@ -3,8 +3,8 @@ package com.bechtle.cougar.graph.features.transformers.mergeDuplicates;
 import com.bechtle.cougar.graph.domain.model.extensions.GeneratedIdentifier;
 import com.bechtle.cougar.graph.domain.model.errors.MissingType;
 import com.bechtle.cougar.graph.domain.model.wrapper.AbstractModel;
+import com.bechtle.cougar.graph.domain.services.EntityServices;
 import com.bechtle.cougar.graph.domain.services.handler.Transformer;
-import com.bechtle.cougar.graph.repository.EntityStore;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.Triple;
 import org.eclipse.rdf4j.model.Model;
@@ -15,7 +15,6 @@ import org.eclipse.rdf4j.model.impl.LinkedHashModel;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.model.vocabulary.RDFS;
 import org.eclipse.rdf4j.query.BindingSet;
-import org.eclipse.rdf4j.query.TupleQueryResult;
 import org.eclipse.rdf4j.sparqlbuilder.core.SparqlBuilder;
 import org.eclipse.rdf4j.sparqlbuilder.core.Variable;
 import org.eclipse.rdf4j.sparqlbuilder.core.query.Queries;
@@ -60,17 +59,17 @@ public class MergeDuplicates implements Transformer {
 
 
     @Override
-    public Mono<? extends AbstractModel> handle(EntityStore graph, AbstractModel model, Map<String, String> parameters) {
+    public Mono<? extends AbstractModel> handle(EntityServices entityServices, AbstractModel model, Map<String, String> parameters) {
 
         return Mono.just(model)
                 .doOnSubscribe(c -> log.debug("(Transformer/Unique) Check if linked entities already exist and reroute if needed"))
                 .doFinally(signalType -> log.trace("(Transformer/Unique) Finished checks for unique entity constraints"))
                 .filter(this::checkForEmbeddedAnonymousEntities)
                 .flatMap(this::mergeDuplicatedWithinModel)
-                .flatMap(triples -> mergeDuplicatesInEntityGraph(graph, triples))
+                .flatMap(triples -> mergeDuplicatesInEntityGraph(entityServices, triples))
                 .switchIfEmpty(Mono.just(model))    // reset to model parameter if no anomyous existed
                 .filter(this::checkForEmbeddedNamedEntities)
-                .flatMap(triples -> checkIfLinkedNamedEntityExistsInGraph(graph, triples))
+                .flatMap(triples -> checkIfLinkedNamedEntityExistsInGraph(entityServices, triples))
                 .switchIfEmpty(Mono.just(model));
     }
 
@@ -79,7 +78,7 @@ public class MergeDuplicates implements Transformer {
      *
      * @return true, if named embedded entities are in payload
      */
-    private boolean     checkForEmbeddedNamedEntities(AbstractModel triples) {
+    private boolean checkForEmbeddedNamedEntities(AbstractModel triples) {
         return triples.embeddedObjects()
                 .stream()
                 .anyMatch(object -> object.isIRI() && (!(object instanceof GeneratedIdentifier)));
@@ -114,7 +113,7 @@ public class MergeDuplicates implements Transformer {
      * @param triples
      */
     public Mono<AbstractModel> mergeDuplicatedWithinModel(AbstractModel triples) {
-        log.trace("(Transformer) Merging duplicates within the model");
+        log.trace("(Transformer) Merging duplicates within the model with {} statements", triples.streamStatements().count());
         Model unmodifiable = new LinkedHashModel(triples.getModel()).unmodifiable();
 
         /*
@@ -138,15 +137,21 @@ public class MergeDuplicates implements Transformer {
         for (Resource anonymous : anonymousObjects) {
             Iterator<Statement> typeStatement = unmodifiable.getStatements(anonymous, RDF.TYPE, null).iterator();
             if (!typeStatement.hasNext()) throw new MissingType(anonymous);
+            Value typeValue = typeStatement.next().getObject();
 
             Iterator<Statement> labelStatement = unmodifiable.getStatements(anonymous, RDFS.LABEL, null).iterator();
             if (!labelStatement.hasNext()) continue;
+            Value labelValue = labelStatement.next().getObject();
 
-            Triple<Resource, Value, Value> possibleDuplicate = Triple.of(anonymous, typeStatement.next().getObject(), labelStatement.next().getObject());
+
+            Triple<Resource, Value, Value> possibleDuplicate = Triple.of(anonymous, typeValue, labelValue);
             Optional<Triple<Resource, Value, Value>> original = foundTypeAndLabel.stream()
                     .filter(triple -> triple.getMiddle().equals(possibleDuplicate.getMiddle()) && triple.getRight().equals(possibleDuplicate.getRight())).findAny();
 
             if (original.isPresent()) {
+                log.debug("(Transformer/Unique) Duplicate '{}'  with shared type '{}' and label '{}' identified, removing it and rerouting all links to origin '{}' ",
+                        possibleDuplicate.getLeft(), possibleDuplicate.getMiddle().stringValue(), possibleDuplicate.getRight().stringValue(),
+                        original.get().getLeft());
                 this.reroute(triples, possibleDuplicate.getLeft(), original.get().getLeft());
             } else {
                 foundTypeAndLabel.add(possibleDuplicate);
@@ -159,7 +164,7 @@ public class MergeDuplicates implements Transformer {
     }
 
     public void reroute(AbstractModel triples, Resource duplicateIdentifier, Resource originalIdentifier) {
-        log.debug("(Transformer/Unique) Duplicate '{}' identified, removing it and rerouting all links to origin '{}' ", duplicateIdentifier, originalIdentifier);
+
         Model unmodifiable = new LinkedHashModel(triples.getModel()).unmodifiable();
 
         // remove all statement from the possibleDuplicate (since we keep the original)
@@ -171,6 +176,8 @@ public class MergeDuplicates implements Transformer {
             triples.getModel().add(statement.getSubject(), statement.getPredicate(), originalIdentifier);
         });
 
+        log.trace("{} statements in the model after rerouting", triples.streamStatements().count());
+
     }
 
     /**
@@ -179,10 +186,10 @@ public class MergeDuplicates implements Transformer {
      * Two entities are duplicates, if they have equal Type (RDF) and Label (RDFS). If the incoming model has a definition,
      * which already exists in the graph, it will be removed (and the edge rerouted to the entity in the graph)
      *
-     * @param graph, connection to the entity graph
+     * @param entityServices, connection to the entity graph
      * @param model, the current model
      */
-    public Mono<AbstractModel> mergeDuplicatesInEntityGraph(EntityStore graph, AbstractModel model) {
+    public Mono<AbstractModel> mergeDuplicatesInEntityGraph(EntityServices entityServices, AbstractModel model) {
         return Mono.just(model)
                 .doOnSubscribe(subscription -> log.trace("(Transformer/Unique) Check if anonymous embedded entities already exist in graph."))
                 .flatMapMany(triples -> {
@@ -206,7 +213,7 @@ public class MergeDuplicates implements Transformer {
                     RdfObject type = Rdf.object(localEntity.type());
                     RdfObject label = Rdf.object(localEntity.label());
                     SelectQuery all = Queries.SELECT(id).where(id.isA(type).andHas(RDFS.LABEL, label)).all();
-                    return Mono.zip(Mono.just(localEntity), graph.query(all).collectList());
+                    return Mono.zip(Mono.just(localEntity), entityServices.query(all).collectList());
                 })
                 .doOnNext(pair -> {
                     // if we found query results, relink local entity and remove duplicate from model
@@ -242,7 +249,7 @@ public class MergeDuplicates implements Transformer {
      * @param graph
      * @param triples
      */
-    public Mono<AbstractModel> checkIfLinkedNamedEntityExistsInGraph(EntityStore graph, AbstractModel triples) {
+    public Mono<AbstractModel> checkIfLinkedNamedEntityExistsInGraph(EntityServices graph, AbstractModel triples) {
         log.trace("(Transformer) Checking for duplicates in graph skipped");
 
         return Mono.just(triples);

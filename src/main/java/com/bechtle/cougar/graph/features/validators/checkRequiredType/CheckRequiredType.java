@@ -2,6 +2,7 @@ package com.bechtle.cougar.graph.features.validators.checkRequiredType;
 
 import com.bechtle.cougar.graph.domain.model.errors.MissingType;
 import com.bechtle.cougar.graph.domain.model.wrapper.AbstractModel;
+import com.bechtle.cougar.graph.domain.services.EntityServices;
 import com.bechtle.cougar.graph.domain.services.handler.Validator;
 import com.bechtle.cougar.graph.repository.EntityStore;
 import lombok.extern.slf4j.Slf4j;
@@ -19,7 +20,7 @@ import java.util.Map;
 public class CheckRequiredType implements Validator {
 
     @Override
-    public Mono<? extends AbstractModel> handle(EntityStore graph, AbstractModel model, Map<String, String> parameters) {
+    public Mono<? extends AbstractModel> handle(EntityServices entityServices, AbstractModel model, Map<String, String> parameters) {
         log.trace("(Validator) Checking if type is defined");
 
         for (Resource obj : model.getModel().subjects()) {

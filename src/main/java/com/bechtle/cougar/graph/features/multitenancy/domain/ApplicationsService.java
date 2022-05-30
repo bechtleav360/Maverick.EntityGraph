@@ -4,6 +4,7 @@ import com.bechtle.cougar.graph.domain.model.extensions.GeneratedIdentifier;
 import com.bechtle.cougar.graph.features.multitenancy.domain.model.ApiKey;
 import com.bechtle.cougar.graph.features.multitenancy.domain.model.Application;
 import com.bechtle.cougar.graph.repository.ApplicationsStore;
+import com.bechtle.cougar.graph.repository.rdf4j.config.RepositoryConfiguration;
 import com.bechtle.cougar.graph.repository.rdf4j.extensions.BindingsAccessor;
 import com.bechtle.cougar.graph.api.security.errors.RevokedApiKeyUsed;
 import com.bechtle.cougar.graph.api.security.errors.UnknownApiKey;
@@ -17,11 +18,12 @@ import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.util.ModelBuilder;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.query.BindingSet;
-import org.eclipse.rdf4j.query.TupleQueryResult;
 import org.eclipse.rdf4j.sparqlbuilder.core.SparqlBuilder;
 import org.eclipse.rdf4j.sparqlbuilder.core.Variable;
 import org.eclipse.rdf4j.sparqlbuilder.core.query.Queries;
 import org.eclipse.rdf4j.sparqlbuilder.core.query.SelectQuery;
+import org.springframework.security.core.context.ReactiveSecurityContextHolder;
+import org.springframework.security.core.context.SecurityContext;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 import reactor.core.publisher.Flux;
@@ -34,11 +36,11 @@ import java.util.List;
 @Slf4j(topic = "cougar.graph.feature.applications")
 public class ApplicationsService {
 
-    private final ApplicationsStore store;
+    private final ApplicationsStore applicationsStore;
     private final ValueFactory valueFactory;
 
     public ApplicationsService(ApplicationsStore store) {
-        this.store = store;
+        this.applicationsStore = store;
         this.valueFactory = SimpleValueFactory.getInstance();
     }
 
@@ -65,7 +67,9 @@ public class ApplicationsService {
         modelBuilder.add(Application.IS_PERSISTENT, subscription.persistent());
 
 
-        return this.store.insert(modelBuilder.build())
+        return ReactiveSecurityContextHolder.getContext()
+                .map(SecurityContext::getAuthentication)
+                .map(authentication -> this.applicationsStore.insert(modelBuilder.build(), authentication))
                 .then(Mono.just(subscription));
 
 
@@ -95,9 +99,9 @@ public class ApplicationsService {
                                 .andHas(Application.HAS_LABEL, sublabel)
                         )
                 );
-        String qs = q.getQueryString();
-
-        return this.store.query(q)
+        return ReactiveSecurityContextHolder.getContext()
+                .map(SecurityContext::getAuthentication)
+                .flatMapMany(authentication -> this.applicationsStore.query(q, authentication))
                 .collectList()
                 .flatMap(result -> {
                     List<BindingSet> bindingSets = result.stream().toList();
@@ -158,7 +162,10 @@ public class ApplicationsService {
                 );
         String qs = q.getQueryString();
 
-        return this.store.query(q)
+        return ReactiveSecurityContextHolder.getContext().map(SecurityContext::getAuthentication)
+                .flatMapMany(authentication ->
+                        this.applicationsStore.query(q, authentication)
+                )
                 .map(BindingsAccessor::new)
                 .map(ba ->
                         new ApiKey(
@@ -196,7 +203,10 @@ public class ApplicationsService {
                 )
                 .limit(100);
 
-        return this.store.query(q)
+        return ReactiveSecurityContextHolder.getContext().map(SecurityContext::getAuthentication)
+                .flatMapMany(authentication ->
+                        this.applicationsStore.query(q, authentication)
+                )
                 .map(BindingsAccessor::new)
                 .map(ba ->
                         new Application(
@@ -212,55 +222,58 @@ public class ApplicationsService {
     public Mono<ApiKey> generateApiKey(String subscriptionIdentifier, String name) {
         log.debug("(Service) Generating new api key for subscriptions '{}'", subscriptionIdentifier);
 
-            Variable node = SparqlBuilder.var("node");
-            Variable subPersistent = SparqlBuilder.var("f");
-            Variable sublabel = SparqlBuilder.var("g");
+        Variable node = SparqlBuilder.var("node");
+        Variable subPersistent = SparqlBuilder.var("f");
+        Variable sublabel = SparqlBuilder.var("g");
 
-            SelectQuery q = Queries.SELECT()
-                    .where(node.isA(Application.TYPE)
-                            .andHas(Application.HAS_KEY, subscriptionIdentifier)
-                            .andHas(Application.HAS_LABEL, sublabel)
-                            .andHas(Application.IS_PERSISTENT, subPersistent)
-                    )
-
-                    .limit(2);
-
-
-        return this.store.query(q)
-                .collectList()
-                .flatMap(this::getUniqueBindingSet)
-                .map(BindingsAccessor::new)
-                .map(ba ->
-                        new Application(
-                                ba.asIRI(node),
-                                ba.asString(sublabel),
-                                subscriptionIdentifier,
-                                ba.asBoolean(subPersistent)
-                        )
+        SelectQuery q = Queries.SELECT()
+                .where(node.isA(Application.TYPE)
+                        .andHas(Application.HAS_KEY, subscriptionIdentifier)
+                        .andHas(Application.HAS_LABEL, sublabel)
+                        .andHas(Application.IS_PERSISTENT, subPersistent)
                 )
-                .map(subscription ->
-                        new ApiKey(
-                                new GeneratedIdentifier(Local.Subscriptions.NAMESPACE),
-                                name,
-                                GeneratedIdentifier.generateRandomKey(16),
-                                true,
-                                ZonedDateTime.now().toString(),
-                                subscription
-                        )
-                )
-                .flatMap(apiKey -> {
-                    ModelBuilder modelBuilder = new ModelBuilder();
-                    modelBuilder.subject(apiKey.iri());
-                    modelBuilder.add(RDF.TYPE, ApiKey.TYPE);
-                    modelBuilder.add(ApiKey.HAS_KEY, apiKey.key());
-                    modelBuilder.add(ApiKey.HAS_LABEL, apiKey.label());
-                    modelBuilder.add(ApiKey.HAS_ISSUE_DATE, apiKey.issueDate());
-                    modelBuilder.add(ApiKey.IS_ACTIVE, apiKey.active());
-                    modelBuilder.add(ApiKey.OF_SUBSCRIPTION, apiKey.subscription().key());
-                    modelBuilder.add(apiKey.subscription().iri(), Application.HAS_API_KEY, apiKey.iri());
 
-                    return this.store.insert(modelBuilder.build()).then(Mono.just(apiKey));
-                });
+                .limit(2);
+
+
+        return ReactiveSecurityContextHolder.getContext().map(SecurityContext::getAuthentication)
+                .flatMap(authentication ->
+                        this.applicationsStore.query(q, authentication)
+                                .collectList()
+                                .flatMap(this::getUniqueBindingSet)
+                                .map(BindingsAccessor::new)
+                                .map(ba ->
+                                        new Application(
+                                                ba.asIRI(node),
+                                                ba.asString(sublabel),
+                                                subscriptionIdentifier,
+                                                ba.asBoolean(subPersistent)
+                                        )
+                                )
+                                .map(subscription ->
+                                        new ApiKey(
+                                                new GeneratedIdentifier(Local.Subscriptions.NAMESPACE),
+                                                name,
+                                                GeneratedIdentifier.generateRandomKey(16),
+                                                true,
+                                                ZonedDateTime.now().toString(),
+                                                subscription
+                                        )
+                                )
+                                .flatMap(apiKey -> {
+                                    ModelBuilder modelBuilder = new ModelBuilder();
+                                    modelBuilder.subject(apiKey.iri());
+                                    modelBuilder.add(RDF.TYPE, ApiKey.TYPE);
+                                    modelBuilder.add(ApiKey.HAS_KEY, apiKey.key());
+                                    modelBuilder.add(ApiKey.HAS_LABEL, apiKey.label());
+                                    modelBuilder.add(ApiKey.HAS_ISSUE_DATE, apiKey.issueDate());
+                                    modelBuilder.add(ApiKey.IS_ACTIVE, apiKey.active());
+                                    modelBuilder.add(ApiKey.OF_SUBSCRIPTION, apiKey.subscription().key());
+                                    modelBuilder.add(apiKey.subscription().iri(), Application.HAS_API_KEY, apiKey.iri());
+
+                                    return this.applicationsStore.insert(modelBuilder.build(), authentication).then(Mono.just(apiKey));
+                                })
+                );
     }
 
     private Mono<BindingSet> getUniqueBindingSet(List<BindingSet> result) {
