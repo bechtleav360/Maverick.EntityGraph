@@ -4,9 +4,11 @@ import com.bechtle.cougar.graph.domain.model.extensions.GeneratedIdentifier;
 import com.bechtle.cougar.graph.domain.model.errors.MissingType;
 import com.bechtle.cougar.graph.domain.model.wrapper.AbstractModel;
 import com.bechtle.cougar.graph.domain.services.EntityServices;
+import com.bechtle.cougar.graph.domain.services.QueryServices;
 import com.bechtle.cougar.graph.domain.services.handler.Transformer;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.Triple;
+import org.checkerframework.common.util.report.qual.ReportOverride;
 import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Statement;
@@ -21,7 +23,9 @@ import org.eclipse.rdf4j.sparqlbuilder.core.query.Queries;
 import org.eclipse.rdf4j.sparqlbuilder.core.query.SelectQuery;
 import org.eclipse.rdf4j.sparqlbuilder.rdf.Rdf;
 import org.eclipse.rdf4j.sparqlbuilder.rdf.RdfObject;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -37,6 +41,14 @@ import java.util.stream.Collectors;
  */
 @ConditionalOnProperty(name = "application.features.transformers.mergeDuplicates", havingValue = "true")
 public class MergeDuplicates implements Transformer {
+
+    private QueryServices queryServices;
+
+    @Override
+    public void registerQueryService(QueryServices queryServices) {
+        this.queryServices = queryServices;
+
+    }
 
     // FIXME: should only operate on local model -> the rerouting to existing entity should happen through scheduler
 
@@ -59,17 +71,17 @@ public class MergeDuplicates implements Transformer {
 
 
     @Override
-    public Mono<? extends AbstractModel> handle(EntityServices entityServices, AbstractModel model, Map<String, String> parameters) {
+    public Mono<? extends AbstractModel> handle(AbstractModel model, Map<String, String> parameters, Authentication authentication) {
 
         return Mono.just(model)
                 .doOnSubscribe(c -> log.debug("(Transformer/Unique) Check if linked entities already exist and reroute if needed"))
                 .doFinally(signalType -> log.trace("(Transformer/Unique) Finished checks for unique entity constraints"))
                 .filter(this::checkForEmbeddedAnonymousEntities)
                 .flatMap(this::mergeDuplicatedWithinModel)
-                .flatMap(triples -> mergeDuplicatesInEntityGraph(entityServices, triples))
+                .flatMap(triples -> mergeDuplicatesInEntityGraph(triples, authentication))
                 .switchIfEmpty(Mono.just(model))    // reset to model parameter if no anomyous existed
                 .filter(this::checkForEmbeddedNamedEntities)
-                .flatMap(triples -> checkIfLinkedNamedEntityExistsInGraph(entityServices, triples))
+                .flatMap(this::checkIfLinkedNamedEntityExistsInGraph)
                 .switchIfEmpty(Mono.just(model));
     }
 
@@ -186,10 +198,9 @@ public class MergeDuplicates implements Transformer {
      * Two entities are duplicates, if they have equal Type (RDF) and Label (RDFS). If the incoming model has a definition,
      * which already exists in the graph, it will be removed (and the edge rerouted to the entity in the graph)
      *
-     * @param entityServices, connection to the entity graph
      * @param model, the current model
      */
-    public Mono<AbstractModel> mergeDuplicatesInEntityGraph(EntityServices entityServices, AbstractModel model) {
+    public Mono<AbstractModel> mergeDuplicatesInEntityGraph(AbstractModel model, Authentication authentication) {
         return Mono.just(model)
                 .doOnSubscribe(subscription -> log.trace("(Transformer/Unique) Check if anonymous embedded entities already exist in graph."))
                 .flatMapMany(triples -> {
@@ -213,7 +224,7 @@ public class MergeDuplicates implements Transformer {
                     RdfObject type = Rdf.object(localEntity.type());
                     RdfObject label = Rdf.object(localEntity.label());
                     SelectQuery all = Queries.SELECT(id).where(id.isA(type).andHas(RDFS.LABEL, label)).all();
-                    return Mono.zip(Mono.just(localEntity), entityServices.query(all).collectList());
+                    return Mono.zip(Mono.just(localEntity), queryServices.queryValues(all, authentication).collectList());
                 })
                 .doOnNext(pair -> {
                     // if we found query results, relink local entity and remove duplicate from model
@@ -249,7 +260,7 @@ public class MergeDuplicates implements Transformer {
      * @param graph
      * @param triples
      */
-    public Mono<AbstractModel> checkIfLinkedNamedEntityExistsInGraph(EntityServices graph, AbstractModel triples) {
+    public Mono<AbstractModel> checkIfLinkedNamedEntityExistsInGraph(AbstractModel triples) {
         log.trace("(Transformer) Checking for duplicates in graph skipped");
 
         return Mono.just(triples);

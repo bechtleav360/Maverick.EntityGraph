@@ -6,6 +6,7 @@ import com.bechtle.cougar.graph.domain.model.extensions.NamespacedModelBuilder;
 import com.bechtle.cougar.graph.domain.model.vocabulary.Local;
 import com.bechtle.cougar.graph.domain.model.wrapper.AbstractModel;
 import com.bechtle.cougar.graph.domain.services.EntityServices;
+import com.bechtle.cougar.graph.domain.services.QueryServices;
 import com.bechtle.cougar.graph.domain.services.handler.Transformer;
 import com.bechtle.cougar.graph.repository.EntityStore;
 import lombok.extern.slf4j.Slf4j;
@@ -16,6 +17,7 @@ import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.vocabulary.DC;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 
@@ -38,7 +40,7 @@ import java.util.stream.Collectors;
 public class ReplaceGlobalIdentifiers implements Transformer {
 
     @Override
-    public Mono<? extends AbstractModel> handle(EntityServices entityServices, AbstractModel triples, Map<String, String> parameters) {
+    public Mono<? extends AbstractModel> handle(AbstractModel triples, Map<String, String> parameters, Authentication authentication) {
 
 
         log.trace("(Transformer) Regenerating identifiers");
@@ -70,6 +72,16 @@ public class ReplaceGlobalIdentifiers implements Transformer {
         });
 
         return Mono.just(triples);
+
+    }
+
+    @Override
+    public void registerEntityService(EntityServices entityServices) {
+
+    }
+
+    @Override
+    public void registerQueryService(QueryServices queryServices) {
 
     }
 }

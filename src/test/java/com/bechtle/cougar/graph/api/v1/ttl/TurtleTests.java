@@ -147,9 +147,11 @@ public class TurtleTests implements EntitiesTest {
 
         Collection<Statement> statements = rdfConsumer.getStatements();
 
+        System.out.println(rdfConsumer.dump(RDFFormat.TURTLE));
+
         Assertions.assertFalse(rdfConsumer.hasStatement(null, Transactions.STATUS, Transactions.RUNNING));;
 
-        Assertions.assertTrue(rdfConsumer.hasStatement(null, Local.ORIGINAL_IDENTIFIER, SimpleValueFactory.getInstance().createLiteral("_a")));
+        Assertions.assertTrue(rdfConsumer.hasStatement(null, SDO.IDENTIFIER, SimpleValueFactory.getInstance().createLiteral("_a")));
         Assertions.assertTrue(rdfConsumer.hasStatement(null, RDF.TYPE, SDO.VIDEO_OBJECT));
     }
 

@@ -15,12 +15,9 @@ import com.bechtle.cougar.graph.domain.model.wrapper.Transaction;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.rdf4j.model.*;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
-import org.eclipse.rdf4j.query.BindingSet;
-import org.eclipse.rdf4j.sparqlbuilder.core.query.SelectQuery;
-import org.springframework.security.core.context.ReactiveSecurityContextHolder;
-import org.springframework.security.core.context.SecurityContext;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.HashMap;
@@ -28,42 +25,41 @@ import java.util.Map;
 
 @Slf4j(topic = "cougar.graph.service.entity")
 @Service
-public class EntityServices extends ServicesBase {
+public class EntityServices {
 
     private final EntityStore entityStore;
     private final TransactionsStore trxStore;
     private final SchemaStore schema;
-    private final DelegatingValidator validators;
-    private final DelegatingTransformer transformers;
+
+
+
+    private DelegatingValidator validators;
+    private DelegatingTransformer transformers;
+
+
+
+    private QueryServices queryServices;
 
     public EntityServices(EntityStore graph,
                           TransactionsStore trxStore,
-                          SchemaStore schema,
-                          DelegatingValidator validators,
-                          DelegatingTransformer transformers) {
+                          SchemaStore schema) {
         this.entityStore = graph;
         this.trxStore = trxStore;
         this.schema = schema;
-        this.validators = validators;
-        this.transformers = transformers;
     }
 
-    public Mono<Entity> readEntity(String identifier) {
-        return ReactiveSecurityContextHolder.getContext().map(SecurityContext::getAuthentication)
-                .flatMap(authentication -> entityStore.getEntity(LocalIRI.withDefaultNamespace(identifier), authentication))
-                //.switchIfEmpty()        // check if param identifier has been a duplicate identifier and is stored in dc.identifier
+
+
+    public Mono<Entity> readEntity(String identifier, Authentication authentication) {
+        return entityStore.getEntity(LocalIRI.withDefaultNamespace(identifier), authentication)
                 .switchIfEmpty(Mono.error(new EntityNotFound(identifier)));
     }
 
 
-    public Mono<Transaction> createEntity(Incoming triples, Map<String, String> parameters) {
-        return Mono.zip(
-                this.createEntity(triples, parameters, new Transaction()),
-                getAuthentication()
-        ).flatMap(tpl -> entityStore.commit(tpl.getT1(), tpl.getT2()))
-                .map(transaction -> {
-                    return transaction;
-                });
+    public Mono<Transaction> createEntity(Incoming triples, Map<String, String> parameters, Authentication authentication) {
+        return this.prepareEntity(triples, parameters, new Transaction(), authentication)
+                .flatMap(transaction -> entityStore.commit(transaction, authentication));
+
     }
 
 
@@ -76,7 +72,7 @@ public class EntityServices extends ServicesBase {
      * @param value           value
      * @return transaction model
      */
-    public Mono<Transaction> setValue(String id, String predicatePrefix, String predicateKey, String value) {
+    public Mono<Transaction> setValue(String id, String predicatePrefix, String predicateKey, String value, Authentication authentication) {
 
 
         ValueFactory vf = SimpleValueFactory.getInstance();
@@ -85,27 +81,27 @@ public class EntityServices extends ServicesBase {
 
         return this.setValue(entityIdentifier,
                 LocalIRI.withDefinedNamespace(namespace, predicateKey),
-                vf.createLiteral(value)
+                vf.createLiteral(value),
+                authentication
         );
     }
 
     /**
      * Adds a statement
      */
-    public Mono<Transaction> setValue(IRI subj, org.eclipse.rdf4j.model.IRI predicate, Value value) {
-        return this.setValue(subj, predicate, value, new Transaction());
+    public Mono<Transaction> setValue(IRI subj, org.eclipse.rdf4j.model.IRI predicate, Value value, Authentication authentication) {
+        return this.setValue(subj, predicate, value, new Transaction(), authentication);
     }
 
     /**
      * Adds a statement. Fails if no entity exists with the given subject
      */
-    public Mono<Transaction> setValue(IRI entityIdentifier, IRI predicate, Value value, Transaction transaction) {
-        return getAuthentication().flatMap(authentication ->
-                        this.entityStore.getEntity(entityIdentifier, authentication)
-                            .switchIfEmpty(Mono.error(new EntityNotFound(entityIdentifier.stringValue())))
-                            .flatMap(entity -> this.entityStore.addStatement(entityIdentifier, predicate, value, transaction.affected(entity)))
-                            .flatMap(trx -> this.entityStore.commit(trx, authentication))
-                );
+    public Mono<Transaction> setValue(IRI entityIdentifier, IRI predicate, Value value, Transaction transaction, Authentication authentication) {
+
+        return this.entityStore.getEntity(entityIdentifier, authentication)
+                .switchIfEmpty(Mono.error(new EntityNotFound(entityIdentifier.stringValue())))
+                .flatMap(entity -> this.entityStore.addStatement(entityIdentifier, predicate, value, transaction.affected(entity)))
+                .flatMap(trx -> this.entityStore.commit(trx, authentication));
     }
 
 
@@ -120,7 +116,7 @@ public class EntityServices extends ServicesBase {
      * @param linkedEntities  value
      * @return transaction model
      */
-    public Mono<Transaction> link(String id, String predicatePrefix, String predicateKey, Incoming linkedEntities) {
+    public Mono<Transaction> linkEntityTo(String id, String predicatePrefix, String predicateKey, Incoming linkedEntities, Authentication authentication) {
 
         LocalIRI entityIdentifier = LocalIRI.withDefaultNamespace(id);
         String namespace = schema.getNamespaceFor(predicatePrefix).orElseThrow(() -> new UnknownPrefix(predicatePrefix)).getName();
@@ -133,28 +129,25 @@ public class EntityServices extends ServicesBase {
 
 
          */
-        return ReactiveSecurityContextHolder.getContext().map(SecurityContext::getAuthentication)
-                .flatMap(authentication -> {
-                    return this.entityStore.getEntity(entityIdentifier, authentication)
-                            .switchIfEmpty(Mono.error(new EntityNotFound(id)))
+        return this.entityStore.getEntity(entityIdentifier, authentication)
+                .switchIfEmpty(Mono.error(new EntityNotFound(id)))
 
-                            /* store the new entities */
-                            .map(entity -> new Transaction().affected(entity))
-                            .flatMap(transaction -> this.createEntity(linkedEntities, new HashMap<>(), transaction))
+                /* store the new entities */
+                .map(entity -> new Transaction().affected(entity))
+                .flatMap(transaction -> this.prepareEntity(linkedEntities, new HashMap<>(), transaction, authentication))
 
-                            /* store the links */
-                            .map(transaction -> {
+                /* store the links */
+                .map(transaction -> {
 
-                                transaction.listModifiedResources(Activity.INSERTED, Activity.UPDATED)
-                                        .forEach(value -> {
-                                            transaction.insert(entityIdentifier, predicate, value, Activity.UPDATED);
-                                        });
+                    transaction.listModifiedResources(Activity.INSERTED, Activity.UPDATED)
+                            .forEach(value -> {
+                                transaction.insert(entityIdentifier, predicate, value, Activity.UPDATED);
+                            });
 
-                                return transaction;
+                    return transaction;
 
-                            })
-                            .flatMap(trx -> this.entityStore.commit(trx, authentication));
-                });
+                })
+                .flatMap(trx -> this.entityStore.commit(trx, authentication));
 
 
         // FIXME: we should separate by entities (and have them as individual transactions)
@@ -162,9 +155,9 @@ public class EntityServices extends ServicesBase {
 
 
     /**
-      * Make sure you store the transaction once you are finished
-      */
-    private Mono<Transaction> createEntity(Incoming triples, Map<String, String> parameters, Transaction transaction) {
+     * Make sure you store the transaction once you are finished
+     */
+    private Mono<Transaction> prepareEntity(Incoming triples, Map<String, String> parameters, Transaction transaction, Authentication authentication) {
         if (log.isDebugEnabled())
             log.debug("(Service) {} statements incoming for creating new entity. Parameters: {}", triples.streamStatements().count(), parameters.size() > 0 ? parameters : "none");
 
@@ -178,7 +171,7 @@ public class EntityServices extends ServicesBase {
 
                 .flatMap(sts -> {
                     /* transform */
-                    return transformers.handle(this, sts, parameters);
+                    return transformers.handle(sts, parameters, authentication);
 
                     /* TODO: check if create of resource of given type is supported or is it delegated to connector */
 
@@ -187,8 +180,14 @@ public class EntityServices extends ServicesBase {
                 .flatMap(sts -> entityStore.insert(sts.getModel(), transaction));
     }
 
-    public Flux<BindingSet> query(SelectQuery all) {
-        return ReactiveSecurityContextHolder.getContext().map(SecurityContext::getAuthentication)
-                .flatMapMany(authentication -> this.entityStore.query(all, authentication));
+    @Autowired
+    public void setValidators( DelegatingValidator validators) {
+        this.validators = validators;
     }
+    @Autowired
+    public void setTransformers(DelegatingTransformer transformers) {
+        this.transformers = transformers;
+        this.transformers.registerEntityService(this);
+    }
+
 }

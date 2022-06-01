@@ -16,20 +16,6 @@ import java.util.List;
 
 public abstract class ServicesBase {
 
-    @Value("${application.security.enabled:true}")
-    boolean securityEnabled;
 
-
-    public Mono<Authentication> getAuthentication() {
-        if(securityEnabled) {
-            return ReactiveSecurityContextHolder.getContext()
-                    .map(SecurityContext::getAuthentication)
-                    .switchIfEmpty(Mono.error(new InternalAuthenticationServiceException("Failed to acquire authentication and security is enabled")));
-        } else {
-            return Mono.just(new TestingAuthenticationToken("test", "test"));
-        }
-
-
-    }
 
 }

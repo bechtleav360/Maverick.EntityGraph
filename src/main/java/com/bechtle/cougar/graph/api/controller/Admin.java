@@ -17,7 +17,7 @@ import reactor.core.publisher.Mono;
 @RequestMapping(path = "/api/admin/bulk")
 @Api(tags = "Admin")
 @Slf4j(topic = "cougar.graph.api")
-public class Admin {
+public class Admin extends AbstractController {
     protected final AdminServices adminServices;
 
     public Admin(AdminServices adminServices) {
@@ -28,8 +28,10 @@ public class Admin {
     @GetMapping(value = "/reset", produces = MediaType.TEXT_PLAIN_VALUE)
     @ResponseStatus(HttpStatus.ACCEPTED)
     Mono<Void> queryBindings() {
-        log.warn("(Request) Clearing the repository");
-        return adminServices.reset(); // .map(ResponseEntity::ok);
+        return super.getAuthentication()
+                .map(adminServices::reset)
+                .then()
+                .doOnSubscribe(s -> log.debug("(Request) Clearing the repository"));
     }
 
 
@@ -37,12 +39,12 @@ public class Admin {
     @PostMapping(value = "/import/entities", consumes = MediaType.APPLICATION_OCTET_STREAM_VALUE)
     @ResponseStatus(HttpStatus.ACCEPTED)
     Mono<Void> importEntities(@RequestBody Flux<DataBuffer> bytes, @RequestParam String mimetype) {
-        log.info("(Request) Importing a file of mimetype {}", mimetype);
         Assert.isTrue(StringUtils.hasLength(mimetype), "Mimetype is a required parameter");
 
-        return adminServices.importEntities(bytes, mimetype); // .map(ResponseEntity::ok);
+        return super.getAuthentication()
+                .map(authentication -> adminServices.importEntities(bytes, mimetype, authentication)).then()
+                .doOnSubscribe(s -> log.debug("(Request) Importing a file of mimetype {}", mimetype));
     }
-
 
 
 }

@@ -2,9 +2,8 @@ package com.bechtle.cougar.graph.features.schedulers.detectDuplicates;
 
 
 import com.bechtle.cougar.graph.api.security.AdminAuthentication;
-import com.bechtle.cougar.graph.repository.EntityStore;
-import com.bechtle.cougar.graph.repository.rdf4j.config.RepositoryConfiguration;
-import com.bechtle.cougar.graph.repository.rdf4j.repository.EntityRepository;
+import com.bechtle.cougar.graph.domain.services.EntityServices;
+import com.bechtle.cougar.graph.domain.services.QueryServices;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Value;
@@ -64,11 +63,13 @@ import java.util.TreeSet;
 public class ScheduledDetectDuplicates {
 
 
-    private final EntityStore entityStore;
+    private final EntityServices entityServices;
+    private final QueryServices queryServices;
     private final SimpleValueFactory valueFactory;
 
-    public ScheduledDetectDuplicates(EntityStore repository) {
-        this.entityStore = repository;
+    public ScheduledDetectDuplicates(EntityServices service, QueryServices queryServices) {
+        this.entityServices = service;
+        this.queryServices = queryServices;
         this.valueFactory = SimpleValueFactory.getInstance();
     }
 
@@ -142,24 +143,23 @@ public class ScheduledDetectDuplicates {
     ?thing 	<http://schema.org/dateCreated> ?date .
 }
          */
-        Variable idVariable = SparqlBuilder.var("identifier");
+        Variable idVariable = SparqlBuilder.var("id");
 
         SelectQuery findDuplicates = Queries.SELECT(idVariable).where(
                 idVariable.isA(this.valueFactory.createIRI(duplicate.type())),
                 idVariable.has(duplicate.sharedProperty(), this.valueFactory.createLiteral(duplicate.sharedValue()))
         );
 
-
-        return this.entityStore.query(findDuplicates, authentication)
+        return this.queryServices.queryValues(findDuplicates, authentication)
                 .doOnSubscribe(subscription -> log.trace("Retrieving all duplicates of same type with value '{}' for property '{}' ", duplicate.sharedValue, duplicate.sharedProperty))
                 .map(bindings -> {
-                    Value id = bindings.getValue("identifier");
+                    Value id = bindings.getValue(idVariable.getVarName());
                     return new Duplicate(id);
                 });
 
     }
 
-    private Flux<Void> mergeDuplicates(List<Duplicate> duplicates, Authentication authentication) {
+    private Flux<Value> mergeDuplicates(List<Duplicate> duplicates, Authentication authentication) {
         if(duplicates.isEmpty()) return Flux.empty();
 
         TreeSet<Duplicate> orderedDuplicates = new TreeSet<>(duplicates);
@@ -167,8 +167,8 @@ public class ScheduledDetectDuplicates {
         SortedSet<Duplicate> deletionCandidates = orderedDuplicates.tailSet(original, false);
 
         return Flux.fromIterable(deletionCandidates)
-                .map(duplicate -> this.findStatementsPointingToDuplicate(duplicate, authentication))
-                .thenMany(Mono.empty());
+                .flatMap(duplicate -> this.findStatementsPointingToDuplicate(duplicate, authentication))
+                .map(LostStatement::pVal);
 
         // save original
 
@@ -190,9 +190,10 @@ public class ScheduledDetectDuplicates {
         Variable subject = SparqlBuilder.var("s");
         Variable predicate = SparqlBuilder.var("p");
 
-        SelectQuery q = Queries.SELECT().where(subject.has(predicate, duplicate.id()));
-        log.trace("XXXXX - {}",q.getQueryString());
-        return entityStore.query(q, authentication)
+        SelectQuery query = Queries.SELECT(subject, predicate).where(subject.has(predicate, duplicate.id()));
+        log.trace("XXXXX - {}",query.getQueryString());
+        return queryServices.queryValues(query, authentication)
+                .doOnSubscribe(subscription -> log.trace("Retrieving all statements pointing to duplicate with id '{}'", duplicate.id()))
                 .map(binding -> {
                     Value pVal = binding.getValue(predicate.getVarName());
                     Value sVal = binding.getValue(subject.getVarName());
@@ -224,7 +225,7 @@ public class ScheduledDetectDuplicates {
         ).groupBy(sharedValue, type).having(Expressions.gt(Expressions.count(thing), 1));
 
 
-        return entityStore.query(findDuplicates, authentication)
+        return queryServices.queryValues(findDuplicates, authentication)
                 .map(binding -> {
                     Value sharedValueVal = binding.getValue(sharedValue.getVarName());
                     Value typeVal = binding.getValue(type.getVarName());

@@ -32,7 +32,7 @@ public class EntityRepository extends AbstractRepository implements EntityStore 
 
     public Mono<Entity> getEntity(IRI id, Authentication authentication) {
             try (RepositoryConnection connection = getConnection(authentication)) {
-                log.trace("(Store) Loading entity from repository {}",connection.getRepository().toString());
+                log.trace("(Store) Loading entity with id '{}' from repository {}", id,  connection.getRepository().toString());
 
                 RepositoryResult<Statement> statements = connection.getStatements(id, null, null);
                 if (!statements.hasNext()) {

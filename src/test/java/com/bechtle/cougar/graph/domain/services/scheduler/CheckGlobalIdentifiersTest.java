@@ -93,7 +93,7 @@ class CheckGlobalIdentifiersTest {
 
         Flux<DataBuffer> read = DataBufferUtils.read(file, new DefaultDataBufferFactory(), 128);
 
-        Mono<Void> voidMono = adminServices.importEntities(read, "text/turtle");
+        Mono<Void> voidMono = adminServices.importEntities(read, "text/turtle", new TestingAuthenticationToken("test", "test"));
 
         StepVerifier.create(voidMono).verifyComplete();
     }

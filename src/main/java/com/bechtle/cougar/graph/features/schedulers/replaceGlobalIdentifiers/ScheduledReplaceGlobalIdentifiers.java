@@ -174,7 +174,7 @@ public class ScheduledReplaceGlobalIdentifiers {
                   } LIMIT 5000
                 """;
         String query = String.format(tpl, Local.Entities.NAMESPACE);
-        return queryServices.queryValues(query)
+        return queryServices.queryValues(query, authentication)
                 .map(bindings -> bindings.getValue("a"));
     }
 

@@ -22,7 +22,7 @@ import java.util.Map;
 @RequestMapping(path = "/api/entities")
 @Api(tags = "Entities")
 @Slf4j(topic = "cougar.graph.api")
-public class Entities {
+public class Entities extends AbstractController {
 
     protected final ObjectMapper objectMapper;
     protected final EntityServices entityServices;
@@ -36,11 +36,12 @@ public class Entities {
     @GetMapping(value = "/{id:[\\w|\\d|-|_]+}", produces = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.N3_VALUE})
     @ResponseStatus(HttpStatus.OK)
     Flux<NamespaceAwareStatement> read(@PathVariable String id) {
-        log.trace("(Request) Reading Entity with id: {}", id);
         Assert.isTrue(id.length() == GeneratedIdentifier.LENGTH, "Incorrect length for identifier.");
 
-        return entityServices.readEntity(id)
-                .flatMapIterable(AbstractModel::asStatements);
+        return super.getAuthentication()
+                .flatMap(authentication -> entityServices.readEntity(id, authentication))
+                .flatMapIterable(AbstractModel::asStatements)
+                .doOnSubscribe(s -> log.trace("(Request) Reading Entity with id: {}", id));
     }
 
     @ApiOperation(value = "Create entity", tags = {"v1"})
@@ -49,13 +50,15 @@ public class Entities {
             produces = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.N3_VALUE})
     @ResponseStatus(HttpStatus.ACCEPTED)
     Flux<NamespaceAwareStatement> createEntity(@RequestBody Incoming request) {
-
-        if (log.isDebugEnabled()) log.debug("(Request) Create a new Entity");
-        if (log.isTraceEnabled()) log.trace("(Request) Payload: \n {}", request.toString());
-
         Assert.isTrue(request.getModel().size() > 0, "No statements in request detected.");
-        Map<String, String> parameter = Map.of();
-        return entityServices.createEntity(request, parameter).flatMapIterable(AbstractModel::asStatements);
+
+        return super.getAuthentication()
+                .flatMap(authentication ->  entityServices.createEntity(request, Map.of(), authentication))
+                .flatMapIterable(AbstractModel::asStatements)
+                .doOnSubscribe(s -> {
+                    if (log.isDebugEnabled()) log.debug("(Request) Create a new Entity");
+                    if (log.isTraceEnabled()) log.trace("(Request) Payload: \n {}", request.toString());
+                });
     }
 
 
@@ -65,19 +68,15 @@ public class Entities {
             produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE})
     @ResponseStatus(HttpStatus.CREATED)
     Flux<NamespaceAwareStatement> createValue(@PathVariable String id, @PathVariable String prefixedKey, @RequestBody String value) {
-
-        if (log.isDebugEnabled())
-            log.debug("(Request) Set property '{}' of entity '{}' to value '{}'", prefixedKey, id, value.length() > 64 ? value.substring(0, 64) : value);
-
         Assert.isTrue(!value.matches("(?s).*[\\n\\r].*"), "Newlines in request body are not supported");
 
         String[] property = splitPrefixedIdentifier(prefixedKey);
-
-        return entityServices.setValue(id, property[0], property[1], value)
-                .map(transaction -> {
-                    return transaction;
-                })
-                .flatMapIterable(AbstractModel::asStatements);
+        return super.getAuthentication()
+                .flatMap(authentication ->  entityServices.setValue(id, property[0], property[1], value, authentication))
+                .flatMapIterable(AbstractModel::asStatements)
+                .doOnSubscribe(s -> {
+                    if (log.isDebugEnabled()) log.debug("(Request) Set property '{}' of entity '{}' to value '{}'", prefixedKey, id, value.length() > 64 ? value.substring(0, 64) : value);
+                });
 
     }
 
@@ -88,21 +87,18 @@ public class Entities {
     @ResponseStatus(HttpStatus.CREATED)
     Flux<NamespaceAwareStatement> createEmbedded(@PathVariable String id, @PathVariable String prefixedKey, @RequestBody Incoming value) {
 
-        if (log.isDebugEnabled())
-            log.debug("(Request) Add embedded entity as property '{}' to entity '{}'", prefixedKey, id);
-
         String[] property = splitPrefixedIdentifier(prefixedKey);
-
-        return entityServices.link(id, property[0], property[1], value).flatMapIterable(AbstractModel::asStatements);
+        return super.getAuthentication()
+                .flatMap(authentication ->  entityServices.linkEntityTo(id, property[0], property[1], value, authentication))
+                .flatMapIterable(AbstractModel::asStatements)
+                .doOnSubscribe(s -> {
+                    if (log.isDebugEnabled()) log.debug("(Request) Add embedded entities as property '{}' to entity '{}'", prefixedKey, id);
+                });
 
 
     }
 
-    private String[] splitPrefixedIdentifier(String prefixedKey) {
-        String[] property = prefixedKey.split("\\.");
-        Assert.isTrue(property.length == 2, "Failed to extract prefix and label from path parameter " + prefixedKey);
-        return property;
-    }
+
 
     /*
     @ApiOperation(value = "Read entity with type coercion", tags = {"v4", "entity"})

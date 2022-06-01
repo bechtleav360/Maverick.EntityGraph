@@ -16,7 +16,7 @@ import reactor.core.publisher.Mono;
 @RequestMapping(path = "/api/query")
 @Api(tags = "Queries")
 @Slf4j(topic = "cougar.graph.api")
-public class Queries {
+public class Queries extends AbstractController{
     protected final QueryServices queryServices;
 
     public Queries(QueryServices queryServices) {
@@ -27,8 +27,12 @@ public class Queries {
     @PostMapping(value = "/select", consumes = "text/plain", produces = {"text/csv", "application/sparql-results+json"})
     @ResponseStatus(HttpStatus.ACCEPTED)
     Flux<BindingSet> queryBindings(@RequestBody String query) {
-        log.trace("(Request) Search graph with tuples query: {}", query.toString());
-        return queryServices.queryValues(query); // .map(ResponseEntity::ok);
+
+        return getAuthentication()
+                .flatMapMany(authentication -> queryServices.queryValues(query, authentication))
+                .doOnSubscribe(s -> {
+                    if(log.isTraceEnabled()) log.trace("(Request) Search graph with tuples query: {}", query.toString());
+                });
     }
 
 
@@ -36,8 +40,12 @@ public class Queries {
     @PostMapping(value = "/construct", consumes = "text/plain", produces = {"text/turtle", "application/ld+json"})
     @ResponseStatus(HttpStatus.ACCEPTED)
     Flux<NamespaceAwareStatement> queryStatements(@RequestBody String query) {
-        log.trace("(Request) Search graph with construct query: {}", query.toString());
 
-        return queryServices.queryGraph(query);
+        return getAuthentication()
+                .flatMapMany(authentication -> queryServices.queryGraph(query, authentication))
+                .doOnSubscribe(s -> {
+                    if(log.isTraceEnabled()) log.trace("(Request) Search graph with construct query: {}", query.toString());
+                });
+
     }
 }

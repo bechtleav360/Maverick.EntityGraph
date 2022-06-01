@@ -21,7 +21,7 @@ import reactor.core.publisher.Flux;
 @RequestMapping(path = "/api/transactions")
 @Api(tags = "Transactions")
 @Slf4j(topic = "cougar.graph.api")
-public class Transactions {
+public class Transactions extends AbstractController {
 
     protected final ObjectMapper objectMapper;
     protected final EntityServices graphService;
@@ -32,15 +32,19 @@ public class Transactions {
     }
 
     @ApiOperation(value = "Read transaction", tags = {"v2"})
-    @GetMapping(value = "/{id:[\\w|\\d|-|_]+}", produces = { RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.NQUADS_VALUE, RdfMimeTypes.N3_VALUE })
+    @GetMapping(value = "/{id:[\\w|\\d|-|_]+}", produces = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.NQUADS_VALUE, RdfMimeTypes.N3_VALUE})
     @ResponseStatus(HttpStatus.OK)
     Flux<NamespaceAwareStatement> read(@PathVariable String id) {
-        log.trace("(Request) Reading transaction with id: {}", id);
+        ;
         Assert.isTrue(id.length() == GeneratedIdentifier.LENGTH, "Incorrect length for identifier.");
 
         // FIXME: marker to use transactions repository
-        return graphService.readEntity(id)
-                .flatMapIterable(AbstractModel::asStatements);
+        return super.getAuthentication()
+                .flatMap(authentication -> graphService.readEntity(id, authentication))
+                .flatMapIterable(AbstractModel::asStatements)
+                .doOnSubscribe(s -> {
+                    if (log.isTraceEnabled()) log.trace("(Request) Reading transaction with id: {}", id);
+                });
     }
 
 }
