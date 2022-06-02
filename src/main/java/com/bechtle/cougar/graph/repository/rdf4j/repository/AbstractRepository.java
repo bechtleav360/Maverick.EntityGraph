@@ -121,80 +121,7 @@ public class AbstractRepository implements RepositoryBehaviour, Statements {
                 emitter.error(e);
             }
         });
-
- /*
-        return ReactiveSecurityContextHolder.getContext()
-                .map(SecurityContext::getAuthentication)
-                .switchIfEmpty(Mono.just(new TestingAuthenticationToken("", "")))
-                .flatMap(authentication ->
-                        // See https://www.vinsguru.com/reactor-flux-file-reading/
-                        Mono.using(
-                                () -> this.getRepository(repositoryType, authentication).getConnection(),
-                                Mono::just,
-                                RepositoryConnection::close     // make sure it's closing at the end
-                        ));
-
-        return this.getConnection().flatMapMany(connection -> Flux.create(c -> {
-
-            TupleQuery q = connection.prepareTupleQuery(QueryLanguage.SPARQL, query);
-            log.trace("Runninq query: {}", query.trim());
-            try (TupleQueryResult result = q.evaluate()) {
-                result.stream().forEach(c::next);
-            } finally {
-                c.complete();
-            }
-        }));
-
-        */
-        /*
-
-        return this.getRepository().flatMapMany(repository ->
-                Flux.create(c -> {
-                    try (RepositoryConnection connection = repository.getConnection()) {
-
-                        TupleQuery q = connection.prepareTupleQuery(QueryLanguage.SPARQL, query);
-                        log.trace("Runninq query: {}", query.trim());
-                        try (TupleQueryResult result = q.evaluate()) {
-                            result.stream().forEach(c::next);
-                        } finally {
-                            c.complete();
-                        }
-
-                    } catch (MalformedQueryException e) {
-                        log.warn("Error while parsing query, reason: {}", e.getMessage());
-                        c.error(e);
-                    } catch (Exception e) {
-                        log.error("Unknown error while running query", e);
-                        c.error(e);
-                    }
-                }));*/
     }
-
-
-    /*public Mono<TupleQueryResult> queryOld(String query) {
-        return this.getRepository().map(repository -> {
-            try (RepositoryConnection connection = repository.getConnection()) {
-
-                TupleQuery q = connection.prepareTupleQuery(QueryLanguage.SPARQL, query);
-
-                TupleQueryResult result = q.evaluate();
-                if (!result.hasNext()) {
-                    log.debug("Query with no results: {}", query);
-                } else {
-                    log.debug("Query has results: {}", query);
-                }
-                return result;
-
-            } catch (MalformedQueryException e) {
-                log.warn("Error while parsing query, reason: {}", e.getMessage());
-                throw e;
-            } catch (Exception e) {
-                log.error("Unknown error while running query", e);
-                throw e;
-            }
-        });
-    }*/
-
 
     @Override
     public Flux<Transaction> commit(Collection<Transaction> transactions, Authentication authentication) {
@@ -259,13 +186,11 @@ public class AbstractRepository implements RepositoryBehaviour, Statements {
     }
 
     @Override
-    public Mono<Transaction> removeStatement(Resource subject, IRI predicate, Value value, Transaction transaction) {
+    public Mono<Transaction> removeStatements(Collection<Statement> statements, Transaction transaction) {
         Assert.notNull(transaction, "Transaction cannot be null");
 
-        return transaction
-                .remove(subject, predicate, value, Activity.UPDATED)
-                .affected(subject, predicate, value)
-                .asMono();
+        statements.forEach(statement -> transaction.remove(statement, Activity.REMOVED).affected(statement));
+        return transaction.asMono();
     }
 
     @Override
@@ -280,8 +205,5 @@ public class AbstractRepository implements RepositoryBehaviour, Statements {
     }
 
 
-    @Override
-    public Mono<Transaction> addStatement(Resource subject, IRI predicate, Value literal) {
-        return Statements.super.addStatement(subject, predicate, literal);
-    }
+
 }

@@ -56,6 +56,12 @@ public class EntityServices {
     }
 
 
+    public Mono<Transaction> deleteEntity(IRI identifier, Authentication authentication) {
+        return this.entityStore.listStatements(identifier, null, null, authentication)
+                .flatMap(statements -> this.entityStore.removeStatements(statements, new Transaction()))
+                .flatMap(trx -> this.entityStore.commit(trx, authentication));
+    }
+
     public Mono<Transaction> createEntity(Incoming triples, Map<String, String> parameters, Authentication authentication) {
         return this.prepareEntity(triples, parameters, new Transaction(), authentication)
                 .flatMap(transaction -> entityStore.commit(transaction, authentication));
@@ -96,7 +102,7 @@ public class EntityServices {
     /**
      * Adds a statement. Fails if no entity exists with the given subject
      */
-    public Mono<Transaction> setValue(IRI entityIdentifier, IRI predicate, Value value, Transaction transaction, Authentication authentication) {
+    Mono<Transaction> setValue(IRI entityIdentifier, IRI predicate, Value value, Transaction transaction, Authentication authentication) {
 
         return this.entityStore.getEntity(entityIdentifier, authentication)
                 .switchIfEmpty(Mono.error(new EntityNotFound(entityIdentifier.stringValue())))
@@ -157,7 +163,7 @@ public class EntityServices {
     /**
      * Make sure you store the transaction once you are finished
      */
-    private Mono<Transaction> prepareEntity(Incoming triples, Map<String, String> parameters, Transaction transaction, Authentication authentication) {
+    Mono<Transaction> prepareEntity(Incoming triples, Map<String, String> parameters, Transaction transaction, Authentication authentication) {
         if (log.isDebugEnabled())
             log.debug("(Service) {} statements incoming for creating new entity. Parameters: {}", triples.streamStatements().count(), parameters.size() > 0 ? parameters : "none");
 
@@ -181,13 +187,25 @@ public class EntityServices {
     }
 
     @Autowired
-    public void setValidators( DelegatingValidator validators) {
+    protected void setValidators( DelegatingValidator validators) {
         this.validators = validators;
     }
     @Autowired
-    public void setTransformers(DelegatingTransformer transformers) {
+    protected void setTransformers(DelegatingTransformer transformers) {
         this.transformers = transformers;
         this.transformers.registerEntityService(this);
     }
+
+
+    /**
+     * Reroutes a statement of an entity, e.g. <entity> <hasProperty> <falseEntity> to <entity> <hasProperty> <rightEntity>
+     */
+    public Mono<Transaction> relinkEntityProperty(Resource subject, IRI predicate, Value oldObject, Value newObject, Authentication authentication) {
+        return this.entityStore.removeStatement(subject, predicate, oldObject, new Transaction())
+                .flatMap(trx -> this.entityStore.addStatement(subject, predicate, newObject, trx))
+                .flatMap(trx -> this.entityStore.commit(trx, authentication));
+
+    }
+
 
 }

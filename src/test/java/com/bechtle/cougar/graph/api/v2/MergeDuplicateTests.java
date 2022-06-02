@@ -118,7 +118,7 @@ public class MergeDuplicateTests {
          */
 
 
-        /*
+
 
         CsvConsumer csvConsumer = new CsvConsumer();
         Variable id = SparqlBuilder.var("id");
@@ -135,7 +135,7 @@ public class MergeDuplicateTests {
                 .expectBody()
                 .consumeWith(csvConsumer);
 
-        Assertions.assertEquals(1, csvConsumer.getRows().size());*/
+        Assertions.assertEquals(1, csvConsumer.getRows().size());
 
     }
 

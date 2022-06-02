@@ -58,7 +58,7 @@ public class Transaction extends AbstractModel {
     }
 
     public Transaction remove(Statement sts, Activity activity) {
-        return this.remove(sts.getSubject(), sts.getPredicate(), sts.getObject(), activity);
+        return this.remove(List.of(sts), activity);
     }
 
     public Transaction remove(Resource subject, IRI predicate, Value value, Activity activity) {
@@ -115,7 +115,6 @@ public class Transaction extends AbstractModel {
 
 
 
-
     public static boolean isTransaction(Model model) {
         return model.contains(null, RDF.TYPE, Transactions.TRANSACTION);
     }
@@ -155,6 +154,9 @@ public class Transaction extends AbstractModel {
         return Mono.just(this);
     }
 
+    public IRI getIdentifier() {
+        return this.transactionIdentifier;
+    }
 
 
     private static class StatementComparator implements Comparator<Statement> {

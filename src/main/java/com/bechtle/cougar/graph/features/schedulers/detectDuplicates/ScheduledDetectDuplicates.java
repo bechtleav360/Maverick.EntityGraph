@@ -2,10 +2,12 @@ package com.bechtle.cougar.graph.features.schedulers.detectDuplicates;
 
 
 import com.bechtle.cougar.graph.api.security.AdminAuthentication;
+import com.bechtle.cougar.graph.domain.model.wrapper.Transaction;
 import com.bechtle.cougar.graph.domain.services.EntityServices;
 import com.bechtle.cougar.graph.domain.services.QueryServices;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.vocabulary.RDFS;
@@ -28,32 +30,32 @@ import java.util.TreeSet;
 
 /**
  * Regular check for duplicates in the entity stores.
- *
+ * <p>
  * A typical example for a duplicate are the following two entities uploaded on different times
- *
+ * <p>
  * [] a ns1:VideoObject ;
- *     ns1:hasDefinedTerm [
- *          a ns1:DefinedTerm ;
- *          rdfs:label "Term 1"
- *      ] .
- *
- *
+ * ns1:hasDefinedTerm [
+ * a ns1:DefinedTerm ;
+ * rdfs:label "Term 1"
+ * ] .
+ * <p>
+ * <p>
  * [] a ns1:VideoObject ;
- *     ns1:hasDefinedTerm [
- *          a ns1:DefinedTerm ;
- *          rdfs:label "Term 1"
- *      ] .
- *
- *  They both share the defined term "Term 1". Since they are uploaded in different requests, we don't check for duplicates. The (embedded) entity
- *
- *  x a DefinedTerm
- *    label "Term 1"
- *
- *  is therefore a duplicate in the repository after the second upload. This scheduler will check for these duplicates by looking at objects which
- *  - share the same label
- *  - share the same original_identifier
- *
- *
+ * ns1:hasDefinedTerm [
+ * a ns1:DefinedTerm ;
+ * rdfs:label "Term 1"
+ * ] .
+ * <p>
+ * They both share the defined term "Term 1". Since they are uploaded in different requests, we don't check for duplicates. The (embedded) entity
+ * <p>
+ * x a DefinedTerm
+ * label "Term 1"
+ * <p>
+ * is therefore a duplicate in the repository after the second upload. This scheduler will check for these duplicates by looking at objects which
+ * - share the same label
+ * - share the same original_identifier
+ * <p>
+ * <p>
  *  TODO:
  *      For now we keep the duplicate but reroute all links to the original.
  */
@@ -91,17 +93,15 @@ public class ScheduledDetectDuplicates {
 
     public Mono<Void> checkForDuplicates(Authentication authentication) {
         return this.findCandidates(RDFS.LABEL, authentication)
-                .map(duplicate -> {
-                    log.trace("Found multiple entities in store with shared type '{}' and label '{}'", duplicate.type(), duplicate.sharedValue());
-                    return duplicate;
+                .map(candidate -> {
+                    log.trace("There are multiple entities with shared type '{}' and label '{}'", candidate.type(), candidate.sharedValue());
+                    return candidate;
                 })
-                .flatMap(duplicate -> this.findDuplicates(duplicate, authentication))
-                .collectList()
-                .map(list -> {
-                    log.trace("Number of duplicates: {}", list.size());
-                    return list;
-                })
-                .flatMapMany(duplicates -> this.mergeDuplicates(duplicates, authentication))
+                .flatMap(candidate ->
+                        this.findDuplicates(candidate, authentication)
+                                .doOnNext(duplicate -> log.trace("Identified entity '{}' as potential duplicate.", duplicate.id()))
+                                .collectList()
+                                .flatMap(duplicates -> this.mergeDuplicates(duplicates, authentication)))
                 .doOnSubscribe(sub -> {
                     log.trace("Checking duplicates sharing the same label");
                     labelCheckRunning = true;
@@ -113,26 +113,6 @@ public class ScheduledDetectDuplicates {
 
     }
 
-    private Mono<Void> mergeDuplicateCandidates(List<DuplicateCandidate> duplicates) {
-        if(duplicates.isEmpty()) return Mono.empty();
-
-        TreeSet<DuplicateCandidate> orderedDuplicates = new TreeSet<>(duplicates);
-        DuplicateCandidate original = orderedDuplicates.first();
-        orderedDuplicates.tailSet(original).forEach(duplicate -> {
-
-                    // collect duplicate identifiers and store in original
-                    log.trace("duplicate id: {}", duplicate.sharedValue());
-
-                    // save original
-
-                    // delete duplicates
-
-                }
-        );
-
-        return Mono.empty();
-
-    }
 
     private Flux<Duplicate> findDuplicates(DuplicateCandidate duplicate, Authentication authentication) {
 
@@ -152,53 +132,88 @@ public class ScheduledDetectDuplicates {
 
         return this.queryServices.queryValues(findDuplicates, authentication)
                 .doOnSubscribe(subscription -> log.trace("Retrieving all duplicates of same type with value '{}' for property '{}' ", duplicate.sharedValue, duplicate.sharedProperty))
-                .map(bindings -> {
+                .flatMap(bindings -> {
                     Value id = bindings.getValue(idVariable.getVarName());
-                    return new Duplicate(id);
+
+                    if (id.isIRI()) {
+                        return Mono.just(new Duplicate((IRI) id));
+                    } else return Mono.empty();
+
                 });
 
     }
 
-    private Flux<Value> mergeDuplicates(List<Duplicate> duplicates, Authentication authentication) {
-        if(duplicates.isEmpty()) return Flux.empty();
+    /**
+     * Method to merge the duplicates. We do the following steps
+     *
+     * Take the head in list as original, the tail are the duplicates which are removed.
+     * For each duplicate in the tail:
+     * - find all statements pointing to the duplicate and reroute it to the original
+     * - remove the duplicate
+     *
+     * TODO: We remove all statements, no attempts are made to preserve additional statements in the duplicate. We should probably
+     * a) keep the duplicate and mark it as deleted or
+     * b) copy additional statements to the original or
+     * c) keep the duplicate with most details as original
+     * @param duplicates
+     * @param authentication
+     * @return
+     */
+    private Mono<Void> mergeDuplicates(List<Duplicate> duplicates, Authentication authentication) {
+        if (duplicates.isEmpty()) return Mono.empty();
 
         TreeSet<Duplicate> orderedDuplicates = new TreeSet<>(duplicates);
         Duplicate original = orderedDuplicates.first();
         SortedSet<Duplicate> deletionCandidates = orderedDuplicates.tailSet(original, false);
 
+
+        /* relink */
         return Flux.fromIterable(deletionCandidates)
-                .flatMap(duplicate -> this.findStatementsPointingToDuplicate(duplicate, authentication))
-                .map(LostStatement::pVal);
-
-        // save original
-
-        // delete duplicates
-
-
-
-
+                .doOnSubscribe(subscription -> log.trace("Trying to merge all duplicates, keeping entity '{}' as original", original.id()))
+                .flatMap(duplicate ->
+                        this.findStatementsPointingToDuplicate(duplicate, authentication)
+                                .flatMap(mislinkedStatement -> this.relinkEntity(mislinkedStatement.subject(), mislinkedStatement.predicate(), mislinkedStatement.object(), original.id(), authentication))
+                                .doOnNext(trx -> log.info("Relinking completed in Transaction {}", trx.getIdentifier()))
+                                .map(transaction -> duplicate)
+                )
+                .flatMap(duplicate ->
+                        this.removeDuplicate(duplicate.id(), authentication)
+                                .doOnNext(trx -> log.info("Removed duplicate entity with identifier '{}' in transaction '{}'", duplicate.id(), trx.getIdentifier()))
+                )
+                .then();
     }
 
-    private Flux<LostStatement> findStatementsPointingToDuplicate(Duplicate duplicate, Authentication authentication) {
+    private Mono<Transaction> removeDuplicate(IRI object, Authentication authentication) {
+        return this.entityServices.deleteEntity(object, authentication);
+    }
 
-        /*
-        SELECT * WHERE {
-          ?sub ?pre <duplicate id> .
-        }
-         */
+    private Mono<Transaction> relinkEntity(Resource subject, IRI predicate, Value object, Value id, Authentication authentication) {
+        return this.entityServices.relinkEntityProperty(subject, predicate, object, id, authentication);
+    }
 
+
+    /**
+     * Runs the query:   SELECT * WHERE { ?sub ?pre <duplicate id> }. to find all entities pointing to the identified duplicate entity (with the goal to reroute those statements to the original)
+     *
+     * @param duplicate,      the identified duplicate
+     * @param authentication, auth info
+     * @return the statements pointing to the duplicate (as Flux)
+     */
+    private Flux<MislinkedStatement> findStatementsPointingToDuplicate(Duplicate duplicate, Authentication authentication) {
         Variable subject = SparqlBuilder.var("s");
         Variable predicate = SparqlBuilder.var("p");
 
         SelectQuery query = Queries.SELECT(subject, predicate).where(subject.has(predicate, duplicate.id()));
-        log.trace("XXXXX - {}",query.getQueryString());
         return queryServices.queryValues(query, authentication)
                 .doOnSubscribe(subscription -> log.trace("Retrieving all statements pointing to duplicate with id '{}'", duplicate.id()))
-                .map(binding -> {
+                .flatMap(binding -> {
                     Value pVal = binding.getValue(predicate.getVarName());
                     Value sVal = binding.getValue(subject.getVarName());
-                    log.trace("lost statement with sub {} and pred {}", sVal.stringValue(), pVal.stringValue());
-                    return new LostStatement(sVal, pVal);
+
+                    if (pVal.isIRI() && sVal.isResource()) {
+                        log.trace("Statement with subject identifier {} pointing with  predicate {} to the duplicate", sVal.stringValue(), pVal.stringValue());
+                        return Mono.just(new MislinkedStatement((Resource) sVal, (IRI) pVal, duplicate.id()));
+                    } else return Mono.empty();
                 });
 
     }
@@ -220,9 +235,9 @@ public class ScheduledDetectDuplicates {
 
         SelectQuery findDuplicates = Queries.SELECT(type, sharedValue)
                 .where(
-                    thing.isA(type),
-                    thing.has(sharedProperty, sharedValue)
-        ).groupBy(sharedValue, type).having(Expressions.gt(Expressions.count(thing), 1));
+                        thing.isA(type),
+                        thing.has(sharedProperty, sharedValue)
+                ).groupBy(sharedValue, type).having(Expressions.gt(Expressions.count(thing), 1));
 
 
         return queryServices.queryValues(findDuplicates, authentication)
@@ -235,12 +250,14 @@ public class ScheduledDetectDuplicates {
     }
 
 
-    private record DuplicateCandidate(IRI sharedProperty, String type, String sharedValue) {}
+    private record DuplicateCandidate(IRI sharedProperty, String type, String sharedValue) {
+    }
 
 
-    private record LostStatement(Value sVal, Value pVal) {}
+    private record MislinkedStatement(Resource subject, IRI predicate, IRI object) {
+    }
 
-    private record Duplicate(Value id) implements Comparable<Duplicate> {
+    private record Duplicate(IRI id) implements Comparable<Duplicate> {
         @Override
         public int compareTo(Duplicate o) {
             return o.id().stringValue().compareTo(this.id().stringValue());
