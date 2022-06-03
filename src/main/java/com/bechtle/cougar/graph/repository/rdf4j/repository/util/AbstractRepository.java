@@ -1,11 +1,12 @@
-package com.bechtle.cougar.graph.repository.rdf4j.repository;
+package com.bechtle.cougar.graph.repository.rdf4j.repository.util;
 
 import com.bechtle.cougar.graph.domain.model.enums.Activity;
-import com.bechtle.cougar.graph.domain.model.errors.EntityNotFound;
 import com.bechtle.cougar.graph.domain.model.extensions.NamespaceAwareStatement;
 import com.bechtle.cougar.graph.domain.model.vocabulary.Transactions;
 import com.bechtle.cougar.graph.domain.model.wrapper.Transaction;
+import com.bechtle.cougar.graph.repository.behaviours.ModelUpdates;
 import com.bechtle.cougar.graph.repository.behaviours.RepositoryBehaviour;
+import com.bechtle.cougar.graph.repository.behaviours.Resettable;
 import com.bechtle.cougar.graph.repository.behaviours.Statements;
 import com.bechtle.cougar.graph.repository.rdf4j.config.RepositoryConfiguration;
 import lombok.extern.slf4j.Slf4j;
@@ -13,8 +14,9 @@ import org.eclipse.rdf4j.model.*;
 import org.eclipse.rdf4j.model.impl.SimpleNamespace;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.query.*;
-import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
+import org.eclipse.rdf4j.repository.RepositoryException;
+import org.eclipse.rdf4j.repository.RepositoryResult;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
@@ -30,7 +32,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 @Slf4j(topic = "cougar.graph.repository")
-public class AbstractRepository implements RepositoryBehaviour, Statements {
+public class AbstractRepository implements RepositoryBehaviour, Statements, ModelUpdates, Resettable {
 
     private final RepositoryConfiguration.RepositoryType repositoryType;
     private RepositoryConfiguration repositoryConfiguration;
@@ -106,7 +108,8 @@ public class AbstractRepository implements RepositoryBehaviour, Statements {
             try (RepositoryConnection connection = this.getConnection(authentication)) {
 
                 TupleQuery q = connection.prepareTupleQuery(QueryLanguage.SPARQL, query);
-                log.trace("Runninq query: {}", query.trim());
+                if (log.isTraceEnabled())
+                    log.trace("Querying repository '{}' with SPQARL Query: {}", connection.getRepository(), query.replace('\n', ' ').trim());
                 try (TupleQueryResult result = q.evaluate()) {
                     result.stream().forEach(emitter::next);
                 } finally {
@@ -124,12 +127,24 @@ public class AbstractRepository implements RepositoryBehaviour, Statements {
     }
 
     @Override
+    public Mono<Void> reset(Authentication authentication, RepositoryConfiguration.RepositoryType repositoryType) {
+        try (RepositoryConnection connection = getConnection(authentication, repositoryType)) {
+            if (log.isTraceEnabled()) log.trace("Resetting repository '{}'", connection.getRepository());
+            RepositoryResult<Statement> statements = connection.getStatements(null, null, null);
+            connection.remove(statements);
+            return Mono.empty();
+        } catch (Exception e) {
+            return Mono.error(e);
+        }
+    }
+
+    @Override
     public Flux<Transaction> commit(Collection<Transaction> transactions, Authentication authentication) {
         return Flux.create(c -> {
             try (RepositoryConnection connection = this.getConnection(authentication)) {
 
 
-                log.trace("(Store) Committing transaction to repository {}", connection.getRepository().toString());
+                log.trace("(Store) Committing transaction to repository '{}'", connection.getRepository().toString());
 
                 transactions.forEach(trx -> {
                     // FIXME: the approach based on the context works only as long as the statements in the graph are all within the global context only
@@ -150,10 +165,10 @@ public class AbstractRepository implements RepositoryBehaviour, Statements {
 
                         trx.setCompleted();
 
-                        log.trace("(Store) Transaction completed with {} inserted statements and {} removed statements.", insertModel.size(), removeModel.size());
+                        log.trace("(Store) Transaction completed with {} inserted statements and {} removed statements in repository '{}'.", insertModel.size(), removeModel.size(), connection.getRepository());
                         c.next(trx);
                     } catch (Exception e) {
-                        log.error("(Store) Failed to complete transaction .", e);
+                        log.error("(Store) Failed to complete transaction for repository '{}'.", connection.getRepository(), e);
                         log.trace("(Store) Insert Statements in this transaction: \n {}", insertModel);
                         log.trace("(Store) Remove Statements in this transaction: \n {}", removeModel);
 
@@ -175,8 +190,36 @@ public class AbstractRepository implements RepositoryBehaviour, Statements {
 
 
     @Override
+    public Mono<Void> insert(Model model, Authentication authentication) {
+
+        try (RepositoryConnection connection = this.getConnection(authentication)) {
+            try {
+
+                if (log.isTraceEnabled())
+                    log.trace("(Store) Inserting model without transaction to repository '{}'", connection.getRepository().toString());
+
+                Resource[] contexts = model.contexts().toArray(new Resource[model.contexts().size()]);
+                connection.add(model, contexts);
+                connection.commit();
+                return Mono.empty();
+            } catch (Exception e) {
+                connection.rollback();
+                return Mono.error(e);
+            }
+        } catch (RepositoryException e) {
+            return Mono.error(e);
+        } catch (IOException e) {
+            return Mono.error(e);
+        }
+
+    }
+
+    @Override
     public Mono<List<Statement>> listStatements(Resource value, IRI predicate, Value object, Authentication authentication) {
         try (RepositoryConnection connection = getConnection(authentication)) {
+            if (log.isTraceEnabled())
+                log.trace("(Store) Listing all statements with pattern [{},{},{}] from repository '{}'", value, predicate, object, connection.getRepository().toString());
+
             List<Statement> statements = connection.getStatements(value, predicate, object).stream().toList();
             return Mono.just(statements);
         } catch (Exception e) {
@@ -203,7 +246,6 @@ public class AbstractRepository implements RepositoryBehaviour, Statements {
                 .asMono();
 
     }
-
 
 
 }

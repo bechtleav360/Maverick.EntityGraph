@@ -1,5 +1,6 @@
 package com.bechtle.cougar.graph.features.multitenancy.api;
 
+import com.bechtle.cougar.graph.api.controller.AbstractController;
 import com.bechtle.cougar.graph.features.multitenancy.api.dto.Requests;
 import com.bechtle.cougar.graph.features.multitenancy.api.dto.Responses;
 import com.bechtle.cougar.graph.features.multitenancy.domain.ApplicationsService;
@@ -21,7 +22,7 @@ import java.util.List;
 @RequestMapping(path = "/api/admin/subscriptions")
 @Api(tags = "Admin")
 @Slf4j(topic = "cougar.graph.feature.subscriptions")
-public class Applications {
+public class Applications extends AbstractController {
 
     private final ApplicationsService subscriptionsService;
 
@@ -36,58 +37,54 @@ public class Applications {
     Mono<Responses.ApplicationResponse> createSubscription(@RequestBody Requests.RegisterApplicationRequest request) {
         Assert.notNull(request.label(), "Label must be set in request");
 
-        log.info("(Request) Create a new subscription with label {} and persistence {}", request.label(), request.persistent());
-
-        return this.subscriptionsService
-                .createSubscription(request.label(), request.persistent())
-                .map(subscription ->
-                    new Responses.ApplicationResponse(
-                            subscription.key(),
-                            subscription.label(),
-                            subscription.persistent()
-                    )
-                );
-    }
-
-
-    @ApiOperation(value = "List all subscriptions", tags = {"v2"})
-    @GetMapping(value = "")
-    @ResponseStatus(HttpStatus.OK)
-    Flux<Responses.ApplicationResponse> listSubscription() {
-        log.info("(Request) List all subscriptions");
-        return this.subscriptionsService
-                .getSubscriptions()
+        return super.getAuthentication()
+                .flatMap(authentication -> this.subscriptionsService.createSubscription(request.label(), request.persistent(), authentication))
                 .map(subscription ->
                         new Responses.ApplicationResponse(
                                 subscription.key(),
                                 subscription.label(),
                                 subscription.persistent()
                         )
-                );
+                ).doOnSubscribe(subscription -> log.info("(Request) Create subscription with label {} and persistence {}", request.label(), request.persistent()));
     }
 
-    @ApiOperation(value = "Generate API Key", tags = {"v2"})
+
+    @ApiOperation(value = "List all subscriptions")
+    @GetMapping(value = "")
+    @ResponseStatus(HttpStatus.OK)
+    Flux<Responses.ApplicationResponse> listSubscription() {
+        return super.getAuthentication()
+                .flatMapMany(this.subscriptionsService::getSubscriptions)
+                .map(subscription ->
+                        new Responses.ApplicationResponse(
+                                subscription.key(),
+                                subscription.label(),
+                                subscription.persistent()
+                        )
+                ).doOnSubscribe(subscription -> log.info("(Request) List all subscriptions"));
+    }
+
+    @ApiOperation(value = "Generate API Key")
     @PostMapping(value = "/{subscriptionId}/keys")
     @ResponseStatus(HttpStatus.CREATED)
     Mono<Responses.ApiKeyWithApplicationResponse> generateKey(@PathVariable String subscriptionId, @RequestBody Requests.CreateApiKeyRequest request) {
         Assert.isTrue(StringUtils.hasLength(subscriptionId), "Subscription is a required parameter");
         Assert.isTrue(StringUtils.hasLength(request.label()), "Name is a required parameter");
 
-        log.info("(Request) Generate a new api key for subscription {} with label {}", subscriptionId, request.label());
-        return this.subscriptionsService
-                .generateApiKey(subscriptionId, request.label())
+        return super.getAuthentication()
+                .flatMap(authentication -> this.subscriptionsService.generateApiKey(subscriptionId, request.label(), authentication))
                 .map(apiKey ->
-                    new Responses.ApiKeyWithApplicationResponse(
-                            apiKey.key(),
-                            apiKey.issueDate(),
-                            apiKey.active(),
-                            new Responses.ApplicationResponse(
-                                    apiKey.subscription().key(),
-                                    apiKey.subscription().label(),
-                                    apiKey.subscription().persistent()
-                            )
-                    )
-                );
+                        new Responses.ApiKeyWithApplicationResponse(
+                                apiKey.key(),
+                                apiKey.issueDate(),
+                                apiKey.active(),
+                                new Responses.ApplicationResponse(
+                                        apiKey.subscription().key(),
+                                        apiKey.subscription().label(),
+                                        apiKey.subscription().persistent()
+                                )
+                        )
+                ).doOnSubscribe(subscription -> log.info("(Request) Generate a new api key for subscription {} with label {}", subscriptionId, request.label()));
 
     }
 
@@ -97,18 +94,18 @@ public class Applications {
     Mono<Responses.ApplicationWithApiKeys> listKeys(@PathVariable String subscriptionId) {
         Assert.isTrue(StringUtils.hasLength(subscriptionId), "Subscription is a required parameter");
 
-        log.info("(Request) List api keys for subscription {}", subscriptionId);
-        return this.subscriptionsService
-                .getKeysForSubscription(subscriptionId)
+        return super.getAuthentication()
+                .flatMapMany(authentication -> this.subscriptionsService.getKeysForSubscription(subscriptionId, authentication))
                 .switchIfEmpty(Mono.error(new InvalidApplication(subscriptionId)))
                 .collectList()
                 .flatMap(keys -> {
-                    if(keys.isEmpty()) return Mono.empty();
+                    if (keys.isEmpty()) return Mono.empty();
 
                     Application subscription = keys.get(0).subscription();
                     List<Responses.ApiKeyResponse> apiKeys = keys.stream().map(apiKey -> new Responses.ApiKeyResponse(apiKey.key(), apiKey.issueDate(), apiKey.active())).toList();
                     return Mono.just(new Responses.ApplicationWithApiKeys(subscription.key(), subscription.label(), subscription.persistent(), apiKeys));
-                });
+                }).doOnSubscribe(s -> log.info("(Request) List api keys for subscription {}", subscriptionId));
+
 
     }
 
@@ -117,12 +114,13 @@ public class Applications {
     @DeleteMapping(value = "/{subscriptionId}/keys/{label}")
     @ResponseStatus(HttpStatus.NOT_FOUND)
     Mono<Void> revokeToken(@PathVariable String subscriptionId, @PathVariable String name) {
-        log.info("(Request) Generate a new token for subscription {}", subscriptionId);
+
         Assert.isTrue(StringUtils.hasLength(subscriptionId), "Subscription is a required parameter");
         Assert.isTrue(StringUtils.hasLength(name), "Name is a required parameter");
 
-        return this.subscriptionsService
-                .revokeApiKey(subscriptionId, name)
-                .then();
+        return super.getAuthentication()
+                .flatMapMany(authentication -> this.subscriptionsService.revokeApiKey(subscriptionId, name, authentication))
+                .then()
+                .doOnSubscribe(subscription -> log.info("(Request) Generate a new token for subscription {}", subscriptionId));
     }
 }

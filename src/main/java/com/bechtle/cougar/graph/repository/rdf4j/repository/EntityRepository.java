@@ -1,24 +1,16 @@
 package com.bechtle.cougar.graph.repository.rdf4j.repository;
 
 import com.bechtle.cougar.graph.repository.rdf4j.config.RepositoryConfiguration;
-import com.bechtle.cougar.graph.domain.model.extensions.NamespaceAwareStatement;
 import com.bechtle.cougar.graph.domain.model.wrapper.Entity;
 import com.bechtle.cougar.graph.repository.EntityStore;
+import com.bechtle.cougar.graph.repository.rdf4j.repository.util.AbstractRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.rdf4j.model.*;
-import org.eclipse.rdf4j.model.impl.SimpleNamespace;
-import org.eclipse.rdf4j.query.*;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.RepositoryResult;
-import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
-import org.springframework.web.client.HttpClientErrorException;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-
-import java.util.*;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Component

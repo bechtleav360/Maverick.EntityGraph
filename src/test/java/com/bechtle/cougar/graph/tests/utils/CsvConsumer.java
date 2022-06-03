@@ -14,10 +14,22 @@ public class CsvConsumer implements Consumer<EntityExchangeResult<byte[]>> {
     }
 
     Set<Map<String, String>> rows = new HashSet<>();
-    String dump = "";
+    StringBuilder dump = new StringBuilder();
 
     public String  getAsString() {
-        return this.dump;
+        StringBuilder result = new StringBuilder();
+        rows.stream().findFirst().ifPresent(hrow -> {
+            hrow.keySet().forEach(header -> {
+                result.append(header).append('\t');
+            });
+        });
+        rows.forEach(row -> {
+            row.values().forEach(value -> {
+                result.append(value).append('\t');
+            });
+        });
+
+        return result.toString();
     }
 
     @Override
@@ -30,7 +42,6 @@ public class CsvConsumer implements Consumer<EntityExchangeResult<byte[]>> {
 
 
         String result = new String(responseBody);
-        dump = dump+=result;
         String[] lines = result.split("\\n");
         String[] headers = lines[0].split(",");
 
@@ -41,8 +52,9 @@ public class CsvConsumer implements Consumer<EntityExchangeResult<byte[]>> {
             for (int j = 0; j < headers.length; j++) {
               row.put(headers[j], values[j]);
             }
-
             rows.add(row);
+
+
         }
 
 

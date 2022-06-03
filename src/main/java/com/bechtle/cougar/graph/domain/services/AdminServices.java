@@ -1,6 +1,7 @@
 package com.bechtle.cougar.graph.domain.services;
 
 import com.bechtle.cougar.graph.repository.EntityStore;
+import com.bechtle.cougar.graph.repository.rdf4j.config.RepositoryConfiguration;
 import lombok.extern.slf4j.Slf4j;
 import org.reactivestreams.Publisher;
 import org.springframework.core.io.buffer.DataBuffer;
@@ -22,8 +23,8 @@ public class AdminServices {
     }
 
 
-    public Mono<Void> reset(Authentication authentication) {
-        return this.graph.reset(authentication).then();
+    public Mono<Void> reset(Authentication authentication, RepositoryConfiguration.RepositoryType repositoryType) {
+        return this.graph.reset(authentication, repositoryType).then();
     }
 
     public Mono<Void> importEntities(Publisher<DataBuffer> bytes, String mimetype, Authentication authentication) {

@@ -1,10 +1,12 @@
-package com.bechtle.cougar.graph.api.v2;
+package com.bechtle.cougar.graph.api.v2.impl;
 
 import com.bechtle.cougar.graph.api.security.AdminAuthentication;
+import com.bechtle.cougar.graph.api.v2.MergeDuplicatesScheduler;
 import com.bechtle.cougar.graph.features.schedulers.detectDuplicates.ScheduledDetectDuplicates;
 import com.bechtle.cougar.graph.tests.config.TestConfigurations;
 import com.bechtle.cougar.graph.tests.utils.CsvConsumer;
 import com.bechtle.cougar.graph.tests.utils.RdfConsumer;
+import com.bechtle.cougar.graph.tests.utils.TestsBase;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.Statement;
@@ -41,17 +43,16 @@ import java.util.stream.StreamSupport;
 @RecordApplicationEvents
 @ActiveProfiles("test")
 @Slf4j
-public class MergeDuplicateTests {
+public class MergeDuplicateTests extends TestsBase implements MergeDuplicatesScheduler  {
 
-    public static ValueFactory vf = SimpleValueFactory.getInstance();
-    @Autowired
-    private WebTestClient webClient;
+
 
     @Autowired
     private ScheduledDetectDuplicates scheduledDetectDuplicates;
 
 
     /** Verify that embedded items in one request are merged */
+    @Override
     @Test
     public void createEmbeddedEntitiesWithSharedItems() {
         Resource file = new ClassPathResource("data/v1/requests/create-valid_withEmbedded.ttl");
@@ -80,6 +81,7 @@ public class MergeDuplicateTests {
     }
 
 
+    @Override
     @Test
     public void createEmbeddedEntitiesWithSharedItemsInSeparateRequests() throws InterruptedException {
         RdfConsumer rdfConsumer = new RdfConsumer(RDFFormat.TURTLE);
@@ -140,56 +142,6 @@ public class MergeDuplicateTests {
     }
 
 
-    @Test
-    public void dump() throws InterruptedException {
-
-        RdfConsumer rdfConsumer = new RdfConsumer(RDFFormat.TURTLE);
-        webClient.post()
-                .uri("/api/entities")
-                .contentType(MediaType.parseMediaType("text/turtle"))
-                .accept(MediaType.parseMediaType("text/turtle"))
-                .body(BodyInserters.fromResource(new ClassPathResource("data/v1/requests/create-valid_withEmbedded.ttl")))
-                .exchange()
-                .expectStatus().isAccepted()
-                .expectBody()
-                .consumeWith(rdfConsumer);
-
-        System.out.println(rdfConsumer.dump(RDFFormat.TURTLE));
-        /*
-        webClient.post()
-                .uri("/api/entities")
-                .contentType(MediaType.parseMediaType("text/turtle"))
-                .body(BodyInserters.fromResource(new ClassPathResource("data/v1/requests/create-valid_withEmbedded_second.ttl")))
-                .exchange()
-                .expectStatus().isAccepted()
-                .expectBody();
-
-         */
 
 
-
-
-        CsvConsumer csvConsumer = new CsvConsumer();
-        webClient
-                .post()
-                .uri("/api/query/select")
-                .contentType(MediaType.parseMediaType("text/plain"))
-                .accept(MediaType.parseMediaType("text/csv"))
-                .body(BodyInserters.fromValue("SELECT DISTINCT * WHERE { ?s ?p ?o }"))
-                .exchange()
-                .expectStatus().isAccepted()
-                .expectBody()
-                .consumeWith(csvConsumer);
-
-        System.out.println(csvConsumer.getAsString());
-
-    }
-
-    @AfterEach
-    public void resetRepository() {
-        webClient.get()
-                .uri("/api/admin/bulk/reset")
-                .exchange()
-                .expectStatus().isAccepted();
-    }
 }

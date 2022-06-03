@@ -1,9 +1,8 @@
 package com.bechtle.cougar.graph.repository.behaviours;
 
 import com.bechtle.cougar.graph.api.converter.RdfUtils;
-import org.eclipse.rdf4j.model.Statement;
+import com.bechtle.cougar.graph.repository.rdf4j.config.RepositoryConfiguration;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
-import org.eclipse.rdf4j.repository.RepositoryResult;
 import org.eclipse.rdf4j.repository.util.RDFInserter;
 import org.eclipse.rdf4j.rio.RDFParser;
 import org.eclipse.rdf4j.rio.RDFParserFactory;
@@ -20,15 +19,8 @@ import java.util.Optional;
 
 public interface Resettable extends RepositoryBehaviour {
 
-    default Mono<Void> reset(Authentication authentication) {
-        try (RepositoryConnection connection = getConnection(authentication)) {
-            RepositoryResult<Statement> statements = connection.getStatements(null, null, null);
-            connection.remove(statements);
-            return Mono.empty();
-        } catch (Exception e) {
-            return Mono.error(e);
-        }
-    }
+    Mono<Void> reset(Authentication authentication, RepositoryConfiguration.RepositoryType repositoryType);
+
 
     default Mono<Void> importStatements(Publisher<DataBuffer> bytesPublisher, String mimetype, Authentication authentication) {
         Optional<RDFParserFactory> parserFactory = RdfUtils.getParserFactory(MimeType.valueOf(mimetype));

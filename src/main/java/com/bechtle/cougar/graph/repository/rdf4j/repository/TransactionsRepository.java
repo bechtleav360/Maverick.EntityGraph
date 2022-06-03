@@ -3,6 +3,7 @@ package com.bechtle.cougar.graph.repository.rdf4j.repository;
 import com.bechtle.cougar.graph.repository.rdf4j.config.RepositoryConfiguration;
 import com.bechtle.cougar.graph.domain.model.wrapper.Transaction;
 import com.bechtle.cougar.graph.repository.TransactionsStore;
+import com.bechtle.cougar.graph.repository.rdf4j.repository.util.AbstractRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.RepositoryException;

@@ -1,8 +1,11 @@
-package com.bechtle.cougar.graph.api;
+package com.bechtle.cougar.graph.api.v2.impl;
 
+import com.bechtle.cougar.graph.api.v2.Subscriptions;
 import com.bechtle.cougar.graph.features.multitenancy.api.dto.Requests;
 import com.bechtle.cougar.graph.features.multitenancy.api.dto.Responses;
 import com.bechtle.cougar.graph.tests.config.TestConfigurations;
+import com.bechtle.cougar.graph.tests.utils.TestsBase;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,38 +21,36 @@ import org.springframework.web.reactive.function.BodyInserters;
 @ContextConfiguration(classes = TestConfigurations.class)
 @RecordApplicationEvents
 @ActiveProfiles("test")
-class SubscriptionsTest {
+class SubscriptionsTest extends TestsBase implements Subscriptions {
 
-    @Autowired
-    private WebTestClient webClient;
-
+    @Override
     @Test
-    void createSubscription() {
+    public void createSubscription() {
+        this.postSubscription("test", false).jsonPath("$.key").isNotEmpty();
+    }
 
-        Requests.RegisterApplicationRequest req = new Requests.RegisterApplicationRequest("test", false);
+    private WebTestClient.BodyContentSpec postSubscription(String label, boolean persistent) {
+        Requests.RegisterApplicationRequest req = new Requests.RegisterApplicationRequest(label, persistent);
 
-        webClient.post()
+        return webClient.post()
                 .uri("/api/admin/subscriptions")
                 .body(BodyInserters.fromValue(req))
                 .exchange()
                 .expectStatus().isCreated()
                 //.expectBody(Responses.CreateSubscriptionResponse.class)
-                .expectBody()
-                .jsonPath("$.key").isNotEmpty();
-                /*.consumeWith(res -> {
-                    String str = new String(res.getResponseBody());
-                    Assertions.assertTrue(StringUtils.hasLength(str));
-                });
-               /* .consumeWith(res -> {
-                    Assertions.assertTrue(StringUtils.hasLength(res.getResponseBody().identifier()));
-                });*/
-        //.jsonPath("$.identifier").isNotEmpty();
-
+                .expectBody();
+                // .jsonPath("$.key").isNotEmpty();
     }
 
+    @Override
     @Test
-    void listSubscription() {
+    public void listSubscription() {
 
+        super.dump();
+
+        this.postSubscription("a", false).jsonPath("$.key").isNotEmpty();
+        this.postSubscription("b", false).jsonPath("$.key").isNotEmpty();
+        this.postSubscription("c", false).jsonPath("$.key").isNotEmpty();
 
         webClient.get()
                 .uri("/api/admin/subscriptions")
@@ -64,11 +65,12 @@ class SubscriptionsTest {
                 //.jsonPath("$.identifier").isNotEmpty()
 
                 .jsonPath("$").isArray()
-                .jsonPath("$.size()").isEqualTo(1);
+                .jsonPath("$.size()").isEqualTo(3);
     }
 
+    @Override
     @Test
-    void generateKey() {
+    public void generateKey() {
 
         Requests.RegisterApplicationRequest req = new Requests.RegisterApplicationRequest("test", false);
 
@@ -96,7 +98,13 @@ class SubscriptionsTest {
                 .expectBody(Responses.ApiKeyResponse.class);
     }
 
+    @Override
     @Test
-    void revokeToken() {
+    public void revokeToken() {
+    }
+
+    @AfterEach
+    public void reset() {
+        super.resetRepository("application");
     }
 }

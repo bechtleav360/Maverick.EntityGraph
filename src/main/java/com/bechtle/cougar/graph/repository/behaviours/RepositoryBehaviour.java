@@ -84,6 +84,10 @@ public interface RepositoryBehaviour {
         return getConfiguration().getRepository(getRepositoryType(), authentication).getConnection();
     }
 
+    default RepositoryConnection getConnection(Authentication authentication, RepositoryConfiguration.RepositoryType repositoryType) throws IOException {
+        return getConfiguration().getRepository(repositoryType, authentication).getConnection();
+    }
+
     RepositoryConfiguration.RepositoryType getRepositoryType();
 
     RepositoryConfiguration getConfiguration();

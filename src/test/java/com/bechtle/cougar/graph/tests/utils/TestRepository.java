@@ -1,5 +1,6 @@
 package com.bechtle.cougar.graph.tests.utils;
 
+import com.bechtle.cougar.graph.repository.rdf4j.repository.util.LabeledRepository;
 import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
@@ -10,6 +11,7 @@ import org.eclipse.rdf4j.rio.Rio;
 import org.eclipse.rdf4j.sail.memory.MemoryStore;
 import org.springframework.core.io.Resource;
 
+import java.awt.*;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringWriter;
@@ -20,7 +22,7 @@ public class TestRepository implements AutoCloseable {
 
     public TestRepository() {
 
-        repository = new SailRepository(new MemoryStore());
+        repository = new LabeledRepository("test", new SailRepository(new MemoryStore()));
     }
 
     public void load(Resource resource) throws IOException {

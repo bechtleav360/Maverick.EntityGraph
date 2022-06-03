@@ -73,24 +73,5 @@ public interface ModelUpdates extends RepositoryBehaviour {
     /**
      *  Stores the triples directly (without transaction context)
      */
-    default Mono<Void> insert(Model model, Authentication authentication) {
-
-
-            try (RepositoryConnection connection = this.getConnection(authentication)) {
-                try {
-                    Resource[] contexts = model.contexts().toArray(new Resource[model.contexts().size()]);
-                    connection.add(model, contexts);
-                    connection.commit();
-                    return Mono.empty();
-                } catch (Exception e) {
-                    connection.rollback();
-                    return Mono.error(e);
-                }
-            } catch (RepositoryException e) {
-                return Mono.error(e);
-            } catch (IOException e) {
-                return Mono.error(e);
-            }
-
-    }
+    Mono<Void> insert(Model model, Authentication authentication);
 }

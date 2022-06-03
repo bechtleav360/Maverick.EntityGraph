@@ -3,6 +3,7 @@ package com.bechtle.cougar.graph.repository.rdf4j.config;
 import com.bechtle.cougar.graph.api.security.AdminAuthentication;
 import com.bechtle.cougar.graph.features.multitenancy.security.ApplicationAuthentication;
 import com.bechtle.cougar.graph.features.multitenancy.domain.model.Application;
+import com.bechtle.cougar.graph.repository.rdf4j.repository.util.LabeledRepository;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import lombok.extern.slf4j.Slf4j;
@@ -15,10 +16,9 @@ import org.eclipse.rdf4j.sail.memory.MemoryStore;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.boot.context.properties.ConstructorBinding;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
+import org.springframework.lang.Nullable;
 import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.ReactiveSecurityContextHolder;
@@ -29,9 +29,11 @@ import org.springframework.util.StringUtils;
 import reactor.core.publisher.Mono;
 
 import java.io.IOException;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 @Component
@@ -42,8 +44,8 @@ public class RepositoryConfiguration {
 
     private final String entitiesPath;
     private final String transactionsPath;
-    private final Repository schemaRepository;
-    private final Repository applicationRepository;
+    private final String schemaPath;
+    private final String applicationsPath;
     private final Cache<String, Repository> cache;
     private Map<String, List<String>> storage;
     private String test;
@@ -58,15 +60,14 @@ public class RepositoryConfiguration {
 
     public RepositoryConfiguration(@Value("${application.storage.entities.path:#{null}}") String entitiesPath,
                                    @Value("${application.storage.transactions.path:#{null}}") String transactionsPath,
-                                   @Qualifier("schema-storage") Repository schemaRepository,
-                                   @Qualifier("application-storage") Repository applicationRepository,
+                                   @Value("${application.storage.default.path: #{null}}") String schemaPath,
+                                   @Value("${application.storage.default.path: #{null}}") String applicationsPath,
                                    @Value("${application.storage.entities:#{null}}") Map<String, String> storageConfiguration) {
 
         this.entitiesPath = entitiesPath;
         this.transactionsPath = transactionsPath;
-        this.schemaRepository = schemaRepository;
-        this.applicationRepository = applicationRepository;
-
+        this.schemaPath = schemaPath;
+        this.applicationsPath = applicationsPath;
 
         cache = Caffeine.newBuilder().expireAfterAccess(60, TimeUnit.MINUTES).build();
     }
@@ -87,7 +88,7 @@ public class RepositoryConfiguration {
         }
 
         if (authentication instanceof TestingAuthenticationToken) {
-            return this.cache.get(repositoryType.name(), s -> new SailRepository(new MemoryStore()));
+            return this.cache.get(repositoryType.name(), s -> new LabeledRepository("Test:"+repositoryType.name(), new SailRepository(new MemoryStore())));
         }
 
         if (authentication instanceof AdminAuthentication) {
@@ -112,27 +113,26 @@ public class RepositoryConfiguration {
     }
 
     private Repository resolveRepositoryForAdminAuthentication(RepositoryType repositoryType, AdminAuthentication authentication) throws IOException {
-        if(repositoryType == RepositoryType.APPLICATION) {
-            return this.applicationRepository;
-        }
-
-        if(repositoryType == RepositoryType.SCHEMA) {
-            return this.schemaRepository;
-        }
-
 
 
         if(authentication.getDetails()  != null && authentication.getDetails().getApplication() != null) {
-            if(repositoryType == RepositoryType.ENTITIES) {
-                return this.getEntityRepository(authentication.getDetails().getApplication().subscription());
+            Application subscription = authentication.getDetails().getApplication().subscription();
+
+            return switch (repositoryType) {
+                case ENTITIES -> this.getEntityRepository(subscription);
+                case TRANSACTIONS -> this.getTransactionsRepository(subscription);
+                case APPLICATION -> this.getApplicationRepository(subscription);
+                case SCHEMA -> this.getSchemaRepository(subscription);
+            };
+
+        } else {
+            if(repositoryType == RepositoryType.APPLICATION) {
+                return this.getApplicationRepository(null);
             }
 
-            if(repositoryType == RepositoryType.TRANSACTIONS) {
-                return this.getTransactionsRepository(authentication.getDetails().getApplication().subscription());
+            if(repositoryType == RepositoryType.SCHEMA) {
+                return this.getSchemaRepository(null);
             }
-        } else {
-            log.warn("No valid application found for admin authentication, we assume this is for tests and return a memory store");
-            return this.cache.get(repositoryType.name(), s -> new SailRepository(new MemoryStore()));
         }
 
 
@@ -166,42 +166,63 @@ public class RepositoryConfiguration {
                     ));
     }
 
-    private Repository getDefaultRepository(Application subscription, String label, String basePath) {
+    private Repository getApplicationRepository(@Nullable Application subscription) {
+        String key = "applications: default";
+        // TODO: check if application has individual schema repo, otherwise we return default
+        return this.cache.get(key, s -> new LabeledRepository(key, this.buildDefaultRepository(subscription, this.applicationsPath, "applications")));
+    }
+
+
+    private Repository getSchemaRepository(@Nullable Application subscription) {
+        String key = "schema: default";
+        // TODO: check if application has individual schema repo, otherwise we return default
+        return this.cache.get(key, s -> new LabeledRepository(key, this.buildDefaultRepository(subscription, this.schemaPath, "schema")));
+    }
+
+
+    public Repository getEntityRepository(Application subscription) throws IOException {
+        String key = "entities:" + subscription.key();
+        return this.cache.get(key, s -> new LabeledRepository(key, this.buildApplicationsRepository(subscription, "entities", this.entitiesPath)));
+    }
+
+    public Repository getTransactionsRepository(Application subscription) throws IOException {
+        String key = "transactions:" + subscription.key();
+        return this.cache.get(key, s -> new LabeledRepository(key, this.buildApplicationsRepository(subscription, "transactions", this.transactionsPath)));
+    }
+
+
+    public Repository buildDefaultRepository(Application subscription, String basePath, String label)  {
+        if(!StringUtils.hasLength(basePath)) {
+            log.debug("(Store) Initializing volatile {} repository for subscription", label);
+            return new SailRepository(new MemoryStore());
+        } else {
+            return this.initializePersistentRepository(Paths.get(basePath, label, "lmdb"), label);
+        }
+    }
+
+
+    private Repository buildApplicationsRepository(Application subscription, String label, String basePath) {
         if (!subscription.persistent() || !StringUtils.hasLength(basePath)) {
             log.debug("(Store) Initializing volatile {} repository for subscription '{}' [{}]", label, subscription.label(), subscription.key());
             return new SailRepository(new MemoryStore());
         } else {
-            Resource file = new FileSystemResource(Paths.get(basePath, subscription.key(), label, "lmdb"));
-            Assert.notNull(file, "Invalid path to repository: " + file);
-            try {
-                LmdbStoreConfig config = new LmdbStoreConfig();
-
-                log.debug("(Store) Initializing persistent {} repository in path '{}'", label, file.getFile().toPath());
-
-
-                return new SailRepository(new LmdbStore(file.getFile(), config));
-            } catch (IOException e) {
-                log.error("Failed to initialize persistent {}  repository in path '{}'. Falling back to in-memory.", label, file, e);
-                return new SailRepository(new MemoryStore());
-            }
+            Path path = Paths.get(basePath, subscription.key(), label, "lmdb");
+            return this.initializePersistentRepository(path, label);
         }
     }
 
-    @Cacheable
-    private Repository getSchemaRepository(Application subscription) {
-        return this.schemaRepository; 
+    private Repository initializePersistentRepository(Path path, String label) {
+        try {
+            Resource file = new FileSystemResource(path);
+            LmdbStoreConfig config = new LmdbStoreConfig();
+
+            log.debug("(Store) Initializing persistent {} repository in path '{}'", label, file.getFile().toPath());
+
+            return new SailRepository(new LmdbStore(file.getFile(), config));
+        } catch (IOException e) {
+            log.error("Failed to initialize persistent {} repository in path '{}'. Falling back to in-memory.", label, path, e);
+            return new SailRepository(new MemoryStore());
+        }
     }
-
-
-    @Cacheable
-    public Repository getEntityRepository(Application subscription) throws IOException {
-        return this.cache.get("entities:" + subscription.key(), s -> this.getDefaultRepository(subscription, "entities", this.entitiesPath));
-    }
-
-    @Cacheable
-    public Repository getTransactionsRepository(Application subscription) throws IOException {
-        return this.cache.get("transactions:" + subscription.key(), s -> this.getDefaultRepository(subscription, "transactions", this.transactionsPath));
-    }
-
 
 }

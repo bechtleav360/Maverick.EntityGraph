@@ -5,6 +5,7 @@ import com.bechtle.cougar.graph.domain.model.vocabulary.Local;
 import com.bechtle.cougar.graph.domain.model.vocabulary.SDO;
 import com.bechtle.cougar.graph.domain.model.vocabulary.Transactions;
 import com.bechtle.cougar.graph.repository.SchemaStore;
+import com.bechtle.cougar.graph.repository.rdf4j.repository.util.AbstractRepository;
 import org.eclipse.rdf4j.model.Namespace;
 import org.eclipse.rdf4j.model.util.Namespaces;
 import org.springframework.stereotype.Component;

@@ -1,5 +1,6 @@
 package com.bechtle.cougar.graph.features.multitenancy.security;
 
+import com.bechtle.cougar.graph.api.security.AdminAuthentication;
 import com.bechtle.cougar.graph.api.security.ApiKeyToken;
 import com.bechtle.cougar.graph.api.security.errors.NoSubscriptionFound;
 import com.bechtle.cougar.graph.features.multitenancy.domain.ApplicationsService;
@@ -34,7 +35,8 @@ public class ApplicationAuthenticationManager implements ReactiveAuthenticationM
 
     private Mono<? extends Authentication> handleApiKeyAuthentication(ApiKeyToken authentication) {
         // check if we can find the api key in one of our subscriptions
-        return this.subscriptionsService.getKey(authentication.getApiKey())
+        // we need a valid admin authentication to verify the current authentication... a bit of inception here
+        return this.subscriptionsService.getKey(authentication.getApiKey(), new AdminAuthentication())
                 .map(ApplicationAuthentication::new)
                 .map(auth -> {
                     log.trace("(Security) Request with Api Key '{}' (and label '{}') is active and belongs to subscription '{}'", auth.getApiKey().key(), auth.getApiKey().label(), auth.getSubscription().key());

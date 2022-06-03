@@ -70,7 +70,7 @@ public class AdminAuthenticationManager implements ReactiveAuthenticationManager
             if(StringUtils.hasLength(authentication.getDetails().getSubscriptionKey())) {
                 log.trace("Headers include a subscription key, trying to retrieve application details from storage.");
                 // check if we can find the api key in one of our subscriptions
-                return this.subscriptionsService.getKey(authentication.getApiKey())
+                return this.subscriptionsService.getKey(authentication.getApiKey(), adminAuthentication)
                         .map(application -> {
                             log.debug("Valid subscription key for application '{}' provided in admin authentication.", application.label());
                             adminAuthentication.getDetails().setApplication(application);
