@@ -5,7 +5,9 @@ import com.bechtle.cougar.graph.api.v1.EntitiesTest;
 import com.bechtle.cougar.graph.domain.model.vocabulary.Local;
 import com.bechtle.cougar.graph.domain.model.vocabulary.SDO;
 import com.bechtle.cougar.graph.domain.model.vocabulary.Transactions;
+import com.bechtle.cougar.graph.repository.rdf4j.config.RepositoryConfiguration;
 import com.bechtle.cougar.graph.tests.config.TestConfigurations;
+import com.bechtle.cougar.graph.tests.utils.TestsBase;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.Statement;
@@ -44,7 +46,7 @@ import java.util.stream.StreamSupport;
 @RecordApplicationEvents
 @ActiveProfiles("test")
 @Slf4j
-public class TurtleTests implements EntitiesTest {
+public class TurtleTests extends TestsBase implements EntitiesTest {
 
 
     public static ValueFactory vf = SimpleValueFactory.getInstance();
@@ -56,10 +58,7 @@ public class TurtleTests implements EntitiesTest {
 
     @AfterEach
     public void resetRepository() {
-        webClient.get()
-                .uri("/api/admin/bulk/reset")
-                .exchange()
-                .expectStatus().isAccepted();
+        super.resetRepository(RepositoryConfiguration.RepositoryType.ENTITIES.name());
     }
 
     @Override

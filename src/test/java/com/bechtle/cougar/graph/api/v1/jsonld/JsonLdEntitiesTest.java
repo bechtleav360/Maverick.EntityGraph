@@ -2,6 +2,7 @@ package com.bechtle.cougar.graph.api.v1.jsonld;
 
 import com.bechtle.cougar.graph.api.v1.EntitiesTest;
 import com.bechtle.cougar.graph.tests.config.TestConfigurations;
+import com.bechtle.cougar.graph.tests.utils.TestsBase;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -19,7 +20,7 @@ import org.springframework.web.reactive.function.BodyInserters;
 @ContextConfiguration(classes = TestConfigurations.class)
 @RecordApplicationEvents
 @ActiveProfiles("test")
-public class JsonLdEntitiesTest implements EntitiesTest {
+public class JsonLdEntitiesTest extends TestsBase implements EntitiesTest {
 
 
     @Autowired

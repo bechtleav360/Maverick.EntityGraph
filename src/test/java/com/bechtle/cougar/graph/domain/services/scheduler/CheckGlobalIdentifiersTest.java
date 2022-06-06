@@ -7,6 +7,7 @@ import com.bechtle.cougar.graph.features.schedulers.replaceGlobalIdentifiers.Sch
 import com.bechtle.cougar.graph.repository.EntityStore;
 import com.bechtle.cougar.graph.repository.TransactionsStore;
 import com.bechtle.cougar.graph.tests.config.TestConfigurations;
+import com.bechtle.cougar.graph.tests.utils.TestsBase;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,7 +36,7 @@ import java.time.temporal.ChronoUnit;
 @RecordApplicationEvents
 @ActiveProfiles("test")
 @Slf4j
-class CheckGlobalIdentifiersTest {
+class CheckGlobalIdentifiersTest extends TestsBase {
     @Autowired
     private WebTestClient webClient;
 
@@ -55,10 +56,6 @@ class CheckGlobalIdentifiersTest {
 
     @Test
     void checkForGlobalIdentifiers() {
-        webClient.get()
-                .uri("/api/admin/bulk/reset")
-                .exchange()
-                .expectStatus().isAccepted();
 
         createEntities();
         scheduled = new ScheduledReplaceGlobalIdentifiers(queryServices, entityStore, transactionsStore);
