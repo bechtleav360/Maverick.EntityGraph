@@ -1,4 +1,4 @@
-package com.bechtle.cougar.graph.features.transformers.replaceGlobalIdentifiers;
+package com.bechtle.cougar.graph.domain.transformers.replaceGlobalIdentifiers;
 
 import com.bechtle.cougar.graph.domain.model.extensions.GeneratedIdentifier;
 import com.bechtle.cougar.graph.domain.model.extensions.NamespaceAwareStatement;

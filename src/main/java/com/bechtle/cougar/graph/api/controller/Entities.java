@@ -32,7 +32,7 @@ public class Entities extends AbstractController {
         this.entityServices = graphService;
     }
 
-    @ApiOperation(value = "Read entity", tags = {"v1"})
+    @ApiOperation(value = "Read entity")
     @GetMapping(value = "/{id:[\\w|\\d|-|_]+}", produces = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.N3_VALUE})
     @ResponseStatus(HttpStatus.OK)
     Flux<NamespaceAwareStatement> read(@PathVariable String id) {
@@ -44,7 +44,7 @@ public class Entities extends AbstractController {
                 .doOnSubscribe(s -> log.trace("(Request) Reading Entity with id: {}", id));
     }
 
-    @ApiOperation(value = "Create entity", tags = {"v1"})
+    @ApiOperation(value = "Create entity")
     @PostMapping(value = "",
             consumes = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.N3_VALUE},
             produces = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.N3_VALUE})
@@ -62,7 +62,7 @@ public class Entities extends AbstractController {
     }
 
 
-    @ApiOperation(value = "Create value or relation", tags = {"v1"})
+    @ApiOperation(value = "Create value or relation")
     @PostMapping(value = "/{id:[\\w|\\d|-|_]+}/{prefixedKey:[\\w|\\d]+\\.[\\w|\\d]+}",
             consumes = MediaType.TEXT_PLAIN_VALUE,
             produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE})
@@ -80,7 +80,7 @@ public class Entities extends AbstractController {
 
     }
 
-    @ApiOperation(value = "Create value or relation", tags = {"v1"})
+    @ApiOperation(value = "Create value or relation")
     @PostMapping(value = "/{id:[\\w|\\d|-|_]+}/{prefixedKey:[\\w|\\d]+\\.[\\w|\\d]+}",
             consumes = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE},
             produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE})

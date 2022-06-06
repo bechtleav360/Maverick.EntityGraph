@@ -1,4 +1,4 @@
-package com.bechtle.cougar.graph.features.transformers.mergeDuplicates;
+package com.bechtle.cougar.graph.domain.transformers.mergeDuplicates;
 
 import com.bechtle.cougar.graph.domain.model.extensions.GeneratedIdentifier;
 import com.bechtle.cougar.graph.domain.model.errors.MissingType;

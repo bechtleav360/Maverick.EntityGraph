@@ -1,4 +1,4 @@
-package com.bechtle.cougar.graph.features.validators.checkRequiredType;
+package com.bechtle.cougar.graph.domain.validators.checkRequiredType;
 
 import com.bechtle.cougar.graph.domain.model.errors.MissingType;
 import com.bechtle.cougar.graph.domain.model.wrapper.AbstractModel;

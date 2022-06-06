@@ -1,4 +1,4 @@
-package com.bechtle.cougar.graph.features.transformers;
+package com.bechtle.cougar.graph.domain.transformers;
 
 /**
  * Transformers are modifying the incoming model. No order can be assumed.
