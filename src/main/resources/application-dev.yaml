@@ -5,7 +5,7 @@
 application:
   security:
     enabled: true
-    apiKey: "xxx"
+    apiKey: "12345"
     basic:
       enabled: false
   features:
@@ -21,19 +21,13 @@ application:
   storage:
     default:
       persistent: false
-      path: {}
+      path: ~
     entities:
       persistent: false
-      path: {}
+      path: ~
     transactions:
       persistent: false
-      path: {}
-
-spring:
-  security:
-    user:
-      name: "user"
-      password: "password"
+      path: ~
 
 logging:
   level:
@@ -43,24 +37,3 @@ logging:
       springframework:
         security: INFO
 
-
-management:
-  endpoints:
-    web:
-      exposure:
-        include: "health, info, env, loggers, metrics, scheduledTasks, logfile, mappings"
-  endpoint:
-    health:
-      enabled: true
-    info:
-      enabled: true
-    env:
-      enabled: true
-    loggers:
-      enabled: true
-    metrics:
-      enabled: true
-    scheduledTasks:
-      enabled: true
-    logfile:
-      enabled: true

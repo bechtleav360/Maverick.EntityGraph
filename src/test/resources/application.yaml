@@ -3,12 +3,13 @@
 #    url: jdbc:h2:file:/data/demo
 
 application:
+  test: "val"
   security:
     enabled: false
-    apiKey: "xxx"
+    apiKey: "test"
   features:
     schedulers:
-      detectDuplicates: false
+      detectDuplicates: true
       replaceGlobalIdentifiers: true
     transformers:
       replaceGlobalIdentifiers: true
@@ -19,13 +20,13 @@ application:
   storage:
     default:
       persistent: false
-      path: {}
+      path: ~
     entities:
       persistent: false
-      path: {}
+      path: ~
     transactions:
       persistent: false
-      path: {}
+      path: ~
 
 spring:
   profiles:
@@ -41,6 +42,8 @@ storage:
 
 logging:
   level:
+    cougar:
+      graph: TRACE
     com:
       bechtle: TRACE
     org:

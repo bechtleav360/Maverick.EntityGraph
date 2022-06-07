@@ -1,3 +1,7 @@
+# Installation Guide
+
+Note: The Helm chart has been adapted to allow for installation as Azure App Service. 
+
 # Install on Kubernetes 
 
 Copy file `values.yaml.template` to `values.yaml` and adapt
