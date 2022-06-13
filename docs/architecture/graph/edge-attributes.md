@@ -47,7 +47,7 @@ inPath/c, from w1, to p3
 .. is a concise syntax for reification, aka making statements about statements. In practice it means that we can define 
 attributes on edges. 
 
-Example (from https://w3c.github.io/rdf-star/cg-spec/editors_draft.html)
+Example (from https://w3c.github.io/cougar.graph.model.rdf-star/cg-spec/editors_draft.html)
 ```turtle
 PREFIX :    <http://www.example.org/>
 
@@ -77,8 +77,8 @@ See more examples in the [draft standard](https://json-ld.github.io/json-ld-star
 
 {
   "@context": {
-    "rdf": "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
-    "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+    "cougar.graph.model.rdf": "http://www.w3.org/1999/02/22-cougar.graph.model.rdf-syntax-ns#",
+    "rdfs": "http://www.w3.org/2000/01/cougar.graph.model.rdf-schema#",
     "eagl": "http://av360.org/schema/eagl#",
     "xsd": "http://www.w3.org/2001/XMLSchema#",
     "sdo": "https://schema.org/"

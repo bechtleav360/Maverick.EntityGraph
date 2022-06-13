@@ -16,7 +16,7 @@ An option for the validation of incoming entities can be the shape expression la
 
 Supported features are: 
 - cardinality
-- enums
+- cougar.graph.model.enums
 - types
 - inheritance
 

@@ -1,0 +1,152 @@
+@prefix dbo: <http://dbpedia.org/ontology/> .
+@prefix dbp: <http://dbpedia.org/property/> .
+@prefix dbpedia: <http://dbpedia.org/resource/> .
+@prefix cougar.graph.model.rdf: <http://www.w3.org/1999/02/22-cougar.graph.model.rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/cougar.graph.model.rdf-schema#> .
+@prefix tto: <http://example.org/tuto/ontology#> .
+@prefix ttr: <http://example.org/tuto/resource#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+_:node1g14cldnnx515 a <https://entdata.citadelgroup.com/model/citadel/gem/gemui#PredicateDisplay> ;
+	<https://entdata.citadelgroup.com/model/citadel/gem/gemui#defaultsRenderer> <https://entdata.citadelgroup.com/model/citadel/gem/gemui#YesNoRenderer> ;
+	<https://entdata.citadelgroup.com/model/citadel/gem/gemui#supportsRenderers> _:node1g14cldnnx516 .
+
+_:node1g14cldnnx516 cougar.graph.model.rdf:first <https://entdata.citadelgroup.com/model/citadel/gem/gemui#YesNoRenderer> ;
+	cougar.graph.model.rdf:rest _:node1g14cldnnx517 .
+
+_:node1g14cldnnx517 cougar.graph.model.rdf:first <https://entdata.citadelgroup.com/model/citadel/gem/gemui#CheckBoxRenderer> ;
+	cougar.graph.model.rdf:rest cougar.graph.model.rdf:nil .
+
+_:node1g14cldnnx518 a <https://entdata.citadelgroup.com/model/citadel/gem/gemui#PredicateDisplay> ;
+	<https://entdata.citadelgroup.com/model/citadel/gem/gemui#defaultsRenderer> <https://entdata.citadelgroup.com/model/citadel/gem/gemui#TextRenderer> ;
+	<https://entdata.citadelgroup.com/model/citadel/gem/gemui#supportsRenderers> _:node1g14cldnnx519 .
+
+_:node1g14cldnnx519 cougar.graph.model.rdf:first <https://entdata.citadelgroup.com/model/citadel/gem/gemui#TextRenderer> ;
+	cougar.graph.model.rdf:rest cougar.graph.model.rdf:nil .
+
+<http://entdata.citadelgroup.com/2021/01/employee/Employee> rdfs:subClassOf <http://entdata.citadelgroup.com/2021/01/employee/Person> .
+
+<http://entdata.citadelgroup.com/2021/01/employee/Person> a rdfs:Class .
+
+<http://entdata.citadelgroup.com/2021/01/employee/dateOfBirth> a rdfs:Property ;
+	rdfs:domain <http://entdata.citadelgroup.com/2021/01/employee/Person> ;
+	rdfs:label "Date of birth" ;
+	rdfs:range xsd:Date .
+
+<http://entdata.citadelgroup.com/2021/01/employee/hasDivision> a rdfs:Property ;
+	rdfs:domain <http://entdata.citadelgroup.com/2021/01/employee/Person> ;
+	rdfs:range <http://entdata.citadelgroup.com/2021/01/employee/Division> .
+
+<http://entdata.citadelgroup.com/2021/01/employee/hasEUIdNumber> rdfs:subPropertyOf <http://entdata.citadelgroup.com/2021/01/employee/hasNationalIdentifier> .
+
+<http://entdata.citadelgroup.com/2021/01/employee/hasFactoryLocation> rdfs:subPropertyOf <http://entdata.citadelgroup.com/2021/01/employee/hasWorkplaceLocation> .
+
+<http://entdata.citadelgroup.com/2021/01/employee/hasManager> a rdfs:Property ;
+	rdfs:domain <http://entdata.citadelgroup.com/2021/01/employee/Person> ;
+	rdfs:range <http://entdata.citadelgroup.com/2021/01/employee/Employee> .
+
+<http://entdata.citadelgroup.com/2021/01/employee/hasManagerHyperlink> a rdfs:Property ;
+	rdfs:domain <http://entdata.citadelgroup.com/2021/01/employee/Person> ;
+	rdfs:range <http://entdata.citadelgroup.com/2021/01/employee/Employee> .
+
+<http://entdata.citadelgroup.com/2021/01/employee/hasName> a rdfs:Property ;
+	rdfs:domain <http://entdata.citadelgroup.com/2021/01/employee/Person> ;
+	rdfs:label "Employee Name" ;
+	rdfs:range xsd:String .
+
+<http://entdata.citadelgroup.com/2021/01/employee/hasNationalIdentifier> a rdfs:Property ;
+	rdfs:domain <http://entdata.citadelgroup.com/2021/01/employee/Person> ;
+	rdfs:label "Any recognized national identifier" ;
+	rdfs:range xsd:String ;
+	<https://entdata.citadelgroup.com/model/citadel/gem/gemui#hasContractualView> _:node1g14cldnnx518 ;
+	<https://entdata.citadelgroup.com/model/citadel/gem/gemui#hasDataView> _:node1g14cldnnx515 .
+
+<http://entdata.citadelgroup.com/2021/01/employee/hasOfficeLocation> rdfs:subPropertyOf <http://entdata.citadelgroup.com/2021/01/employee/hasWorkplaceLocation> .
+
+<http://entdata.citadelgroup.com/2021/01/employee/hasPAN> rdfs:subPropertyOf <http://entdata.citadelgroup.com/2021/01/employee/hasNationalIdentifier> .
+
+<http://entdata.citadelgroup.com/2021/01/employee/hasPassport> rdfs:range <http://entdata.citadelgroup.com/2021/01/employee/Passport> ;
+	rdfs:subPropertyOf <http://entdata.citadelgroup.com/2021/01/employee/hasNationalIdentifier> .
+
+<http://entdata.citadelgroup.com/2021/01/employee/hasSSN> rdfs:label "Social Security Number" ;
+	rdfs:subPropertyOf <http://entdata.citadelgroup.com/2021/01/employee/hasNationalIdentifier> .
+
+<http://entdata.citadelgroup.com/2021/01/employee/hasShopLocation> rdfs:subPropertyOf <http://entdata.citadelgroup.com/2021/01/employee/hasWorkplaceLocation> .
+
+<http://entdata.citadelgroup.com/2021/01/employee/hasWorkplaceLocation> a rdfs:Property ;
+	rdfs:domain <http://entdata.citadelgroup.com/2021/01/employee/Person> ;
+	rdfs:range <http://entdata.citadelgroup.com/2021/01/common-schema/Location> .
+
+<http://entdata.citadelgroup.com/2021/01/employee/isManager> a rdfs:Property ;
+	rdfs:domain <http://entdata.citadelgroup.com/2021/01/employee/Person> ;
+	rdfs:label "Is a manager" ;
+	rdfs:range xsd:Date .
+
+<http://entdata.citadelgroup.com/2021/01/employee/ofJursidiction:> a rdfs:Property ;
+	rdfs:domain <http://entdata.citadelgroup.com/2021/01/employee/Passport> ;
+	rdfs:range <http://entdata.citadelgroup.com/2021/01/common-schema/ISOJurisdiction> .
+
+<http://entdata.citadelgroup.com/2021/01/employee/passportNumber> a rdfs:Property ;
+	rdfs:domain <http://entdata.citadelgroup.com/2021/01/employee/Passport> ;
+	rdfs:range xsd:String .
+
+<https://entdata.citadelgroup.com/model/citadel/gem/gemui#BooleanRenderer> rdfs:isDefinedBy <https://entdata.citadelgroup.com/model/citadel/gem/gemui#> ;
+	rdfs:subClassOf <https://entdata.citadelgroup.com/model/citadel/gem/gemui#DataTypePropertyRenderer> ;
+	<https://entdata.citadelgroup.com/model/citadel/core/meta#isAbstract> true .
+
+<https://entdata.citadelgroup.com/model/citadel/gem/gemui#CheckBoxRenderer> a <https://entdata.citadelgroup.com/model/citadel/gem/gemui#BooleanRenderer> ;
+	rdfs:comment "Renders a boolean value into a checkbox" ;
+	rdfs:isDefinedBy <https://entdata.citadelgroup.com/model/citadel/gem/gemui#> ;
+	rdfs:label "Checkbox Renderer" .
+
+<https://entdata.citadelgroup.com/model/citadel/gem/gemui#DataTypePropertyRenderer> rdfs:isDefinedBy <https://entdata.citadelgroup.com/model/citadel/gem/gemui#> ;
+	rdfs:subClassOf <https://entdata.citadelgroup.com/model/citadel/gem/gemui#DisplayRenderer> ;
+	<https://entdata.citadelgroup.com/model/citadel/core/meta#isAbstract> true .
+
+<https://entdata.citadelgroup.com/model/citadel/gem/gemui#DisplayRenderer> a <http://www.w3.org/2002/07/owl#Class> ;
+	rdfs:isDefinedBy <https://entdata.citadelgroup.com/model/citadel/gem/gemui#> ;
+	rdfs:label "Display Renderer" .
+
+<https://entdata.citadelgroup.com/model/citadel/gem/gemui#PredicateDisplay> a <http://www.w3.org/2002/07/owl#Class> ;
+	rdfs:isDefinedBy <https://entdata.citadelgroup.com/model/citadel/gem/gemui#> ;
+	rdfs:label "Precicate Display" .
+
+<https://entdata.citadelgroup.com/model/citadel/gem/gemui#TextRenderer> a <https://entdata.citadelgroup.com/model/citadel/gem/gemui#DataTypePropertyRenderer> ;
+	rdfs:comment "Renders a text value" ;
+	rdfs:isDefinedBy <https://entdata.citadelgroup.com/model/citadel/gem/gemui#> ;
+	rdfs:label "Text Renderer" ;
+	rdfs:subClassOf <https://entdata.citadelgroup.com/model/citadel/gem/gemui#DataTypePropertyRenderer> .
+
+<https://entdata.citadelgroup.com/model/citadel/gem/gemui#YesNoRenderer> rdfs:comment "Renders a boolean value into one of two strings" ;
+	rdfs:isDefinedBy <https://entdata.citadelgroup.com/model/citadel/gem/gemui#> ;
+	rdfs:label "Yes No Renderer" ;
+	rdfs:subClassOf <https://entdata.citadelgroup.com/model/citadel/gem/gemui#BooleanRenderer> ;
+	<https://entdata.citadelgroup.com/model/citadel/gem/gemui#hasFalseString> "No" ;
+	<https://entdata.citadelgroup.com/model/citadel/gem/gemui#hasTrueString> "Yes" .
+
+<https://entdata.citadelgroup.com/model/citadel/gem/gemui#hasContractualView> a <http://www.w3.org/2002/07/owl#DatatypeProperty> ;
+	rdfs:comment "Property denoting what Contractual View the class or property should be displayed as" ;
+	rdfs:label "Contractual View" ;
+	rdfs:range <https://entdata.citadelgroup.com/model/citadel/gem/gemui#DisplayRenderer> ;
+	rdfs:subPropertyOf <https://entdata.citadelgroup.com/model/citadel/gem/gemui#hasUIView> .
+
+<https://entdata.citadelgroup.com/model/citadel/gem/gemui#hasDataView> a <http://www.w3.org/2002/07/owl#DatatypeProperty> ;
+	rdfs:comment "Property denoting what Data View the class or property should be displayed as" ;
+	rdfs:label "Data View" ;
+	rdfs:range <https://entdata.citadelgroup.com/model/citadel/gem/gemui#DisplayRenderer> ;
+	rdfs:subPropertyOf <https://entdata.citadelgroup.com/model/citadel/gem/gemui#hasUIView> .
+
+<https://entdata.citadelgroup.com/model/citadel/gem/gemui#hasFalseString> a <http://www.w3.org/2002/07/owl#DatatypeProperty> ;
+	rdfs:comment "Property denoting what string should be displayed when the boolean is False" ;
+	rdfs:label "False String" ;
+	rdfs:range xsd:string .
+
+<https://entdata.citadelgroup.com/model/citadel/gem/gemui#hasTrueString> a <http://www.w3.org/2002/07/owl#DatatypeProperty> ;
+	rdfs:comment "Property denoting what string should be displayed when the boolean is True" ;
+	rdfs:label "True String" ;
+	rdfs:range xsd:string .
+
+<https://entdata.citadelgroup.com/model/citadel/gem/gemui#hasUIView> a <http://www.w3.org/2002/07/owl#DatatypeProperty> ;
+	rdfs:comment "Property denoting what UI View the class or property should be displayed as" ;
+	rdfs:label "UI View" ;
+	rdfs:range <https://entdata.citadelgroup.com/model/citadel/gem/gemui#DisplayRenderer> .
