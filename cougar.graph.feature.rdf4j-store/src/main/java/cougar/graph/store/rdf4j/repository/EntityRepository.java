@@ -1,18 +1,25 @@
 package cougar.graph.store.rdf4j.repository;
 
+import cougar.graph.model.enums.Activity;
+import cougar.graph.model.security.Authorities;
 import cougar.graph.store.rdf.models.Entity;
 import cougar.graph.store.EntityStore;
 import cougar.graph.store.RepositoryType;
+import cougar.graph.store.rdf.models.Transaction;
 import cougar.graph.store.rdf4j.repository.util.AbstractRepository;
 import lombok.extern.slf4j.Slf4j;
-import org.eclipse.rdf4j.model.IRI;
-import org.eclipse.rdf4j.model.Statement;
-import org.eclipse.rdf4j.model.Value;
+import org.eclipse.rdf4j.model.*;
+import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.RepositoryResult;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.stereotype.Component;
+import org.springframework.util.Assert;
 import reactor.core.publisher.Mono;
+
+import java.io.IOException;
+import java.util.Collection;
 
 @Slf4j
 @Component
@@ -24,8 +31,8 @@ public class EntityRepository extends AbstractRepository implements EntityStore 
     }
 
 
-    public Mono<Entity> getEntity(IRI id, Authentication authentication) {
-            try (RepositoryConnection connection = getConnection(authentication)) {
+    public Mono<Entity> getEntity(IRI id, Authentication authentication, GrantedAuthority requiredAuthority) {
+            try (RepositoryConnection connection = getConnection(authentication, requiredAuthority)) {
                 log.trace("(Store) Loading entity with id '{}' from repository {}", id,  connection.getRepository().toString());
 
                 RepositoryResult<Statement> statements = connection.getStatements(id, null, null);
@@ -55,7 +62,54 @@ public class EntityRepository extends AbstractRepository implements EntityStore 
             }
     }
 
+    @Override
+    public Mono<Transaction> delete(Collection<Statement> statements, Transaction transaction) {
+        Assert.notNull(transaction, "Transaction cannot be null");
 
 
+        return transaction
+                .remove(statements, Activity.REMOVED)
+                .asMono();
+    }
+
+    @Override
+    public Mono<Transaction> insert(Model model, Transaction transaction) {
+        Assert.notNull(transaction, "Transaction cannot be null");
+
+        transaction = transaction
+                .insert(model, Activity.INSERTED)
+                .affected(model);
+
+
+        return transaction.asMono();
+    }
+
+
+    /**
+     * Returns the type of the entity identified by the given id;
+     *
+     * @param identifier the id of the entity
+     * @return its type (or empty)
+     */
+    public Mono<Value> type(Resource identifier, Authentication authentication, GrantedAuthority requiredAuthority) {
+        try (RepositoryConnection connection = getConnection(authentication, requiredAuthority)) {
+            RepositoryResult<Statement> statements = connection.getStatements(identifier, RDF.TYPE, null, false);
+
+            Value result = null;
+            for (Statement st : statements) {
+                // FIXME: not sure if this is a domain exception (which mean it should not be handled here)
+                if (result != null) {
+                    return Mono.error(new IOException("Duplicate type definitions for resource with identifier " + identifier.stringValue()));
+                } else result = st.getObject();
+            }
+            if (result == null) return Mono.empty();
+            else return Mono.just(result);
+
+
+        } catch (Exception e) {
+            return Mono.error(e);
+        }
+
+    }
 
 }

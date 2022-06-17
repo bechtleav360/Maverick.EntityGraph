@@ -1,5 +1,6 @@
 package cougar.graph.services.services;
 
+import cougar.graph.model.security.Authorities;
 import cougar.graph.services.services.handler.DelegatingTransformer;
 import cougar.graph.model.rdf.NamespaceAwareStatement;
 import cougar.graph.store.EntityStore;
@@ -13,7 +14,7 @@ import reactor.core.publisher.Flux;
 
 
 @Service
-@Slf4j(topic = "cougar.graph.service.query")
+@Slf4j(topic = "graph.service.query")
 public class QueryServices {
 
     private final EntityStore entityStore;

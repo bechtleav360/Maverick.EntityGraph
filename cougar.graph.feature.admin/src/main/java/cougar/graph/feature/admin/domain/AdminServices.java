@@ -11,7 +11,7 @@ import reactor.core.publisher.Mono;
 
 
 @Service
-@Slf4j(topic = "cougar.graph.feature.admin")
+@Slf4j(topic = "graph.feature.admin.domain")
 public class AdminServices {
 
     private final EntityStore graph;
@@ -22,12 +22,12 @@ public class AdminServices {
 
 
     public Mono<Void> reset(Authentication authentication, RepositoryType repositoryType) {
-        log.trace("Purging repository {}", repositoryType.name());
-        return this.graph.reset(authentication, repositoryType).then();
+        return this.graph.reset(authentication, repositoryType)
+                .doOnSubscribe(sub -> log.info("Purging repository"));
     }
 
     public Mono<Void> importEntities(Publisher<DataBuffer> bytes, String mimetype, Authentication authentication) {
-        log.trace("Importing statements of type '{}' through admin services", mimetype);
-        return this.graph.importStatements(bytes, mimetype, authentication).then();
+        return this.graph.importStatements(bytes, mimetype, authentication)
+                .doOnSubscribe(sub -> log.info("Importing statements of type '{}' through admin services", mimetype));
     }
 }

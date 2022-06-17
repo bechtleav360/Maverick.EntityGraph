@@ -86,7 +86,7 @@ class SubscriptionsTest extends TestsBase implements Subscriptions {
 
         webClient.post()
                 .uri(uriBuilder -> uriBuilder
-                        .path("/api/admin/subscriptions/{id}/keys")
+                        .path("/api/subscriptions/{id}/keys")
                         .build(re.key())
                 )
                 .bodyValue(request)

@@ -13,7 +13,7 @@ import reactor.core.publisher.Flux;
 @RestController
 @RequestMapping(path = "/api/query")
 @Api(tags = "Queries")
-@Slf4j(topic = "cougar.graph.api")
+@Slf4j(topic = "graph.api.queries")
 public class Queries extends AbstractController {
     protected final QueryServices queryServices;
 
@@ -21,7 +21,7 @@ public class Queries extends AbstractController {
         this.queryServices = queryServices;
     }
 
-    @ApiOperation(value = "Run a query", tags = {"v1"})
+    @ApiOperation(value = "Run a query")
     @PostMapping(value = "/select", consumes = "text/plain", produces = {"text/csv", "application/sparql-results+json"})
     @ResponseStatus(HttpStatus.ACCEPTED)
     Flux<BindingSet> queryBindings(@RequestBody String query) {
@@ -29,12 +29,12 @@ public class Queries extends AbstractController {
         return getAuthentication()
                 .flatMapMany(authentication -> queryServices.queryValues(query, authentication))
                 .doOnSubscribe(s -> {
-                    if (log.isTraceEnabled()) log.trace("(Request) Search graph with tuples query: {}", query);
+                    if (log.isTraceEnabled()) log.trace("Search graph with tuples query: {}", query);
                 });
     }
 
 
-    @ApiOperation(value = "Run a query", tags = {"v1"})
+    @ApiOperation(value = "Run a query")
     @PostMapping(value = "/construct", consumes = "text/plain", produces = {"text/turtle", "application/ld+json"})
     @ResponseStatus(HttpStatus.ACCEPTED)
     Flux<NamespaceAwareStatement> queryStatements(@RequestBody String query) {
@@ -42,7 +42,7 @@ public class Queries extends AbstractController {
         return getAuthentication()
                 .flatMapMany(authentication -> queryServices.queryGraph(query, authentication))
                 .doOnSubscribe(s -> {
-                    if (log.isTraceEnabled()) log.trace("(Request) Search graph with construct query: {}", query);
+                    if (log.isTraceEnabled()) log.trace("Search graph with construct query: {}", query);
                 });
 
     }

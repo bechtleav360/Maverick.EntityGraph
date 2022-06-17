@@ -34,7 +34,7 @@ import java.util.stream.Collectors;
  *
  *
  */
-@Slf4j(topic = "cougar.graph.transformer.identifiers")
+@Slf4j(topic = "graph.transformer.identifiers")
 @Component
 @ConditionalOnProperty(name = "application.features.transformers.replaceGlobalIdentifiers", havingValue = "true")
 public class ReplaceGlobalIdentifiers implements Transformer {
@@ -43,7 +43,7 @@ public class ReplaceGlobalIdentifiers implements Transformer {
     public Mono<? extends AbstractModel> handle(AbstractModel triples, Map<String, String> parameters, Authentication authentication) {
 
 
-        log.trace("(Transformer) Regenerating identifiers");
+        log.trace("Replacing global identifiers in incoming model with local identifiers.");
 
         List<NamespaceAwareStatement> copy = Collections.unmodifiableList(triples.streamNamespaceAwareStatements().toList());
 

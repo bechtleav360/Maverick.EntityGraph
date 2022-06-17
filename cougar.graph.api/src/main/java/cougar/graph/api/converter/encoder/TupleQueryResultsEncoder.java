@@ -21,7 +21,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.*;
 
-@Slf4j(topic = "cougar.graph.api.encoder")
+@Slf4j(topic = "graph.api.encoder")
 public class TupleQueryResultsEncoder implements Encoder<TupleQueryResult> {
     private static final List<MimeType> mimeTypes;
 

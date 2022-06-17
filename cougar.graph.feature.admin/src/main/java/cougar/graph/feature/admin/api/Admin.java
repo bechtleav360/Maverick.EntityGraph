@@ -20,7 +20,7 @@ import java.util.Locale;
 @RestController
 @RequestMapping(path = "/api/admin/bulk")
 @Api(tags = "Admin")
-@Slf4j(topic = "cougar.graph.api")
+@Slf4j(topic = "graph.feature.admin.api")
 public class Admin extends AbstractController {
     protected final AdminServices adminServices;
 
@@ -43,7 +43,7 @@ public class Admin extends AbstractController {
         return super.getAuthentication()
                 .map(auth -> adminServices.reset(auth, repositoryType))
                 .then()
-                .doOnSubscribe(s -> log.debug("(Request) Clearing the repository"));
+                .doOnSubscribe(s -> log.debug("Clearing the repository"));
     }
 
 
@@ -55,7 +55,7 @@ public class Admin extends AbstractController {
 
         return super.getAuthentication()
                 .map(authentication -> adminServices.importEntities(bytes, mimetype, authentication)).then()
-                .doOnSubscribe(s -> log.debug("(Request) Importing a file of mimetype {}", mimetype));
+                .doOnSubscribe(s -> log.debug("Importing a file of mimetype {}", mimetype));
     }
 
 

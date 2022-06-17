@@ -11,7 +11,6 @@ import cougar.graph.store.RepositoryType;
 import cougar.graph.feature.applications.domain.model.Application;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.rdf4j.repository.Repository;
-import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
 import org.eclipse.rdf4j.sail.lmdb.LmdbStore;
 import org.eclipse.rdf4j.sail.lmdb.config.LmdbStoreConfig;
@@ -24,6 +23,7 @@ import org.springframework.core.io.Resource;
 import org.springframework.lang.Nullable;
 import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
@@ -40,7 +40,7 @@ import java.util.concurrent.TimeUnit;
  *
  */
 @Component
-@Slf4j(topic = "cougar.graph.repository.configuration")
+@Slf4j(topic = "graph.repository.config")
 @ConfigurationProperties(prefix = "application")
 @Primary
 public class ApplicationRepositoryBuilder implements RepositoryBuilder {
@@ -78,14 +78,14 @@ public class ApplicationRepositoryBuilder implements RepositoryBuilder {
      * <p>
      * We assert a valid and positive authentication at this point.
      *
-     * @param repositoryType the type, e.g. for schema or entities
+     * @param repositoryType    the type, e.g. for schema or entities
      * @return the repository
      * @throws IOException if repository cannot be resolved
      */
     @Override
     public Repository buildRepository(RepositoryType repositoryType, Authentication authentication) throws IOException {
         Assert.notNull(authentication, "Failed to resolve repository due to missing authentication");
-        Assert.isTrue(authentication.isAuthenticated(), "Unauthorized");
+        Assert.isTrue(authentication.isAuthenticated(), "Authentication is set to 'false' within a "+authentication.getClass().getSimpleName());
 
 
         if (authentication instanceof TestingAuthenticationToken) {

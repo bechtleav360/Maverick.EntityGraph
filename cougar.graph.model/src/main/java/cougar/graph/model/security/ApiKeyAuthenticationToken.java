@@ -49,8 +49,8 @@ public class ApiKeyAuthenticationToken implements Authentication {
      */
     public void grantAuthority(GrantedAuthority authority) {
         // authorities USER and ADMIN are XOR
-        if(authority == Authorities.USER && this.getAuthorities().contains(Authorities.ADMIN)) throw new SecurityException("Granting user authority while admin authority has been set already");
-        if(authority == Authorities.ADMIN && this.getAuthorities().contains(Authorities.USER)) throw new SecurityException("Granting admin authority while user authority has been set already");
+        // if(authority == Authorities.USER && this.getAuthorities().contains(Authorities.ADMIN)) throw new SecurityException("Granting user authority while admin authority has been set already");
+        // if(authority == Authorities.ADMIN && this.getAuthorities().contains(Authorities.USER)) throw new SecurityException("Granting admin authority while user authority has been set already");
 
         this.getAuthorities().add(authority);
     }

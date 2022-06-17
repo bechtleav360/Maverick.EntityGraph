@@ -1,6 +1,6 @@
 package cougar.graph.main.trials;
 
-import cougar.graph.tests.util.TestRepository;
+import cougar.graph.store.rdf4j.repository.TestRepository;
 import org.eclipse.rdf4j.rio.RDFFormat;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.SpringBootConfiguration;

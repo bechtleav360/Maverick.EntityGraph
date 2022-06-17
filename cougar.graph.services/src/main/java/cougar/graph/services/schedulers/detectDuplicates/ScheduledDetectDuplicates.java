@@ -62,7 +62,7 @@ import java.util.TreeSet;
  *      For now we keep the duplicate but reroute all links to the original.
  */
 @Component
-@Slf4j(topic = "cougar.graph.schedulers.duplicates")
+@Slf4j(topic = "graph.schedulers.duplicates")
 @ConditionalOnProperty(name = "application.features.schedulers.detectDuplicates", havingValue = "true")
 public class ScheduledDetectDuplicates {
 

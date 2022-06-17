@@ -28,7 +28,7 @@ import java.util.Map;
  * Systems wishing to skolemise bNodes, and expose those skolem constants to external systems (e.g. in query results) SHOULD mint a "fresh" (globally unique) URI for each bNode.
  * All systems performing skolemisation SHOULD do so in a way that they can recognise the constants once skolemised, and map back to the source bNodes where possible.
  */
-@Slf4j(topic = "cougar.graph.transformer.identifiers")
+@Slf4j(topic = "graph.transformer.skolemizer")
 @Component
 @ConditionalOnProperty(name = "application.features.transformers.replaceAnonymousIdentifiers", havingValue = "true")
 public class ReplaceAnonymousIdentifiers implements Transformer {
@@ -36,7 +36,7 @@ public class ReplaceAnonymousIdentifiers implements Transformer {
 
     @Override
     public Mono<? extends AbstractModel> handle(AbstractModel triples, Map<String, String> parameters, Authentication authentication) {
-        log.trace("(Transformer) Skolemizing identifiers");
+        log.trace("Generating local identifiers for anonymous identifiers in incoming model.");
 
         for (Resource obj : new ArrayList<>(triples.getModel().subjects())) {
             /* Handle Ids */

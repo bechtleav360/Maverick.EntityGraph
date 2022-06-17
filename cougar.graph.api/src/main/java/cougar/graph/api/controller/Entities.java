@@ -21,7 +21,7 @@ import java.util.Map;
 @RestController
 @RequestMapping(path = "/api/entities")
 @Api(tags = "Entities")
-@Slf4j(topic = "cougar.graph.api")
+@Slf4j(topic = "graph.api.entities")
 public class Entities extends AbstractController {
 
     protected final ObjectMapper objectMapper;
@@ -41,7 +41,7 @@ public class Entities extends AbstractController {
         return super.getAuthentication()
                 .flatMap(authentication -> entityServices.readEntity(id, authentication))
                 .flatMapIterable(AbstractModel::asStatements)
-                .doOnSubscribe(s -> log.trace("(Request) Reading Entity with id: {}", id));
+                .doOnSubscribe(s -> log.trace("Reading Entity with id: {}", id));
     }
 
     @ApiOperation(value = "Create entity")
@@ -56,8 +56,8 @@ public class Entities extends AbstractController {
                 .flatMap(authentication ->  entityServices.createEntity(request, Map.of(), authentication))
                 .flatMapIterable(AbstractModel::asStatements)
                 .doOnSubscribe(s -> {
-                    if (log.isDebugEnabled()) log.debug("(Request) Create a new Entity");
-                    if (log.isTraceEnabled()) log.trace("(Request) Payload: \n {}", request.toString());
+                    if (log.isDebugEnabled()) log.debug("Create a new Entity");
+                    if (log.isTraceEnabled()) log.trace("Payload: \n {}", request.toString());
                 });
     }
 
@@ -75,7 +75,7 @@ public class Entities extends AbstractController {
                 .flatMap(authentication ->  entityServices.setValue(id, property[0], property[1], value, authentication))
                 .flatMapIterable(AbstractModel::asStatements)
                 .doOnSubscribe(s -> {
-                    if (log.isDebugEnabled()) log.debug("(Request) Set property '{}' of entity '{}' to value '{}'", prefixedKey, id, value.length() > 64 ? value.substring(0, 64) : value);
+                    if (log.isDebugEnabled()) log.debug("Set property '{}' of entity '{}' to value '{}'", prefixedKey, id, value.length() > 64 ? value.substring(0, 64) : value);
                 });
 
     }
@@ -92,7 +92,7 @@ public class Entities extends AbstractController {
                 .flatMap(authentication ->  entityServices.linkEntityTo(id, property[0], property[1], value, authentication))
                 .flatMapIterable(AbstractModel::asStatements)
                 .doOnSubscribe(s -> {
-                    if (log.isDebugEnabled()) log.debug("(Request) Add embedded entities as property '{}' to entity '{}'", prefixedKey, id);
+                    if (log.isDebugEnabled()) log.debug("Add embedded entities as property '{}' to entity '{}'", prefixedKey, id);
                 });
 
 

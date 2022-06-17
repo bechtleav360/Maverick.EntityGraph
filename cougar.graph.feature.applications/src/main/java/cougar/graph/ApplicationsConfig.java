@@ -12,11 +12,11 @@ import javax.annotation.PostConstruct;
         name = "application.features.modules.applications",
         matchIfMissing = false)
 @ComponentScan(basePackages = "cougar.graph.feature.applications")
-@Slf4j(topic = "cougar.graph")
+@Slf4j(topic = "graph.feature.apps")
 public class ApplicationsConfig {
 
     @PostConstruct
     public void logActivation() {
-        log.info("Active Feature: Multi-tenancy through Subscriptions");
+        log.info("Activated Feature: Multi-tenancy through Subscriptions");
     }
 }

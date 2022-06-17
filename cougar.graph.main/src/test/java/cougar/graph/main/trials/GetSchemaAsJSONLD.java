@@ -3,7 +3,7 @@ package cougar.graph.main.trials;
 import com.apicatalog.jsonld.JsonLd;
 import com.apicatalog.jsonld.JsonLdError;
 import com.apicatalog.jsonld.document.JsonDocument;
-import cougar.graph.tests.util.TestRepository;
+import cougar.graph.store.rdf4j.repository.TestRepository;
 import jakarta.json.JsonArray;
 import org.eclipse.rdf4j.rio.RDFFormat;
 import org.junit.jupiter.api.Test;

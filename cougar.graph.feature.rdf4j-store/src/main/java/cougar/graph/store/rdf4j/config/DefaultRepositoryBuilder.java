@@ -19,6 +19,7 @@ import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
@@ -30,7 +31,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 @Component
-@Slf4j(topic = "cougar.graph.repository.configuration")
+@Slf4j(topic = "graph.repository.config")
 @ConfigurationProperties(prefix = "application")
 public class DefaultRepositoryBuilder implements RepositoryBuilder {
 
@@ -68,6 +69,7 @@ public class DefaultRepositoryBuilder implements RepositoryBuilder {
      * Initializes the connection to a repository. The repositories are cached
      *
      * @param repositoryType
+     * @param requiredAuthority
      * @return
      * @throws IOException
      */

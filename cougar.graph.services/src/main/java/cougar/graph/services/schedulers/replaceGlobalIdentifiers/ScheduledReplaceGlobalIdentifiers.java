@@ -39,7 +39,7 @@ import java.util.List;
  * }
  * LIMIT 100
  */
-@Slf4j(topic = "cougar.graph.schedulers.identifiers")
+@Slf4j(topic = "graph.schedulers.identifiers")
 @Component
 @ConditionalOnProperty(name = "application.features.schedulers.replaceGlobalIdentifiers", havingValue = "true")
 public class ScheduledReplaceGlobalIdentifiers {
@@ -95,7 +95,7 @@ public class ScheduledReplaceGlobalIdentifiers {
                 .buffer(50)
                 .flatMap(transactions -> this.storeTransactions(transactions, authentication))
                 .doOnError(throwable -> {
-                    log.error("Exception during check: {}",throwable.getMessage());
+                    log.error("Exception during check for global identifiers: {}",throwable.getMessage());
                 })
                 ;
     }

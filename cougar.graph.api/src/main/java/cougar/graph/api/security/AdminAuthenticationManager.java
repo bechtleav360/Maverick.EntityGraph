@@ -7,6 +7,7 @@ import org.apache.commons.text.RandomStringGenerator;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Primary;
 import org.springframework.security.authentication.ReactiveAuthenticationManager;
+import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
@@ -17,7 +18,7 @@ import reactor.core.publisher.Mono;
 import javax.annotation.PostConstruct;
 
 @Component
-@Slf4j(topic = "cougar.graph.security")
+@Slf4j(topic = "graph.config.security")
 @Primary
 public class AdminAuthenticationManager implements ReactiveAuthenticationManager {
 
@@ -25,8 +26,8 @@ public class AdminAuthenticationManager implements ReactiveAuthenticationManager
     String key;
 
 
-    public AdminAuthenticationManager(
-    ) {
+    public AdminAuthenticationManager() {
+        log.trace("Activated Admin Authentication Manager (checking configured admin api key)");
     }
 
     @PostConstruct
@@ -41,6 +42,12 @@ public class AdminAuthenticationManager implements ReactiveAuthenticationManager
     @Override
     public Mono<Authentication> authenticate(Authentication authentication) {
         Assert.notNull(authentication, "Authentication is null in Authentication Manager");
+        log.trace("(Filter) Handling authentication of type {} in Admin Authentication Manager ", authentication.getClass().getSimpleName());
+
+        if(authentication instanceof TestingAuthenticationToken) {
+            log.warn("Test authentication token detected, disabling security.");
+            authentication.setAuthenticated(true);
+        }
 
         if (authentication instanceof UsernamePasswordAuthenticationToken) {
             return handleBasicAuthentication((UsernamePasswordAuthenticationToken) authentication)
@@ -64,6 +71,7 @@ public class AdminAuthenticationManager implements ReactiveAuthenticationManager
             log.debug("Valid API Key for Admin authentication provided.");
 
             authentication.grantAuthority(Authorities.ADMIN);
+            authentication.grantAuthority(Authorities.USER);
             authentication.setAuthenticated(true);
             return Mono.just(authentication);
         }

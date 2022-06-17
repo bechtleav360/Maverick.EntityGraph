@@ -26,7 +26,7 @@ import java.util.Map;
  * The buffered statements encoder is required by formats with a header (JSON-LD, Turtle) and a concise syntax. Here,
  * we need to collect all statements to print a completed document. For n-quads or similar formats, we simply dump the statements.
  */
-@Slf4j(topic = "cougar.graph.api.encoder")
+@Slf4j(topic = "graph.api.encoder")
 public class StatementsEncoder implements Encoder<NamespaceAwareStatement> {
     private static final List<MimeType> mimeTypes;
 
@@ -51,7 +51,7 @@ public class StatementsEncoder implements Encoder<NamespaceAwareStatement> {
 
         return Flux
                 .from(inputStream)
-                .doOnSubscribe(c -> log.debug("(Decoder) Trying to write statements stream response with mimetype '{}'", mimeType != null ? mimeType.toString() : "unset"))
+                .doOnSubscribe(c -> log.debug("Trying to write statements stream response with mimetype '{}'", mimeType != null ? mimeType.toString() : "unset"))
                 .collectList()
                 .flatMapMany(statement -> {
                     try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
@@ -62,7 +62,7 @@ public class StatementsEncoder implements Encoder<NamespaceAwareStatement> {
                         log.error("Failed to write response of mimetype '{}'", mimeType.toString(), e);
                         return Flux.error(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to write response"));
                     } finally {
-                        log.trace("(Decoder) Completed writing statements stream response with mimetype '{}'", mimeType != null ? mimeType.toString() : "unset");
+                        log.trace("Completed writing statements stream response with mimetype '{}'", mimeType != null ? mimeType.toString() : "unset");
                     }
 
                 });

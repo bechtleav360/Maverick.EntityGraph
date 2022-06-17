@@ -15,7 +15,7 @@ import java.util.List;
 import java.util.Map;
 
 @Component
-@Slf4j(topic = "cougar.graph.transformers.delegator")
+@Slf4j(topic = "graph.transformer.delegator")
 public class DelegatingTransformer implements Transformer {
 
     private List<Transformer> transformers;

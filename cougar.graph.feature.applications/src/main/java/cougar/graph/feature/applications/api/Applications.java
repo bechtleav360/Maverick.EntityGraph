@@ -20,7 +20,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping(path = "/api/subscriptions")
-@Slf4j(topic = "cougar.graph.feature.subscriptions")
+@Slf4j(topic = "graph.feature.apps.api")
 public class Applications extends AbstractController {
 
     private final ApplicationsService subscriptionsService;
@@ -45,7 +45,7 @@ public class Applications extends AbstractController {
                                 subscription.label(),
                                 subscription.persistent()
                         )
-                ).doOnSubscribe(subscription -> log.info("(Request) Create application with label {} and persistence {}", request.label(), request.persistent()));
+                ).doOnSubscribe(subscription -> log.info("Creating a new application"));
     }
 
 
@@ -61,7 +61,7 @@ public class Applications extends AbstractController {
                                 subscription.label(),
                                 subscription.persistent()
                         )
-                ).doOnSubscribe(subscription -> log.info("(Request) List all subscriptions"));
+                ).doOnSubscribe(subscription -> log.info("Fetching all subscriptions"));
     }
 
     @ApiOperation(value = "Generate API Key")
@@ -84,7 +84,7 @@ public class Applications extends AbstractController {
                                         apiKey.application().persistent()
                                 )
                         )
-                ).doOnSubscribe(subscription -> log.info("(Request) Generate a new api key for application {} with label {}", subscriptionId, request.label()));
+                ).doOnSubscribe(subscription -> log.info("Generating a new api key for an application"));
 
     }
 
@@ -104,7 +104,7 @@ public class Applications extends AbstractController {
                     Application subscription = keys.get(0).application();
                     List<Responses.ApiKeyResponse> apiKeys = keys.stream().map(apiKey -> new Responses.ApiKeyResponse(apiKey.key(), apiKey.issueDate(), apiKey.active())).toList();
                     return Mono.just(new Responses.ApplicationWithApiKeys(subscription.key(), subscription.label(), subscription.persistent(), apiKeys));
-                }).doOnSubscribe(s -> log.info("(Request) List api keys for application {}", subscriptionId));
+                }).doOnSubscribe(s -> log.info("Fetching all api keys for an application"));
 
 
     }
@@ -121,6 +121,6 @@ public class Applications extends AbstractController {
         return super.getAuthentication()
                 .flatMapMany(authentication -> this.subscriptionsService.revokeApiKey(subscriptionId, name, authentication))
                 .then()
-                .doOnSubscribe(subscription -> log.info("(Request) Generate a new token for application {}", subscriptionId));
+                .doOnSubscribe(subscription -> log.info("Generating a new token for an application"));
     }
 }

@@ -1,7 +1,7 @@
 package cougar.graph.main.trials;
 
 import com.apicatalog.jsonld.JsonLdError;
-import cougar.graph.tests.util.TestRepository;
+import cougar.graph.store.rdf4j.repository.TestRepository;
 import org.eclipse.rdf4j.query.QueryLanguage;
 import org.eclipse.rdf4j.query.TupleQuery;
 import org.eclipse.rdf4j.query.TupleQueryResult;

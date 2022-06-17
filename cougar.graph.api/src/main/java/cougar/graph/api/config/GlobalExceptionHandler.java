@@ -16,7 +16,7 @@ import java.util.Map;
  * @see <a href="https://github.com/Opalo/spring-webflux-and-domain-exceptions/blob/master/error-attributes/src/test/java/org/opal/DomainExceptionWrapper.java">Description</a>
  */
 @Configuration
-@Slf4j
+@Slf4j(topic = "graph.config.errors")
 public class GlobalExceptionHandler extends DefaultErrorAttributes {
 
     @Override
@@ -88,6 +88,6 @@ public class GlobalExceptionHandler extends DefaultErrorAttributes {
     }
 
     private void printWarning(Throwable error) {
-        log.warn("(ErrorHandler) Handling error '{}' with message: {}", error.getClass().getSimpleName(), error.getMessage());
+        log.warn("Handling error '{}' with message: {}", error.getClass().getSimpleName(), error.getMessage());
     }
 }

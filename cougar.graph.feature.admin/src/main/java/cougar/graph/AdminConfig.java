@@ -12,11 +12,11 @@ import javax.annotation.PostConstruct;
         name = "application.features.modules.admin",
         matchIfMissing = false)
 @ComponentScan(basePackages = "cougar.graph.feature.admin")
-@Slf4j(topic = "cougar.graph")
+@Slf4j(topic = "graph.feature.admin")
 public class AdminConfig {
 
     @PostConstruct
     public void logActivation() {
-        log.info("Active Feature: Administrative Operations");
+        log.info("Activated Feature: Administrative Operations");
     }
 }

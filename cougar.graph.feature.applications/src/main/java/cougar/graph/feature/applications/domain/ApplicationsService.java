@@ -4,6 +4,7 @@ import cougar.graph.feature.applications.domain.model.ApplicationApiKey;
 import cougar.graph.feature.applications.domain.model.Application;
 import cougar.graph.model.errors.DuplicateRecordsException;
 import cougar.graph.model.rdf.GeneratedIdentifier;
+import cougar.graph.model.security.Authorities;
 import cougar.graph.store.rdf.helpers.BindingsAccessor;
 import cougar.graph.model.vocabulary.Local;
 import cougar.graph.feature.applications.store.ApplicationsStore;
@@ -21,6 +22,7 @@ import org.eclipse.rdf4j.sparqlbuilder.core.Variable;
 import org.eclipse.rdf4j.sparqlbuilder.core.query.Queries;
 import org.eclipse.rdf4j.sparqlbuilder.core.query.SelectQuery;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 import reactor.core.publisher.Flux;
@@ -32,7 +34,7 @@ import java.time.ZonedDateTime;
 import java.util.List;
 
 @Service
-@Slf4j(topic = "cougar.graph.feature.applications")
+@Slf4j(topic = "graph.feature.apps.domain")
 public class ApplicationsService {
 
     private final ApplicationsStore applicationsStore;
@@ -66,9 +68,9 @@ public class ApplicationsService {
         modelBuilder.add(Application.IS_PERSISTENT, subscription.persistent());
 
 
-        return this.applicationsStore.insert(modelBuilder.build(), authentication)
+        return this.applicationsStore.insert(modelBuilder.build(), authentication, Authorities.ADMIN)
                 .then(Mono.just(subscription))
-                .doOnSubscribe(subs -> log.debug("(Service) Creating a new application with label '{}' and persistence set to '{}' ", label, persistent));
+                .doOnSubscribe(subs -> log.debug("Creating a new application with label '{}' and persistence set to '{}' ", label, persistent));
 
 
     }
@@ -96,7 +98,7 @@ public class ApplicationsService {
                                 .andHas(Application.HAS_LABEL, sublabel)
                         )
                 );
-        return this.applicationsStore.query(q, authentication)
+        return this.applicationsStore.query(q, authentication, Authorities.ADMIN)
                 .collectList()
                 .flatMap(result -> {
                     List<BindingSet> bindingSets = result.stream().toList();
@@ -122,7 +124,7 @@ public class ApplicationsService {
                 .switchIfEmpty(Mono.error(new UnknownApiKey(keyIdentifier)))
                 .filter(ApplicationApiKey::active)
                 .switchIfEmpty(Mono.error(new RevokedApiKeyUsed(keyIdentifier)))
-                .doOnSubscribe(subs -> log.debug("(Service) Requesting application details for application key '{}'", keyIdentifier));
+                .doOnSubscribe(subs -> log.debug("Requesting application details for application key '{}'", keyIdentifier));
 
 
     }
@@ -158,7 +160,7 @@ public class ApplicationsService {
                 );
         String qs = q.getQueryString();
 
-        return this.applicationsStore.query(q, authentication)
+        return this.applicationsStore.query(q, authentication, Authorities.ADMIN)
                 .map(BindingsAccessor::new)
                 .map(ba ->
                         new ApplicationApiKey(
@@ -176,7 +178,7 @@ public class ApplicationsService {
                                 )
                         )
                 )
-                .doOnSubscribe(sub -> log.debug("(Service) Requesting all API Keys for application with key '{}'", subscriptionIdentifier));
+                .doOnSubscribe(sub -> log.debug("Requesting all API Keys for application with key '{}'", subscriptionIdentifier));
     }
 
 
@@ -197,7 +199,7 @@ public class ApplicationsService {
                 )
                 .limit(100);
 
-        return this.applicationsStore.query(q, authentication)
+        return this.applicationsStore.query(q, authentication, Authorities.ADMIN)
                 .map(BindingsAccessor::new)
                 .map(ba ->
                         new Application(
@@ -207,7 +209,7 @@ public class ApplicationsService {
                                 ba.asBoolean(persistent)
                         )
                 )
-                .doOnSubscribe(sub -> log.debug("(Service) Requesting all subscriptions"));
+                .doOnSubscribe(sub -> log.debug("Requesting all subscriptions"));
 
     }
 
@@ -228,7 +230,7 @@ public class ApplicationsService {
                 .limit(2);
 
 
-        return this.applicationsStore.query(q, authentication)
+        return this.applicationsStore.query(q, authentication, Authorities.USER)
                 .collectList()
                 .flatMap(this::getUniqueBindingSet)
                 .map(BindingsAccessor::new)
@@ -261,9 +263,9 @@ public class ApplicationsService {
                     modelBuilder.add(ApplicationApiKey.OF_SUBSCRIPTION, apiKey.application().key());
                     modelBuilder.add(apiKey.application().iri(), Application.HAS_API_KEY, apiKey.iri());
 
-                    return this.applicationsStore.insert(modelBuilder.build(), authentication).then(Mono.just(apiKey));
+                    return this.applicationsStore.insert(modelBuilder.build(), authentication, Authorities.USER).then(Mono.just(apiKey));
                 })
-                .doOnSubscribe(subs -> log.debug("(Service) Generating new api key for subscriptions '{}'", subscriptionIdentifier));
+                .doOnSubscribe(subs -> log.debug("Generating new api key for subscriptions '{}'", subscriptionIdentifier));
     }
 
     private Mono<BindingSet> getUniqueBindingSet(List<BindingSet> result) {

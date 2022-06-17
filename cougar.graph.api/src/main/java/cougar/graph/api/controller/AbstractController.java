@@ -1,8 +1,7 @@
 package cougar.graph.api.controller;
 
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.authentication.InternalAuthenticationServiceException;
-import org.springframework.security.authentication.TestingAuthenticationToken;
+import org.springframework.security.authentication.*;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.ReactiveSecurityContextHolder;
 import org.springframework.security.core.context.SecurityContext;
@@ -10,20 +9,14 @@ import org.springframework.util.Assert;
 import reactor.core.publisher.Mono;
 
 public class AbstractController {
-    @Value("${application.security.enabled:true}")
-    boolean securityEnabled;
 
 
     protected Mono<Authentication> getAuthentication() {
-        if(securityEnabled) {
-            return ReactiveSecurityContextHolder.getContext()
-                    .map(SecurityContext::getAuthentication)
-                    .switchIfEmpty(Mono.error(new InternalAuthenticationServiceException("Failed to acquire authentication and security is enabled")));
-        } else {
-            return Mono.just(new TestingAuthenticationToken("test", "test"));
-        }
-
-
+        return ReactiveSecurityContextHolder.getContext()
+                .map(SecurityContext::getAuthentication)
+                .switchIfEmpty(Mono.error(new AuthenticationCredentialsNotFoundException("Failed to acquire authentication from security context.")))
+                .filter(Authentication::isAuthenticated)
+                .switchIfEmpty(Mono.error(new InsufficientAuthenticationException("Request couldn't be authenticated.")));
     }
 
     protected String[] splitPrefixedIdentifier(String prefixedKey) {

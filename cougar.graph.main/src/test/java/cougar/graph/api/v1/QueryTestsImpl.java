@@ -1,8 +1,10 @@
 package cougar.graph.api.v1;
 
 import cougar.graph.TestConfigurations;
+import cougar.graph.store.RepositoryType;
 import cougar.graph.tests.api.v1.QueriesTest;
 import cougar.graph.tests.util.CsvConsumer;
+import cougar.graph.tests.util.TestsBase;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
@@ -22,7 +24,7 @@ import org.springframework.web.reactive.function.BodyInserters;
 @RecordApplicationEvents
 @ActiveProfiles("test")
 @Slf4j
-public class QueryTestsImpl implements QueriesTest {
+public class QueryTestsImpl extends TestsBase implements QueriesTest {
 
     @Autowired
     private WebTestClient webClient;
@@ -64,9 +66,6 @@ public class QueryTestsImpl implements QueriesTest {
 
     @AfterEach
     public void resetRepository() {
-        webClient.get()
-                .uri("/api/admin/bulk/reset")
-                .exchange()
-                .expectStatus().isAccepted();
+        super.resetRepository(RepositoryType.ENTITIES.name());
     }
 }

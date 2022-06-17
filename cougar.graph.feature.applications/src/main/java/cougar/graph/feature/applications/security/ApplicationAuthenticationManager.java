@@ -24,7 +24,7 @@ import cougar.graph.api.security.errors.NoSubscriptionFound;
  * This class must not give Admin Authority.
  */
 @Component
-@Slf4j
+@Slf4j(topic = "graph.feature.apps.security")
 public class ApplicationAuthenticationManager implements ReactiveAuthenticationManager {
 
 
@@ -34,6 +34,7 @@ public class ApplicationAuthenticationManager implements ReactiveAuthenticationM
     private final ApplicationsService subscriptionsService;
 
     public ApplicationAuthenticationManager(ApplicationsService subscriptionsService) {
+        log.trace("(Startup) Activated Application Authentication Manager (checking subscription api keys)");
         this.subscriptionsService = subscriptionsService;
     }
 
@@ -41,6 +42,7 @@ public class ApplicationAuthenticationManager implements ReactiveAuthenticationM
     @Override
     public Mono<Authentication> authenticate(Authentication authentication) {
         Assert.notNull(authentication, "Authentication is null in Authentication Manager");
+        log.trace("Handling authentication of type '{}' and authentication status '{}' in Application Authentication Manager ", authentication.getClass().getSimpleName(), authentication.isAuthenticated());
 
         /*
             we have to assume that the admin authentication comes later
@@ -50,12 +52,13 @@ public class ApplicationAuthenticationManager implements ReactiveAuthenticationM
             return handleApiKeyHader((ApiKeyAuthenticationToken) authentication)
                             .map(auth -> this.handleSubscriptionKeyHeader((ApiKeyAuthenticationToken) auth))
                             .map(auth -> (Authentication) auth);
-        } else {
+        } /*else {
             // fallback to default application (which is always declined)
             log.warn("Invalid authentication of type {} found and refused", authentication.getClass());
             authentication.setAuthenticated(false);
             return Mono.just(authentication);
-        }
+        }*/
+        else return Mono.just(authentication);
 
     }
 
@@ -66,7 +69,7 @@ public class ApplicationAuthenticationManager implements ReactiveAuthenticationM
         String apiKey = apiKeyAuthenticationToken.getApiKey().orElseThrow();
         return this.subscriptionsService.getKey(apiKey, apiKeyAuthenticationToken)
                 .map(applicationApiKey -> {
-                    log.debug("(Security) Valid api key for application '{}' provided in header '{}'.", applicationApiKey.label(), ApiKeyAuthenticationToken.API_KEY_HEADER);
+                    log.debug("Valid api key for application '{}' provided in header '{}'.", applicationApiKey.label(), ApiKeyAuthenticationToken.API_KEY_HEADER);
                     ApplicationAuthenticationToken applicationAuthenticationToken = new ApplicationAuthenticationToken(apiKeyAuthenticationToken, applicationApiKey);
                     applicationAuthenticationToken.grantAuthority(Authorities.USER);
                     applicationAuthenticationToken.setAuthenticated(true);
@@ -94,7 +97,7 @@ public class ApplicationAuthenticationManager implements ReactiveAuthenticationM
             // check if we can find the api key in one of our subscriptions
             return this.subscriptionsService.getKey(subscriptionApiKey, apiKeyAuthenticationToken)
                     .map(application -> {
-                        log.debug("(Security) Valid api key for application '{}' provided in header '{}'.", application.label(), SUBSCRIPTION_KEY_HEADER);
+                        log.debug("Valid api key for application '{}' provided in header '{}'.", application.label(), SUBSCRIPTION_KEY_HEADER);
                         return new ApplicationAuthenticationToken(apiKeyAuthenticationToken, application);
                     })
                     .switchIfEmpty(Mono.error(new NoSubscriptionFound(subscriptionApiKey)));

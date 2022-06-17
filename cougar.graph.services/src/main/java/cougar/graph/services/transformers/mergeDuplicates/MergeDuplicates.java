@@ -30,7 +30,7 @@ import reactor.core.publisher.Mono;
 import java.util.*;
 import java.util.stream.Collectors;
 
-@Slf4j(topic = "cougar.graph.transformer.duplicates")
+@Slf4j(topic = "graph.transformer.deduplication")
 @Component
 /**
  * Checks whether duplicates exist in the incoming model. Does not check within the repository (this is delegated to a
@@ -71,8 +71,8 @@ public class MergeDuplicates implements Transformer {
     public Mono<? extends AbstractModel> handle(AbstractModel model, Map<String, String> parameters, Authentication authentication) {
 
         return Mono.just(model)
-                .doOnSubscribe(c -> log.debug("(Transformer/Unique) Check if linked entities already exist and reroute if needed"))
-                .doFinally(signalType -> log.trace("(Transformer/Unique) Finished checks for unique entity constraints"))
+                .doOnSubscribe(c -> log.debug("Check if linked entities already exist and reroute if needed"))
+                .doFinally(signalType -> log.trace("Finished checks for unique entity constraints"))
                 .filter(this::checkForEmbeddedAnonymousEntities)
                 .flatMap(this::mergeDuplicatedWithinModel)
                 .flatMap(triples -> mergeDuplicatesInEntityGraph(triples, authentication))
@@ -122,7 +122,7 @@ public class MergeDuplicates implements Transformer {
      * @param triples
      */
     public Mono<AbstractModel> mergeDuplicatedWithinModel(AbstractModel triples) {
-        log.trace("(Transformer) Merging duplicates within the model with {} statements", triples.streamStatements().count());
+        log.trace("Merging duplicates within the model with {} statements", triples.streamStatements().count());
         Model unmodifiable = new LinkedHashModel(triples.getModel()).unmodifiable();
 
         /*
@@ -158,7 +158,7 @@ public class MergeDuplicates implements Transformer {
                     .filter(triple -> triple.getMiddle().equals(possibleDuplicate.getMiddle()) && triple.getRight().equals(possibleDuplicate.getRight())).findAny();
 
             if (original.isPresent()) {
-                log.debug("(Transformer/Unique) Duplicate '{}'  with shared type '{}' and label '{}' identified, removing it and rerouting all links to origin '{}' ",
+                log.debug("Duplicate '{}'  with shared type '{}' and label '{}' identified, removing it and rerouting all links to origin '{}' ",
                         possibleDuplicate.getLeft(), possibleDuplicate.getMiddle().stringValue(), possibleDuplicate.getRight().stringValue(),
                         original.get().getLeft());
                 this.reroute(triples, possibleDuplicate.getLeft(), original.get().getLeft());
@@ -167,7 +167,7 @@ public class MergeDuplicates implements Transformer {
             }
 
         }
-        log.trace("(Transformer/Unique) Anonymous embedded entities merged");
+        log.trace("Anonymous embedded entities merged");
         return Mono.just(triples);
 
     }
@@ -185,7 +185,7 @@ public class MergeDuplicates implements Transformer {
             triples.getModel().add(statement.getSubject(), statement.getPredicate(), originalIdentifier);
         });
 
-        log.trace("{} statements in the model after rerouting", triples.streamStatements().count());
+        if (log.isTraceEnabled()) log.trace("{} statements in the model after rerouting", triples.streamStatements().count());
 
     }
 
@@ -199,7 +199,7 @@ public class MergeDuplicates implements Transformer {
      */
     public Mono<AbstractModel> mergeDuplicatesInEntityGraph(AbstractModel model, Authentication authentication) {
         return Mono.just(model)
-                .doOnSubscribe(subscription -> log.trace("(Transformer/Unique) Check if anonymous embedded entities already exist in graph."))
+                .doOnSubscribe(subscription -> log.trace("Check if anonymous embedded entities already exist in graph."))
                 .flatMapMany(triples -> {
                     // collect types and labels of embedded objects
                     return Flux.<LocalEntity>create(c -> {
@@ -228,7 +228,7 @@ public class MergeDuplicates implements Transformer {
                     LocalEntity localEntity = pair.getT1();
                     List<BindingSet> queryResult = pair.getT2();
                     if (queryResult.size() > 1) {
-                        log.trace("(Transformer) Linked entity exists already in graph, rerouting.");
+                        log.trace("Linked entity exists already in graph, rerouting.");
                         this.reroute(model, localEntity.localIdentifier(), (Resource) queryResult.get(0).getValue("id"));
                     }
                 })

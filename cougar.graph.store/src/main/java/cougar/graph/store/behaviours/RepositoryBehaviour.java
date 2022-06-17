@@ -2,6 +2,7 @@ package cougar.graph.store.behaviours;
 
 
 import brave.internal.Nullable;
+import cougar.graph.model.security.Authorities;
 import cougar.graph.store.rdf.models.Transaction;
 import cougar.graph.store.RepositoryBuilder;
 import cougar.graph.store.RepositoryType;
@@ -13,7 +14,9 @@ import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.RepositoryResult;
+import org.springframework.security.authentication.InsufficientAuthenticationException;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -30,7 +33,6 @@ public interface RepositoryBehaviour {
 
     default ValueFactory getValueFactory(@Nullable Authentication authentication) throws IOException {
         if (authentication == null || !authentication.isAuthenticated()) return this.getValueFactory();
-
         return getBuilder().buildRepository(this.getRepositoryType(), authentication).getValueFactory();
     }
 
@@ -41,51 +43,27 @@ public interface RepositoryBehaviour {
      * @return true if exists
      */
     default Mono<Boolean> exists(Resource subj, Authentication authentication) throws IOException {
-        try (RepositoryConnection connection = getConnection(authentication)) {
-            return Mono.just(connection.hasStatement(subj, RDF.TYPE, null, false));
-        }
+        return this.exists(subj, authentication, Authorities.USER);
     }
 
-    /**
-     * Returns the type of the entity identified by the given id;
-     *
-     * @param identifier the id of the entity
-     * @return its type (or empty)
-     */
-    default Mono<Value> type(Resource identifier, Authentication authentication) {
-        try (RepositoryConnection connection = getConnection(authentication)) {
-            RepositoryResult<Statement> statements = connection.getStatements(identifier, RDF.TYPE, null, false);
-
-            Value result = null;
-            for (Statement st : statements) {
-                // FIXME: not sure if this is a domain exception (which mean it should not be handled here)
-                if (result != null) {
-                    return Mono.error(new IOException("Duplicate type definitions for resource with identifier " + identifier.stringValue()));
-                } else result = st.getObject();
-            }
-            if (result == null) return Mono.empty();
-            else return Mono.just(result);
+    Mono<Boolean> exists(Resource subj, Authentication authentication, GrantedAuthority requiredAuthority) throws IOException;
 
 
-        } catch (Exception e) {
-            return Mono.error(e);
-        }
+    Flux<Transaction> commit(Collection<Transaction> transactions, Authentication authentication, GrantedAuthority requiredAuthority);
 
+    default Mono<Transaction> commit(Transaction transaction, Authentication authentication, GrantedAuthority requiredAuthority) {
+        return this.commit(List.of(transaction), authentication, requiredAuthority).singleOrEmpty();
     }
 
 
-    Flux<Transaction> commit(Collection<Transaction> transactions, Authentication authentication);
-
-    default Mono<Transaction> commit(Transaction transaction, Authentication authentication) {
-        return this.commit(List.of(transaction), authentication).singleOrEmpty();
+    default RepositoryConnection getConnection(Authentication authentication, GrantedAuthority requiredAuthority) throws IOException {
+        return this.getConnection(authentication, getRepositoryType(), requiredAuthority);
     }
 
-
-    default RepositoryConnection getConnection(Authentication authentication) throws IOException {
-        return getBuilder().buildRepository(getRepositoryType(), authentication).getConnection();
-    }
-
-    default RepositoryConnection getConnection(Authentication authentication, RepositoryType repositoryType) throws IOException {
+    default RepositoryConnection getConnection(Authentication authentication, RepositoryType repositoryType, GrantedAuthority requiredAuthority) throws IOException {
+        if(! authentication.getAuthorities().contains(requiredAuthority)) {
+            throw new InsufficientAuthenticationException(String.format("Missing authority '%s' for initializing connection to requested repository for authentication", requiredAuthority.getAuthority()));
+        };
         return getBuilder().buildRepository(repositoryType, authentication).getConnection();
     }
 

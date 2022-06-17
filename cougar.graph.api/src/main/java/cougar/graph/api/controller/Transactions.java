@@ -20,7 +20,7 @@ import reactor.core.publisher.Flux;
 @RestController
 @RequestMapping(path = "/api/transactions")
 @Api(tags = "Transactions")
-@Slf4j(topic = "cougar.graph.api")
+@Slf4j(topic = "graph.api.transactions")
 public class Transactions extends AbstractController {
 
     protected final ObjectMapper objectMapper;
@@ -42,7 +42,7 @@ public class Transactions extends AbstractController {
                 .flatMap(authentication -> graphService.readEntity(id, authentication))
                 .flatMapIterable(AbstractModel::asStatements)
                 .doOnSubscribe(s -> {
-                    if (log.isTraceEnabled()) log.trace("(Request) Reading transaction with id: {}", id);
+                    if (log.isTraceEnabled()) log.trace("Reading transaction with id: {}", id);
                 });
     }
 

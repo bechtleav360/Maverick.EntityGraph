@@ -3,10 +3,9 @@
 #    url: jdbc:h2:file:/data/demo
 
 application:
-  test: "val"
   security:
     enabled: false
-    apiKey: "test"
+    apiKey: ~
   features:
     modules:
       admin: true

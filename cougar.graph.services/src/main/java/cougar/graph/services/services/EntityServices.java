@@ -1,19 +1,22 @@
 package cougar.graph.services.services;
 
-import cougar.graph.store.EntityStore;
-import cougar.graph.store.SchemaStore;
-import cougar.graph.store.TransactionsStore;
-import cougar.graph.services.services.handler.DelegatingTransformer;
-import cougar.graph.services.services.handler.DelegatingValidator;
 import cougar.graph.model.enums.Activity;
 import cougar.graph.model.errors.EntityNotFound;
 import cougar.graph.model.errors.UnknownPrefix;
 import cougar.graph.model.rdf.LocalIRI;
+import cougar.graph.services.services.handler.DelegatingTransformer;
+import cougar.graph.services.services.handler.DelegatingValidator;
+import cougar.graph.store.EntityStore;
+import cougar.graph.store.SchemaStore;
+import cougar.graph.store.TransactionsStore;
 import cougar.graph.store.rdf.models.Entity;
 import cougar.graph.store.rdf.models.Incoming;
 import cougar.graph.store.rdf.models.Transaction;
 import lombok.extern.slf4j.Slf4j;
-import org.eclipse.rdf4j.model.*;
+import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Resource;
+import org.eclipse.rdf4j.model.Value;
+import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
@@ -23,7 +26,7 @@ import reactor.core.publisher.Mono;
 import java.util.HashMap;
 import java.util.Map;
 
-@Slf4j(topic = "cougar.graph.service.entity")
+@Slf4j(topic = "graph.service.entity")
 @Service
 public class EntityServices {
 
@@ -32,10 +35,8 @@ public class EntityServices {
     private final SchemaStore schema;
 
 
-
     private DelegatingValidator validators;
     private DelegatingTransformer transformers;
-
 
 
     private QueryServices queryServices;
@@ -47,7 +48,6 @@ public class EntityServices {
         this.trxStore = trxStore;
         this.schema = schema;
     }
-
 
 
     public Mono<Entity> readEntity(String identifier, Authentication authentication) {
@@ -187,9 +187,10 @@ public class EntityServices {
     }
 
     @Autowired
-    protected void setValidators( DelegatingValidator validators) {
+    protected void setValidators(DelegatingValidator validators) {
         this.validators = validators;
     }
+
     @Autowired
     protected void setTransformers(DelegatingTransformer transformers) {
         this.transformers = transformers;

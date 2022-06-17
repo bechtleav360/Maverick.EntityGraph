@@ -20,7 +20,7 @@ import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
 
-@Slf4j(topic = "cougar.graph.api.decoder")
+@Slf4j(topic = "graph.api.decoder")
 public class StatementsDecoder implements Decoder<Incoming> {
     private static final List<MimeType> mimeTypes;
 
@@ -63,17 +63,17 @@ public class StatementsDecoder implements Decoder<Incoming> {
         return DataBufferUtils.join(publisher)
                 .flatMap(dataBuffer -> {
 
-                    log.debug("(Decoder) Trying to parse payload of mimetype '{}'", mimeType.toString());
+                    log.debug("Trying to parse payload of mimetype '{}'", mimeType.toString());
                     RDFParser parser = RdfUtils.getParserFactory(mimeType).orElseThrow().getParser();
                     TriplesCollector handler = RdfUtils.getTriplesCollector();
 
                     try (InputStream is = dataBuffer.asInputStream(false)) {
                         parser.setRDFHandler(handler);
                         parser.parse(is);
-                        log.trace("(Decoder) Parsing of payload with mimetype '{}' completed", mimeType);
+                        log.trace("Parsing of payload with mimetype '{}' completed", mimeType);
                         return Mono.just(handler.getModel());
                     } catch (Exception e) {
-                        log.error("(Decoder) Failed to parse request of mimetype '{}'", mimeType, e);
+                        log.error("Failed to parse request of mimetype '{}'", mimeType, e);
                         return Mono.error(e);
                     }
         });

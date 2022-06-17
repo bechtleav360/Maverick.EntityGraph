@@ -2,7 +2,7 @@ package cougar.graph.store.rdf4j.repository.util;
 
 import cougar.graph.model.enums.Activity;
 import cougar.graph.model.rdf.NamespaceAwareStatement;
-import cougar.graph.store.rdf.models.Transaction;
+import cougar.graph.model.security.Authorities;
 import cougar.graph.model.vocabulary.Transactions;
 import cougar.graph.store.RepositoryBuilder;
 import cougar.graph.store.RepositoryType;
@@ -10,29 +10,42 @@ import cougar.graph.store.behaviours.ModelUpdates;
 import cougar.graph.store.behaviours.RepositoryBehaviour;
 import cougar.graph.store.behaviours.Resettable;
 import cougar.graph.store.behaviours.Statements;
+import cougar.graph.store.rdf.helpers.RdfUtils;
+import cougar.graph.store.rdf.models.Transaction;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.rdf4j.model.*;
 import org.eclipse.rdf4j.model.impl.SimpleNamespace;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
+import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.query.*;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.RepositoryException;
 import org.eclipse.rdf4j.repository.RepositoryResult;
+import org.eclipse.rdf4j.repository.util.RDFInserter;
+import org.eclipse.rdf4j.rio.RDFParser;
+import org.eclipse.rdf4j.rio.RDFParserFactory;
+import org.reactivestreams.Publisher;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.buffer.DataBuffer;
+import org.springframework.core.io.buffer.DataBufferUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.util.Assert;
+import org.springframework.util.MimeType;
 import org.springframework.web.client.HttpClientErrorException;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-@Slf4j(topic = "cougar.graph.repository")
+@Slf4j(topic = "graph.repository")
 public class AbstractRepository implements RepositoryBehaviour, Statements, ModelUpdates, Resettable {
 
     private final RepositoryType repositoryType;
@@ -58,29 +71,9 @@ public class AbstractRepository implements RepositoryBehaviour, Statements, Mode
     }
 
 
-    @Deprecated
-    public Mono<Void> store(Model model, Authentication authentication) {
-        try (RepositoryConnection connection = this.getConnection(authentication)) {
-            try {
-                Resource[] contexts = model.contexts().toArray(new Resource[model.contexts().size()]);
-                connection.add(model, contexts);
-                connection.commit();
-                log.debug("Model was stored in repository '{}'", connection.getRepository().toString());
-                return Mono.empty();
-            } catch (Exception e) {
-                connection.rollback();
-                return Mono.error(e);
-            }
-        } catch (Exception e) {
-            log.error("Failed to initialize repository connection");
-            return Mono.error(e);
-        }
-    }
-
-
-    public Flux<NamespaceAwareStatement> construct(String query, Authentication authentication) {
+    public Flux<NamespaceAwareStatement> construct(String query, Authentication authentication, GrantedAuthority requiredAuthority) {
         return Flux.create(c -> {
-            try (RepositoryConnection connection = getConnection(authentication)) {
+            try (RepositoryConnection connection = getConnection(authentication, requiredAuthority)) {
                 GraphQuery q = connection.prepareGraphQuery(QueryLanguage.SPARQL, query);
                 try (GraphQueryResult result = q.evaluate()) {
                     Set<Namespace> namespaces = result.getNamespaces().entrySet().stream()
@@ -104,9 +97,9 @@ public class AbstractRepository implements RepositoryBehaviour, Statements, Mode
         });
     }
 
-    public Flux<BindingSet> query(String query, Authentication authentication) {
+    public Flux<BindingSet> query(String query, Authentication authentication, GrantedAuthority requiredAuthority) {
         return Flux.create(emitter -> {
-            try (RepositoryConnection connection = this.getConnection(authentication)) {
+            try (RepositoryConnection connection = this.getConnection(authentication, requiredAuthority)) {
 
                 TupleQuery q = connection.prepareTupleQuery(QueryLanguage.SPARQL, query);
                 if (log.isTraceEnabled())
@@ -129,8 +122,9 @@ public class AbstractRepository implements RepositoryBehaviour, Statements, Mode
 
     @Override
     public Mono<Void> reset(Authentication authentication, RepositoryType repositoryType) {
-        try (RepositoryConnection connection = getConnection(authentication, repositoryType)) {
-            if (log.isTraceEnabled()) log.trace("Resetting repository '{}'", connection.getRepository());
+        try (RepositoryConnection connection = getConnection(authentication, repositoryType, Authorities.ADMIN)) {
+            if (log.isTraceEnabled())
+                log.trace("Removing all statements from repository '{}'", connection.getRepository());
             RepositoryResult<Statement> statements = connection.getStatements(null, null, null);
             connection.remove(statements);
             return Mono.empty();
@@ -139,13 +133,78 @@ public class AbstractRepository implements RepositoryBehaviour, Statements, Mode
         }
     }
 
+
     @Override
-    public Flux<Transaction> commit(Collection<Transaction> transactions, Authentication authentication) {
+    public Mono<Void> delete(Model model, Authentication authentication, GrantedAuthority requiredAuthority) {
+        return Mono.create(sink -> {
+            try (RepositoryConnection connection = getConnection(authentication, requiredAuthority)) {
+                try {
+                    Resource[] contexts = model.contexts().toArray(new Resource[model.contexts().size()]);
+                    connection.add(model, contexts);
+                    connection.commit();
+                    sink.success();
+                } catch (Exception e) {
+                    connection.rollback();
+                    sink.error(e);
+                }
+            } catch (RepositoryException e) {
+                sink.error(e);
+            } catch (IOException e) {
+                sink.error(e);
+            }
+        });
+    }
+
+    public Mono<Void> importStatements(Publisher<DataBuffer> bytesPublisher, String mimetype, Authentication authentication) {
+        ;
+
+        Optional<RDFParserFactory> parserFactory = RdfUtils.getParserFactory(MimeType.valueOf(mimetype));
+        Assert.isTrue(parserFactory.isPresent(), "Unsupported mimetype for parsing the file.");
+
+        RDFParser parser = parserFactory.orElseThrow().getParser();
+
+
+
+        return DataBufferUtils.join(bytesPublisher)
+                .flatMap(dataBuffer -> {
+                    try (RepositoryConnection connection = getConnection(authentication, Authorities.ADMIN)) {
+                        RDFInserter rdfInserter = new RDFInserter(connection);
+                        parser.setRDFHandler(rdfInserter);
+                        try (InputStream bais = dataBuffer.asInputStream(true)) {
+                            parser.parse(bais);
+                        } catch (Exception e) {
+                            return Mono.error(e);
+                        }
+                        return Mono.empty();
+                    } catch (Exception e) {
+                        return Mono.error(e);
+                    }
+                })
+                .doOnError(throwable -> {
+                    log.error("Error while importing statements: {}", throwable.getMessage());
+                })
+                .doOnSubscribe(subscription -> {
+                    if (log.isTraceEnabled())
+                        log.trace("Attempt to import statements into repository '{}'", this.getRepositoryType().name());
+                })
+                .then()
+                ;
+
+    }
+
+    public Mono<Boolean> exists(Resource subj, Authentication authentication, GrantedAuthority requiredAutority) throws IOException {
+        try (RepositoryConnection connection = getConnection(authentication, requiredAutority)) {
+            return Mono.just(connection.hasStatement(subj, RDF.TYPE, null, false));
+        }
+    }
+
+    @Override
+    public Flux<Transaction> commit(Collection<Transaction> transactions, Authentication authentication, GrantedAuthority requiredAuthority) {
         return Flux.create(c -> {
-            try (RepositoryConnection connection = this.getConnection(authentication)) {
+            try (RepositoryConnection connection = this.getConnection(authentication, requiredAuthority)) {
 
 
-                log.trace("(Store) Committing transaction to repository '{}'", connection.getRepository().toString());
+                log.trace("Committing transaction to repository '{}'", connection.getRepository().toString());
 
                 transactions.forEach(trx -> {
                     // FIXME: the approach based on the context works only as long as the statements in the graph are all within the global context only
@@ -166,12 +225,12 @@ public class AbstractRepository implements RepositoryBehaviour, Statements, Mode
 
                         trx.setCompleted();
 
-                        log.trace("(Store) Transaction completed with {} inserted statements and {} removed statements in repository '{}'.", insertModel.size(), removeModel.size(), connection.getRepository());
+                        log.trace("Transaction completed with {} inserted statements and {} removed statements in repository '{}'.", insertModel.size(), removeModel.size(), connection.getRepository());
                         c.next(trx);
                     } catch (Exception e) {
-                        log.error("(Store) Failed to complete transaction for repository '{}'.", connection.getRepository(), e);
-                        log.trace("(Store) Insert Statements in this transaction: \n {}", insertModel);
-                        log.trace("(Store) Remove Statements in this transaction: \n {}", removeModel);
+                        log.error("Failed to complete transaction for repository '{}'.", connection.getRepository(), e);
+                        log.trace("Insert Statements in this transaction: \n {}", insertModel);
+                        log.trace("Remove Statements in this transaction: \n {}", removeModel);
 
                         connection.rollback();
                         trx.setFailed(e.getMessage());
@@ -191,13 +250,13 @@ public class AbstractRepository implements RepositoryBehaviour, Statements, Mode
 
 
     @Override
-    public Mono<Void> insert(Model model, Authentication authentication) {
+    public Mono<Void> insert(Model model, Authentication authentication, GrantedAuthority requiredAuthority) {
 
-        try (RepositoryConnection connection = this.getConnection(authentication)) {
+        try (RepositoryConnection connection = this.getConnection(authentication, requiredAuthority)) {
             try {
 
                 if (log.isTraceEnabled())
-                    log.trace("(Store) Inserting model without transaction to repository '{}'", connection.getRepository().toString());
+                    log.trace("Inserting model without transaction to repository '{}'", connection.getRepository().toString());
 
                 Resource[] contexts = model.contexts().toArray(new Resource[model.contexts().size()]);
                 connection.add(model, contexts);
@@ -215,11 +274,12 @@ public class AbstractRepository implements RepositoryBehaviour, Statements, Mode
 
     }
 
+
     @Override
-    public Mono<List<Statement>> listStatements(Resource value, IRI predicate, Value object, Authentication authentication) {
-        try (RepositoryConnection connection = getConnection(authentication)) {
+    public Mono<List<Statement>> listStatements(Resource value, IRI predicate, Value object, Authentication authentication, GrantedAuthority requiredAuthority) {
+        try (RepositoryConnection connection = getConnection(authentication, requiredAuthority)) {
             if (log.isTraceEnabled())
-                log.trace("(Store) Listing all statements with pattern [{},{},{}] from repository '{}'", value, predicate, object, connection.getRepository().toString());
+                log.trace("Listing all statements with pattern [{},{},{}] from repository '{}'", value, predicate, object, connection.getRepository().toString());
 
             List<Statement> statements = connection.getStatements(value, predicate, object).stream().toList();
             return Mono.just(statements);

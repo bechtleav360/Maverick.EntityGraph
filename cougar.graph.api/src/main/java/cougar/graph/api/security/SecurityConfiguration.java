@@ -26,7 +26,7 @@ import static cougar.graph.model.security.ApiKeyAuthenticationToken.API_KEY_HEAD
 @Configuration
 @EnableWebFluxSecurity
 @Profile("! test")
-@Slf4j(topic = "cougar.graph.security")
+@Slf4j(topic = "graph.config.security")
 public class SecurityConfiguration {
 
 
@@ -83,11 +83,7 @@ public class SecurityConfiguration {
         };
     }
 
-    @Bean
-    @ConditionalOnProperty(name = "application.security.enabled", havingValue = "false")
-    ServerAuthenticationConverter buildTestingAuthenticationConverter() {
-        return exchange -> Mono.just(new TestingAuthenticationToken("test", "test"));
-    }
+
 
 
 
