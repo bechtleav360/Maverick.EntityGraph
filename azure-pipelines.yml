@@ -12,6 +12,7 @@ steps:
     displayName: Test and Package
     inputs:
       mavenPomFile: 'pom.xml'
+      goals: 'install'
       publishJUnitResults: true
       testResultsFiles: '**/surefire-reports/TEST-*.xml'
       javaHomeOption: 'JDKVersion'
