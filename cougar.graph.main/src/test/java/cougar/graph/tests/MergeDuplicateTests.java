@@ -1,6 +1,7 @@
 package cougar.graph.tests;
 
 import cougar.graph.TestConfigurations;
+import cougar.graph.model.security.Authorities;
 import cougar.graph.services.schedulers.detectDuplicates.ScheduledDetectDuplicates;
 import cougar.graph.tests.api.v2.MergeDuplicatesScheduler;
 import cougar.graph.tests.util.CsvConsumer;
@@ -71,8 +72,9 @@ public class MergeDuplicateTests extends TestsBase implements MergeDuplicatesSch
         long videos = StreamSupport.stream(statements.getStatements(null, RDF.TYPE, TestsBase.vf.createIRI("http://schema.org/", "VideoObject")).spliterator(), false).count();
         Assertions.assertEquals(2, videos);
 
-        List<Statement> collect = StreamSupport.stream(statements.getStatements(null, RDFS.LABEL, TestsBase.vf.createLiteral("Term 1")).spliterator(), false).toList();
-        Assertions.assertEquals(1, collect.size());
+        //long terms = StreamSupport.stream(statements.getStatements(null, RDFS.LABEL, TestsBase.vf.createLiteral("Term 1")).spliterator(), false).count();
+        long terms = StreamSupport.stream(statements.getStatements(null, RDFS.LABEL, null).spliterator(), false).count();
+        Assertions.assertEquals(1, terms);
     }
 
 
@@ -98,7 +100,7 @@ public class MergeDuplicateTests extends TestsBase implements MergeDuplicatesSch
                 .expectBody();
 
 
-        StepVerifier.create(this.scheduledDetectDuplicates.checkForDuplicates(new TestingAuthenticationToken("", ""))).verifyComplete();
+        StepVerifier.create(this.scheduledDetectDuplicates.checkForDuplicates(new TestingAuthenticationToken("", "", List.of(Authorities.ADMIN, Authorities.USER)))).verifyComplete();
 
         /**
          * SELECT DISTINCT * WHERE {

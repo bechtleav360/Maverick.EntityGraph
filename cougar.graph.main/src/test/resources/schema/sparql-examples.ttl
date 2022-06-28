@@ -1,8 +1,8 @@
 @prefix dbo: <http://dbpedia.org/ontology/> .
 @prefix dbp: <http://dbpedia.org/property/> .
 @prefix dbpedia: <http://dbpedia.org/resource/> .
-@prefix cougar.graph.model.rdf: <http://www.w3.org/1999/02/22-cougar.graph.model.rdf-syntax-ns#> .
-@prefix rdfs: <http://www.w3.org/2000/01/cougar.graph.model.rdf-schema#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix tto: <http://example.org/tuto/ontology#> .
 @prefix ttr: <http://example.org/tuto/resource#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
@@ -11,18 +11,18 @@ _:node1g14cldnnx515 a <https://entdata.citadelgroup.com/model/citadel/gem/gemui#
 	<https://entdata.citadelgroup.com/model/citadel/gem/gemui#defaultsRenderer> <https://entdata.citadelgroup.com/model/citadel/gem/gemui#YesNoRenderer> ;
 	<https://entdata.citadelgroup.com/model/citadel/gem/gemui#supportsRenderers> _:node1g14cldnnx516 .
 
-_:node1g14cldnnx516 cougar.graph.model.rdf:first <https://entdata.citadelgroup.com/model/citadel/gem/gemui#YesNoRenderer> ;
-	cougar.graph.model.rdf:rest _:node1g14cldnnx517 .
+_:node1g14cldnnx516 rdf:first <https://entdata.citadelgroup.com/model/citadel/gem/gemui#YesNoRenderer> ;
+	rdf:rest _:node1g14cldnnx517 .
 
-_:node1g14cldnnx517 cougar.graph.model.rdf:first <https://entdata.citadelgroup.com/model/citadel/gem/gemui#CheckBoxRenderer> ;
-	cougar.graph.model.rdf:rest cougar.graph.model.rdf:nil .
+_:node1g14cldnnx517 rdf:first <https://entdata.citadelgroup.com/model/citadel/gem/gemui#CheckBoxRenderer> ;
+	rdf:rest rdf:nil .
 
 _:node1g14cldnnx518 a <https://entdata.citadelgroup.com/model/citadel/gem/gemui#PredicateDisplay> ;
 	<https://entdata.citadelgroup.com/model/citadel/gem/gemui#defaultsRenderer> <https://entdata.citadelgroup.com/model/citadel/gem/gemui#TextRenderer> ;
 	<https://entdata.citadelgroup.com/model/citadel/gem/gemui#supportsRenderers> _:node1g14cldnnx519 .
 
-_:node1g14cldnnx519 cougar.graph.model.rdf:first <https://entdata.citadelgroup.com/model/citadel/gem/gemui#TextRenderer> ;
-	cougar.graph.model.rdf:rest cougar.graph.model.rdf:nil .
+_:node1g14cldnnx519 rdf:first <https://entdata.citadelgroup.com/model/citadel/gem/gemui#TextRenderer> ;
+	rdf:rest rdf:nil .
 
 <http://entdata.citadelgroup.com/2021/01/employee/Employee> rdfs:subClassOf <http://entdata.citadelgroup.com/2021/01/employee/Person> .
 

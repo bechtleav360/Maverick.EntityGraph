@@ -1,6 +1,6 @@
 @prefix ns1: <http://schema.org/> .
 @prefix ns2: <http://av360.io/schema/eagl/> .
-@prefix rdfs: <http://www.w3.org/2000/01/cougar.graph.model.rdf-schema#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
 <http://example.org/videos#1> a ns1:video ;

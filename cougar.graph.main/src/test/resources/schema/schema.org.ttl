@@ -3135,62 +3135,62 @@ See also the <a href="/docs/hotels.html">dedicated document on the use of schema
 :UserBlocks a rdfs:Class ;
     rdfs:label "UserBlocks" ;
     :supersededBy :InteractionCounter ;
-    rdfs:comment "UserInteraction and its subtypes is an old way of talking about users interacting with pages. It is generally better to use [[Action]]-based cougar.graph.model.vocabulary, alongside types such as [[Comment]]." ;
+    rdfs:comment "UserInteraction and its subtypes is an old way of talking about users interacting with pages. It is generally better to use [[Action]]-based vocabulary, alongside types such as [[Comment]]." ;
     rdfs:subClassOf :UserInteraction .
 
 :UserCheckins a rdfs:Class ;
     rdfs:label "UserCheckins" ;
     :supersededBy :InteractionCounter ;
-    rdfs:comment "UserInteraction and its subtypes is an old way of talking about users interacting with pages. It is generally better to use [[Action]]-based cougar.graph.model.vocabulary, alongside types such as [[Comment]]." ;
+    rdfs:comment "UserInteraction and its subtypes is an old way of talking about users interacting with pages. It is generally better to use [[Action]]-based vocabulary, alongside types such as [[Comment]]." ;
     rdfs:subClassOf :UserInteraction .
 
 :UserComments a rdfs:Class ;
     rdfs:label "UserComments" ;
     :source <http://www.w3.org/wiki/WebSchemas/SchemaDotOrgSources#source_rNews> ;
     :supersededBy :InteractionCounter ;
-    rdfs:comment "UserInteraction and its subtypes is an old way of talking about users interacting with pages. It is generally better to use [[Action]]-based cougar.graph.model.vocabulary, alongside types such as [[Comment]]." ;
+    rdfs:comment "UserInteraction and its subtypes is an old way of talking about users interacting with pages. It is generally better to use [[Action]]-based vocabulary, alongside types such as [[Comment]]." ;
     rdfs:subClassOf :UserInteraction .
 
 :UserDownloads a rdfs:Class ;
     rdfs:label "UserDownloads" ;
     :supersededBy :InteractionCounter ;
-    rdfs:comment "UserInteraction and its subtypes is an old way of talking about users interacting with pages. It is generally better to use [[Action]]-based cougar.graph.model.vocabulary, alongside types such as [[Comment]]." ;
+    rdfs:comment "UserInteraction and its subtypes is an old way of talking about users interacting with pages. It is generally better to use [[Action]]-based vocabulary, alongside types such as [[Comment]]." ;
     rdfs:subClassOf :UserInteraction .
 
 :UserInteraction a rdfs:Class ;
     rdfs:label "UserInteraction" ;
     :supersededBy :InteractionCounter ;
-    rdfs:comment "UserInteraction and its subtypes is an old way of talking about users interacting with pages. It is generally better to use [[Action]]-based cougar.graph.model.vocabulary, alongside types such as [[Comment]]." ;
+    rdfs:comment "UserInteraction and its subtypes is an old way of talking about users interacting with pages. It is generally better to use [[Action]]-based vocabulary, alongside types such as [[Comment]]." ;
     rdfs:subClassOf :Event .
 
 :UserLikes a rdfs:Class ;
     rdfs:label "UserLikes" ;
     :supersededBy :InteractionCounter ;
-    rdfs:comment "UserInteraction and its subtypes is an old way of talking about users interacting with pages. It is generally better to use [[Action]]-based cougar.graph.model.vocabulary, alongside types such as [[Comment]]." ;
+    rdfs:comment "UserInteraction and its subtypes is an old way of talking about users interacting with pages. It is generally better to use [[Action]]-based vocabulary, alongside types such as [[Comment]]." ;
     rdfs:subClassOf :UserInteraction .
 
 :UserPageVisits a rdfs:Class ;
     rdfs:label "UserPageVisits" ;
     :supersededBy :InteractionCounter ;
-    rdfs:comment "UserInteraction and its subtypes is an old way of talking about users interacting with pages. It is generally better to use [[Action]]-based cougar.graph.model.vocabulary, alongside types such as [[Comment]]." ;
+    rdfs:comment "UserInteraction and its subtypes is an old way of talking about users interacting with pages. It is generally better to use [[Action]]-based vocabulary, alongside types such as [[Comment]]." ;
     rdfs:subClassOf :UserInteraction .
 
 :UserPlays a rdfs:Class ;
     rdfs:label "UserPlays" ;
     :supersededBy :InteractionCounter ;
-    rdfs:comment "UserInteraction and its subtypes is an old way of talking about users interacting with pages. It is generally better to use [[Action]]-based cougar.graph.model.vocabulary, alongside types such as [[Comment]]." ;
+    rdfs:comment "UserInteraction and its subtypes is an old way of talking about users interacting with pages. It is generally better to use [[Action]]-based vocabulary, alongside types such as [[Comment]]." ;
     rdfs:subClassOf :UserInteraction .
 
 :UserPlusOnes a rdfs:Class ;
     rdfs:label "UserPlusOnes" ;
     :supersededBy :InteractionCounter ;
-    rdfs:comment "UserInteraction and its subtypes is an old way of talking about users interacting with pages. It is generally better to use [[Action]]-based cougar.graph.model.vocabulary, alongside types such as [[Comment]]." ;
+    rdfs:comment "UserInteraction and its subtypes is an old way of talking about users interacting with pages. It is generally better to use [[Action]]-based vocabulary, alongside types such as [[Comment]]." ;
     rdfs:subClassOf :UserInteraction .
 
 :UserTweets a rdfs:Class ;
     rdfs:label "UserTweets" ;
     :supersededBy :InteractionCounter ;
-    rdfs:comment "UserInteraction and its subtypes is an old way of talking about users interacting with pages. It is generally better to use [[Action]]-based cougar.graph.model.vocabulary, alongside types such as [[Comment]]." ;
+    rdfs:comment "UserInteraction and its subtypes is an old way of talking about users interacting with pages. It is generally better to use [[Action]]-based vocabulary, alongside types such as [[Comment]]." ;
     rdfs:subClassOf :UserInteraction .
 
 :Vehicle a rdfs:Class ;
@@ -5152,7 +5152,7 @@ In the case of products, the country of origin of the product. The exact interpr
     :domainIncludes :CourseInstance ;
     :rangeIncludes :Text,
         :URL ;
-    rdfs:comment "The medium or means of delivery of the course instance or the mode of study, either as a text label (e.g. \"online\", \"onsite\" or \"blended\"; \"synchronous\" or \"asynchronous\"; \"full-time\" or \"part-time\") or as a URL reference to a term from a controlled cougar.graph.model.vocabulary (e.g. https://ceds.ed.gov/element/001311#Asynchronous )." .
+    rdfs:comment "The medium or means of delivery of the course instance or the mode of study, either as a text label (e.g. \"online\", \"onsite\" or \"blended\"; \"synchronous\" or \"asynchronous\"; \"full-time\" or \"part-time\") or as a URL reference to a term from a controlled vocabulary (e.g. https://ceds.ed.gov/element/001311#Asynchronous )." .
 
 :coursePrerequisites a rdf:Property ;
     rdfs:label "coursePrerequisites" ;
@@ -6526,7 +6526,7 @@ Typical unit code(s): MTK for square meter, FTK for square foot, or YDK for squa
 
     # NOTE in data/ext/pending/issue-1797.ttl we tentatively amend this by extending the property as follows:
     # The textual definition for isVariantOf has been minimally updated to accomodate ProductGroup; this could be
-    # :isVariantOf a cougar.graph.model.rdf:Property ; :domainIncludes :Product ; :rangeIncludes :ProductGroup .
+    # :isVariantOf a rdf:Property ; :domainIncludes :Product ; :rangeIncludes :ProductGroup .
 
 :isbn a rdf:Property ;
     rdfs:label "isbn" ;
@@ -7916,7 +7916,7 @@ Note: for historical reasons, any textual label and formal code provided as a li
         :URL ;
     rdfs:comment """A commonly used identifier for the characteristic represented by the property, e.g. a manufacturer or a standard code for a property. propertyID can be
 (1) a prefixed string, mainly meant to be used with standards for product properties; (2) a site-specific, non-prefixed string (e.g. the primary key of the property or the vendor-specific id of the property), or (3)
-a URL indicating the type of the property, either pointing to an external cougar.graph.model.vocabulary, or a Web resource that describes the property (e.g. a glossary entry).
+a URL indicating the type of the property, either pointing to an external vocabulary, or a Web resource that describes the property (e.g. a glossary entry).
 Standards bodies should promote a standard prefix for the identifiers of properties from their standards.""" .
 
 :proteinContent a rdf:Property ;
@@ -8925,7 +8925,7 @@ we define a supporting type, [[SpeakableSpecification]]  which is defined to be 
     rdfs:label "tickerSymbol" ;
     :domainIncludes :Corporation ;
     :rangeIncludes :Text ;
-    rdfs:comment "The exchange traded instrument associated with a Corporation object. The tickerSymbol is expressed as an exchange and an instrument label separated by a space character. For the exchange component of the tickerSymbol attribute, we recommend using the controlled cougar.graph.model.vocabulary of Market Identifier Codes (MIC) specified in ISO15022." .
+    rdfs:comment "The exchange traded instrument associated with a Corporation object. The tickerSymbol is expressed as an exchange and an instrument label separated by a space character. For the exchange component of the tickerSymbol attribute, we recommend using the controlled vocabulary of Market Identifier Codes (MIC) specified in ISO15022." .
 
 :ticketNumber a rdf:Property ;
     rdfs:label "ticketNumber" ;
@@ -10502,6 +10502,6 @@ Open-ended date ranges can be written with ".." in place of the end date. For ex
 
 <http://www.w3.org/wiki/WebSchemas/SchemaDotOrgSources#MBZ> a :Organization ;
     rdfs:label "MBZ" ;
-    rdfs:comment """This cougar.graph.model.vocabulary was improved through collaboration with the MusicBrainz project
+    rdfs:comment """This vocabulary was improved through collaboration with the MusicBrainz project
     ([www.musicbrainz.org](http://www.musicbrainz.org)), and is partially inspired by the MusicBrainz and
     [Music Ontology](http://musicontology.com/docs/getting-started.html) schemas.""" .

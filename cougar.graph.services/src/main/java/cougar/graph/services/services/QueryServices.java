@@ -27,7 +27,7 @@ public class QueryServices {
     public Flux<BindingSet> queryValues(String query, Authentication authentication) {
         return this.entityStore.query(query, authentication)
                 .doOnSubscribe(subscription -> {
-                    log.trace("Running query in entity store.");
+                    if(log.isTraceEnabled()) log.trace("Running query in entity store.");
                 });
     }
 
@@ -38,7 +38,7 @@ public class QueryServices {
     public Flux<NamespaceAwareStatement> queryGraph(String query, Authentication authentication) {
         return this.entityStore.construct(query, authentication)
                 .doOnSubscribe(subscription -> {
-                    log.trace("Running query in entity store.");
+                    if(log.isTraceEnabled()) log.trace("Running query in entity store.");
                 });
 
     }
