@@ -9,7 +9,7 @@ pool:
 
 steps:
   - task: Maven@3
-    displayName: Package
+    displayName: Test and Package
     inputs:
       mavenPomFile: 'pom.xml'
       publishJUnitResults: true
@@ -23,12 +23,12 @@ steps:
       sonarQubeRunAnalysis: false
   - script: echo "Publishing image with $(Build.BuildNumber) for user $(ghcr.user)"
   - task: Maven@3
-    displayName: Build Docker Image
+    displayName: Build and publish Docker Image
     env:
       GHCR_USER: $(ghcr.user)
       GHCR_PASSWORD: $(ghcr.password)
     inputs:
-      mavenPomFile: 'pom.xml'
+      mavenPomFile: 'cougar.graph.main/pom.xml'
       goals: 'spring-boot:build-image'
       publishJUnitResults: false
       jdkVersionOption: 1.17
