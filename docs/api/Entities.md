@@ -68,8 +68,8 @@ Payload has to be either
 ```json
 {
   "@context": {
-    "rdf": "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
-    "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+    "cougar.graph.model.rdf": "http://www.w3.org/1999/02/22-cougar.graph.model.rdf-syntax-ns#",
+    "rdfs": "http://www.w3.org/2000/01/cougar.graph.model.rdf-schema#",
     "eagl": "http://av360.org/schema/eagl#",
     "xsd": "http://www.w3.org/2001/XMLSchema#", 
     "sdo": "https://schema.org/"
@@ -114,8 +114,8 @@ embedded entity and patch the container with the new edge.
 ```json
 {
   "@context": {
-    "rdf": "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
-    "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+    "cougar.graph.model.rdf": "http://www.w3.org/1999/02/22-cougar.graph.model.rdf-syntax-ns#",
+    "rdfs": "http://www.w3.org/2000/01/cougar.graph.model.rdf-schema#",
     "eagl": "http://av360.org/schema/eagl#",
     "xsd": "http://www.w3.org/2001/XMLSchema#", 
     "sdo": "https://schema.org/"
@@ -162,8 +162,8 @@ Conflicts can arise:
 ```json
 {
   "@context": {
-    "rdf": "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
-    "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+    "cougar.graph.model.rdf": "http://www.w3.org/1999/02/22-cougar.graph.model.rdf-syntax-ns#",
+    "rdfs": "http://www.w3.org/2000/01/cougar.graph.model.rdf-schema#",
     "eagl": "http://av360.org/schema/eagl#",
     "xsd": "http://www.w3.org/2001/XMLSchema#", 
     "sdo": "https://schema.org/"
@@ -235,8 +235,8 @@ If the schema definition has put a arity-constraint on a property, this request 
 ```json
 {
   "@context": {
-    "rdf": "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
-    "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+    "cougar.graph.model.rdf": "http://www.w3.org/1999/02/22-cougar.graph.model.rdf-syntax-ns#",
+    "rdfs": "http://www.w3.org/2000/01/cougar.graph.model.rdf-schema#",
     "eagl": "http://av360.org/schema/eagl#",
     "xsd": "http://www.w3.org/2001/XMLSchema#", 
     "sdo": "https://schema.org/"
@@ -274,8 +274,8 @@ service is based on machine learning, we want to also store the prediction quali
 ```json
 {
   "@context": {
-    "rdf": "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
-    "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+    "cougar.graph.model.rdf": "http://www.w3.org/1999/02/22-cougar.graph.model.rdf-syntax-ns#",
+    "rdfs": "http://www.w3.org/2000/01/cougar.graph.model.rdf-schema#",
     "eagl": "http://av360.org/schema/eagl#",
     "xsd": "http://www.w3.org/2001/XMLSchema#", 
     "sdo:" "https://schema.org/"

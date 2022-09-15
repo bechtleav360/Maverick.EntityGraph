@@ -3,6 +3,8 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
+    <packaging>pom</packaging>
+
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
@@ -11,23 +13,35 @@
         <!-- lookup parent from repository -->
     </parent>
 
-    <artifactId>eagl-service-graph</artifactId>
-    <groupId>com.bechtle.eagl</groupId>
+    <artifactId>graph-parent</artifactId>
+    <groupId>com.bechtle.cougar.graph</groupId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>Graph API Service</name>
+    <name>Cougar Graph (Parent)</name>
+    <modules>
+        <module>cougar.graph.main</module>
+        <module>cougar.graph.api</module>
+        <module>cougar.graph.services</module>
+        <module>cougar.graph.store</module>
+        <module>cougar.graph.model</module>
+        <module>cougar.graph.feature.rdf4j-store</module>
+        <module>cougar.graph.feature.admin</module>
+        <module>cougar.graph.feature.applications</module>
+        <module>cougar.graph.tests</module>
+    </modules>
+
     <description>Provides access to the graph through json-ld api</description>
     <properties>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
         <java.version>17</java.version>
         <spring-cloud.version>2021.0.1</spring-cloud.version>
+        <graph.version>0.0.1-SNAPSHOT</graph.version>
     </properties>
     <dependencies>
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
-
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-webflux</artifactId>
@@ -42,107 +56,39 @@
         </dependency>
 
         <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-cache</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.github.ben-manes.caffeine</groupId>
-            <artifactId>caffeine</artifactId>
-        </dependency>
-
-        <!--
-        <dependency>
-            <groupId>com.arangodb</groupId>
-            <artifactId>arangodb-spring-boot-starter</artifactId>
-            <version>2.3.3.RELEASE</version>
-        </dependency>
-        -->
-        <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
             <optional>true</optional>
         </dependency>
         <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-test</artifactId>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>io.projectreactor</groupId>
-            <artifactId>reactor-test</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mockito</groupId>
-            <artifactId>mockito-core</artifactId>
-            <version>4.3.1</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>io.springfox</groupId>
-            <artifactId>springfox-boot-starter</artifactId>
-            <version>3.0.0</version>
-        </dependency>
-        <dependency>
-            <groupId>io.springfox</groupId>
-            <artifactId>springfox-spring-webflux</artifactId>
-            <version>3.0.0</version>
-        </dependency>
-        <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
-            <version>31.1-jre</version>
         </dependency>
         <dependency>
-            <groupId>org.eclipse.rdf4j</groupId>
-            <artifactId>rdf4j-storage</artifactId>
-            <type>pom</type>
-        </dependency>
-        <dependency>
-            <groupId>org.eclipse.rdf4j</groupId>
-            <artifactId>rdf4j-sail-lmdb</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.lwjgl</groupId>
-            <artifactId>lwjgl</artifactId>
-            <classifier>natives-linux</classifier>
-            <scope>runtime</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.lwjgl</groupId>
-            <artifactId>lwjgl-lmdb</artifactId>
-            <classifier>natives-linux</classifier>
-            <scope>runtime</scope>
+            <groupId>commons-lang</groupId>
+            <artifactId>commons-lang</artifactId>
         </dependency>
 
-<!--
-        <dependency>
-            <groupId>org.lwjgl</groupId>
-            <artifactId>lwjgl-lmdb</artifactId>
-            <classifier>natives-windows</classifier>
-            <scope>runtime</scope>
-        </dependency>
--->
-        <dependency>
-            <groupId>org.eclipse.rdf4j</groupId>
-            <artifactId>rdf4j-sparqlbuilder</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>com.apicatalog</groupId>
-            <artifactId>titanium-json-ld</artifactId>
-            <version>1.2.0</version>
-        </dependency>
-        <dependency>
-            <groupId>org.glassfish</groupId>
-            <artifactId>jakarta.json</artifactId>
-            <version>2.0.1</version>
-        </dependency>
     </dependencies>
     <dependencyManagement>
+
         <dependencies>
+            <dependency>
+                <groupId>com.google.guava</groupId>
+                <artifactId>guava</artifactId>
+                <version>31.1-jre</version>
+            </dependency>
+            <dependency>
+                <groupId>commons-lang</groupId>
+                <artifactId>commons-lang</artifactId>
+                <version>2.6</version>
+                <scope>compile</scope>
+            </dependency>
+            <dependency>
+                <groupId>io.springfox</groupId>
+                <artifactId>springfox-spring-webflux</artifactId>
+                <version>3.0.0</version>
+            </dependency>
             <dependency>
                 <groupId>org.springframework.cloud</groupId>
                 <artifactId>spring-cloud-dependencies</artifactId>
@@ -184,35 +130,70 @@
                 <artifactId>jackson-annotations</artifactId>
                 <version>2.13.2</version>
             </dependency>
+            <dependency>
+                <groupId>com.bechtle.cougar.graph</groupId>
+                <artifactId>graph-model</artifactId>
+                <version>${graph.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.bechtle.cougar.graph</groupId>
+                <artifactId>graph-api</artifactId>
+                <version>${graph.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.bechtle.cougar.graph</groupId>
+                <artifactId>graph-store</artifactId>
+                <version>${graph.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.bechtle.cougar.graph</groupId>
+                <artifactId>graph-store-rdf4j</artifactId>
+                <version>${graph.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.bechtle.cougar.graph</groupId>
+                <artifactId>graph-application</artifactId>
+                <version>${graph.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.bechtle.cougar.graph</groupId>
+                <artifactId>graph-tests</artifactId>
+                <version>${graph.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.bechtle.cougar.graph</groupId>
+                <artifactId>graph-feature-admin</artifactId>
+                <version>${graph.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.bechtle.cougar.graph</groupId>
+                <artifactId>graph-feature-multitenancy</artifactId>
+                <version>${graph.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.bechtle.cougar.graph</groupId>
+                <artifactId>graph-services</artifactId>
+                <version>${graph.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.fasterxml.jackson.core</groupId>
+                <artifactId>jackson-core</artifactId>
+                <version>2.13.2</version>
+            </dependency>
+            <dependency>
+                <groupId>com.fasterxml.jackson.core</groupId>
+                <artifactId>jackson-annotations</artifactId>
+                <version>2.13.2</version>
+            </dependency>
+            <dependency>
+                <groupId>com.fasterxml.jackson.core</groupId>
+                <artifactId>jackson-databind</artifactId>
+                <version>2.13.2</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-maven-plugin</artifactId>
-                <configuration>
-                    <image>
-                        <!-- with version <label>ghcr.io/bechtleav360/${project.artifactId}:${project.version}</label> -->
-                        <name>ghcr.io/bechtleav360/${project.artifactId}</name>
-                        <publish>true</publish>
-                        <verboseLogging>true</verboseLogging>
-                        <env>
-                            <BP_OCI_SOURCE>https://github.com/bechtleav360/eagl-service-graph</BP_OCI_SOURCE>
-                        </env>
-                    </image>
-                    <docker>
-                        <publishRegistry>
-                            <username>${env.GHCR_USER}</username>
-                            <password>${env.GHCR_PASSWORD}</password>
-                            <url>https://ghcr.io</url>
-                        </publishRegistry>
-                    </docker>
-                </configuration>
-            </plugin>
-        </plugins>
-    </build>
+
     <repositories>
         <repository>
             <id>spring-milestones</id>
