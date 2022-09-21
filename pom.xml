@@ -13,16 +13,29 @@
         <!-- lookup parent from repository -->
     </parent>
 
-    <artifactId>eagl-service-graph</artifactId>
-    <groupId>com.bechtle.eagl</groupId>
+    <artifactId>graph-parent</artifactId>
+    <groupId>com.bechtle.cougar.graph</groupId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>Graph API Service</name>
+    <name>Cougar Graph (Parent)</name>
+    <modules>
+        <module>cougar.graph.main</module>
+        <module>cougar.graph.api</module>
+        <module>cougar.graph.services</module>
+        <module>cougar.graph.store</module>
+        <module>cougar.graph.model</module>
+        <module>cougar.graph.feature.rdf4j-store</module>
+        <module>cougar.graph.feature.admin</module>
+        <module>cougar.graph.feature.applications</module>
+        <module>cougar.graph.tests</module>
+    </modules>
+
     <description>Provides access to the graph through json-ld api</description>
     <properties>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
         <java.version>17</java.version>
-        <spring-cloud.version>2021.0.4</spring-cloud.version>
+        <spring-cloud.version>2021.0.1</spring-cloud.version>
+        <graph.version>0.0.1-SNAPSHOT</graph.version>
     </properties>
     <dependencies>
         <dependency>
@@ -55,76 +68,76 @@
             <groupId>commons-lang</groupId>
             <artifactId>commons-lang</artifactId>
         </dependency>
-        <dependency>
-            <groupId>org.mockito</groupId>
-            <artifactId>mockito-core</artifactId>
-            <version>4.3.1</version>
-            <scope>test</scope>
-        </dependency>
 
-        <dependency>
-            <groupId>io.springfox</groupId>
-            <artifactId>springfox-boot-starter</artifactId>
-            <version>3.0.0</version>
-        </dependency>
-        <dependency>
-            <groupId>io.springfox</groupId>
-            <artifactId>springfox-spring-webflux</artifactId>
-            <version>3.0.0</version>
-        </dependency>
-        <dependency>
-            <groupId>com.google.guava</groupId>
-            <artifactId>guava</artifactId>
-            <version>31.1-jre</version>
-        </dependency>
-        <dependency>
-            <groupId>org.eclipse.rdf4j</groupId>
-            <artifactId>rdf4j-storage</artifactId>
-            <type>pom</type>
-        </dependency>
-        <dependency>
-            <groupId>org.eclipse.rdf4j</groupId>
-            <artifactId>rdf4j-sail-lmdb</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.lwjgl</groupId>
-            <artifactId>lwjgl</artifactId>
-            <classifier>natives-linux</classifier>
-            <scope>runtime</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.lwjgl</groupId>
-            <artifactId>lwjgl-lmdb</artifactId>
-            <classifier>natives-linux</classifier>
-            <scope>runtime</scope>
-        </dependency>
-
-<!--
-        <dependency>
-            <groupId>org.lwjgl</groupId>
-            <artifactId>lwjgl-lmdb</artifactId>
-            <classifier>natives-windows</classifier>
-            <scope>runtime</scope>
-        </dependency>
--->
-        <dependency>
-            <groupId>org.eclipse.rdf4j</groupId>
-            <artifactId>rdf4j-sparqlbuilder</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>com.apicatalog</groupId>
-            <artifactId>titanium-json-ld</artifactId>
-            <version>1.2.0</version>
-        </dependency>
-        <dependency>
-            <groupId>org.glassfish</groupId>
-            <artifactId>jakarta.json</artifactId>
-            <version>2.0.1</version>
-        </dependency>
     </dependencies>
     <dependencyManagement>
+
         <dependencies>
+            <dependency>
+                <groupId>com.google.guava</groupId>
+                <artifactId>guava</artifactId>
+                <version>31.1-jre</version>
+            </dependency>
+            <dependency>
+                <groupId>commons-lang</groupId>
+                <artifactId>commons-lang</artifactId>
+                <version>2.6</version>
+                <scope>compile</scope>
+            </dependency>
+            <dependency>
+                <groupId>io.springfox</groupId>
+                <artifactId>springfox-spring-webflux</artifactId>
+                <version>3.0.0</version>
+            </dependency>
+            <dependency>
+                <groupId>org.springframework.cloud</groupId>
+                <artifactId>spring-cloud-dependencies</artifactId>
+                <version>${spring-cloud.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>com.arangodb</groupId>
+                <artifactId>arangodb-spring-data</artifactId>
+                <version>3.6.0</version>
+            </dependency>
+            <dependency>
+                <groupId>com.arangodb</groupId>
+                <artifactId>arangodb-java-driver</artifactId>
+                <version>6.15.0</version>
+            </dependency>
+            <dependency>
+                <groupId>org.eclipse.rdf4j</groupId>
+                <artifactId>rdf4j-bom</artifactId>
+                <version>4.1.3</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>com.bechtle.cougar.graph</groupId>
+                <artifactId>graph-model</artifactId>
+                <version>${graph.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.bechtle.cougar.graph</groupId>
+                <artifactId>graph-api</artifactId>
+                <version>${graph.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.bechtle.cougar.graph</groupId>
+                <artifactId>graph-store</artifactId>
+                <version>${graph.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.bechtle.cougar.graph</groupId>
+                <artifactId>graph-store-rdf4j</artifactId>
+                <version>${graph.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.bechtle.cougar.graph</groupId>
+                <artifactId>graph-application</artifactId>
+                <version>${graph.version}</version>
+            </dependency>
             <dependency>
                 <groupId>com.bechtle.cougar.graph</groupId>
                 <artifactId>graph-tests</artifactId>
@@ -141,11 +154,9 @@
                 <version>${graph.version}</version>
             </dependency>
             <dependency>
-                <groupId>org.eclipse.rdf4j</groupId>
-                <artifactId>rdf4j-bom</artifactId>
-                <version>4.1.3</version>
-                <type>pom</type>
-                <scope>import</scope>
+                <groupId>com.bechtle.cougar.graph</groupId>
+                <artifactId>graph-services</artifactId>
+                <version>${graph.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.fasterxml.jackson.core</groupId>
@@ -154,14 +165,16 @@
             </dependency>
             <dependency>
                 <groupId>com.fasterxml.jackson.core</groupId>
-                <artifactId>jackson-databind</artifactId>
+                <artifactId>jackson-annotations</artifactId>
                 <version>2.13.4</version>
             </dependency>
             <dependency>
                 <groupId>com.fasterxml.jackson.core</groupId>
-                <artifactId>jackson-annotations</artifactId>
+                <artifactId>jackson-databind</artifactId>
                 <version>2.13.4</version>
             </dependency>
+            <!-- https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-databind -->
+
         </dependencies>
     </dependencyManagement>
 
