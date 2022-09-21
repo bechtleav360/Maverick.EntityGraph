@@ -15,7 +15,7 @@ The layers are implemented as independent graphs to support separations of conce
 The following example shows a combination of all layers.
 
 ```turtle
-@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix cougar.graph.model.rdf: <http://www.w3.org/1999/02/22-cougar.graph.model.rdf-syntax-ns#> .
 @prefix entities: <http://example.org/schema/entities#> .
 @prefix versions: <http://example.org/schema/versions#> .
 @prefix annot: <http://example.org/schema/annotations#> .
@@ -42,19 +42,19 @@ base:b4 a ns2:RsaSignature2018 ;
 
 ```
 
-As we can see in the example, we separate the layers by vocabulary (identified by the prefix). Since every line in the example is an atomic statement in the form `<subject, predicate, object>`, the can be stored independently. Combining them all into on entity representation is the combination of different SPARL Queries from each layer. 
+As we can see in the example, we separate the layers by cougar.graph.model.vocabulary (identified by the prefix). Since every line in the example is an atomic statement in the form `<subject, predicate, object>`, the can be stored independently. Combining them all into on entity representation is the combination of different SPARL Queries from each layer. 
 
 Taking the example from above, we would need the following query
 
 *Get the entity*
 ```
 
-PREFIX rdf:     <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-PREFIX rdfs:    <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX cougar.graph.model.rdf:     <http://www.w3.org/1999/02/22-cougar.graph.model.rdf-syntax-ns#>
+PREFIX rdfs:    <http://www.w3.org/2000/01/cougar.graph.model.rdf-schema#>
 PREFIX entities: <http://example.org/schema/entities#>
 
 SELECT * WHERE { 
-   ?s rdf:type entities:WikipediaEntry .
+   ?s cougar.graph.model.rdf:type entities:WikipediaEntry .
    ?s ?p ?o
 }
 ```

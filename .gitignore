@@ -7,8 +7,8 @@ release.properties
 dependency-reduced-pom.xml
 buildNumber.properties
 .mvn/timing.properties
-# https://github.com/takari/maven-wrapper#usage-without-binary-jar
-.mvn/wrapper/maven-wrapper.jar
+# https://github.com/takari/maven-cougar.graph.model.wrapper#usage-without-binary-jar
+.mvn/cougar.graph.model.wrapper/maven-cougar.graph.model.wrapper.jar
 .idea
 *.log
 *.gz

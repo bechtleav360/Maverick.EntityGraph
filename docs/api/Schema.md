@@ -38,8 +38,8 @@ A valid type definition. The definition can include as many types as needed
 The following example is using the Turtle Syntax
 
 ```turtle
-@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
-@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix cougar.graph.model.rdf: <http://www.w3.org/1999/02/22-cougar.graph.model.rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/cougar.graph.model.rdf-schema#> .
 @prefix eagl: <http://av360.org/schema/eagl#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 @prefix schema: <https://schema.org/> .
@@ -49,7 +49,7 @@ eagl:WikipediaEntry a rdfs:Class ;
     rdfs:comment "A wikipedia entry about a certain topic." ;
     rdfs:subClassOf eagl:LearningUnit .
 
-eagl:hasWikpediaLink a rdf:Property ;
+eagl:hasWikpediaLink a cougar.graph.model.rdf:Property ;
     rdfs:domain eagl:WikipediaEntry
     rdfs:target schema:Url
 
@@ -60,8 +60,8 @@ and the following using json-ld (as graph)
 ```json
 {
   "@context": {
-    "rdf": "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
-    "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+    "cougar.graph.model.rdf": "http://www.w3.org/1999/02/22-cougar.graph.model.rdf-syntax-ns#",
+    "rdfs": "http://www.w3.org/2000/01/cougar.graph.model.rdf-schema#",
     "eagl": "http://av360.org/schema/eagl#",
     "xsd": "http://www.w3.org/2001/XMLSchema#"
   },
