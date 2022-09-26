@@ -1,4 +1,4 @@
-package cougar.graph.main.trials;
+package trials;
 
 import cougar.graph.store.rdf4j.repository.TestRepository;
 import org.eclipse.rdf4j.rio.RDFFormat;

@@ -4,6 +4,7 @@ import cougar.graph.model.enums.Activity;
 import cougar.graph.model.errors.EntityNotFound;
 import cougar.graph.model.errors.UnknownPrefix;
 import cougar.graph.model.rdf.LocalIRI;
+import cougar.graph.model.vocabulary.Local;
 import cougar.graph.services.services.handler.DelegatingTransformer;
 import cougar.graph.services.services.handler.DelegatingValidator;
 import cougar.graph.store.EntityStore;
@@ -13,18 +14,16 @@ import cougar.graph.store.rdf.models.Entity;
 import cougar.graph.store.rdf.models.Incoming;
 import cougar.graph.store.rdf.models.Transaction;
 import lombok.extern.slf4j.Slf4j;
-import org.eclipse.rdf4j.model.IRI;
-import org.eclipse.rdf4j.model.Resource;
-import org.eclipse.rdf4j.model.Value;
-import org.eclipse.rdf4j.model.ValueFactory;
+import org.eclipse.rdf4j.model.*;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
+import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 @Slf4j(topic = "graph.service.entity")
 @Service
@@ -170,6 +169,7 @@ public class EntityServices {
         // TODO: perform validation via sha
         // https://rdf4j.org/javadoc/3.2.0/org/eclipse/rdf4j/sail/shacl/ShaclSail.html
         return Mono.just(triples)
+
                 .flatMap(sts -> {
                     /* validate */
                     return validators.handle(this, sts, parameters);
@@ -180,6 +180,17 @@ public class EntityServices {
                     return transformers.handle(sts, parameters, authentication);
 
                     /* TODO: check if create of resource of given type is supported or is it delegated to connector */
+
+                })
+                .map(sts -> {
+                    // we explicitly type the incoming object as entity (required for distinguish between entities and embedded entities in later queries)
+                    Set<Resource> identifiers = new HashSet<>(sts.getModel().filter(null, RDF.TYPE, null).subjects());
+
+                    identifiers.forEach(id ->
+                                    sts.getModel().add(id, RDF.TYPE, Local.Entities.TYPE)
+                            );
+
+                    return sts;
 
                 })
 
@@ -205,8 +216,8 @@ public class EntityServices {
         return this.entityStore.removeStatement(subject, predicate, oldObject, new Transaction())
                 .flatMap(trx -> this.entityStore.addStatement(subject, predicate, newObject, trx))
                 .flatMap(trx -> this.entityStore.commit(trx, authentication));
-
     }
+
 
 
 }

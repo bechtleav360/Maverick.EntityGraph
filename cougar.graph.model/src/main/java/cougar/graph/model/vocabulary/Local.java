@@ -23,6 +23,8 @@ public class Local {
         public static String PREFIX = "entity";
         public static Namespace NS = EntityNamespace.of(PREFIX, NAMESPACE);
 
+        public static IRI TYPE = LocalIRI.from(NAMESPACE, "Entity");
+
 
     }
 

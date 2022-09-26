@@ -1,4 +1,4 @@
-package cougar.graph.main.trials;
+package trials;
 
 import com.apicatalog.jsonld.JsonLdError;
 import cougar.graph.store.rdf4j.repository.TestRepository;

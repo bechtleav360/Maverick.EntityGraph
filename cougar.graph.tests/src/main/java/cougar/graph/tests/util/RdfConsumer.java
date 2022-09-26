@@ -68,6 +68,11 @@ public class RdfConsumer implements Consumer<EntityExchangeResult<byte[]>> {
         }
     }
 
+    public void assertLength(int expected) {
+
+    }
+
+
     public Collection<Statement> getStatements() {
         return this.collector.getStatements();
     }

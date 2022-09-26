@@ -1,5 +1,7 @@
 package cougar.graph.api.converter.encoder;
 
+import cougar.graph.api.controller.Entities;
+import cougar.graph.model.vocabulary.Local;
 import cougar.graph.store.rdf.helpers.RdfUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.rdf4j.model.Namespace;
@@ -49,8 +51,14 @@ public class BufferedStatementsEncoder implements Encoder<Statement> {
     public Flux<DataBuffer> encode(Publisher<? extends Statement> inputStream, DataBufferFactory bufferFactory, ResolvableType elementType, MimeType mimeType, Map<String, Object> hints) {
 
         return Flux.from(inputStream)
-                .doOnSubscribe(c -> log.debug("Trying to write buffered statements stream response with mimetype '{}'", mimeType != null ? mimeType.toString() : "unset"))
+                .doOnSubscribe(c ->  {
+                    if(log.isTraceEnabled()) {
+                        log.trace("Setting up buffered statements stream for response with mimetype '{}'", mimeType != null ? mimeType.toString() : "unset");
+                    }
+                })
                 .map(statement -> (Statement) statement)
+                // we filter out any internal statements
+                .filter(statement -> !statement.getObject().equals(Local.Entities.TYPE))
                 .collectList()
                 .flatMapMany(statements -> {
                     try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
@@ -73,7 +81,9 @@ public class BufferedStatementsEncoder implements Encoder<Statement> {
                         log.error("Failed to write response of mimetype '{}'", mimeType.toString(), e);
                         return Flux.error(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to write response"));
                     } finally {
-                        log.trace("Completed writing buffered statements response with mimetype '{}'", mimeType != null ? mimeType.toString() : "unset");
+                        if(log.isTraceEnabled()) {
+                            log.trace("Completed writing buffered statements response with mimetype '{}'", mimeType != null ? mimeType.toString() : "unset");
+                        }
                     }
                 });
     }

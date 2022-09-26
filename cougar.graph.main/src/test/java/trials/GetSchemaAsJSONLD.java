@@ -1,4 +1,4 @@
-package cougar.graph.main.trials;
+package trials;
 
 import com.apicatalog.jsonld.JsonLd;
 import com.apicatalog.jsonld.JsonLdError;

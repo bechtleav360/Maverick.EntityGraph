@@ -1,4 +1,4 @@
-package cougar.graph.domain.services.scheduler;
+package cougar.graph.services.schedulers;
 
 import cougar.graph.TestConfigurations;
 import cougar.graph.model.security.Authorities;

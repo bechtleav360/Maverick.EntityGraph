@@ -1,6 +1,5 @@
 package cougar.graph.store;
 
-import cougar.graph.model.rdf.LocalIRI;
 import cougar.graph.model.rdf.NamespaceAwareStatement;
 import cougar.graph.model.security.Authorities;
 import cougar.graph.store.behaviours.*;
@@ -20,6 +19,8 @@ import java.util.List;
 public interface EntityStore extends Searchable, Resettable, ModelUpdates, Selectable, Statements {
 
     Mono<Entity> getEntity(IRI id, Authentication authentication, GrantedAuthority requiredAuthority);
+
+
 
 
     Mono<Transaction> delete(Collection<Statement> statements, Transaction transaction);

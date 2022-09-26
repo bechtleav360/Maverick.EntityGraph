@@ -5,6 +5,7 @@ import cougar.graph.model.enums.RdfMimeTypes;
 import cougar.graph.model.rdf.GeneratedIdentifier;
 import cougar.graph.model.rdf.NamespaceAwareStatement;
 import cougar.graph.services.services.EntityServices;
+import cougar.graph.services.services.QueryServices;
 import cougar.graph.store.rdf.models.AbstractModel;
 import cougar.graph.store.rdf.models.Incoming;
 import io.swagger.annotations.Api;
@@ -26,10 +27,12 @@ public class Entities extends AbstractController {
 
     protected final ObjectMapper objectMapper;
     protected final EntityServices entityServices;
+    protected final QueryServices queryServices;
 
-    public Entities(ObjectMapper objectMapper, EntityServices graphService) {
+    public Entities(ObjectMapper objectMapper, EntityServices graphService, QueryServices queryServices) {
         this.objectMapper = objectMapper;
         this.entityServices = graphService;
+        this.queryServices = queryServices;
     }
 
     @ApiOperation(value = "Read entity")
@@ -41,7 +44,23 @@ public class Entities extends AbstractController {
         return super.getAuthentication()
                 .flatMap(authentication -> entityServices.readEntity(id, authentication))
                 .flatMapIterable(AbstractModel::asStatements)
-                .doOnSubscribe(s -> log.trace("Reading Entity with id: {}", id));
+                .doOnSubscribe(s -> {
+                    if(log.isDebugEnabled()) log.debug("Request to read entity with id: {}", id);
+                });
+    }
+
+
+    @ApiOperation(value = "List entities")
+    @GetMapping(value = "", produces = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.N3_VALUE})
+    @ResponseStatus(HttpStatus.OK)
+    Flux<NamespaceAwareStatement> list() {
+
+        return super.getAuthentication()
+                .flatMapMany(queryServices::listEntities)
+                .flatMapIterable(AbstractModel::asStatements)
+                .doOnSubscribe(s -> {
+                    if(log.isDebugEnabled()) log.debug("Request to list entities");
+                });
     }
 
     @ApiOperation(value = "Create entity")
@@ -56,7 +75,7 @@ public class Entities extends AbstractController {
                 .flatMap(authentication ->  entityServices.createEntity(request, Map.of(), authentication))
                 .flatMapIterable(AbstractModel::asStatements)
                 .doOnSubscribe(s -> {
-                    if (log.isDebugEnabled()) log.debug("Create a new Entity");
+                    if (log.isDebugEnabled()) log.debug("Request to create a new Entity");
                     if (log.isTraceEnabled()) log.trace("Payload: \n {}", request.toString());
                 });
     }
@@ -75,7 +94,7 @@ public class Entities extends AbstractController {
                 .flatMap(authentication ->  entityServices.setValue(id, property[0], property[1], value, authentication))
                 .flatMapIterable(AbstractModel::asStatements)
                 .doOnSubscribe(s -> {
-                    if (log.isDebugEnabled()) log.debug("Set property '{}' of entity '{}' to value '{}'", prefixedKey, id, value.length() > 64 ? value.substring(0, 64) : value);
+                    if (log.isDebugEnabled()) log.debug("Request to set property '{}' of entity '{}' to value '{}'", prefixedKey, id, value.length() > 64 ? value.substring(0, 64) : value);
                 });
 
     }
@@ -92,7 +111,7 @@ public class Entities extends AbstractController {
                 .flatMap(authentication ->  entityServices.linkEntityTo(id, property[0], property[1], value, authentication))
                 .flatMapIterable(AbstractModel::asStatements)
                 .doOnSubscribe(s -> {
-                    if (log.isDebugEnabled()) log.debug("Add embedded entities as property '{}' to entity '{}'", prefixedKey, id);
+                    if (log.isDebugEnabled()) log.debug("Request to add embedded entities as property '{}' to entity '{}'", prefixedKey, id);
                 });
 
 

@@ -71,7 +71,7 @@ public class MergeDuplicates implements Transformer {
     public Mono<? extends AbstractModel> handle(AbstractModel model, Map<String, String> parameters, Authentication authentication) {
 
         return Mono.just(model)
-                .doOnSubscribe(c -> log.debug("Check if linked entities already exist and reroute if needed"))
+                .doOnSubscribe(c -> log.debug("Check if linked entities already exist and merge if required."))
                 .doFinally(signalType -> log.trace("Finished checks for unique entity constraints"))
                 .filter(this::checkForEmbeddedAnonymousEntities)
                 .flatMap(this::mergeDuplicatedWithinModel)
@@ -143,6 +143,7 @@ public class MergeDuplicates implements Transformer {
         // stores triple: identifier, type, label
         Set<Triple<Resource, Value, Value>> foundTypeAndLabel = new HashSet<>();
 
+        int count = 0;
         for (Resource anonymous : anonymousObjects) {
             Iterator<Statement> typeStatement = unmodifiable.getStatements(anonymous, RDF.TYPE, null).iterator();
             if (!typeStatement.hasNext()) throw new MissingType(anonymous);
@@ -162,12 +163,13 @@ public class MergeDuplicates implements Transformer {
                         possibleDuplicate.getLeft(), possibleDuplicate.getMiddle().stringValue(), possibleDuplicate.getRight().stringValue(),
                         original.get().getLeft());
                 this.reroute(triples, possibleDuplicate.getLeft(), original.get().getLeft());
+                count++;
             } else {
                 foundTypeAndLabel.add(possibleDuplicate);
             }
 
         }
-        log.trace("Anonymous embedded entities merged");
+        log.trace("{} anonymous embedded entities merged", count);
         return Mono.just(triples);
 
     }
@@ -199,7 +201,7 @@ public class MergeDuplicates implements Transformer {
      */
     public Mono<AbstractModel> mergeDuplicatesInEntityGraph(AbstractModel model, Authentication authentication) {
         return Mono.just(model)
-                .doOnSubscribe(subscription -> log.trace("Check if anonymous embedded entities already exist in graph."))
+                .doOnSuccess(subscription -> log.trace("Checked if anonymous embedded entities already exist in graph."))
                 .flatMapMany(triples -> {
                     // collect types and labels of embedded objects
                     return Flux.<LocalEntity>create(c -> {
@@ -228,7 +230,7 @@ public class MergeDuplicates implements Transformer {
                     LocalEntity localEntity = pair.getT1();
                     List<BindingSet> queryResult = pair.getT2();
                     if (queryResult.size() > 1) {
-                        log.trace("Linked entity exists already in graph, rerouting.");
+                        log.debug("Linked entity exists already in graph, merging with existing item in graph.");
                         this.reroute(model, localEntity.localIdentifier(), (Resource) queryResult.get(0).getValue("id"));
                     }
                 })
@@ -254,7 +256,6 @@ public class MergeDuplicates implements Transformer {
     /**
      * Scenario: Request contains embedded entity
      *
-     * @param graph
      * @param triples
      */
     public Mono<AbstractModel> checkIfLinkedNamedEntityExistsInGraph(AbstractModel triples) {
