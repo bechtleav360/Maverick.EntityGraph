@@ -40,18 +40,18 @@ The following example is using the Turtle Syntax
 ```turtle
 @prefix cougar.graph.model.rdf: <http://www.w3.org/1999/02/22-cougar.graph.model.rdf-syntax-ns#> .
 @prefix rdfs: <http://www.w3.org/2000/01/cougar.graph.model.rdf-schema#> .
-@prefix eagl: <http://av360.org/schema/eagl#> .
+@prefix mav: <http://av360.org/schema/maverick#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 @prefix schema: <https://schema.org/> .
 
-eagl:WikipediaEntry a rdfs:Class ;
+mav:WikipediaEntry a rdfs:Class ;
     rdfs:label "Wikipedia Entry" ;
     rdfs:comment "A wikipedia entry about a certain topic." ;
-    rdfs:subClassOf eagl:LearningUnit .
+    rdfs:subClassOf mav:LearningUnit .
 
-eagl:hasWikpediaLink a cougar.graph.model.rdf:Property ;
-    rdfs:domain eagl:WikipediaEntry
-    rdfs:target schema:Url
+mav:hasWikpediaLink a cougar.graph.model.rdf:Property ;
+    rdfs:domain mav:WikipediaEntry ;
+    rdfs:target schema:Url .
 
 ```
 
@@ -60,25 +60,24 @@ and the following using json-ld (as graph)
 ```json
 {
   "@context": {
-    "cougar.graph.model.rdf": "http://www.w3.org/1999/02/22-cougar.graph.model.rdf-syntax-ns#",
     "rdfs": "http://www.w3.org/2000/01/cougar.graph.model.rdf-schema#",
-    "eagl": "http://av360.org/schema/eagl#",
+    "mav": "http://av360.org/schema/maverick#",
     "xsd": "http://www.w3.org/2001/XMLSchema#"
   },
   "@graph": [
        {
-        "@id": "eagl:WikipediaEntry",
+        "@id": "mav:WikipediaEntry",
         "@type": "rdfs:Class",
         "rdfs:comment": "A wikipedia entry about a certain topic.",
         "rdfs:label": "Wikipedia Entry",
         "rdfs:subClassOf": {
-            "@id": "eagl:LearningUnit"
+            "@id": "mav:LearningUnit"
         }
       }, 
       {
-        "@id": "eagl:hasWikpediaLink",
+        "@id": "mav:hasWikpediaLink",
         "@type": "rdfs:Property",
-        "rdfs:domain": "eagl:WikipediaEntry",
+        "rdfs:domain": "mav:WikipediaEntry",
         "rdfs:target": "schema:Url"
       }
   ]
@@ -111,7 +110,7 @@ Version: 3
 *Notes on conflicts:*
 
 * Schema versioning makes sense. But what are the implications: 
-    * Adding a version tag to the type name (e.g. `"@type": "eagl:WikipediaEntry#1`). Hard to handle and breaks JSON-LD Handlers
+    * Adding a version tag to the type name (e.g. `"@type": "mav:WikipediaEntry#1`). Hard to handle and breaks JSON-LD Handlers
     * Adding a new prefix: will result in a lot of prefixes, produces just chaos
 * But e.g. adding a new (mandatory) value to a type automatically means an invalid schema?
 * Making versioning implicit through timestamps, e.g. an entity with last_creation_date before the schema update means it is still valid, any new update to the entity will enforce the new rules
@@ -150,8 +149,8 @@ Provides a list of all supported prefixes as valid @Context definitions. Those a
       }, 
       {
         "@Type": "jsonld:PrefixDefinition",
-        "jsonld:term": "eagl", 
-        "jsonld:iri": "http://av360.io/schema/eagl#"
+        "jsonld:term": "mav", 
+        "jsonld:iri": "http://av360.io/schema/mav#"
       }
   ]
 }

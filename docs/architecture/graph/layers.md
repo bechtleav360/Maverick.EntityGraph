@@ -60,9 +60,9 @@ SELECT * WHERE {
 ```
 
 ## Shadowed entities
-not relevant for eagl
+not relevant yet
 
 ## Verification of integrity and authenticity
-not relevant for eagl
+not relevant yet
 
 ## User feedback and classifications

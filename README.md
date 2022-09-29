@@ -1,4 +1,4 @@
-# eagl-service-graph
+# Maverick.EntityGraph
 API to access skills, learning units, and everything else through a json-ld api
 
 ## Develop
@@ -15,7 +15,7 @@ Start locally with param ``spring_profiles_active=dev``
   - Private Container registry as registry source
   - ``https://ghcr.io`` as server url
   - Your GIT PAT for the credentials
-  - ``bechtleav360/eagl-service-graph:latest`` as full image name
+  - ``bechtleav360/maverick-entity-graph:latest`` as full image name
 3. Enable Application logging
 4. Add application property "SPRING_APPLICATION_JSON" (see below)
 5. Add application property "PORT" in configuration 
@@ -38,7 +38,7 @@ Here are a few commands to remember
 ````shell
 az webapp list -o table
 
-az webapp log tail -n graphs -g eagl-services
+az webapp log tail -n graphs -g maverick-services
 
 ````
 

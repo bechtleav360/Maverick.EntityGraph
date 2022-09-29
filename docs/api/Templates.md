@@ -29,7 +29,7 @@ Creates a new template. Example can be found here: https://www.w3.org/TR/json-ld
 ```json
 
 {
-  "@context": {"@vocab": "http://av360.org/schema/eagl#"},
+  "@context": {"@vocab": "http://av360.org/schema/maverick#"},
   "@type": "LearningPath",
   "hasItem": {
     "@explicit": true,
