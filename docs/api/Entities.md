@@ -70,16 +70,16 @@ Payload has to be either
   "@context": {
     "cougar.graph.model.rdf": "http://www.w3.org/1999/02/22-cougar.graph.model.rdf-syntax-ns#",
     "rdfs": "http://www.w3.org/2000/01/cougar.graph.model.rdf-schema#",
-    "eagl": "http://av360.org/schema/eagl#",
+    "mav": "http://av360.org/schema/maverick#",
     "xsd": "http://www.w3.org/2001/XMLSchema#", 
     "sdo": "https://schema.org/"
 
   },
   "@graph": [
     {
-      "@type": "eagl:WikipediaEntry",
+      "@type": "mav:WikipediaEntry",
       "additionalAttribute": "",
-      "eagl:hasWikipediaLink": {
+      "mav:hasWikipediaLink": {
         "@type": "sdo:url",
         "url": "http://en.wikipedia.org/..",
         "language": "en-US"
@@ -116,7 +116,7 @@ embedded entity and patch the container with the new edge.
   "@context": {
     "cougar.graph.model.rdf": "http://www.w3.org/1999/02/22-cougar.graph.model.rdf-syntax-ns#",
     "rdfs": "http://www.w3.org/2000/01/cougar.graph.model.rdf-schema#",
-    "eagl": "http://av360.org/schema/eagl#",
+    "mav": "http://av360.org/schema/maverick#",
     "xsd": "http://www.w3.org/2001/XMLSchema#", 
     "sdo": "https://schema.org/"
   },
@@ -127,9 +127,9 @@ embedded entity and patch the container with the new edge.
         "sdo:language": "de-DE"
        }, 
        {
-        "@type": "eagl:WikipediaEntry",
+        "@type": "mav:WikipediaEntry",
         "@id": "684416b4", 
-        "eagl:hasWikipediaLink": {
+        "mav:hasWikipediaLink": {
             "@id": "df87da74-7e9b-11ec-90d6-0242ac120003"
         }
   ]
@@ -137,7 +137,7 @@ embedded entity and patch the container with the new edge.
 ```
 
 
-Example url ``POST /api/entities/684416b4/eagl.hasWikipediaLink``
+Example url ``POST /api/entities/684416b4/mav.hasWikipediaLink``
 
 ```json
 {
@@ -164,7 +164,7 @@ Conflicts can arise:
   "@context": {
     "cougar.graph.model.rdf": "http://www.w3.org/1999/02/22-cougar.graph.model.rdf-syntax-ns#",
     "rdfs": "http://www.w3.org/2000/01/cougar.graph.model.rdf-schema#",
-    "eagl": "http://av360.org/schema/eagl#",
+    "mav": "http://av360.org/schema/maverick#",
     "xsd": "http://www.w3.org/2001/XMLSchema#", 
     "sdo": "https://schema.org/"
   },
@@ -176,9 +176,9 @@ Conflicts can arise:
         "language": "de-DE"
        }, 
        {
-        "@type": "eagl:WikipediaEntry",
+        "@type": "mav:WikipediaEntry",
         "@id": "684416b4-2ea3-48b0-b55c-6a2410e2baec", 
-        "eagl:hasWikipediaLink": {
+        "mav:hasWikipediaLink": {
             "@id": "df87da74-7e9b-11ec-90d6-0242ac120003"
       }
   ]
@@ -194,9 +194,9 @@ The following json is illegal
 ```json
 {
   "@context": {
-    "eagl": "http://av360.org/schema/eagl#",
+    "mav": "http://av360.org/schema/maverick#",
   },
-  "@type": "eagl:WikipediaEntry",
+  "@type": "mav:WikipediaEntry",
   "@id": "684416b4-2ea3-48b0-b55c-6a2410e2baec", 
   "complexObject": {
     "a": 1, 
@@ -237,7 +237,7 @@ If the schema definition has put a arity-constraint on a property, this request 
   "@context": {
     "cougar.graph.model.rdf": "http://www.w3.org/1999/02/22-cougar.graph.model.rdf-syntax-ns#",
     "rdfs": "http://www.w3.org/2000/01/cougar.graph.model.rdf-schema#",
-    "eagl": "http://av360.org/schema/eagl#",
+    "mav": "http://av360.org/schema/maverick#",
     "xsd": "http://www.w3.org/2001/XMLSchema#", 
     "sdo": "https://schema.org/"
   },
@@ -276,14 +276,14 @@ service is based on machine learning, we want to also store the prediction quali
   "@context": {
     "cougar.graph.model.rdf": "http://www.w3.org/1999/02/22-cougar.graph.model.rdf-syntax-ns#",
     "rdfs": "http://www.w3.org/2000/01/cougar.graph.model.rdf-schema#",
-    "eagl": "http://av360.org/schema/eagl#",
+    "mav": "http://av360.org/schema/maverick#",
     "xsd": "http://www.w3.org/2001/XMLSchema#", 
     "sdo:" "https://schema.org/"
 
   },
 
-  "@type": "eagl:WikipediaEntry",
-  "eagl:hasWikipediaLink": {
+  "@type": "mav:WikipediaEntry",
+  "mav:hasWikipediaLink": {
       "@type": "sdo:url",
       "url": {
         "@value": "http://en.wikipedia.org/.."
@@ -291,7 +291,7 @@ service is based on machine learning, we want to also store the prediction quali
       "lang": "en-US"
     }
   }, 
-  "eagl:topic": {
+  "mav:topic": {
      "@id": "topics/RiskManagement", 
      "@annotation": {
        "certainty": 0.6
