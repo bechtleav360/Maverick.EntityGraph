@@ -32,9 +32,11 @@ public class AdminAuthenticationManager implements ReactiveAuthenticationManager
 
     @PostConstruct
     public void checkKey() {
-        if(! StringUtils.hasLength(key)) {
+        if(! StringUtils.hasLength(this.key)) {
             this.key = new RandomStringGenerator.Builder().withinRange('a', 'z').build().generate(16);
             log.info("No admin key set, using the following randomly generated api key for this session: '{}' ", this.key);
+        } else {
+            log.info("The following admin key will be used in this session: '{}' ", this.key);
         }
     }
 

@@ -30,13 +30,13 @@ class OpenApiConfiguration {
     }
 
     @Bean
-    public Docket docket() {
+    public Docket entitiesDocket() {
         return new Docket(DocumentationType.OAS_30)
-                .groupName("Graph API")
+                .groupName("Entities API")
                 .apiInfo(new ApiInfoBuilder()
-                        .title("Graph Service API")
-                        .description("API to access the graph.")
-                        .version("0.0.1-SNAPSHOT")
+                        .title("Entity Graph API")
+                        .description("API to access and update the entity graph.")
+                        .version("0.1.0")
                         .license("Apache 2.0")
                         .licenseUrl("https://opensource.org/licenses/Apache-2.0")
                         .build())
@@ -44,11 +44,50 @@ class OpenApiConfiguration {
                 .securitySchemes(List.of(apiKey()))
                 .securityContexts(List.of(securityContext()))
                 .select()
-                .apis(RequestHandlerSelectors.basePackage("cougar.graph.api.controller"))
+                .apis(RequestHandlerSelectors.basePackage("cougar.graph.api.controller.entities"))
                 // .paths(PathSelectors.ant("/api/**"))
                 .build();
     }
 
+    @Bean
+    public Docket queryDocket() {
+        return new Docket(DocumentationType.OAS_30)
+                .groupName("Query API")
+                .apiInfo(new ApiInfoBuilder()
+                        .title("Query Service API")
+                        .description("API to run sparql queries.")
+                        .version("0.3.0")
+                        .license("Apache 2.0")
+                        .licenseUrl("https://opensource.org/licenses/Apache-2.0")
+                        .build())
+
+                .securitySchemes(List.of(apiKey()))
+                .securityContexts(List.of(securityContext()))
+                .select()
+                .apis(RequestHandlerSelectors.basePackage("cougar.graph.api.controller.queries"))
+                // .paths(PathSelectors.ant("/api/**"))
+                .build();
+    }
+
+    @Bean
+    public Docket queryTransactions() {
+        return new Docket(DocumentationType.OAS_30)
+                .groupName("Transactions API")
+                .apiInfo(new ApiInfoBuilder()
+                        .title("Transaction Services API")
+                        .description("API to access transactions. All changes to entities are logged in transactions.")
+                        .version("0.1.0")
+                        .license("Apache 2.0")
+                        .licenseUrl("https://opensource.org/licenses/Apache-2.0")
+                        .build())
+
+                .securitySchemes(List.of(apiKey()))
+                .securityContexts(List.of(securityContext()))
+                .select()
+                .apis(RequestHandlerSelectors.basePackage("cougar.graph.api.controller.transactions"))
+                // .paths(PathSelectors.ant("/api/**"))
+                .build();
+    }
 
     private SecurityContext securityContext() {
         return SecurityContext.builder().securityReferences(defaultAuth()).build();

@@ -1,6 +1,7 @@
-package cougar.graph.api.controller;
+package cougar.graph.api.controller.transactions;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import cougar.graph.api.controller.AbstractController;
 import cougar.graph.model.enums.RdfMimeTypes;
 import cougar.graph.model.rdf.GeneratedIdentifier;
 import cougar.graph.model.rdf.NamespaceAwareStatement;
@@ -31,7 +32,7 @@ public class Transactions extends AbstractController {
         this.graphService = graphService;
     }
 
-    @ApiOperation(value = "Read transaction", tags = {"v2"})
+    @ApiOperation(value = "Read transaction")
     @GetMapping(value = "/{id:[\\w|\\d|-|_]+}", produces = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.NQUADS_VALUE, RdfMimeTypes.N3_VALUE})
     @ResponseStatus(HttpStatus.OK)
     Flux<NamespaceAwareStatement> read(@PathVariable String id) {

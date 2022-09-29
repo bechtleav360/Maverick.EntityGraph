@@ -19,7 +19,7 @@ import java.util.Locale;
 
 @RestController
 @RequestMapping(path = "/api/admin/bulk")
-@Api(tags = "Admin")
+@Api(tags = "Admin Operations")
 @Slf4j(topic = "graph.feature.admin.api")
 public class Admin extends AbstractController {
     protected final AdminServices adminServices;
@@ -28,7 +28,7 @@ public class Admin extends AbstractController {
         this.adminServices = adminServices;
     }
 
-    @ApiOperation(value = "Empty repository", tags = {"v1"})
+    @ApiOperation(value = "Empty repository", tags = {})
     @GetMapping(value = "/reset", produces = MediaType.TEXT_PLAIN_VALUE)
     @ResponseStatus(HttpStatus.ACCEPTED)
     Mono<Void> queryBindings(@RequestParam(name = "name") String repositoryTypeName) {
@@ -47,7 +47,7 @@ public class Admin extends AbstractController {
     }
 
 
-    @ApiOperation(value = "Import RDF into entity repository", tags = {"v1"})
+    @ApiOperation(value = "Import RDF into entity repository", tags = {})
     @PostMapping(value = "/import/entities", consumes = MediaType.APPLICATION_OCTET_STREAM_VALUE)
     @ResponseStatus(HttpStatus.ACCEPTED)
     Mono<Void> importEntities(@RequestBody Flux<DataBuffer> bytes, @RequestParam String mimetype) {

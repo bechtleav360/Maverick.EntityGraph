@@ -1,6 +1,7 @@
-package cougar.graph.api.controller;
+package cougar.graph.api.controller.entities;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import cougar.graph.api.controller.AbstractController;
 import cougar.graph.model.enums.RdfMimeTypes;
 import cougar.graph.model.rdf.GeneratedIdentifier;
 import cougar.graph.model.rdf.NamespaceAwareStatement;

@@ -19,26 +19,27 @@ import reactor.core.publisher.Mono;
 import java.util.List;
 
 @RestController
-@RequestMapping(path = "/api/subscriptions")
+@RequestMapping(path = "/api/applications")
+@Api(tags = "Manage applications")
 @Slf4j(topic = "graph.feature.apps.api")
 public class Applications extends AbstractController {
 
-    private final ApplicationsService subscriptionsService;
+    private final ApplicationsService applicationsService;
 
-    public Applications(ApplicationsService subscriptionsService) {
+    public Applications(ApplicationsService applicationsService) {
 
-        this.subscriptionsService = subscriptionsService;
+        this.applicationsService = applicationsService;
     }
 
 
     @ApiOperation(value = "Create a new application")
     @PostMapping(value = "")
     @ResponseStatus(HttpStatus.CREATED)
-    Mono<Responses.ApplicationResponse> createSubscription(@RequestBody Requests.RegisterApplicationRequest request) {
+    Mono<Responses.ApplicationResponse> createApplication(@RequestBody Requests.RegisterApplicationRequest request) {
         Assert.notNull(request.label(), "Label must be set in request");
 
         return super.getAuthentication()
-                .flatMap(authentication -> this.subscriptionsService.createSubscription(request.label(), request.persistent(), authentication))
+                .flatMap(authentication -> this.applicationsService.createApplication(request.label(), request.persistent(), authentication))
                 .map(subscription ->
                         new Responses.ApplicationResponse(
                                 subscription.key(),
@@ -48,31 +49,31 @@ public class Applications extends AbstractController {
                 ).doOnSubscribe(subscription -> log.info("Creating a new application"));
     }
 
-
-    @ApiOperation(value = "List all subscriptions")
+    @ApiOperation(value = "List all applications")
     @GetMapping(value = "")
     @ResponseStatus(HttpStatus.OK)
-    Flux<Responses.ApplicationResponse> listSubscription() {
+    Flux<Responses.ApplicationResponse> listApplications() {
         return super.getAuthentication()
-                .flatMapMany(this.subscriptionsService::getSubscriptions)
+                .flatMapMany(this.applicationsService::getApplications)
                 .map(subscription ->
                         new Responses.ApplicationResponse(
                                 subscription.key(),
                                 subscription.label(),
                                 subscription.persistent()
                         )
-                ).doOnSubscribe(subscription -> log.info("Fetching all subscriptions"));
+                ).doOnSubscribe(subscription -> log.info("Fetching all applications"));
     }
 
+
     @ApiOperation(value = "Generate API Key")
-    @PostMapping(value = "/{subscriptionId}/keys")
+    @PostMapping(value = "/{applicationId}/keys")
     @ResponseStatus(HttpStatus.CREATED)
-    Mono<Responses.ApiKeyWithApplicationResponse> generateKey(@PathVariable String subscriptionId, @RequestBody Requests.CreateApiKeyRequest request) {
-        Assert.isTrue(StringUtils.hasLength(subscriptionId), "Subscription is a required parameter");
+    Mono<Responses.ApiKeyWithApplicationResponse> generateKey(@PathVariable String applicationId, @RequestBody Requests.CreateApiKeyRequest request) {
+        Assert.isTrue(StringUtils.hasLength(applicationId), "Application ID  is a required parameter");
         Assert.isTrue(StringUtils.hasLength(request.label()), "Name is a required parameter");
 
         return super.getAuthentication()
-                .flatMap(authentication -> this.subscriptionsService.generateApiKey(subscriptionId, request.label(), authentication))
+                .flatMap(authentication -> this.applicationsService.generateApiKey(applicationId, request.label(), authentication))
                 .map(apiKey ->
                         new Responses.ApiKeyWithApplicationResponse(
                                 apiKey.key(),
@@ -88,15 +89,15 @@ public class Applications extends AbstractController {
 
     }
 
-    @ApiOperation(value = "List API keys")
-    @GetMapping(value = "/{subscriptionId}/keys")
+    @ApiOperation(value = "List registered API keys for application")
+    @GetMapping(value = "/{applicationId}/keys")
     @ResponseStatus(HttpStatus.CREATED)
-    Mono<Responses.ApplicationWithApiKeys> listKeys(@PathVariable String subscriptionId) {
-        Assert.isTrue(StringUtils.hasLength(subscriptionId), "Subscription is a required parameter");
+    Mono<Responses.ApplicationWithApiKeys> listKeys(@PathVariable String applicationId) {
+        Assert.isTrue(StringUtils.hasLength(applicationId), "Application ID is a required parameter");
 
         return super.getAuthentication()
-                .flatMapMany(authentication -> this.subscriptionsService.getKeysForSubscription(subscriptionId, authentication))
-                .switchIfEmpty(Mono.error(new InvalidApplication(subscriptionId)))
+                .flatMapMany(authentication -> this.applicationsService.getKeysForApplication(applicationId, authentication))
+                .switchIfEmpty(Mono.error(new InvalidApplication(applicationId)))
                 .collectList()
                 .flatMap(keys -> {
                     if (keys.isEmpty()) return Mono.empty();
@@ -111,15 +112,15 @@ public class Applications extends AbstractController {
 
 
     @ApiOperation(value = "Revoke API Key")
-    @DeleteMapping(value = "/{subscriptionId}/keys/{label}")
+    @DeleteMapping(value = "/{applicationId}/keys/{label}")
     @ResponseStatus(HttpStatus.NOT_FOUND)
-    Mono<Void> revokeToken(@PathVariable String subscriptionId, @PathVariable String name) {
+    Mono<Void> revokeToken(@PathVariable String applicationId, @PathVariable String label) {
 
-        Assert.isTrue(StringUtils.hasLength(subscriptionId), "Subscription is a required parameter");
-        Assert.isTrue(StringUtils.hasLength(name), "Name is a required parameter");
+        Assert.isTrue(StringUtils.hasLength(applicationId), "Subscription is a required parameter");
+        Assert.isTrue(StringUtils.hasLength(label), "Name is a required parameter");
 
         return super.getAuthentication()
-                .flatMapMany(authentication -> this.subscriptionsService.revokeApiKey(subscriptionId, name, authentication))
+                .flatMapMany(authentication -> this.applicationsService.revokeApiKey(applicationId, label, authentication))
                 .then()
                 .doOnSubscribe(subscription -> log.info("Generating a new token for an application"));
     }

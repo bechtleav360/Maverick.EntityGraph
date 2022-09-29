@@ -1,6 +1,5 @@
 package cougar.graph.api.converter.encoder;
 
-import cougar.graph.api.controller.Entities;
 import cougar.graph.model.vocabulary.Local;
 import cougar.graph.store.rdf.helpers.RdfUtils;
 import lombok.extern.slf4j.Slf4j;

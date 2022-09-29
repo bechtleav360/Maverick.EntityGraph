@@ -22,7 +22,6 @@ import org.eclipse.rdf4j.sparqlbuilder.core.Variable;
 import org.eclipse.rdf4j.sparqlbuilder.core.query.Queries;
 import org.eclipse.rdf4j.sparqlbuilder.core.query.SelectQuery;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.GrantedAuthority;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 import reactor.core.publisher.Flux;
@@ -33,6 +32,10 @@ import cougar.graph.api.security.errors.UnknownApiKey;
 import java.time.ZonedDateTime;
 import java.util.List;
 
+/**
+ * Applications separate tenants. Each application has its own separate stores.
+ * An application has a set of unique API Keys. The api key identifies the application.
+ */
 @Service
 @Slf4j(topic = "graph.feature.apps.domain")
 public class ApplicationsService {
@@ -45,31 +48,38 @@ public class ApplicationsService {
         this.valueFactory = SimpleValueFactory.getInstance();
     }
 
-    public Mono<Application> createSubscription(String label, boolean persistent, Authentication authentication) {
+    /**
+     * Creates a new application.
+     * @param label
+     * @param persistent
+     * @param authentication
+     * @return
+     */
+    public Mono<Application> createApplication(String label, boolean persistent, Authentication authentication) {
 
         // generate application identifier
-        String subscriptionIdentifier = GeneratedIdentifier.generateRandomKey(16);
-        GeneratedIdentifier subject = new GeneratedIdentifier(Local.Subscriptions.NAMESPACE, subscriptionIdentifier);
+        String applicationIdentifier = GeneratedIdentifier.generateRandomKey(16);
+        GeneratedIdentifier subject = new GeneratedIdentifier(Local.Subscriptions.NAMESPACE, applicationIdentifier);
 
-        Application subscription = new Application(
+        Application application = new Application(
                 subject,
                 label,
-                subscriptionIdentifier,
+                applicationIdentifier,
                 persistent
         );
 
         // store application
         ModelBuilder modelBuilder = new ModelBuilder();
 
-        modelBuilder.subject(subscription.iri());
+        modelBuilder.subject(application.iri());
         modelBuilder.add(RDF.TYPE, Application.TYPE);
-        modelBuilder.add(Application.HAS_KEY, subscription.key());
-        modelBuilder.add(Application.HAS_LABEL, subscription.label());
-        modelBuilder.add(Application.IS_PERSISTENT, subscription.persistent());
+        modelBuilder.add(Application.HAS_KEY, application.key());
+        modelBuilder.add(Application.HAS_LABEL, application.label());
+        modelBuilder.add(Application.IS_PERSISTENT, application.persistent());
 
 
         return this.applicationsStore.insert(modelBuilder.build(), authentication, Authorities.ADMIN)
-                .then(Mono.just(subscription))
+                .then(Mono.just(application))
                 .doOnSubscribe(subs -> log.debug("Creating a new application with label '{}' and persistence set to '{}' ", label, persistent));
 
 
@@ -133,7 +143,7 @@ public class ApplicationsService {
         return (IRI) bindings.getValue(var.getVarName());
     }
 
-    public Flux<ApplicationApiKey> getKeysForSubscription(String subscriptionIdentifier, Authentication authentication) {
+    public Flux<ApplicationApiKey> getKeysForApplication(String applicationIdentifier, Authentication authentication) {
 
 
         Variable nodeKey = SparqlBuilder.var("n1");
@@ -152,7 +162,7 @@ public class ApplicationsService {
                         .andHas(ApplicationApiKey.HAS_ISSUE_DATE, keyDate)
                         .andHas(ApplicationApiKey.IS_ACTIVE, keyActive)
                         .andHas(ApplicationApiKey.OF_SUBSCRIPTION, nodeSubscription)
-                        .and(nodeSubscription.has(Application.HAS_KEY, subscriptionIdentifier)
+                        .and(nodeSubscription.has(Application.HAS_KEY, applicationIdentifier)
                                 .andHas(Application.IS_PERSISTENT, subPersistent)
                                 .andHas(Application.HAS_LABEL, sublabel)
                         )
@@ -172,17 +182,17 @@ public class ApplicationsService {
                                 new Application(
                                         ba.asIRI(nodeSubscription),
                                         ba.asString(sublabel),
-                                        subscriptionIdentifier,
+                                        applicationIdentifier,
                                         ba.asBoolean(subPersistent)
 
                                 )
                         )
                 )
-                .doOnSubscribe(sub -> log.debug("Requesting all API Keys for application with key '{}'", subscriptionIdentifier));
+                .doOnSubscribe(sub -> log.debug("Requesting all API Keys for application with key '{}'", applicationIdentifier));
     }
 
 
-    public Flux<Application> getSubscriptions(Authentication authentication) {
+    public Flux<Application> getApplications(Authentication authentication) {
 
 
         Variable node = SparqlBuilder.var("n");
@@ -209,11 +219,11 @@ public class ApplicationsService {
                                 ba.asBoolean(persistent)
                         )
                 )
-                .doOnSubscribe(sub -> log.debug("Requesting all subscriptions"));
+                .doOnSubscribe(sub -> log.debug("Requesting all applications"));
 
     }
 
-    public Mono<ApplicationApiKey> generateApiKey(String subscriptionIdentifier, String name, Authentication authentication) {
+    public Mono<ApplicationApiKey> generateApiKey(String applicationIdentifier, String name, Authentication authentication) {
 
 
         Variable node = SparqlBuilder.var("node");
@@ -222,7 +232,7 @@ public class ApplicationsService {
 
         SelectQuery q = Queries.SELECT()
                 .where(node.isA(Application.TYPE)
-                        .andHas(Application.HAS_KEY, subscriptionIdentifier)
+                        .andHas(Application.HAS_KEY, applicationIdentifier)
                         .andHas(Application.HAS_LABEL, sublabel)
                         .andHas(Application.IS_PERSISTENT, subPersistent)
                 )
@@ -238,7 +248,7 @@ public class ApplicationsService {
                         new Application(
                                 ba.asIRI(node),
                                 ba.asString(sublabel),
-                                subscriptionIdentifier,
+                                applicationIdentifier,
                                 ba.asBoolean(subPersistent)
                         )
                 )
@@ -265,7 +275,7 @@ public class ApplicationsService {
 
                     return this.applicationsStore.insert(modelBuilder.build(), authentication, Authorities.USER).then(Mono.just(apiKey));
                 })
-                .doOnSubscribe(subs -> log.debug("Generating new api key for subscriptions '{}'", subscriptionIdentifier));
+                .doOnSubscribe(subs -> log.debug("Generating new api key for subscriptions '{}'", applicationIdentifier));
     }
 
     private Mono<BindingSet> getUniqueBindingSet(List<BindingSet> result) {

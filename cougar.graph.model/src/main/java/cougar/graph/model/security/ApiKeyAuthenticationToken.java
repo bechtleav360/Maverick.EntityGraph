@@ -13,7 +13,7 @@ import java.util.*;
 public class ApiKeyAuthenticationToken implements Authentication {
 
     public static final String API_KEY_HEADER = "X-API-KEY";
-    private final List<GrantedAuthority> authorities;
+    private final Set<GrantedAuthority> authorities;
 
     private final Map<String, String> headers;
     private boolean isAuthenticated;
@@ -21,7 +21,7 @@ public class ApiKeyAuthenticationToken implements Authentication {
 
     public ApiKeyAuthenticationToken(Map<String, String> headers) {
         this.headers = headers;
-        this.authorities = AuthorityUtils.NO_AUTHORITIES;
+        this.authorities = new HashSet<>(AuthorityUtils.NO_AUTHORITIES);
     }
 
     public ApiKeyAuthenticationToken() {
@@ -44,7 +44,7 @@ public class ApiKeyAuthenticationToken implements Authentication {
 
 
     /**
-     * Since multiple authentication managers might need different authorities, we keep this list mutable.
+     * Since different authentication managers might need different authorities, we keep this list mutable.
      * @param authority
      */
     public void grantAuthority(GrantedAuthority authority) {

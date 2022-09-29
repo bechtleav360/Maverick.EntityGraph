@@ -1,5 +1,6 @@
-package cougar.graph.api.controller;
+package cougar.graph.api.controller.queries;
 
+import cougar.graph.api.controller.AbstractController;
 import cougar.graph.model.rdf.NamespaceAwareStatement;
 import cougar.graph.services.services.QueryServices;
 import io.swagger.annotations.Api;
