@@ -29,7 +29,7 @@ steps:
       GHCR_USER: $(ghcr.user)
       GHCR_PASSWORD: $(ghcr.password)
     inputs:
-      mavenPomFile: 'cougar.graph.main/pom.xml'
+      mavenPomFile: 'maverick.graph.main/pom.xml'
       goals: 'spring-boot:build-image'
       publishJUnitResults: false
       jdkVersionOption: 1.17
