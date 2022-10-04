@@ -62,6 +62,15 @@ public class EntityServices {
                 .flatMap(trx -> this.entityStore.commit(trx, authentication));
     }
 
+
+    public Mono<Transaction> deleteEntity(String id, Authentication authentication) {
+
+
+        LocalIRI entityIdentifier = LocalIRI.withDefaultNamespace(id);
+
+        return this.deleteEntity(entityIdentifier, authentication);
+    }
+
     public Mono<Transaction> createEntity(Incoming triples, Map<String, String> parameters, Authentication authentication) {
         return this.prepareEntity(triples, parameters, new Transaction(), authentication)
                 .flatMap(transaction -> entityStore.commit(transaction, authentication));
@@ -107,6 +116,35 @@ public class EntityServices {
         return this.entityStore.getEntity(entityIdentifier, authentication)
                 .switchIfEmpty(Mono.error(new EntityNotFound(entityIdentifier.stringValue())))
                 .flatMap(entity -> this.entityStore.addStatement(entityIdentifier, predicate, value, transaction.affected(entity)))
+                .flatMap(trx -> this.entityStore.commit(trx, authentication));
+    }
+
+    /**
+     * Deletes a statement.
+     */
+
+    public Mono<Transaction> deleteValue(String id, String predicatePrefix, String predicateKey, String value, Authentication authentication) {
+
+
+        ValueFactory vf = SimpleValueFactory.getInstance();
+        LocalIRI entityIdentifier = LocalIRI.withDefaultNamespace(id);
+        String namespace = schema.getNamespaceFor(predicatePrefix).orElseThrow(() -> new UnknownPrefix(predicatePrefix)).getName();
+
+        return this.deleteValue(entityIdentifier,
+                LocalIRI.withDefinedNamespace(namespace, predicateKey),
+                vf.createLiteral(value),
+                authentication
+        );
+    }
+
+
+    /**
+     * Deletes a statement. Fails if no entity exists with the given subject
+     */
+    Mono<Transaction> deleteValue(IRI entityIdentifier, IRI predicate, Value value,  Authentication authentication) {
+
+        return this.entityStore.listStatements(entityIdentifier, predicate,value, authentication)
+                .flatMap(statements -> this.entityStore.removeStatements(statements, new Transaction()))
                 .flatMap(trx -> this.entityStore.commit(trx, authentication));
     }
 
