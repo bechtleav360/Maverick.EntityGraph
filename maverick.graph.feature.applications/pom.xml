@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>graph-parent</artifactId>
+        <groupId>com.bechtle.maverick.graph</groupId>
+        <version>0.0.1-SNAPSHOT</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>graph-feature-multitenancy</artifactId>
+    <name>Maverick.EntityGraph Feature: Multitenancy</name>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.bechtle.maverick.graph</groupId>
+            <artifactId>graph-model</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.bechtle.maverick.graph</groupId>
+            <artifactId>graph-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.bechtle.maverick.graph</groupId>
+            <artifactId>graph-store</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.bechtle.maverick.graph</groupId>
+            <artifactId>graph-store-rdf4j</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.bechtle.maverick.graph</groupId>
+            <artifactId>graph-tests</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.bechtle.maverick.graph</groupId>
+            <artifactId>graph-feature-admin</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.eclipse.rdf4j</groupId>
+            <artifactId>rdf4j-repository-sail</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.rdf4j</groupId>
+            <artifactId>rdf4j-sail-lmdb</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.rdf4j</groupId>
+            <artifactId>rdf4j-sail-memory</artifactId>
+        </dependency>
+    </dependencies>
+
+    <properties>
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
+    </properties>
+
+</project>

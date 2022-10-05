@@ -11,7 +11,7 @@
 - [x] Instance on cloud with persistent storage
 - [x] Preloaded videos 
 
-# 2 - EAGL MVP
+# 2 - Maverick.EntityGraph MVP
 
 - [x] Read entity
 - [x] Multitenancy API

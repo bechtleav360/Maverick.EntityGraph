@@ -14,19 +14,19 @@
     </parent>
 
     <artifactId>graph-parent</artifactId>
-    <groupId>com.bechtle.cougar.graph</groupId>
+    <groupId>com.bechtle.maverick.graph</groupId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>Cougar Graph (Parent)</name>
+    <name>Maverick.EntityGraph (Parent)</name>
     <modules>
-        <module>cougar.graph.main</module>
-        <module>cougar.graph.api</module>
-        <module>cougar.graph.services</module>
-        <module>cougar.graph.store</module>
-        <module>cougar.graph.model</module>
-        <module>cougar.graph.feature.rdf4j-store</module>
-        <module>cougar.graph.feature.admin</module>
-        <module>cougar.graph.feature.applications</module>
-        <module>cougar.graph.tests</module>
+        <module>maverick.graph.main</module>
+        <module>maverick.graph.api</module>
+        <module>maverick.graph.services</module>
+        <module>maverick.graph.store</module>
+        <module>maverick.graph.model</module>
+        <module>maverick.graph.feature.rdf4j-store</module>
+        <module>maverick.graph.feature.admin</module>
+        <module>maverick.graph.feature.applications</module>
+        <module>maverick.graph.tests</module>
     </modules>
 
     <description>Provides access to the graph through json-ld api</description>
@@ -114,47 +114,47 @@
                 <scope>import</scope>
             </dependency>
             <dependency>
-                <groupId>com.bechtle.cougar.graph</groupId>
+                <groupId>com.bechtle.maverick.graph</groupId>
                 <artifactId>graph-model</artifactId>
                 <version>${graph.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.bechtle.cougar.graph</groupId>
+                <groupId>com.bechtle.maverick.graph</groupId>
                 <artifactId>graph-api</artifactId>
                 <version>${graph.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.bechtle.cougar.graph</groupId>
+                <groupId>com.bechtle.maverick.graph</groupId>
                 <artifactId>graph-store</artifactId>
                 <version>${graph.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.bechtle.cougar.graph</groupId>
+                <groupId>com.bechtle.maverick.graph</groupId>
                 <artifactId>graph-store-rdf4j</artifactId>
                 <version>${graph.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.bechtle.cougar.graph</groupId>
+                <groupId>com.bechtle.maverick.graph</groupId>
                 <artifactId>graph-application</artifactId>
                 <version>${graph.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.bechtle.cougar.graph</groupId>
+                <groupId>com.bechtle.maverick.graph</groupId>
                 <artifactId>graph-tests</artifactId>
                 <version>${graph.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.bechtle.cougar.graph</groupId>
+                <groupId>com.bechtle.maverick.graph</groupId>
                 <artifactId>graph-feature-admin</artifactId>
                 <version>${graph.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.bechtle.cougar.graph</groupId>
+                <groupId>com.bechtle.maverick.graph</groupId>
                 <artifactId>graph-feature-multitenancy</artifactId>
                 <version>${graph.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.bechtle.cougar.graph</groupId>
+                <groupId>com.bechtle.maverick.graph</groupId>
                 <artifactId>graph-services</artifactId>
                 <version>${graph.version}</version>
             </dependency>

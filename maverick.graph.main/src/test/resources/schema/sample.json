@@ -1,0 +1,145 @@
+{
+  "@context": {
+    "rdf": "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
+    "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+    "mav": "https://av360.io/schema/maverick#",
+    "xsd": "http://www.w3.org/2001/XMLSchema#",
+    "sdo": "https://schema.org/"
+  },
+  "@graph": [
+    {
+      "@id": "mav:LearningPath",
+      "@type": "rdfs:Class",
+      "rdfs:label": "a learning path"
+    },
+    {
+      "@id": "mav:LearningUnit",
+      "@type": "rdfs:Class",
+      "rdfs:label": "a learning unit"
+    },
+    {
+      "@id": "mav:WikipediaEntry",
+      "@type": "rdfs:Class",
+      "rdfs:label": "Wikipedia Entry",
+      "rdfs:subClassOf": [
+        {
+          "@id": "sdo:TextDigitalDocument"
+        },
+        {
+          "@id": "mav:LearningUnit"
+        }
+      ]
+    },
+    {
+      "@id": "mav:YoutubeVideo",
+      "@type": "rdfs:Class",
+      "rdfs:comment": "A video",
+      "rdfs:label": "Youtube Video",
+      "rdfs:subClassOf": [
+        {
+          "@id": "sdo:VideoObject"
+        },
+        {
+          "@id": "mav:LearningUnit"
+        },
+        {
+          "@id": "sdo:video"
+        }
+      ]
+    },
+    {
+      "@id": "mav:includesUnits",
+      "@type": "rdf:Property",
+      "rdfs:comment": "An embedded video object.",
+      "rdfs:label": "video",
+      "sdo:domainIncludes": {
+        "@id": "mav:LearningPath"
+      },
+      "sdo:rangeIncludes": [
+        {
+          "@id": "sdo:Clip"
+        },
+        {
+          "@id": "sdo:VideoObject"
+        }
+      ]
+    },
+    {
+      "@id": "sdo:Clip",
+      "@type": "rdfs:Class",
+      "rdfs:comment": "A short TV or radio program or a segment/part of a program.",
+      "rdfs:label": "Clip",
+      "rdfs:subClassOf": {
+        "@id": "sdo:CreativeWork"
+      }
+    },
+    {
+      "@id": "sdo:CreativeWork",
+      "@type": "rdfs:Class",
+      "rdfs:comment": "The most generic kind of creative work, including books, movies, photographs, software programs, etc.",
+      "rdfs:label": "CreativeWork",
+      "rdfs:subClassOf": {
+        "@id": "sdo:Thing"
+      }
+    },
+    {
+      "@id": "sdo:DigitalDocument",
+      "@type": "rdfs:Class",
+      "rdfs:comment": "An electronic file or document.",
+      "rdfs:label": "DigitalDocument",
+      "rdfs:subClassOf": {
+        "@id": "sdo:CreativeWork"
+      }
+    },
+    {
+      "@id": "sdo:MediaObject",
+      "@type": "rdfs:Class",
+      "rdfs:comment": "A media object, such as an image, video, or audio object embedded in a web page or a downloadable dataset i.e. DataDownload. Note that a creative work may have many media objects associated with it on the same web page. For example, a page about a single song (MusicRecording) may have a music video (VideoObject), and a high and low bandwidth audio stream (2 AudioObject's).",
+      "rdfs:label": "MediaObject",
+      "rdfs:subClassOf": {
+        "@id": "sdo:CreativeWork"
+      }
+    },
+    {
+      "@id": "sdo:TextDigitalDocument",
+      "@type": "rdfs:Class",
+      "rdfs:comment": "A file composed primarily of text.",
+      "rdfs:label": "TextDigitalDocument",
+      "rdfs:subClassOf": {
+        "@id": "sdo:DigitalDocument"
+      }
+    },
+    {
+      "@id": "sdo:Thing",
+      "@type": "rdfs:Class",
+      "rdfs:comment": "The most generic type of item.",
+      "rdfs:label": "Thing"
+    },
+    {
+      "@id": "sdo:VideoObject",
+      "@type": "rdfs:Class",
+      "rdfs:comment": "A video file.",
+      "rdfs:label": "VideoObject",
+      "rdfs:subClassOf": {
+        "@id": "sdo:MediaObject"
+      }
+    },
+    {
+      "@id": "sdo:video",
+      "@type": "rdf:Property",
+      "rdfs:comment": "An embedded video object.",
+      "rdfs:label": "video",
+      "sdo:domainIncludes": {
+        "@id": "sdo:CreativeWork"
+      },
+      "sdo:rangeIncludes": [
+        {
+          "@id": "sdo:Clip"
+        },
+        {
+          "@id": "sdo:VideoObject"
+        }
+      ]
+    }
+  ]
+}

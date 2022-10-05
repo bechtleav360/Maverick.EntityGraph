@@ -11,7 +11,7 @@ Support for querying the graph
 ## Run Query
 Version: 2
 
-``GET /api/query?type=eagl:LearningUnit&expand=true``
+``GET /api/query?type=mav:LearningUnit&expand=true``
 
 returns entities of given type
 
@@ -24,7 +24,7 @@ returns entities of given type
 * ``limit``:
 * ``page``:
 
-In this example, the type `eagl:LearningUnit` is abstract. There are no direct instances in the graph, we only have WikipediaEntries and YoutubeVideos. By adding the ``expand``-flag, we define that we are interested in all entities whose type inherits from the query parameter.
+In this example, the type `mav:LearningUnit` is abstract. There are no direct instances in the graph, we only have WikipediaEntries and YoutubeVideos. By adding the ``expand``-flag, we define that we are interested in all entities whose type inherits from the query parameter.
 
 Query support comes through attribute matching in the frames.
 

@@ -8,7 +8,7 @@ our own solution.
 A Knowledge Graph with self-learning rules needs to have the ability, to infer new connections and assign certainty values to it
 ```
 
-:w1 a eagl:WikipediaEntry ;
+:w1 a mav:WikipediaEntry ;
     :w1 :inPath :p1
     :w1 :inPath :p2
     :w1 :inPath :p3
@@ -60,8 +60,10 @@ Taking our example from above, we would define it as
 
 
 ```turtle
+PREFIX :     <http://www.example.org/>
+PREFIX mav: <https://av360.io/schema/maverick#>
 
-:w1 a eagl:WikipediaEntry ;
+:w1 a mav:WikipediaEntry ;
     :title "a title" ; 
     << :w1 :inPath :p1 >> :certainty "1" ;
     << :w1 :inPath :p2 >> :certainty "0.634323233" ;
@@ -77,15 +79,15 @@ See more examples in the [draft standard](https://json-ld.github.io/json-ld-star
 
 {
   "@context": {
-    "cougar.graph.model.rdf": "http://www.w3.org/1999/02/22-cougar.graph.model.rdf-syntax-ns#",
-    "rdfs": "http://www.w3.org/2000/01/cougar.graph.model.rdf-schema#",
-    "eagl": "http://av360.org/schema/eagl#",
+    "rdf": "http://www.w3.org/1999/02/22/rdf-syntax-ns#",
+    "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+    "mav": "http://av360.org/schema/maverick#",
     "xsd": "http://www.w3.org/2001/XMLSchema#",
     "sdo": "https://schema.org/"
   },
-  "@type": "eagl:WikipediaEntry",
+  "@type": "mav:WikipediaEntry",
   "sdo:title": "a title", 
-  "eagl:inPath": [
+  "mav:inPath": [
     {
       "@id": "p1",
       "@annotation": {
