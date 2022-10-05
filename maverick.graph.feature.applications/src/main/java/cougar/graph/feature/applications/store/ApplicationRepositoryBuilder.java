@@ -23,7 +23,6 @@ import org.springframework.core.io.Resource;
 import org.springframework.lang.Nullable;
 import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.GrantedAuthority;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
@@ -92,11 +91,11 @@ public class ApplicationRepositoryBuilder implements RepositoryBuilder {
             return this.cache.get(repositoryType.name(), s -> new LabeledRepository("test:" + repositoryType.name(), new SailRepository(new MemoryStore())));
         }
 
-        if (authentication instanceof ApiKeyAuthenticationToken && authentication.getAuthorities().contains(Authorities.ADMIN)) {
-            return this.resolveRepositoryForAdminAuthentication(repositoryType, (ApiKeyAuthenticationToken) authentication);
+        if (authentication instanceof ApiKeyAuthenticationToken && Authorities.satisfies(Authorities.SYSTEM, authentication.getAuthorities())) {
+            return this.resolveRepositoryForSystemAuthentication(repositoryType, (ApiKeyAuthenticationToken) authentication);
         }
 
-        if (authentication instanceof ApplicationAuthenticationToken && authentication.getAuthorities().contains(Authorities.USER)) {
+        if (authentication instanceof ApplicationAuthenticationToken && Authorities.satisfies(Authorities.READER, authentication.getAuthorities())) {
             return this.resolveRepositoryForApplicationAuthentication(repositoryType, (ApplicationAuthenticationToken) authentication);
         }
 
@@ -104,7 +103,7 @@ public class ApplicationRepositoryBuilder implements RepositoryBuilder {
     }
 
     private Repository resolveRepositoryForApplicationAuthentication(RepositoryType repositoryType, ApplicationAuthenticationToken authentication) throws IOException {
-        Assert.isTrue(authentication.getAuthorities().contains(Authorities.USER), "Missing authorization: " + Authorities.USER.getAuthority());
+        Assert.isTrue(Authorities.satisfies(Authorities.READER, authentication.getAuthorities()), "Missing authorization: " + Authorities.READER.getAuthority());
 
         log.trace("(Store) Resolving repository with application authentication.");
         return switch (repositoryType) {
@@ -117,8 +116,8 @@ public class ApplicationRepositoryBuilder implements RepositoryBuilder {
         };
     }
 
-    private Repository resolveRepositoryForAdminAuthentication(RepositoryType repositoryType, ApiKeyAuthenticationToken authentication) throws IOException {
-        Assert.isTrue(authentication.getAuthorities().contains(Authorities.ADMIN), "Missing authorization: " + Authorities.ADMIN.getAuthority());
+    private Repository resolveRepositoryForSystemAuthentication(RepositoryType repositoryType, ApiKeyAuthenticationToken authentication) throws IOException {
+        Assert.isTrue(Authorities.satisfies(Authorities.SYSTEM, authentication.getAuthorities()), "Missing authorization: " + Authorities.SYSTEM.getAuthority());
 
         if (authentication instanceof ApplicationAuthenticationToken) {
             log.trace("Resolving repository with admin authentication and additional subscription key.");

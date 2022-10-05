@@ -71,7 +71,8 @@ public class ApplicationAuthenticationManager implements ReactiveAuthenticationM
                 .map(applicationApiKey -> {
                     log.debug("Valid api key for application '{}' provided in header '{}'.", applicationApiKey.label(), ApiKeyAuthenticationToken.API_KEY_HEADER);
                     ApplicationAuthenticationToken applicationAuthenticationToken = new ApplicationAuthenticationToken(apiKeyAuthenticationToken, applicationApiKey);
-                    applicationAuthenticationToken.grantAuthority(Authorities.USER);
+                    // TODO: extract role from application key
+                    applicationAuthenticationToken.grantAuthority(Authorities.READER);
                     applicationAuthenticationToken.setAuthenticated(true);
                     return apiKeyAuthenticationToken;
 

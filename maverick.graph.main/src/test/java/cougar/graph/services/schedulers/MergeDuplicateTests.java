@@ -3,6 +3,7 @@ package cougar.graph.services.schedulers;
 import cougar.graph.TestConfigurations;
 import cougar.graph.model.security.Authorities;
 import cougar.graph.services.schedulers.detectDuplicates.ScheduledDetectDuplicates;
+import cougar.graph.store.RepositoryType;
 import cougar.graph.tests.api.v2.MergeDuplicatesScheduler;
 import cougar.graph.tests.util.CsvConsumer;
 import cougar.graph.tests.util.RdfConsumer;
@@ -17,6 +18,7 @@ import org.eclipse.rdf4j.sparqlbuilder.core.SparqlBuilder;
 import org.eclipse.rdf4j.sparqlbuilder.core.Variable;
 import org.eclipse.rdf4j.sparqlbuilder.core.query.Queries;
 import org.eclipse.rdf4j.sparqlbuilder.core.query.SelectQuery;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,11 +48,18 @@ public class MergeDuplicateTests extends TestsBase implements MergeDuplicatesSch
     @Autowired
     private ScheduledDetectDuplicates scheduledDetectDuplicates;
 
+    @AfterEach
+    public void resetRepository() {
+        super.resetRepository(RepositoryType.ENTITIES.name());
+    }
+
 
     /** Verify that embedded items in one request are merged */
     @Override
     @Test
     public void createEmbeddedEntitiesWithSharedItems() {
+        log.info("---------- Running test: Create embedded with share items ---------- ");
+
         Resource file = new ClassPathResource("requests/create-valid_withEmbedded.ttl");
         RdfConsumer rdfConsumer = new RdfConsumer(RDFFormat.TURTLE);
 
@@ -81,6 +90,8 @@ public class MergeDuplicateTests extends TestsBase implements MergeDuplicatesSch
     @Override
     @Test
     public void createEmbeddedEntitiesWithSharedItemsInSeparateRequests() throws InterruptedException {
+        log.info("---------- Running test: Create embedded with shared items in separate requests ---------- ");
+
         RdfConsumer rdfConsumer = new RdfConsumer(RDFFormat.TURTLE);
 
         webClient.post()
@@ -100,7 +111,7 @@ public class MergeDuplicateTests extends TestsBase implements MergeDuplicatesSch
                 .expectBody();
 
 
-        StepVerifier.create(this.scheduledDetectDuplicates.checkForDuplicates(new TestingAuthenticationToken("", "", List.of(Authorities.ADMIN, Authorities.USER)))).verifyComplete();
+        StepVerifier.create(this.scheduledDetectDuplicates.checkForDuplicates(new TestingAuthenticationToken("", "", List.of(Authorities.SYSTEM)))).verifyComplete();
 
         /**
          * SELECT DISTINCT * WHERE {

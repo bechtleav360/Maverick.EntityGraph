@@ -87,7 +87,7 @@ public class ScheduledDetectDuplicates {
 
         ApiKeyAuthenticationToken adminAuthentication = new ApiKeyAuthenticationToken(new HashMap<>());
         adminAuthentication.setAuthenticated(true);
-        adminAuthentication.grantAuthority(Authorities.ADMIN);
+        adminAuthentication.grantAuthority(Authorities.SYSTEM);
 
         // FIXME: do this with all applicatations (run-as semantics)
 

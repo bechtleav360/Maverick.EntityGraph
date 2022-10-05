@@ -2,6 +2,7 @@ package cougar.graph.services.schedulers;
 
 import cougar.graph.TestConfigurations;
 import cougar.graph.model.security.Authorities;
+import cougar.graph.store.RepositoryType;
 import cougar.graph.store.rdf.models.Transaction;
 import cougar.graph.services.schedulers.replaceGlobalIdentifiers.ScheduledReplaceGlobalIdentifiers;
 import cougar.graph.feature.admin.domain.AdminServices;
@@ -10,6 +11,7 @@ import cougar.graph.store.EntityStore;
 import cougar.graph.store.TransactionsStore;
 import cougar.graph.tests.util.TestsBase;
 import lombok.extern.slf4j.Slf4j;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -57,6 +59,12 @@ class CheckGlobalIdentifiersTest extends TestsBase {
     @Autowired
     TransactionsStore transactionsStore;
 
+
+    @AfterEach
+    public void resetRepository() {
+        super.resetRepository(RepositoryType.ENTITIES.name());
+    }
+
     @Test
     void checkForGlobalIdentifiers() {
 
@@ -64,7 +72,7 @@ class CheckGlobalIdentifiersTest extends TestsBase {
         scheduled = new ScheduledReplaceGlobalIdentifiers(queryServices, entityStore, transactionsStore);
 
         Flux<Transaction> action = this.createEntities().thenMany(
-                scheduled.checkForGlobalIdentifiers(new TestingAuthenticationToken("", "", List.of(Authorities.ADMIN, Authorities.USER)))
+                scheduled.checkForGlobalIdentifiers(new TestingAuthenticationToken("", "", List.of(Authorities.SYSTEM)))
                         .doOnNext(transaction -> log.trace("Completed transaction"))
         );
 
@@ -95,7 +103,7 @@ class CheckGlobalIdentifiersTest extends TestsBase {
 
         Flux<DataBuffer> read = DataBufferUtils.read(file, new DefaultDataBufferFactory(), 128);
 
-        return adminServices.importEntities(read, "text/turtle", new TestingAuthenticationToken("test", "test", List.of(Authorities.ADMIN)));
+        return adminServices.importEntities(read, "text/turtle", new TestingAuthenticationToken("test", "test", List.of(Authorities.APPLICATION)));
 
     }
 }
