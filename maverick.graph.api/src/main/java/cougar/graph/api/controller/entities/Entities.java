@@ -161,8 +161,7 @@ public class Entities extends AbstractController {
             produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE})
     @ResponseStatus(HttpStatus.CREATED)
     Flux<NamespaceAwareStatement> updateValue(@PathVariable String id, @PathVariable String prefixedKey, @RequestBody String value) {
-        Assert.isTrue(!value.matches("(?s).*[\\n\\r].*"), "Newlines in request body are not supported");
-        //TODO: change Assertion to prefixedKey must exist in advance
+        //TODO: Assert prefixedKey must exist in advance
         String[] property = splitPrefixedIdentifier(prefixedKey);
         return super.getAuthentication()
                 .flatMap(authentication -> entityServices.setValue(id, property[0], property[1], value, authentication))
