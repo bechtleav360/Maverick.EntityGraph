@@ -127,6 +127,13 @@ public class Entities extends AbstractController {
     @ResponseStatus(HttpStatus.OK)
     Flux<NamespaceAwareStatement> deleteEntity(@PathVariable String id){
         Assert.isTrue(id.length() == GeneratedIdentifier.LENGTH, "Incorrect length for identifier.");
+        boolean assertion = Boolean.TRUE.equals(
+                super.getAuthentication()
+                        .flatMap(authentication -> entityServices.entityExists(id, authentication))
+                        .block()
+        );
+        Assert.isTrue(assertion, "Entity with id" + id + ". \\" +
+                "does not exist");
 
         return super.getAuthentication()
                 .flatMap(authentication ->  entityServices.deleteEntity(id, authentication))
@@ -146,6 +153,13 @@ public class Entities extends AbstractController {
         Assert.isTrue(!value.matches("(?s).*[\\n\\r].*"), "Newlines in request body are not supported");
 
         String[] property = splitPrefixedIdentifier(prefixedKey);
+        boolean assertion = Boolean.TRUE.equals(
+                super.getAuthentication()
+                        .flatMap(authentication -> entityServices.valueIsSet(id, property[0], property[1], authentication))
+                        .block()
+        );
+        Assert.isTrue(assertion, "Property " + prefixedKey + " is not set for entity " + id + ". \\" +
+                "Property must be set prior to delete request.");
         return super.getAuthentication()
                 .flatMap(authentication ->  entityServices.deleteValue(id, property[0], property[1], value, authentication))
                 .flatMapIterable(AbstractModel::asStatements)
@@ -161,8 +175,15 @@ public class Entities extends AbstractController {
             produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE})
     @ResponseStatus(HttpStatus.CREATED)
     Flux<NamespaceAwareStatement> updateValue(@PathVariable String id, @PathVariable String prefixedKey, @RequestBody String value) {
-        //TODO: Assert prefixedKey must exist in advance
         String[] property = splitPrefixedIdentifier(prefixedKey);
+        boolean assertion = Boolean.TRUE.equals(
+                super.getAuthentication()
+                        .flatMap(authentication -> entityServices.valueIsSet(id, property[0], property[1], authentication))
+                        .block()
+        );
+        Assert.isTrue(assertion, "Property " + prefixedKey + " is not set for entity " + id + ". \\" +
+                "Property must be set prior to put request.");
+
         return super.getAuthentication()
                 .flatMap(authentication -> entityServices.setValue(id, property[0], property[1], value, authentication))
                 .flatMapIterable(AbstractModel::asStatements)

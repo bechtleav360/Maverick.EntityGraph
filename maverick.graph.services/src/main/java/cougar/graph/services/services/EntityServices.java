@@ -20,7 +20,6 @@ import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.*;
@@ -69,6 +68,34 @@ public class EntityServices {
 
         return this.deleteEntity(entityIdentifier, authentication);
     }
+
+
+    public Mono<Boolean> valueIsSet(IRI identifier, IRI predicate, Authentication authentication) {
+        return this.entityStore.listStatements(identifier, predicate, null, authentication)
+                .hasElement();
+    }
+
+
+    public Mono<Boolean> valueIsSet(String id, String predicatePrefix, String predicateKey, Authentication authentication) {
+
+
+        LocalIRI entityIdentifier = LocalIRI.withDefaultNamespace(id);
+        String namespace = schema.getNamespaceFor(predicatePrefix).orElseThrow(() -> new UnknownPrefix(predicatePrefix)).getName();
+
+        return this.valueIsSet(entityIdentifier,
+                LocalIRI.withDefinedNamespace(namespace, predicateKey),
+                authentication
+        );
+    }
+
+
+    public Mono<Boolean> entityExists(String id, Authentication authentication) {
+        LocalIRI identifier = LocalIRI.withDefaultNamespace(id);
+
+        return this.entityStore.listStatements(identifier, null, null, authentication)
+                .hasElement();
+    }
+
 
     public Mono<Transaction> createEntity(Incoming triples, Map<String, String> parameters, Authentication authentication) {
         return this.prepareEntity(triples, parameters, new Transaction(), authentication)
