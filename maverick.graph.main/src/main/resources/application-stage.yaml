@@ -5,6 +5,9 @@ application:
     enabled: true
     apiKey: "xxx"
   features:
+    modules:
+      applications: true
+      admin: true
     schedulers:
       detectDuplicates: false
       replaceGlobalIdentifiers: true

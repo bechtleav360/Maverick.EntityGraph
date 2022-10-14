@@ -15,9 +15,13 @@ import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
 import org.springframework.security.config.web.server.SecurityWebFiltersOrder;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
+import org.springframework.security.core.context.ReactiveSecurityContextHolder;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.server.SecurityWebFilterChain;
 import org.springframework.security.web.server.authentication.AuthenticationWebFilter;
 import org.springframework.security.web.server.authentication.ServerAuthenticationConverter;
+import org.springframework.security.web.server.authentication.ServerHttpBasicAuthenticationConverter;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
@@ -77,8 +81,9 @@ public class SecurityConfiguration {
         return exchange -> {
             List<String> apiKeys = exchange.getRequest().getHeaders().get(API_KEY_HEADER);
             if (apiKeys == null || apiKeys.size() == 0) {
-                // lets fallback to username/password
-                return Mono.empty();
+                // lets fallback to the standard authentication (basic)
+                ServerHttpBasicAuthenticationConverter basicAuthenticationConverter = new ServerHttpBasicAuthenticationConverter();
+                return basicAuthenticationConverter.convert(exchange);
             }
 
             log.trace("Found a valid api key in request, delegating authentication.");
