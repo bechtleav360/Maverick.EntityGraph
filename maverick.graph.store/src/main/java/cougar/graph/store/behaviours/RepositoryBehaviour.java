@@ -43,7 +43,7 @@ public interface RepositoryBehaviour {
      * @return true if exists
      */
     default Mono<Boolean> exists(Resource subj, Authentication authentication) throws IOException {
-        return this.exists(subj, authentication, Authorities.USER);
+        return this.exists(subj, authentication, Authorities.READER);
     }
 
     Mono<Boolean> exists(Resource subj, Authentication authentication, GrantedAuthority requiredAuthority) throws IOException;
@@ -61,7 +61,7 @@ public interface RepositoryBehaviour {
     }
 
     default RepositoryConnection getConnection(Authentication authentication, RepositoryType repositoryType, GrantedAuthority requiredAuthority) throws IOException {
-        if(! authentication.getAuthorities().contains(requiredAuthority)) {
+        if(! Authorities.satisfies(requiredAuthority, authentication.getAuthorities())) {
             throw new InsufficientAuthenticationException(String.format("Missing authority '%s' for initializing connection to requested repository for authentication", requiredAuthority.getAuthority()));
         };
         return getBuilder().buildRepository(repositoryType, authentication).getConnection();

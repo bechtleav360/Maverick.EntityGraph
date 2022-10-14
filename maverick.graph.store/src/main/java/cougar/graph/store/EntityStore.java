@@ -36,32 +36,32 @@ public interface EntityStore extends Searchable, Resettable, ModelUpdates, Selec
 
 
     default Flux<BindingSet> query(String query, Authentication authentication) {
-        return this.query(query, authentication, Authorities.USER);
+        return this.query(query, authentication, Authorities.READER);
     }
 
     default Mono<? extends Transaction> commit(Transaction trx, Authentication authentication) {
-        return this.commit(trx, authentication, Authorities.USER);
+        return this.commit(trx, authentication, Authorities.READER);
     }
 
     default Mono<Entity> getEntity(IRI entityIdentifier, Authentication authentication) {
-        return this.getEntity(entityIdentifier, authentication, Authorities.USER);
+        return this.getEntity(entityIdentifier, authentication, Authorities.READER);
 
     }
 
     default Mono<List<Statement>> listStatements(IRI object, IRI predicate, Value val, Authentication authentication) {
-        return this.listStatements(object, predicate, val, authentication, Authorities.USER);
+        return this.listStatements(object, predicate, val, authentication, Authorities.READER);
     }
 
     default Mono<? extends List<Statement>> listStatements(Resource object, IRI predicate, Value val, Authentication authentication) {
-        return this.listStatements(object, predicate, val, authentication, Authorities.USER);
+        return this.listStatements(object, predicate, val, authentication, Authorities.READER);
     }
 
     default Flux<NamespaceAwareStatement> construct(String query, Authentication authentication) {
-        return this.construct(query, authentication, Authorities.USER);
+        return this.construct(query, authentication, Authorities.READER);
     }
 
     default Flux<Transaction> commit(List<Transaction> transactions, Authentication authentication) {
-        return this.commit(transactions, authentication, Authorities.USER);
+        return this.commit(transactions, authentication, Authorities.READER);
     }
 
 
