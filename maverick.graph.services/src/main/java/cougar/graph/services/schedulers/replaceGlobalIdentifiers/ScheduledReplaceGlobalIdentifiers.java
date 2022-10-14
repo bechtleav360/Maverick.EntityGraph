@@ -47,7 +47,6 @@ public class ScheduledReplaceGlobalIdentifiers {
     // FIXME: should not directly access the services
     private final QueryServices queryServices;
 
-
     private final EntityStore entityStore;
     private final TransactionsStore trxStore;
 
@@ -63,7 +62,7 @@ public class ScheduledReplaceGlobalIdentifiers {
     public void checkForGlobalIdentifiersScheduled() {
         ApiKeyAuthenticationToken authentication = new ApiKeyAuthenticationToken();
         authentication.setAuthenticated(true);
-        authentication.grantAuthority(Authorities.ADMIN);
+        authentication.grantAuthority(Authorities.SYSTEM);
 
         this.checkForGlobalIdentifiers(authentication)
                 .collectList()

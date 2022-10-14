@@ -13,7 +13,7 @@ import java.util.*;
 public class ApiKeyAuthenticationToken implements Authentication {
 
     public static final String API_KEY_HEADER = "X-API-KEY";
-    private final Set<GrantedAuthority> authorities;
+    private final Set<Authorities.WeightedAuthority> authorities;
 
     private final Map<String, String> headers;
     private boolean isAuthenticated;
@@ -21,7 +21,7 @@ public class ApiKeyAuthenticationToken implements Authentication {
 
     public ApiKeyAuthenticationToken(Map<String, String> headers) {
         this.headers = headers;
-        this.authorities = new HashSet<>(AuthorityUtils.NO_AUTHORITIES);
+        this.authorities = new HashSet<>(Authorities.NO_AUTHORITIES);
     }
 
     public ApiKeyAuthenticationToken() {
@@ -38,7 +38,7 @@ public class ApiKeyAuthenticationToken implements Authentication {
     }
 
     @Override
-    public Collection<GrantedAuthority> getAuthorities() {
+    public Collection<Authorities.WeightedAuthority> getAuthorities() {
         return this.authorities;
     }
 
@@ -47,7 +47,7 @@ public class ApiKeyAuthenticationToken implements Authentication {
      * Since different authentication managers might need different authorities, we keep this list mutable.
      * @param authority
      */
-    public void grantAuthority(GrantedAuthority authority) {
+    public void grantAuthority(Authorities.WeightedAuthority authority) {
         // authorities USER and ADMIN are XOR
         // if(authority == Authorities.USER && this.getAuthorities().contains(Authorities.ADMIN)) throw new SecurityException("Granting user authority while admin authority has been set already");
         // if(authority == Authorities.ADMIN && this.getAuthorities().contains(Authorities.USER)) throw new SecurityException("Granting admin authority while user authority has been set already");

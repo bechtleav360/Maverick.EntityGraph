@@ -72,8 +72,7 @@ public class AdminAuthenticationManager implements ReactiveAuthenticationManager
         if(StringUtils.hasLength(this.key) && authentication.getApiKey().isPresent() && authentication.getApiKey().get().equalsIgnoreCase(this.key)) {
             log.debug("Valid API Key for Admin authentication provided.");
 
-            authentication.grantAuthority(Authorities.ADMIN);
-            authentication.grantAuthority(Authorities.USER);
+            authentication.grantAuthority(Authorities.SYSTEM);
             authentication.setAuthenticated(true);
             return Mono.just(authentication);
         }

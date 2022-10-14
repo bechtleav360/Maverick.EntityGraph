@@ -8,6 +8,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.DelegatingReactiveAuthenticationManager;
 import org.springframework.security.authentication.ReactiveAuthenticationManager;
 import org.springframework.security.authentication.TestingAuthenticationToken;
@@ -46,10 +47,13 @@ public class SecurityConfiguration {
 
         SecurityWebFilterChain build = http
                 .authorizeExchange()
-                .matchers(EndpointRequest.to("info", "env", "logfile", "loggers", "metrics", "scheduledTasks")).hasAuthority(Authorities.ADMIN.getAuthority())
+                .matchers(EndpointRequest.to("env", "logfile", "loggers", "metrics", "scheduledTasks")).hasAuthority(Authorities.SYSTEM.getAuthority())
                 .matchers(EndpointRequest.to("health")).permitAll()
-                .pathMatchers("/api/admin/**").hasAuthority(Authorities.ADMIN.getAuthority())
-                .pathMatchers("/api/**").hasAnyAuthority(Authorities.USER.getAuthority(), Authorities.ADMIN.getAuthority())
+                .pathMatchers("/api/admin/**").hasAuthority(Authorities.APPLICATION.getAuthority())
+                .pathMatchers(HttpMethod.GET, "/api/**").hasAuthority(Authorities.READER.getAuthority())
+                .pathMatchers(HttpMethod.HEAD, "/api/**").hasAuthority(Authorities.READER.getAuthority())
+                .pathMatchers(HttpMethod.DELETE, "/api/**").hasAuthority(Authorities.CONTRIBUTOR.getAuthority())
+                .pathMatchers(HttpMethod.POST, "/api/**").hasAuthority(Authorities.CONTRIBUTOR.getAuthority())
                 .anyExchange().permitAll()
                 .and()
                 .addFilterAt(authenticationWebFilter, SecurityWebFiltersOrder.AUTHENTICATION)
