@@ -61,7 +61,7 @@ public class TestConfigurations {
     @Bean
     @ConditionalOnProperty(name = "application.security.enabled", havingValue = "false")
     ServerAuthenticationConverter buildTestingAuthenticationConverter() {
-        return exchange -> Mono.just(new TestingAuthenticationToken("test", "test", List.of(Authorities.ADMIN, Authorities.USER)));
+        return exchange -> Mono.just(new TestingAuthenticationToken("test", "test", List.of(Authorities.SYSTEM)));
     }
     /*
     @Bean

@@ -45,7 +45,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-@Slf4j(topic = "graph.repository")
+@Slf4j(topic = "graph.repository.base")
 public class AbstractRepository implements RepositoryBehaviour, Statements, ModelUpdates, Resettable {
 
     private final RepositoryType repositoryType;
@@ -121,8 +121,8 @@ public class AbstractRepository implements RepositoryBehaviour, Statements, Mode
     }
 
     @Override
-    public Mono<Void> reset(Authentication authentication, RepositoryType repositoryType) {
-        try (RepositoryConnection connection = getConnection(authentication, repositoryType, Authorities.ADMIN)) {
+    public Mono<Void> reset(Authentication authentication, RepositoryType repositoryType, GrantedAuthority requiredAuthority) {
+        try (RepositoryConnection connection = getConnection(authentication, repositoryType, requiredAuthority)) {
             if (log.isTraceEnabled())
                 log.trace("Removing all statements from repository '{}'", connection.getRepository());
             RepositoryResult<Statement> statements = connection.getStatements(null, null, null);
@@ -155,7 +155,8 @@ public class AbstractRepository implements RepositoryBehaviour, Statements, Mode
         });
     }
 
-    public Mono<Void> importStatements(Publisher<DataBuffer> bytesPublisher, String mimetype, Authentication authentication) {
+    @Override
+    public Mono<Void> importStatements(Publisher<DataBuffer> bytesPublisher, String mimetype, Authentication authentication, GrantedAuthority requiredAuthority) {
         ;
 
         Optional<RDFParserFactory> parserFactory = RdfUtils.getParserFactory(MimeType.valueOf(mimetype));
@@ -167,7 +168,7 @@ public class AbstractRepository implements RepositoryBehaviour, Statements, Mode
 
         return DataBufferUtils.join(bytesPublisher)
                 .flatMap(dataBuffer -> {
-                    try (RepositoryConnection connection = getConnection(authentication, Authorities.ADMIN)) {
+                    try (RepositoryConnection connection = getConnection(authentication, requiredAuthority)) {
                         RDFInserter rdfInserter = new RDFInserter(connection);
                         parser.setRDFHandler(rdfInserter);
                         try (InputStream bais = dataBuffer.asInputStream(true)) {
@@ -192,8 +193,8 @@ public class AbstractRepository implements RepositoryBehaviour, Statements, Mode
 
     }
 
-    public Mono<Boolean> exists(Resource subj, Authentication authentication, GrantedAuthority requiredAutority) throws IOException {
-        try (RepositoryConnection connection = getConnection(authentication, requiredAutority)) {
+    public Mono<Boolean> exists(Resource subj, Authentication authentication, GrantedAuthority requiredAuthority) throws IOException {
+        try (RepositoryConnection connection = getConnection(authentication, requiredAuthority)) {
             return Mono.just(connection.hasStatement(subj, RDF.TYPE, null, false));
         }
     }

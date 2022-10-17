@@ -78,7 +78,7 @@ public class ApplicationsService {
         modelBuilder.add(Application.IS_PERSISTENT, application.persistent());
 
 
-        return this.applicationsStore.insert(modelBuilder.build(), authentication, Authorities.ADMIN)
+        return this.applicationsStore.insert(modelBuilder.build(), authentication, Authorities.SYSTEM)
                 .then(Mono.just(application))
                 .doOnSubscribe(subs -> log.debug("Creating a new application with label '{}' and persistence set to '{}' ", label, persistent));
 
@@ -108,7 +108,7 @@ public class ApplicationsService {
                                 .andHas(Application.HAS_LABEL, sublabel)
                         )
                 );
-        return this.applicationsStore.query(q, authentication, Authorities.ADMIN)
+        return this.applicationsStore.query(q, authentication, Authorities.APPLICATION)
                 .collectList()
                 .flatMap(result -> {
                     List<BindingSet> bindingSets = result.stream().toList();
@@ -170,7 +170,7 @@ public class ApplicationsService {
                 );
         String qs = q.getQueryString();
 
-        return this.applicationsStore.query(q, authentication, Authorities.ADMIN)
+        return this.applicationsStore.query(q, authentication, Authorities.APPLICATION)
                 .map(BindingsAccessor::new)
                 .map(ba ->
                         new ApplicationApiKey(
@@ -209,7 +209,7 @@ public class ApplicationsService {
                 )
                 .limit(100);
 
-        return this.applicationsStore.query(q, authentication, Authorities.ADMIN)
+        return this.applicationsStore.query(q, authentication, Authorities.SYSTEM)
                 .map(BindingsAccessor::new)
                 .map(ba ->
                         new Application(
@@ -240,7 +240,7 @@ public class ApplicationsService {
                 .limit(2);
 
 
-        return this.applicationsStore.query(q, authentication, Authorities.USER)
+        return this.applicationsStore.query(q, authentication, Authorities.APPLICATION)
                 .collectList()
                 .flatMap(this::getUniqueBindingSet)
                 .map(BindingsAccessor::new)
@@ -273,7 +273,7 @@ public class ApplicationsService {
                     modelBuilder.add(ApplicationApiKey.OF_SUBSCRIPTION, apiKey.application().key());
                     modelBuilder.add(apiKey.application().iri(), Application.HAS_API_KEY, apiKey.iri());
 
-                    return this.applicationsStore.insert(modelBuilder.build(), authentication, Authorities.USER).then(Mono.just(apiKey));
+                    return this.applicationsStore.insert(modelBuilder.build(), authentication, Authorities.APPLICATION).then(Mono.just(apiKey));
                 })
                 .doOnSubscribe(subs -> log.debug("Generating new api key for subscriptions '{}'", applicationIdentifier));
     }

@@ -31,6 +31,6 @@ steps:
     inputs:
       mavenPomFile: 'maverick.graph.main/pom.xml'
       goals: 'spring-boot:build-image'
-      publishJUnitResults: false
+      publishJUnitResults: true
       jdkVersionOption: 1.17
   

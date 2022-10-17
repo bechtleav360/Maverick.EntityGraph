@@ -10,12 +10,14 @@ import org.springframework.security.authentication.ReactiveAuthenticationManager
 import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.web.server.authentication.ServerHttpBasicAuthenticationConverter;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 import reactor.core.publisher.Mono;
 
 import javax.annotation.PostConstruct;
+import java.util.Set;
 
 @Component
 @Slf4j(topic = "graph.config.security")
@@ -72,8 +74,7 @@ public class AdminAuthenticationManager implements ReactiveAuthenticationManager
         if(StringUtils.hasLength(this.key) && authentication.getApiKey().isPresent() && authentication.getApiKey().get().equalsIgnoreCase(this.key)) {
             log.debug("Valid API Key for Admin authentication provided.");
 
-            authentication.grantAuthority(Authorities.ADMIN);
-            authentication.grantAuthority(Authorities.USER);
+            authentication.grantAuthority(Authorities.SYSTEM);
             authentication.setAuthenticated(true);
             return Mono.just(authentication);
         }
@@ -82,7 +83,24 @@ public class AdminAuthenticationManager implements ReactiveAuthenticationManager
 
     }
 
+    /**
+     * Some endpoints (e.g. the actuators) fall back to basic authentication.
+     *
+     * For now, we expect only the system password here.
+     * @param authentication
+     * @return
+     */
     private Mono<? extends Authentication> handleBasicAuthentication(UsernamePasswordAuthenticationToken authentication) {
+        log.trace("Handling request with basic authentication");
+
+        if(StringUtils.hasLength(this.key) && StringUtils.hasLength(authentication.getCredentials().toString()) && authentication.getCredentials().toString().equalsIgnoreCase(this.key)) {
+            log.debug("Valid password for system authentication provided.");
+
+
+            UsernamePasswordAuthenticationToken authenticated = UsernamePasswordAuthenticationToken.authenticated(authentication.getPrincipal(), authentication.getPrincipal(), Set.of(Authorities.SYSTEM));
+            return Mono.just(authenticated);
+        }
+
         return Mono.just(authentication);
     }
 
