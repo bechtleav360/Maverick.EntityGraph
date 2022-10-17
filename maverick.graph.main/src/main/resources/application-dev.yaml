@@ -14,7 +14,7 @@ application:
       admin: true
     schedulers:
       detectDuplicates: false
-      replaceGlobalIdentifiers: false
+      replaceGlobalIdentifiers: true
     transformers:
       replaceGlobalIdentifiers: true
       replaceAnonymousIdentifiers: true
@@ -38,5 +38,25 @@ logging:
       bechtle: TRACE
     org:
       springframework:
-        security: INFO
+        security: TRACE
 
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "health, info, env, loggers, metrics, scheduledTasks, logfile, mappings"
+  endpoint:
+    health:
+      enabled: true
+    info:
+      enabled: true
+    env:
+      enabled: true
+    loggers:
+      enabled: true
+    metrics:
+      enabled: true
+    scheduledTasks:
+      enabled: true
+    logfile:
+      enabled: true

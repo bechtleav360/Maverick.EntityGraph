@@ -19,10 +19,10 @@ public interface TransactionsStore {
     Flux<Transaction> store(Collection<Transaction> transaction, Authentication authentication, GrantedAuthority requiredAuthority);
 
     default Flux<Transaction> store(Collection<Transaction> transaction, Authentication authentication) {
-        return this.store(transaction, authentication, Authorities.USER);
+        return this.store(transaction, authentication, Authorities.CONTRIBUTOR);
     }
 
     default Mono<Transaction> store(Transaction transaction, Authentication authentication) {
-        return this.store(transaction, authentication, Authorities.USER);
+        return this.store(transaction, authentication, Authorities.CONTRIBUTOR);
     }
 }

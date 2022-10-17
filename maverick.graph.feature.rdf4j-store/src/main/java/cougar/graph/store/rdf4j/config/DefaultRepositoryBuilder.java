@@ -69,7 +69,7 @@ public class DefaultRepositoryBuilder implements RepositoryBuilder {
      * Initializes the connection to a repository. The repositories are cached
      *
      * @param repositoryType
-     * @param requiredAuthority
+     * @param authentication
      * @return
      * @throws IOException
      */
@@ -84,8 +84,7 @@ public class DefaultRepositoryBuilder implements RepositoryBuilder {
         if (authentication instanceof TestingAuthenticationToken) {
             return this.cache.get(repositoryType.name(), s -> new LabeledRepository("Test:"+repositoryType.name(), new SailRepository(new MemoryStore())));
         }
-
-        if (authentication.getAuthorities().contains(Authorities.ADMIN)) {
+        if(Authorities.satisfies(Authorities.SYSTEM, authentication.getAuthorities())) {
             log.trace("Resolving repository with admin authentication.");
             return this.resolveRepositoryForAdminAuthentication(repositoryType, (ApiKeyAuthenticationToken) authentication);
         }

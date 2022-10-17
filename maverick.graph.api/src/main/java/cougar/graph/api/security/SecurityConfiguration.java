@@ -8,15 +8,20 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.DelegatingReactiveAuthenticationManager;
 import org.springframework.security.authentication.ReactiveAuthenticationManager;
 import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
 import org.springframework.security.config.web.server.SecurityWebFiltersOrder;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
+import org.springframework.security.core.context.ReactiveSecurityContextHolder;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.server.SecurityWebFilterChain;
 import org.springframework.security.web.server.authentication.AuthenticationWebFilter;
 import org.springframework.security.web.server.authentication.ServerAuthenticationConverter;
+import org.springframework.security.web.server.authentication.ServerHttpBasicAuthenticationConverter;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
@@ -46,10 +51,13 @@ public class SecurityConfiguration {
 
         SecurityWebFilterChain build = http
                 .authorizeExchange()
-                .matchers(EndpointRequest.to("info", "env", "logfile", "loggers", "metrics", "scheduledTasks")).hasAuthority(Authorities.ADMIN.getAuthority())
+                .matchers(EndpointRequest.to("env", "logfile", "loggers", "metrics", "scheduledTasks")).hasAuthority(Authorities.SYSTEM.getAuthority())
                 .matchers(EndpointRequest.to("health")).permitAll()
-                .pathMatchers("/api/admin/**").hasAuthority(Authorities.ADMIN.getAuthority())
-                .pathMatchers("/api/**").hasAnyAuthority(Authorities.USER.getAuthority(), Authorities.ADMIN.getAuthority())
+                .pathMatchers("/api/admin/**").hasAuthority(Authorities.APPLICATION.getAuthority())
+                .pathMatchers(HttpMethod.GET, "/api/**").hasAuthority(Authorities.READER.getAuthority())
+                .pathMatchers(HttpMethod.HEAD, "/api/**").hasAuthority(Authorities.READER.getAuthority())
+                .pathMatchers(HttpMethod.DELETE, "/api/**").hasAuthority(Authorities.CONTRIBUTOR.getAuthority())
+                .pathMatchers(HttpMethod.POST, "/api/**").hasAuthority(Authorities.CONTRIBUTOR.getAuthority())
                 .anyExchange().permitAll()
                 .and()
                 .addFilterAt(authenticationWebFilter, SecurityWebFiltersOrder.AUTHENTICATION)
@@ -73,8 +81,9 @@ public class SecurityConfiguration {
         return exchange -> {
             List<String> apiKeys = exchange.getRequest().getHeaders().get(API_KEY_HEADER);
             if (apiKeys == null || apiKeys.size() == 0) {
-                // lets fallback to username/password
-                return Mono.empty();
+                // lets fallback to the standard authentication (basic)
+                ServerHttpBasicAuthenticationConverter basicAuthenticationConverter = new ServerHttpBasicAuthenticationConverter();
+                return basicAuthenticationConverter.convert(exchange);
             }
 
             log.trace("Found a valid api key in request, delegating authentication.");

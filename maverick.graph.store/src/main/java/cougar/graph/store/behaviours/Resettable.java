@@ -9,8 +9,8 @@ import reactor.core.publisher.Mono;
 
 public interface Resettable extends RepositoryBehaviour {
 
-    Mono<Void> reset(Authentication authentication, RepositoryType repositoryType);
+    Mono<Void> reset(Authentication authentication, RepositoryType repositoryType, GrantedAuthority requiredAuthority);
 
 
-    Mono<Void> importStatements(Publisher<DataBuffer> bytesPublisher, String mimetype, Authentication authentication);
+    Mono<Void> importStatements(Publisher<DataBuffer> bytesPublisher, String mimetype, Authentication authentication, GrantedAuthority requiredAuthority);
 }
