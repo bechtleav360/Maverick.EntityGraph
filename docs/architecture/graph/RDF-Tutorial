@@ -1,0 +1,221 @@
+https://rdf4j.org/documentation/tutorials/getting-started/#example-14-load-a-file-directly-into-a-database
+
+1. Einleitung: Was ist RDF?
+2. Verwendung von RDF4J zur Erstellung von RDF-Modellen
+3. Literalwerte: Datentypen und Sprachkennzeichen
+4. Leere Knotenpunkte
+5. Ziel: Wir möchten das Format von anderen Tools lesen können, um Toolübergreifend Informationen auszutauschen
+6. Zugriff auf ein Modell
+7. Benannte Graphen und Kontexte
+8. Datenbanken und SPARQL-Abfragen
+9. Weitere Lektüre
+10. RDF Star https://www.ontotext.com/knowledgehub/fundamentals/what-is-rdf-star/
+
+
+1. Einleitung in RDF (Resource Description Framework)
+
+RDF ist eine Empfehlung des W3C (World Wide Web Consortium)
+Zweck: Einen Rahmen für den Ausdruck von Informationen über Ressourcen in einer maschinenlesbaren, interoperablen Umgebung zu schaffen.
+Ressource: Kann alles sein, was wir mit einem Identifikator versehen können:
+    Websites
+    Bilder
+    Abstrakte, reale Dinge
+    Konzepte
+    ...
+    
+RDF ist dafür gedacht, Informationen zu modellieren, die von Anwendungen verarbeitet werden müssen:
+    Beispiel: Eine Modellierung von Informationen über Künstler:
+    Start: Eine einfache Tatsache: "Picassos Vorname ist Pablo", in RDF ausgedrückt:
+    Beschreibung: 
+    Wir haben eine Ressource "Picasso", die durch folgenden IRI (Internationalized Resource Identifier) bezeichnet wird: http://example.org/Picasso
+    Die Ressourcen besitzen Eigenschaften:
+    Hier verwenden wir die Eigenschaft: foaf:firstName (friend of a friend), um die Beziehung zwischen der Ressource "Picasso" und dem Wert "Pablo" zu kennzeichnen.
+    foaf:firstName ist ebenfalls eine IRI, aber um die Lesbarkeit zu verbessern, verwenden wir eine abgekürzte Syntax, die sogenannten Präfixnamen (mehr dazu später).
+    Der Eigenschaftswert "Pablo" ist ein Literalwert:
+    Er wird nicht durch einen Ressourcenbezeichner, sondern durch eine Zeichenkette dargestellt. 
+    Wir haben unseren Fakt über Picasso als einfachen Graphen dargestellt:
+    Wir besitzen zwei Knoten, verbunden durch eine Kante.
+    RDF-Modelle stellen wir uns als Graphen vor.
+    Jede Tatsache wird als Aussage (Triple) bezeichnet:
+    Das Subjekt: Dies ist ein Anfangsknoten der Aussage und stellt die Ressource dar, um die es in der Aussage geht.
+    Das Prädikat:  Diese Eigenschaft bezeichnet die Kante zwischen zwei Knoten.
+    Das Objekt:  Der Endknoten der Aussage, der die Ressource oder das Literal darstellt.
+    Eine kleine Erweiterung unseres Beispiels:
+    Wir verfügen nicht nur über eine einzige Aussage über Picasso, sondern kennen auch eine weitere Tatsache: "Picasso ist ein Künstler".
+
+Wir können unser RDF-Modell wie folgt erweitern:
+
+Beschreibung:
+    Eine weitere Aussage wurde zu unserem Graphen hinzugefügt, indem eine weitere Kante zu einem bereits vorhandenen Knoten hinzugefügt wurde, 
+    die mit der Eigenschaft rdf:type und dem Wert ex:Artist gekennzeichnet ist. 
+    Wenn wir dem Datenmodell neue Fakten hinzufügen, werden dem dem Graphen weitere Knoten und Kanten hinzufügt. 
+    
+    
+1.1 Internationalized Resource Identifier (IRI) 
+    Namensbereiche und vorgefertigte Namen (namespaces & prefixed names):
+        IRI's sind der Grund, warum RDF's so leistungsfähig sind:
+        Sie bieten einen Mechanismus, der eine globale Identifizierung jeder Ressource ermöglicht.
+        Unabhängig davon, wer einen Datensatz verfasst oder wo diese Daten physisch gespeichert sind, 
+        wenn wir eine identische IRI mit einem anderen Datensatz teilen, wissen beide, dass sie die selbe Sache betrachten. 
+        In vielen Datensätzen werden wir IRI's sehen, die mit "http://..." beginnen.
+
+        Aber: Dies heißt nicht unbedingt, dass wir diesen Link im Browser öffnen können und etwas sinnvolles erhalten:
+            Oft werden IRI's nur als eindeutige Bezeichner und nicht als tatsächliche Adressen verwendet.
+            Einige RDF-Quellen stellen sicher, dass unsere IRI's im Web nachgeschlagen werden können und sie tatsächlich Daten zurückerhalten, 
+            welche die durch den IRI identifizierte Ressource beschreiben:
+            
+            Linked Open Data (LOD) (Exkurs)
+            https://de.wikipedia.org/wiki/Linked_Open_Data
+            Linked Open Data (LOD) bezeichnet im World Wide Web frei verfügbare Daten, die per Uniform Resource Identifier (URI) identifiziert sind 
+            und darüber direkt per HTTP abgerufen werden können und ebenfalls per URI auf andere Daten verweisen. 
+            Idealerweise werden zur Kodierung und Verlinkung der Daten das Resource Description Framework (RDF) und darauf aufbauende Standards wie die 
+            Web Ontology Language (OWL) und die Abfragesprache SPARQL verwendet, damit sie von Maschinen in ihrer Bedeutung richtig interpretiert werden können. 
+            Somit ist das Linked Open Data Teil des Semantic Web. Die miteinander verknüpften Daten ergeben ein weltweites Netz, das auch als 
+            Linked [Open] Data Cloud“ oder „Giant Global Graph“ bezeichnet wird. Dort wo der Schwerpunkt weniger auf der freien Nutzbarkeit der Daten wie bei freien 
+            Inhalten liegt (Open Data), ist auch die Bezeichnung Linked Data üblich.
+
+In RDF-Daten werden IRI's in abgekürzter Form dargestellt:
+
+    <Präfix>:<Name>
+    
+        Diese ist als "Präfixed names" bekannt. Sie hat keinen Einfluss auf die Bedeutung der Daten, aber sie erleichtert das Lesen dieser Daten.
+        Ein Präfix wird definiert, das einen Namensraum ersetzt.
+            Ein Namensraum ist der erste Teil eines IRI, der von mehreren Ressourcen gemeinsam genutzt wird, z.B. teilen sich die IRI's:
+            http//example.org/Picasso
+            http//example.org/Rodin
+            http//example.org/ Rembrandt 
+            den Namensraum: http//example.org/.
+            Indem wir ein neues Präfix ex als Abkürzung für diesen Namensraum definieren, können wir die Zeichenfolge ex:Picasso anstelle des vollständigen IRI's 
+            verwenden.
+
+
+1.2 Erstellung und Wiederverwendung von IRI's
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+5. RDF4j bietet uns Werkzeuge zum Lesen und Schreiben von RDF-Modellen in verschiedenen Syntaxformaten, die alle standardisiert sind.
+    Mit diesen Syntaxformaten können wir Daten zwischen Anwendungen austauschen.
+    Die am häufigsten verwendeten Formate sind:
+        RDF/XML
+        Turtle
+        N-Triples
+
+
+5.1 Schreiben in RDF/XML
+
+    Beispiel: Wir können unser Modell als RDF/XML schreiben, indem wir die RDF4J Rio Parser/Writer Tools verwenden:
+    
+        Rio.write(model, System.out, RDFFormat.RDFXML);
+        
+    Die Ausgabe sieht in etwa so aus:
+        
+        <?xml version="1.0" encoding="UTF-8"?>
+        <rdf:RDF
+          xmlns:ex="http://example.org/"
+          xmlns:xsd="http://www.w3.org/2001/XMLSchema#"
+          xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+
+        <rdf:Description rdf:about="http://example.org/Picasso">
+          <rdf:type rdf:resource="http://example.org/Artist"/>
+          <firstName xmlns="http://xmlns.com/foaf/0.1/" rdf:datatype="http://www.w3.org/2001/XMLSchema#string">Pablo</firstName>
+          <ex:homeAddress rdf:nodeID="node1b4koa8edx1"/>
+        </rdf:Description>
+
+        <rdf:Description rdf:nodeID="node1b4koa8edx1">
+          <ex:street rdf:datatype="http://www.w3.org/2001/XMLSchema#string">31 Art Gallery</ex:street>
+          <ex:city rdf:datatype="http://www.w3.org/2001/XMLSchema#string">Madrid</ex:city>
+          <ex:country rdf:datatype="http://www.w3.org/2001/XMLSchema#string">Spain</ex:country>
+        </rdf:Description>
+
+        </rdf:RDF>
+        
+    Die Rio.write-Methode nimmt einen java.io.OutputStream oder einen java.io.Writer als Argument an. Wenn wir also in eine Datei statt auf den Bildschirm 
+    schreiben wollen, können wir einfach einen FileOutputStream oder einen FileWriter verwenden und ihn auf den gewünschten Speicherort verweisen.
+
+
+5.2 Schreiben in Turtle und in andere Formate
+
+    Beispiel: Wir können unser Modell im Turtle-Syntax-Format schreiben:
+    
+        Rio.write(model, System.out, RDFFormat.TURTLE);
+        
+    Die Ausgabe im Turtle-Format sieht wie folgt aus:
+    
+        1@prefix ex: <http://example.org/> .
+        2
+        3ex:Picasso a ex:Artist ;
+        4        <http://xmlns.com/foaf/0.1/firstName> "Pablo" ;
+        5        ex:homeAddress _:node1b4koq381x1 .
+        6
+        7_:node1b4koq381x1 ex:street "31 Art Gallery" ;
+        8        ex:city "Madrid" ;
+        9        ex:country "Spain" .
+
+    Wir können erkennen, dass das Turtle-Syntax-Format viel kompakter und auch für den Menschen leichter zu lesen ist. Gehen wir es schnell durch:
+
+    In der ersten Zeile wird ein Namespace-Präfix definiert. Es handelt sich um einen uns bekannten Namespace: den ex-Namespace, den wir unserem RDF-Modell vorhin 
+    hinzugefügt haben. Die Turtle-Syntax unterstützt die Verwendung von Namen mit Präfix, um das Format kompakter und leichter lesbar zu machen.
+    
+    Die Zeilen 3-5 zeigen drei RDF-Anweisungen, die sich alle auf ex:Picasso beziehen:
+    Die erste Anweisung in Zeile 3 besagt, dass Picasso vom Typ Künstler ist. In Turtle ist a eine Abkürzung für die Eigenschaft rdf:type. 
+    Wir beachten, dass die Zeile mit einem ; endet, was uns anzeigt, dass die nächste Zeile in der Datei das gleiche Thema behandelt.
+    
+    Zeile 4 besagt, dass Picassos Vorname "Pablo" ist. Wir beachten, dass hier der vollständige IRI für die Eigenschaft verwendet wird - dies geschieht, 
+    weil wir bei der Erstellung unseres Modells kein Namespace-Präfix für die Eigenschaft festgelegt haben. 
+    Hinweis: In der Turtle-Syntax beginnt ein vollständiger IRI immer mit < und endet mit >. Dadurch lassen sie sich leicht von vorangestellten Namen und von 
+    leeren Knotenbezeichnern unterscheiden.
+    
+    Zeile 5 schließlich besagt, dass Picasso eine homeAddress hat, die ein leerer Knoten ist:
+    ein leerer Knotenbezeichner in der Turtle-Syntax beginnt immer mit _: .
+    Wir beachten, dass diese Zeile mit einem . endet, was bedeutet, dass wir mit der Angabe von Fakten über das aktuelle Thema fertig sind.
+    Zeile 7 und folgende geben schließlich Fakten über den leeren Knoten (die Heimatadresse von Picasso) an: die Straße ist "31 Art Gallery", 
+    die Stadt ist "Madrid" und das Land ist "Spain".
+    
+    
+5.3 Lesen einer Turtle-RDF-Datei
+
+    Beispiel: Wie wir eine Turtle-Datei lesen und ein Model-Objekt daraus erzeugen können:
+        1 String filename = "example-data-artists.ttl";
+        2
+        3 // read the file 'example-data-artists.ttl' as an InputStream.
+        4 InputStream input = Example06ReadTurtle.class.getResourceAsStream("/" + filename);
+        5
+        6 // Rio also accepts a java.io.Reader as input for the parser.
+        7 Model model = Rio.parse(input, "", RDFFormat.TURTLE);
+
+
+5.4 N-Triples
+
+    https://en.wikipedia.org/wiki/N-Triples
+    N-Triples ist ein Format zum Speichern und Übertragen von Daten:
+        Es ist ein zeilenbasiertes Klartext-Format zur Serialisierung von RDF-Graphen und eine Untermenge des Turtle-Formats (Terse RDF Triple Language).
+        N-Triples sollte nicht mit Notation3 verwechselt werden, einer Obermenge von Turtle. 
+        N-Triples wurde in erster Linie von Dave Beckett an der University of Bristol und Art Barstow am World Wide Web Consortium (W3C) entwickelt.
+        N-Triples wurde als einfacheres Format als Notation3 und Turtle konzipiert und ist daher für Software leichter zu parsen und zu generieren. 
+        Da ihm jedoch einige der Abkürzungen fehlen, die von anderen RDF-Serialisierungen bereitgestellt werden (wie CURIEs und verschachtelte Ressourcen, 
+        die sowohl von RDF/XML als auch von Turtle bereitgestellt werden), kann es mühsam sein, große Datenmengen von Hand abzutippen, und es ist schwer zu lesen.
+
+
+5.5 N-Triples Star
+
+    https://w3c.github.io/rdf-star/tests/nt/syntax/manifest.html
+
+
+
+
