@@ -1,4 +1,4 @@
-# Roadmap
+# Roadmap along versions
 
 
 # 1 - Loading data 
@@ -11,21 +11,18 @@
 - [x] Instance on cloud with persistent storage
 - [x] Preloaded videos 
 
-# 2 - MVP
+# 2 - Maverick.EntityGraph MVP
 
 - [x] Read entity
 - [x] Multitenancy API
-- [x] K8S Deployment Pipeline (via Helm chart)
-- [ ] Read value or relation
-- [ ] Delete entity
-- [ ] Delete value or relation
-- [ ] Update value
-- [ ] Paging support
+- [ ] K8S Deployment Pipeline (via Helm chart)
+- [x] Read value or relation
+- [x] Delete entity
+- [x] Delete value or relation
+- [x] Update value
+- [ ] Paging support 
 
 # 3 - Data Sync Strategy
-
-- [ ] Export to format usable by training models
-- [ ] Batch Import 
 
 
 # 4 - Entity API complete
@@ -35,7 +32,8 @@
 
 # 5 - Schema aware
 
-- [ ] Validation of incoming entities
+- [ ] a
+- [ ] a
 
 # 6 - Frames
 

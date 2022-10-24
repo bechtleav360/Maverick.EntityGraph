@@ -68,7 +68,7 @@ Payload has to be either
 ```json
 {
   "@context": {
-    "cougar.graph.model.rdf": "http://www.w3.org/1999/02/22-cougar.graph.model.rdf-syntax-ns#",
+    "rdf": "http://www.w3.org/1999/02/22-cougar.graph.model.rdf-syntax-ns#",
     "rdfs": "http://www.w3.org/2000/01/cougar.graph.model.rdf-schema#",
     "mav": "http://av360.org/schema/maverick#",
     "xsd": "http://www.w3.org/2001/XMLSchema#", 

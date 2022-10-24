@@ -13,6 +13,14 @@
     <name>Maverick.EntityGraph Application</name>
     <dependencies>
         <dependency>
+            <groupId>ch.qos.logback.contrib</groupId>
+            <artifactId>logback-json-classic</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>ch.qos.logback.contrib</groupId>
+            <artifactId>logback-jackson</artifactId>
+        </dependency>
+        <dependency>
             <groupId>com.bechtle.maverick.graph</groupId>
             <artifactId>graph-api</artifactId>
         </dependency>
