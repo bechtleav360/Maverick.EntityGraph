@@ -20,12 +20,13 @@
 - [x] Delete entity
 - [x] Delete value or relation
 - [x] Update value
-- [ ] Paging support 
+
 
 # 3 - Data Sync Strategy
 
 
 # 4 - Entity API complete
+- [ ] Paging support
 - [ ] HATEOAS navigation
 - [ ] Patch entity
 - [ ] Query parameter

@@ -139,7 +139,7 @@ public class AbstractRepository implements RepositoryBehaviour, Statements, Mode
         return Mono.create(sink -> {
             try (RepositoryConnection connection = getConnection(authentication, requiredAuthority)) {
                 try {
-                    Resource[] contexts = model.contexts().toArray(new Resource[model.contexts().size()]);
+                    Resource[] contexts = model.contexts().toArray(new Resource[0]);
                     connection.add(model, contexts);
                     connection.commit();
                     sink.success();
@@ -147,9 +147,7 @@ public class AbstractRepository implements RepositoryBehaviour, Statements, Mode
                     connection.rollback();
                     sink.error(e);
                 }
-            } catch (RepositoryException e) {
-                sink.error(e);
-            } catch (IOException e) {
+            } catch (RepositoryException | IOException e) {
                 sink.error(e);
             }
         });
@@ -157,14 +155,11 @@ public class AbstractRepository implements RepositoryBehaviour, Statements, Mode
 
     @Override
     public Mono<Void> importStatements(Publisher<DataBuffer> bytesPublisher, String mimetype, Authentication authentication, GrantedAuthority requiredAuthority) {
-        ;
 
         Optional<RDFParserFactory> parserFactory = RdfUtils.getParserFactory(MimeType.valueOf(mimetype));
         Assert.isTrue(parserFactory.isPresent(), "Unsupported mimetype for parsing the file.");
 
         RDFParser parser = parserFactory.orElseThrow().getParser();
-
-
 
         return DataBufferUtils.join(bytesPublisher)
                 .flatMap(dataBuffer -> {
@@ -181,9 +176,7 @@ public class AbstractRepository implements RepositoryBehaviour, Statements, Mode
                         return Mono.error(e);
                     }
                 })
-                .doOnError(throwable -> {
-                    log.error("Error while importing statements: {}", throwable.getMessage());
-                })
+                .doOnError(throwable -> log.error("Error while importing statements: {}", throwable.getMessage()))
                 .doOnSubscribe(subscription -> {
                     if (log.isTraceEnabled())
                         log.trace("Attempt to import statements into repository '{}'", this.getRepositoryType().name());
@@ -259,7 +252,7 @@ public class AbstractRepository implements RepositoryBehaviour, Statements, Mode
                 if (log.isTraceEnabled())
                     log.trace("Inserting model without transaction to repository '{}'", connection.getRepository().toString());
 
-                Resource[] contexts = model.contexts().toArray(new Resource[model.contexts().size()]);
+                Resource[] contexts = model.contexts().toArray(new Resource[0]);
                 connection.add(model, contexts);
                 connection.commit();
                 return Mono.empty();
@@ -267,9 +260,7 @@ public class AbstractRepository implements RepositoryBehaviour, Statements, Mode
                 connection.rollback();
                 return Mono.error(e);
             }
-        } catch (RepositoryException e) {
-            return Mono.error(e);
-        } catch (IOException e) {
+        } catch (RepositoryException | IOException e) {
             return Mono.error(e);
         }
 

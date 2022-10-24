@@ -20,15 +20,15 @@ import javax.annotation.PostConstruct;
 import java.util.Set;
 
 @Component
-@Slf4j(topic = "graph.config.security")
+@Slf4j(topic = "graph.config.security.default")
 @Primary
-public class AdminAuthenticationManager implements ReactiveAuthenticationManager {
+public class DefaultAuthenticationManager implements ReactiveAuthenticationManager {
 
     @Value("${application.security.apiKey:}")
     String key;
 
 
-    public AdminAuthenticationManager() {
+    public DefaultAuthenticationManager() {
         log.trace("Activated Admin Authentication Manager (checking configured admin api key)");
     }
 
@@ -46,7 +46,7 @@ public class AdminAuthenticationManager implements ReactiveAuthenticationManager
     @Override
     public Mono<Authentication> authenticate(Authentication authentication) {
         Assert.notNull(authentication, "Authentication is null in Authentication Manager");
-        log.trace("(Filter) Handling authentication of type {} in Admin Authentication Manager ", authentication.getClass().getSimpleName());
+        log.trace("(Filter) Handling authentication of type {} in system authentication manager (default)", authentication.getClass().getSimpleName());
 
         if(authentication instanceof TestingAuthenticationToken) {
             log.warn("Test authentication token detected, disabling security.");
@@ -72,11 +72,13 @@ public class AdminAuthenticationManager implements ReactiveAuthenticationManager
         log.trace("Handling request with API Key authentication");
         // check if this is the admin user
         if(StringUtils.hasLength(this.key) && authentication.getApiKey().isPresent() && authentication.getApiKey().get().equalsIgnoreCase(this.key)) {
-            log.debug("Valid API Key for Admin authentication provided.");
+            log.debug("Valid System API Key for system authentication provided.");
 
             authentication.grantAuthority(Authorities.SYSTEM);
             authentication.setAuthenticated(true);
             return Mono.just(authentication);
+        } else {
+            log.trace("Invalid System API Key in request, denying access.");
         }
 
         return Mono.just(authentication);

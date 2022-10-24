@@ -9,7 +9,6 @@ application:
     basic:
       enabled: false
   features:
-
     schedulers:
       detectDuplicates: false
       replaceGlobalIdentifiers: false
