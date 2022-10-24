@@ -47,13 +47,15 @@ public class SecurityConfiguration {
 
         SecurityWebFilterChain build = http
                 .authorizeExchange()
+
+
+                .pathMatchers(HttpMethod.GET, "/api/**").hasAnyAuthority(Authorities.SYSTEM.getAuthority(), Authorities.APPLICATION.getAuthority(), Authorities.CONTRIBUTOR.getAuthority(), Authorities.READER.getAuthority())
+                .pathMatchers(HttpMethod.HEAD, "/api/**").hasAnyAuthority(Authorities.SYSTEM.getAuthority(), Authorities.APPLICATION.getAuthority(), Authorities.CONTRIBUTOR.getAuthority(), Authorities.READER.getAuthority())
+                .pathMatchers(HttpMethod.DELETE, "/api/**").hasAnyAuthority(Authorities.SYSTEM.getAuthority(), Authorities.APPLICATION.getAuthority(), Authorities.CONTRIBUTOR.getAuthority())
+                .pathMatchers(HttpMethod.POST, "/api/**").hasAnyAuthority(Authorities.SYSTEM.getAuthority(), Authorities.APPLICATION.getAuthority(), Authorities.CONTRIBUTOR.getAuthority())
+                .pathMatchers("/api/admin/**").hasAnyAuthority(Authorities.SYSTEM.getAuthority(), Authorities.APPLICATION.getAuthority())
                 .matchers(EndpointRequest.to("env", "logfile", "loggers", "metrics", "scheduledTasks")).hasAuthority(Authorities.SYSTEM.getAuthority())
                 .matchers(EndpointRequest.to("health")).permitAll()
-                .pathMatchers("/api/admin/**").hasAuthority(Authorities.APPLICATION.getAuthority())
-                .pathMatchers(HttpMethod.GET, "/api/**").hasAuthority(Authorities.READER.getAuthority())
-                .pathMatchers(HttpMethod.HEAD, "/api/**").hasAuthority(Authorities.READER.getAuthority())
-                .pathMatchers(HttpMethod.DELETE, "/api/**").hasAuthority(Authorities.CONTRIBUTOR.getAuthority())
-                .pathMatchers(HttpMethod.POST, "/api/**").hasAuthority(Authorities.CONTRIBUTOR.getAuthority())
                 .anyExchange().permitAll()
                 .and()
                 .addFilterAt(authenticationWebFilter, SecurityWebFiltersOrder.AUTHENTICATION)
@@ -65,8 +67,6 @@ public class SecurityConfiguration {
 
         log.trace("Security is enabled and was configured to secure all requests.");
         return build;
-
-
 
     }
 
