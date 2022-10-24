@@ -16,10 +16,10 @@
 - [x] Read entity
 - [x] Multitenancy API
 - [ ] K8S Deployment Pipeline (via Helm chart)
-- [ ] Read value or relation
-- [ ] Delete entity
-- [ ] Delete value or relation
-- [ ] Update value
+- [x] Read value or relation
+- [x] Delete entity
+- [x] Delete value or relation
+- [x] Update value
 - [ ] Paging support 
 
 # 3 - Data Sync Strategy
