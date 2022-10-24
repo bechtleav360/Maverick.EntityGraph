@@ -37,7 +37,8 @@ public class Entities extends AbstractController {
     }
 
     @ApiOperation(value = "Read entity")
-    @GetMapping(value = "/{id:[\\w|\\d|-|_]+}", produces = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.N3_VALUE})
+    @GetMapping(value = "/{id:[\\w|\\d|-|_]+}",
+                produces = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.N3_VALUE})
     @ResponseStatus(HttpStatus.OK)
     Flux<NamespaceAwareStatement> read(@PathVariable String id) {
         Assert.isTrue(id.length() == GeneratedIdentifier.LENGTH, "Incorrect length for identifier.");
@@ -117,8 +118,99 @@ public class Entities extends AbstractController {
 
 
     }
+    //-----------------------------------------------------------------
 
 
+    @ApiOperation(value = "Delete entity")
+    @DeleteMapping(value = "/{id:[\\w|\\d|-|_]+}",
+            produces = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.N3_VALUE})
+    @ResponseStatus(HttpStatus.OK)
+    Flux<NamespaceAwareStatement> deleteEntity(@PathVariable String id){
+        Assert.isTrue(id.length() == GeneratedIdentifier.LENGTH, "Incorrect length for identifier.");
+        boolean assertion = Boolean.TRUE.equals(
+                super.getAuthentication()
+                        .flatMap(authentication -> entityServices.entityExists(id, authentication))
+                        .block()
+        );
+        Assert.isTrue(assertion, "Entity with id" + id + ". \\" +
+                "does not exist");
+
+        return super.getAuthentication()
+                .flatMap(authentication ->  entityServices.deleteEntity(id, authentication))
+                .flatMapIterable(AbstractModel::asStatements)
+                .doOnSubscribe(s -> {
+                    if (log.isDebugEnabled()) log.debug("Delete an Entity");
+                    if (log.isTraceEnabled()) log.trace("id: \n {}", id);
+                });
+    }
+
+    @ApiOperation(value = "Delete value or relation", tags = {"v2", "entity"})
+    @DeleteMapping(value = "/{id:[\\w|\\d|-|_]+}/{prefixedKey:[\\w|\\d]+\\.[\\w|\\d]+}",
+            consumes = MediaType.TEXT_PLAIN_VALUE,
+            produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE})
+    @ResponseStatus(HttpStatus.CREATED)
+    Flux<NamespaceAwareStatement> deleteValue(@PathVariable String id, @PathVariable String prefixedKey, @RequestBody String value) {
+        Assert.isTrue(!value.matches("(?s).*[\\n\\r].*"), "Newlines in request body are not supported");
+
+        String[] property = splitPrefixedIdentifier(prefixedKey);
+        boolean assertion = Boolean.TRUE.equals(
+                super.getAuthentication()
+                        .flatMap(authentication -> entityServices.valueIsSet(id, property[0], property[1], authentication))
+                        .block()
+        );
+        Assert.isTrue(assertion, "Property " + prefixedKey + " is not set for entity " + id + ". \\" +
+                "Property must be set prior to delete request.");
+        return super.getAuthentication()
+                .flatMap(authentication ->  entityServices.deleteValue(id, property[0], property[1], value, authentication))
+                .flatMapIterable(AbstractModel::asStatements)
+                .doOnSubscribe(s -> {
+                    if (log.isDebugEnabled()) log.debug("Deleted property '{}' of entity '{}'", prefixedKey, id);
+                });
+
+    }
+
+    @ApiOperation(value = "Update value", tags = {"v3", "entity"})
+    @PutMapping(value = "/{id:[\\w|\\d|-|_]+}/{prefixedKey:[\\w|\\d]+\\.[\\w|\\d]+}",
+            consumes = MediaType.TEXT_PLAIN_VALUE,
+            produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE})
+    @ResponseStatus(HttpStatus.CREATED)
+    Flux<NamespaceAwareStatement> updateValue(@PathVariable String id, @PathVariable String prefixedKey, @RequestBody String value) {
+        String[] property = splitPrefixedIdentifier(prefixedKey);
+        boolean assertion = Boolean.TRUE.equals(
+                super.getAuthentication()
+                        .flatMap(authentication -> entityServices.valueIsSet(id, property[0], property[1], authentication))
+                        .block()
+        );
+        Assert.isTrue(assertion, "Property " + prefixedKey + " is not set for entity " + id + ". \\" +
+                "Property must be set prior to put request.");
+
+        return super.getAuthentication()
+                .flatMap(authentication -> entityServices.setValue(id, property[0], property[1], value, authentication))
+                .flatMapIterable(AbstractModel::asStatements)
+                .doOnSubscribe(s -> {
+                    if (log.isDebugEnabled())
+                        log.debug("Set property '{}' of entity '{}' to value '{}'", prefixedKey, id, value.length() > 64 ? value.substring(0, 64) : value);
+                });
+    }
+
+    /* //
+    @ApiOperation(value = "Update entity", tags = {"v3", "entity"})
+    @PutMapping(value = "",
+                consumes = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.N3_VALUE},
+                produces = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.N3_VALUE})
+        @ResponseStatus(HttpStatus.ACCEPTED)
+        Flux<NamespaceAwareStatement> updateValue(@RequestBody Incoming request) {
+            Assert.isTrue(request.getModel().size() > 0, "No statements in request detected.");
+
+            return super.getAuthentication()
+                    .flatMap(authentication ->  entityServices.createEntity(request, Map.of(), authentication))
+                    .flatMapIterable(AbstractModel::asStatements)
+                    .doOnSubscribe(s -> {
+                        if (log.isDebugEnabled()) log.debug("Create a new Entity");
+                        if (log.isTraceEnabled()) log.trace("Payload: \n {}", request.toString());
+                    });
+        }
+    */
 
     /*
     @ApiOperation(value = "Read entity with type coercion", tags = {"v4", "entity"})
