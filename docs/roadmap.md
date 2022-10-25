@@ -16,14 +16,19 @@
 - [x] Read entity
 - [x] Multitenancy API
 - [ ] K8S Deployment Pipeline (via Helm chart)
+  - [ ] Configuration of applications through Config Map
+  - [ ] Applications json through values and Helm templating
 - [x] Read value or relation
 - [x] Delete entity
 - [x] Delete value or relation
 - [x] Update value
+- [ ] Activating EntityGraph as WebApp
 
 
 # 3 - Data Sync Strategy
 
+- [ ] Regular nquads dumps in S3 of each registered application as new feature
+- [ ] Regular import pipeline through preconfigured s3 bucket
 
 # 4 - Entity API complete
 - [ ] Paging support
