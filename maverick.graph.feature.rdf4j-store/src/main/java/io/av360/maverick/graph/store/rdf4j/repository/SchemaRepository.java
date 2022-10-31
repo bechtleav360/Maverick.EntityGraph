@@ -11,6 +11,7 @@ import org.eclipse.rdf4j.model.Namespace;
 import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.util.Namespaces;
+import org.eclipse.rdf4j.model.vocabulary.SKOS;
 import org.springframework.stereotype.Component;
 
 import java.util.HashSet;

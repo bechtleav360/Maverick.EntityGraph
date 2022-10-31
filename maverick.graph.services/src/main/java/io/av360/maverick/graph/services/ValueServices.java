@@ -35,21 +35,21 @@ public interface ValueServices {
      * @param entityIdentifier The unique local identifier of the entity
      * @param predicatePrefix Prefix of the predicate
      * @param predicateKey Key of the predicate
-     * @param value  The value to be removed
+     * @param lang  Optional language tag
      * @param authentication The current authentication
      * @return The transaction information.
      */
-    Mono<Transaction> removeValue(String entityIdentifier, String predicatePrefix, String predicateKey, String value, Authentication authentication);
+    Mono<Transaction> removeValue(String entityIdentifier, String predicatePrefix, String predicateKey, String lang, Authentication authentication);
 
     /**
      *
      * @param entityIdentifier The unique local identifier of the entity
      * @param predicate Qualified predicate from existing schema
-     * @param value  The value to be removed
+     * @param lang  Optional language tag
      * @param authentication The current authentication
      * @return The transaction information.
      */
-    Mono<Transaction> removeValue(Resource entityIdentifier, IRI predicate, Value value, Authentication authentication);
+    Mono<Transaction> removeValue(Resource entityIdentifier, IRI predicate, String lang, Authentication authentication);
 
     /**
      *

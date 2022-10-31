@@ -136,10 +136,6 @@ public class JsonLdEntitiesTest extends TestsBase implements EntitiesTest {
 
     }
 
-    @Override
-    public void createValue() {
-
-    }
 
     @Override
     public void createEmbeddedEntity() {

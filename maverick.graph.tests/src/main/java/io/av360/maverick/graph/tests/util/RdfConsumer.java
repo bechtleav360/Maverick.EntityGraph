@@ -4,6 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.eclipse.rdf4j.model.*;
 import org.eclipse.rdf4j.model.impl.LinkedHashModel;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
+import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.rio.RDFFormat;
 import org.eclipse.rdf4j.rio.RDFParser;
 import org.eclipse.rdf4j.rio.RDFWriter;
@@ -18,6 +19,7 @@ import java.io.StringWriter;
 import java.util.Collection;
 import java.util.Map;
 import java.util.function.Consumer;
+import java.util.stream.StreamSupport;
 
 @Slf4j
 public class RdfConsumer implements Consumer<EntityExchangeResult<byte[]>> {
@@ -89,5 +91,13 @@ public class RdfConsumer implements Consumer<EntityExchangeResult<byte[]>> {
 
     public boolean hasStatement(Resource subject, IRI predicate, Value object) {
         return this.asModel().getStatements(subject, predicate, object).iterator().hasNext();
+    }
+
+    public Statement findStatement(Resource s, IRI p, IRI o) {
+        return StreamSupport.stream(this.asModel().getStatements(s, p, o).spliterator(), false).findFirst().orElseThrow();
+    }
+
+    public int countValues(Resource s, IRI p) {
+        return Long.valueOf(StreamSupport.stream(this.asModel().getStatements(s, p, null).spliterator(), false).count()).intValue();
     }
 }

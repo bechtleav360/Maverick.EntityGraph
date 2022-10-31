@@ -15,10 +15,15 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.eclipse.rdf4j.model.*;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
+import org.eclipse.rdf4j.rio.LanguageHandler;
+import org.eclipse.rdf4j.rio.LanguageHandlerRegistry;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Slf4j(topic = "graph.service.values")
 @Service
@@ -40,9 +45,26 @@ public class ValueServicesImpl implements ValueServices {
 
     @Override
     public Mono<Transaction> insertValue(String id, String predicatePrefix, String predicateKey, String value, Authentication authentication) {
+        Literal literal = null;
+        if (value.matches(".*@\\w\\w-?[\\w\\d-]*$")) {
+            String tag = value.substring(value.lastIndexOf('@')+1);
+            value = value.substring(0, value.lastIndexOf('@'));
+
+            LanguageHandler languageHandler = LanguageHandlerRegistry.getInstance().get(LanguageHandler.BCP47).orElseThrow();
+            if (languageHandler.isRecognizedLanguage(tag)) {
+                literal  = languageHandler.normalizeLanguage(value, tag, SimpleValueFactory.getInstance());
+            } else {
+                log.warn("Failed to identify language tag in literal. We treat it as string.");
+                literal = SimpleValueFactory.getInstance().createLiteral(value);
+            }
+        } else {
+            literal = SimpleValueFactory.getInstance().createLiteral(value);
+        }
+
+
         return this.insertValue(LocalIRI.withDefaultNamespace(id),
                 LocalIRI.withDefinedNamespace(schemaStore.getNamespaceFor(predicatePrefix), predicateKey),
-                SimpleValueFactory.getInstance().createLiteral(value),
+                literal,
                 authentication);
     }
 
@@ -88,7 +110,7 @@ public class ValueServicesImpl implements ValueServices {
                                 Literal currentValue = (Literal) statement.getObject();
                                 if (updateValue.getLanguage().isPresent() && currentValue.getLanguage().isPresent()) {
                                     // entity already has a value for this predicate. It has a language tag. If another value with the same language tag exists, we remove it.
-                                    if(StringUtils.equals(currentValue.getLanguage().get(), updateValue.getLanguage().get())) {
+                                    if (StringUtils.equals(currentValue.getLanguage().get(), updateValue.getLanguage().get())) {
                                         this.entityStore.removeStatement(statement, pair.getRight());
                                     }
                                 } else {
@@ -119,10 +141,10 @@ public class ValueServicesImpl implements ValueServices {
      * Deletes a value with a new transaction.  Fails if no entity exists with the given subject
      */
     @Override
-    public Mono<Transaction> removeValue(String id, String predicatePrefix, String predicateKey, String value, Authentication authentication) {
+    public Mono<Transaction> removeValue(String id, String predicatePrefix, String predicateKey, String lang, Authentication authentication) {
         return this.removeValue(LocalIRI.withDefaultNamespace(id),
                 LocalIRI.withDefinedNamespace(schemaStore.getNamespaceFor(predicatePrefix), predicateKey),
-                schemaStore.getValueFactory().createLiteral(value),
+                lang,
                 authentication);
     }
 
@@ -131,8 +153,8 @@ public class ValueServicesImpl implements ValueServices {
      * Deletes a value with a new transaction. Fails if no entity exists with the given subject
      */
     @Override
-    public Mono<Transaction> removeValue(Resource entityIdentifier, IRI predicate, Value value, Authentication authentication) {
-        return this.removeValue(entityIdentifier, predicate, value, new Transaction(), authentication)
+    public Mono<Transaction> removeValue(Resource entityIdentifier, IRI predicate, String lang,  Authentication authentication) {
+        return this.removeValue(entityIdentifier, predicate, lang, new Transaction(), authentication)
                 .doOnSuccess(trx -> {
                     eventPublisher.publishEvent(new ValueRemovedEvent(trx));
                 });
@@ -141,10 +163,40 @@ public class ValueServicesImpl implements ValueServices {
     /**
      * Internal method to remove a value within an existing transaction.
      */
-    Mono<Transaction> removeValue(Resource entityIdentifier, IRI predicate, Value value, Transaction transaction, Authentication authentication) {
+    Mono<Transaction> removeValue(Resource entityIdentifier, IRI predicate, String lang, Transaction transaction, Authentication authentication) {
 
-        return this.entityStore.listStatements(entityIdentifier, predicate, value, authentication)
-                .flatMap(statements -> this.entityStore.removeStatements(statements, transaction))
+        return this.entityStore.listStatements(entityIdentifier, predicate, null, authentication)
+                .flatMap(statements -> {
+                    if(statements.size() > 1) {
+                        List<Statement> statementsToRemove = new ArrayList<>();
+                        if(StringUtils.isEmpty(lang)) {
+                            return Mono.error(new InvalidEntityUpdate(entityIdentifier,"Multiple values for given predicate detected, but no language tag in request."));
+                        }
+                        for (Statement st : statements) {
+                            Value object = st.getObject();
+                            if(object.isBNode()) {
+                                log.warn("Found a link to an anonymous node. Purge it from repository.");
+                                statementsToRemove.add(st);
+                            } else if(object.isIRI()) {
+                                return Mono.error(new InvalidEntityUpdate(entityIdentifier,"Invalid to remove links via the values api."));
+                            } else if(object.isLiteral()) {
+                                Literal currentLiteral = (Literal) object;
+                                if(StringUtils.equals(currentLiteral.getLanguage().orElse("invalid"), lang)) {
+                                    statementsToRemove.add(st);
+                                }
+                            }
+                        }
+
+
+                        return this.entityStore.removeStatements(statementsToRemove, transaction);
+                    } else {
+                        if(statements.size() == 1 && statements.get(0).getObject().isIRI()) {
+                            return Mono.error(new InvalidEntityUpdate(entityIdentifier,"Invalid to remove links via the values api."));
+                        }
+                        return this.entityStore.removeStatements(statements, transaction);
+                    }
+
+                })
                 .flatMap(trx -> this.entityStore.commit(trx, authentication));
     }
 

@@ -56,8 +56,7 @@ public class TurtleTests extends TestsBase implements EntitiesTest {
     @Override
     @Test
     public void createEntity() {
-        Resource file = new ClassPathResource("requests/create-valid.ttl");
-        RdfConsumer rdfConsumer = this.create(file);
+        RdfConsumer rdfConsumer = super.upload("requests/create-valid.ttl");
 
 
         Collection<Statement> statements = rdfConsumer.getStatements();
@@ -94,8 +93,7 @@ public class TurtleTests extends TestsBase implements EntitiesTest {
     @Override
     @Test
     public void createEntityWithValidId() {
-        Resource file = new ClassPathResource("requests/create-validWithId.ttl");
-        RdfConsumer rdfConsumer = this.create(file);
+        RdfConsumer rdfConsumer = super.upload("requests/create-validWithId.ttl");
 
         Collection<Statement> statements = rdfConsumer.getStatements();
         Assertions.assertFalse(rdfConsumer.hasStatement(null, Transactions.STATUS, Transactions.RUNNING));
@@ -104,8 +102,7 @@ public class TurtleTests extends TestsBase implements EntitiesTest {
 
     @Test
     public void createEntityWithValidIdAndBase() {
-        Resource file = new ClassPathResource("requests/create-validWithIdAndBase.ttl");
-        RdfConsumer rdfConsumer = create(file);
+        RdfConsumer rdfConsumer = super.upload("requests/create-validWithIdAndBase.ttl");
 
         Collection<Statement> statements = rdfConsumer.getStatements();
         Assertions.assertFalse(rdfConsumer.hasStatement(null, Transactions.STATUS, Transactions.RUNNING));
@@ -121,6 +118,7 @@ public class TurtleTests extends TestsBase implements EntitiesTest {
      */
     public void createEntityWithInvalidId() {
         Resource file = new ClassPathResource("requests/create-validWithInvalidId.ttl");
+
         webClient.post()
                 .uri("/api/entities")
                 .contentType(MediaType.parseMediaType("text/turtle"))
@@ -132,16 +130,11 @@ public class TurtleTests extends TestsBase implements EntitiesTest {
     @Override
     @Test
     public void createMultipleEntities() {
-
-        Resource file = new ClassPathResource("requests/create-valid_multiple.ttl");
-        RdfConsumer rdfConsumer = this.create(file);
+        RdfConsumer rdfConsumer = super.upload("requests/create-valid_multiple.ttl");
 
         Collection<Statement> statements = rdfConsumer.getStatements();
 
-        System.out.println(rdfConsumer.dump(RDFFormat.TURTLE));
-
         Assertions.assertFalse(rdfConsumer.hasStatement(null, Transactions.STATUS, Transactions.RUNNING));
-
         Assertions.assertTrue(rdfConsumer.hasStatement(null, SDO.IDENTIFIER, SimpleValueFactory.getInstance().createLiteral("_a")));
         Assertions.assertTrue(rdfConsumer.hasStatement(null, RDF.TYPE, SDO.VIDEO_OBJECT));
     }
@@ -166,83 +159,18 @@ public class TurtleTests extends TestsBase implements EntitiesTest {
 
 
 
-    @Override
-    @Test
-    public void createValue() {
-        Resource file = new ClassPathResource("requests/create-valid.ttl");
-        RdfConsumer rdfConsumer = this.create(file);
 
 
 
-        Model statements = rdfConsumer.asModel();
-        Statement video = StreamSupport.stream(statements.getStatements(null, RDF.TYPE, vf.createIRI("http://schema.org/", "video")).spliterator(), false).findFirst().orElseThrow();
-        String description = "This is a description";
 
-        webClient.post()
-                .uri(uriBuilder -> uriBuilder.path("/api/entities/{id}/dc.description")
-                                .build(
-                                        vf.createIRI(video.getSubject().stringValue()).getLocalName()
-                                )
-
-                )
-                .contentType(MediaType.parseMediaType("text/plain"))
-                .body(BodyInserters.fromValue(description))
-                .exchange()
-                .expectStatus().isCreated()
-                .expectBody()
-                .consumeWith(rdfConsumer);
-
-        Assertions.assertTrue(rdfConsumer.hasStatement(video.getSubject(), video.getPredicate(), video.getObject()));
-        Assertions.assertTrue(rdfConsumer.hasStatement(video.getSubject(), vf.createIRI("http://purl.org/dc/terms/description"), vf.createLiteral(description)));
-    }
-
-
-    @Test
-    public void createValueWithUnknownPrefix() {
-        Resource file = new ClassPathResource("requests/create-valid.ttl");
-        RdfConsumer rdfConsumer = new RdfConsumer(RDFFormat.TURTLE);
-
-        webClient.post()
-                .uri("/api/entities")
-                .contentType(MediaType.parseMediaType("text/turtle"))
-                .accept(MediaType.parseMediaType("text/turtle"))
-                .body(BodyInserters.fromResource(file))
-                .exchange()
-
-                .expectStatus().isAccepted()
-                .expectBody()
-                .consumeWith(rdfConsumer);
-
-        Model statements = rdfConsumer.asModel();
-        Statement video = StreamSupport.stream(statements.getStatements(null, RDF.TYPE, vf.createIRI("http://schema.org/", "video")).spliterator(), false).findFirst().orElseThrow();
-        String description = "This is a description";
-
-        webClient.post()
-                .uri(uriBuilder -> uriBuilder.path("/api/entities/{id}/xxx.myPred")
-                        .build(
-                                vf.createIRI(video.getSubject().stringValue()).getLocalName()
-                        )
-
-                )
-                .contentType(MediaType.parseMediaType("text/plain"))
-                .body(BodyInserters.fromValue(description))
-                .exchange()
-                .expectStatus().isBadRequest();
-
-    }
 
     @Override
     @Test
     public void createEmbeddedEntity() {
-        Resource file = new ClassPathResource("requests/create-valid.ttl");
-
-        RdfConsumer rdfConsumer = this.create(file);
-
-        Model statements = rdfConsumer.asModel();
+        RdfConsumer rdfConsumer = super.upload("requests/create-valid.ttl");
         Assertions.assertTrue(rdfConsumer.hasStatement(null, Transactions.STATUS, Transactions.SUCCESS));
 
-        Statement video = StreamSupport.stream(statements.getStatements(null, RDF.TYPE, vf.createIRI("http://schema.org/", "video")).spliterator(), false).findFirst().orElseThrow();
-
+        Statement video = rdfConsumer.findStatement(null, RDF.TYPE, vf.createIRI("http://schema.org/", "video"));
 
 
         Resource embedded = new ClassPathResource("requests/create-valid_embedded.ttl");
@@ -285,20 +213,5 @@ public class TurtleTests extends TestsBase implements EntitiesTest {
 
     }
 
-    private RdfConsumer create(Resource file) {
-        RdfConsumer rdfConsumer = new RdfConsumer(RDFFormat.TURTLE, true);
 
-        webClient.post()
-                .uri("/api/entities")
-                .contentType(RdfUtils.getMediaType(RDFFormat.TURTLE))
-                .accept(RdfUtils.getMediaType(RDFFormat.TURTLE))
-                .body(BodyInserters.fromResource(file))
-                .header("X-API-KEY", "test")
-                .exchange()
-                .expectStatus().isAccepted()
-                .expectBody()
-                .consumeWith(rdfConsumer);
-
-        return rdfConsumer;
-    }
 }
