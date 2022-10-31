@@ -1,11 +1,14 @@
-#spring:
-#  datasource:
-#    url: jdbc:h2:file:/data/demo
-
+spring:
+  profiles:
+    active: test
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.security.SecurityAutoConfiguration
+      -
 application:
   security:
     enabled: false
-    apiKey: ~
+    apiKey: "123"
   features:
     modules:
       admin: true
@@ -30,16 +33,7 @@ application:
       persistent: false
       path: ~
 
-spring:
-  profiles:
-    active: test
-  autoconfigure:
-    exclude:
-      - org.springframework.boot.autoconfigure.security.SecurityAutoConfiguration
 
-storage:
-  default:
-    path: ""
 
 
 logging:

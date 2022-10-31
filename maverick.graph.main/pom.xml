@@ -5,7 +5,7 @@
     <parent>
         <artifactId>graph-parent</artifactId>
         <groupId>com.bechtle.maverick.graph</groupId>
-        <version>0.0.1-SNAPSHOT</version>
+        <version>${revision}</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -30,7 +30,7 @@
         </dependency>
         <dependency>
             <groupId>com.bechtle.maverick.graph</groupId>
-            <artifactId>graph-feature-multitenancy</artifactId>
+            <artifactId>graph-feature-applications</artifactId>
         </dependency>
         <dependency>
             <groupId>com.bechtle.maverick.graph</groupId>
@@ -39,11 +39,6 @@
         <dependency>
             <groupId>com.bechtle.maverick.graph</groupId>
             <artifactId>graph-tests</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>io.projectreactor</groupId>
-            <artifactId>reactor-test</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -69,7 +64,9 @@
                     </image>
                     <docker>
                         <publishRegistry>
+                            <!--suppress UnresolvedMavenProperty -->
                             <username>${env.GHCR_USER}</username>
+                            <!--suppress UnresolvedMavenProperty -->
                             <password>${env.GHCR_PASSWORD}</password>
                             <url>https://ghcr.io</url>
                         </publishRegistry>

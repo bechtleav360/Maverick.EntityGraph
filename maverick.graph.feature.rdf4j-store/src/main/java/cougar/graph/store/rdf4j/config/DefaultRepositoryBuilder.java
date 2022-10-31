@@ -36,10 +36,16 @@ import java.util.concurrent.TimeUnit;
 public class DefaultRepositoryBuilder implements RepositoryBuilder {
 
 
-    private final String entitiesPath;
-    private final String transactionsPath;
-    private final String schemaPath;
-    private final String applicationsPath;
+    @Value("${application.storage.entities.path:#{null}}")
+    private String entitiesPath;
+    @Value("${application.storage.transactions.path:#{null}}")
+    private String transactionsPath;
+
+    @Value("${application.storage.default.path: #{null}}")
+    private String schemaPath;
+
+    @Value("${application.storage.default.path: #{null}}")
+    private String applicationsPath;
     private final Cache<String, Repository> cache;
     private Map<String, List<String>> storage;
     private String test;
@@ -49,16 +55,7 @@ public class DefaultRepositoryBuilder implements RepositoryBuilder {
 
 
 
-    public DefaultRepositoryBuilder(@Value("${application.storage.entities.path:#{null}}") String entitiesPath,
-                                    @Value("${application.storage.transactions.path:#{null}}") String transactionsPath,
-                                    @Value("${application.storage.default.path: #{null}}") String schemaPath,
-                                    @Value("${application.storage.default.path: #{null}}") String applicationsPath,
-                                    @Value("${application.storage.entities:#{null}}") Map<String, String> storageConfiguration) {
-
-        this.entitiesPath = entitiesPath;
-        this.transactionsPath = transactionsPath;
-        this.schemaPath = schemaPath;
-        this.applicationsPath = applicationsPath;
+    public DefaultRepositoryBuilder( ) {
 
         cache = Caffeine.newBuilder().expireAfterAccess(60, TimeUnit.MINUTES).build();
     }
@@ -68,10 +65,10 @@ public class DefaultRepositoryBuilder implements RepositoryBuilder {
     /**
      * Initializes the connection to a repository. The repositories are cached
      *
-     * @param repositoryType
-     * @param authentication
-     * @return
-     * @throws IOException
+     * @param repositoryType Type of the repository
+     * @param authentication Current authentication information
+     * @return The repository object
+     * @throws IOException If repository cannot be found
      */
     @Override
     public Repository buildRepository(RepositoryType repositoryType, Authentication authentication) throws IOException {
@@ -93,7 +90,7 @@ public class DefaultRepositoryBuilder implements RepositoryBuilder {
     }
 
 
-    protected Repository resolveRepositoryForAdminAuthentication(RepositoryType repositoryType, ApiKeyAuthenticationToken authentication) throws IOException {
+    protected Repository resolveRepositoryForAdminAuthentication(RepositoryType repositoryType, ApiKeyAuthenticationToken authentication) {
         return switch (repositoryType) {
             case ENTITIES -> this.buildEntityRepository("default");
             case TRANSACTIONS -> this.buildTransactionsRepository("default");
@@ -105,7 +102,7 @@ public class DefaultRepositoryBuilder implements RepositoryBuilder {
 
 
 
-    protected Repository buildApplicationRepository(String scope) throws IOException {
+    protected Repository buildApplicationRepository(String scope) {
         String key = "applications: "+scope;
         // TODO: check if application has individual schema repo, otherwise we return default
         return this.cache.get(key, s -> new LabeledRepository(key, this.buildDefaultRepository(this.applicationsPath, "applications")));
@@ -119,12 +116,12 @@ public class DefaultRepositoryBuilder implements RepositoryBuilder {
     }
 
 
-    protected Repository buildEntityRepository(String scope) throws IOException {
+    protected Repository buildEntityRepository(String scope) {
         String key = "entities:" + scope;
         return this.cache.get(key, s -> new LabeledRepository(key, this.buildDefaultRepository(this.entitiesPath, "entities")));
     }
 
-    protected Repository buildTransactionsRepository(String scope) throws IOException {
+    protected Repository buildTransactionsRepository(String scope) {
         String key = "transactions:" + scope;
         return this.cache.get(key, s -> new LabeledRepository(key, this.buildDefaultRepository(this.transactionsPath, "transactions")));
     }

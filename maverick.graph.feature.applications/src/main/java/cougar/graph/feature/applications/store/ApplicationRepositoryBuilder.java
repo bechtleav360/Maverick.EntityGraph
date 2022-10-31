@@ -17,6 +17,7 @@ import org.eclipse.rdf4j.sail.lmdb.config.LmdbStoreConfig;
 import org.eclipse.rdf4j.sail.memory.MemoryStore;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.bind.ConstructorBinding;
 import org.springframework.context.annotation.Primary;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
@@ -40,32 +41,23 @@ import java.util.concurrent.TimeUnit;
  */
 @Component
 @Slf4j(topic = "graph.repository.config")
-@ConfigurationProperties(prefix = "application")
 @Primary
 public class ApplicationRepositoryBuilder implements RepositoryBuilder {
 
 
-    private final String entitiesPath;
-    private final String transactionsPath;
-    private final String schemaPath;
-    private final String applicationsPath;
+
+    @Value("${application.storage.entities.path:#{null}}")
+    private String entitiesPath;
+    @Value("${application.storage.transactions.path:#{null}}")
+    private String transactionsPath;
+    @Value("${application.storage.default.path: #{null}}")
+    private String schemaPath;
+    @Value("${application.storage.default.path: #{null}}")
+    private String applicationsPath;
     private final Cache<String, Repository> cache;
-    private Map<String, List<String>> storage;
-    private String test;
-    private Map<String, String> security;
 
 
-    public ApplicationRepositoryBuilder(@Value("${application.storage.entities.path:#{null}}") String entitiesPath,
-                                        @Value("${application.storage.transactions.path:#{null}}") String transactionsPath,
-                                        @Value("${application.storage.default.path: #{null}}") String schemaPath,
-                                        @Value("${application.storage.default.path: #{null}}") String applicationsPath,
-                                        @Value("${application.storage.entities:#{null}}") Map<String, String> storageConfiguration) throws IOException {
-
-        this.entitiesPath = entitiesPath;
-        this.transactionsPath = transactionsPath;
-        this.schemaPath = schemaPath;
-        this.applicationsPath = applicationsPath;
-
+    public ApplicationRepositoryBuilder()  {
         cache = Caffeine.newBuilder().expireAfterAccess(60, TimeUnit.MINUTES).build();
     }
 
@@ -73,7 +65,7 @@ public class ApplicationRepositoryBuilder implements RepositoryBuilder {
 
 
     /**
-     * Initializes the connection to a repository. The repositories are cached.
+     * Initializes the connection to a repository. The connections are cached.
      * <p>
      * We assert a valid and positive authentication at this point.
      *
@@ -165,7 +157,7 @@ public class ApplicationRepositoryBuilder implements RepositoryBuilder {
     }
 
 
-    private Repository getEntityRepository(@Nullable Application application) throws IOException {
+    private Repository getEntityRepository(@Nullable Application application) {
         if(application == null) {
             String key = "entities: default";
             return this.cache.get(key, s -> new LabeledRepository(key, this.buildDefaultRepository(this.applicationsPath, "entities")));
@@ -176,7 +168,7 @@ public class ApplicationRepositoryBuilder implements RepositoryBuilder {
 
     }
 
-    private Repository getTransactionsRepository(@Nullable Application application) throws IOException {
+    private Repository getTransactionsRepository(@Nullable Application application) {
         if(application == null) {
             String key = "transactions: default";
             return this.cache.get(key, s -> new LabeledRepository(key, this.buildDefaultRepository(this.transactionsPath, "entities")));

@@ -2,6 +2,7 @@ package cougar.graph.api.security;
 
 import cougar.graph.model.security.ApiKeyAuthenticationToken;
 import cougar.graph.model.security.Authorities;
+import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.text.RandomStringGenerator;
 import org.springframework.beans.factory.annotation.Value;
@@ -16,7 +17,6 @@ import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 import reactor.core.publisher.Mono;
 
-import javax.annotation.PostConstruct;
 import java.util.Set;
 
 @Component
@@ -89,8 +89,8 @@ public class DefaultAuthenticationManager implements ReactiveAuthenticationManag
      * Some endpoints (e.g. the actuators) fall back to basic authentication.
      *
      * For now, we expect only the system password here.
-     * @param authentication
-     * @return
+     * @param authentication Current basic authentication
+     * @return Authentication with relevant authorities
      */
     private Mono<? extends Authentication> handleBasicAuthentication(UsernamePasswordAuthenticationToken authentication) {
         log.trace("Handling request with basic authentication");
