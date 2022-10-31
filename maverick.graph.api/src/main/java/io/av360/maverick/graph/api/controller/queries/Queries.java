@@ -2,7 +2,7 @@ package io.av360.maverick.graph.api.controller.queries;
 
 import io.av360.maverick.graph.api.controller.AbstractController;
 import io.av360.maverick.graph.model.rdf.NamespaceAwareStatement;
-import io.av360.maverick.graph.services.services.QueryServices;
+import io.av360.maverick.graph.services.QueryServices;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;

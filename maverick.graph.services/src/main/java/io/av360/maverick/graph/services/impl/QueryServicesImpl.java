@@ -1,7 +1,8 @@
-package io.av360.maverick.graph.services.services;
+package io.av360.maverick.graph.services.impl;
 
 import io.av360.maverick.graph.model.vocabulary.Local;
-import io.av360.maverick.graph.services.services.handler.DelegatingTransformer;
+import io.av360.maverick.graph.services.QueryServices;
+import io.av360.maverick.graph.services.transformers.DelegatingTransformer;
 import io.av360.maverick.graph.model.rdf.NamespaceAwareStatement;
 import io.av360.maverick.graph.store.EntityStore;
 import io.av360.maverick.graph.store.rdf.models.Entity;
@@ -20,17 +21,18 @@ import reactor.core.publisher.Flux;
 
 @Service
 @Slf4j(topic = "graph.service.query")
-public class QueryServices {
+public class QueryServicesImpl implements QueryServices {
 
     private final EntityStore entityStore;
 
-    public QueryServices(EntityStore graph) {
+    public QueryServicesImpl(EntityStore graph) {
         this.entityStore = graph;
     }
 
 
 
 
+    @Override
     public Flux<BindingSet> queryValues(String query, Authentication authentication) {
         return this.entityStore.query(query, authentication)
                 .doOnSubscribe(subscription -> {
@@ -38,10 +40,12 @@ public class QueryServices {
                 });
     }
 
+    @Override
     public Flux<BindingSet> queryValues(SelectQuery query, Authentication authentication) {
         return this.queryValues(query.getQueryString(), authentication);
     }
 
+    @Override
     public Flux<NamespaceAwareStatement> queryGraph(String query, Authentication authentication) {
         return this.entityStore.construct(query, authentication)
                 .doOnSubscribe(subscription -> {

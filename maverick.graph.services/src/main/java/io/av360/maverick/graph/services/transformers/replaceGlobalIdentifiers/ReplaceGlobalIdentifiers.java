@@ -1,8 +1,8 @@
 package io.av360.maverick.graph.services.transformers.replaceGlobalIdentifiers;
 
-import io.av360.maverick.graph.services.services.EntityServices;
-import io.av360.maverick.graph.services.services.QueryServices;
-import io.av360.maverick.graph.services.services.handler.Transformer;
+import io.av360.maverick.graph.services.EntityServices;
+import io.av360.maverick.graph.services.QueryServices;
+import io.av360.maverick.graph.services.transformers.Transformer;
 import io.av360.maverick.graph.store.rdf.models.AbstractModel;
 import lombok.extern.slf4j.Slf4j;
 import io.av360.maverick.graph.model.rdf.GeneratedIdentifier;
@@ -76,7 +76,7 @@ public class ReplaceGlobalIdentifiers implements Transformer {
     }
 
     @Override
-    public void registerEntityService(EntityServices entityServices) {
+    public void registerEntityService(EntityServices entityServicesImpl) {
 
     }
 

@@ -6,7 +6,7 @@ import io.av360.maverick.graph.store.RepositoryType;
 import io.av360.maverick.graph.store.rdf.models.Transaction;
 import io.av360.maverick.graph.services.schedulers.replaceGlobalIdentifiers.ScheduledReplaceGlobalIdentifiers;
 import io.av360.maverick.graph.feature.admin.domain.AdminServices;
-import io.av360.maverick.graph.services.services.QueryServices;
+import io.av360.maverick.graph.services.QueryServices;
 import io.av360.maverick.graph.store.EntityStore;
 import io.av360.maverick.graph.store.TransactionsStore;
 import io.av360.maverick.graph.tests.util.TestsBase;

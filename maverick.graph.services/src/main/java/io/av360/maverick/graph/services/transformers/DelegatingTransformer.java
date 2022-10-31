@@ -1,8 +1,9 @@
-package io.av360.maverick.graph.services.services.handler;
+package io.av360.maverick.graph.services.transformers;
 
+import io.av360.maverick.graph.services.transformers.Transformer;
 import io.av360.maverick.graph.store.rdf.models.AbstractModel;
-import io.av360.maverick.graph.services.services.EntityServices;
-import io.av360.maverick.graph.services.services.QueryServices;
+import io.av360.maverick.graph.services.EntityServices;
+import io.av360.maverick.graph.services.QueryServices;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
@@ -25,8 +26,8 @@ public class DelegatingTransformer implements Transformer {
     }
 
     @Override
-    public void registerEntityService(EntityServices entityServices) {
-        getRegisteredTransformers().forEach(transformer -> transformer.registerEntityService(entityServices));
+    public void registerEntityService(EntityServices entityServicesImpl) {
+        getRegisteredTransformers().forEach(transformer -> transformer.registerEntityService(entityServicesImpl));
     }
 
     @Override
