@@ -27,8 +27,12 @@
 
 # 3 - Data Sync Strategy
 
-- [ ] Regular nquads dumps in S3 of each registered application as new feature
+- [ ] Configure application events (with documentation)
+- [ ] Create new feature which forwards events to webhook
+- [ ] Create sidecar to forward application events via webhook to message queue
+- [ ] Implement regular nquads dumps in S3 of each registered application as new feature
 - [ ] Regular import pipeline through preconfigured s3 bucket
+- [ ] Consolidate application configuration in single config bean
 
 # 4 - Entity API complete
 - [ ] Paging support

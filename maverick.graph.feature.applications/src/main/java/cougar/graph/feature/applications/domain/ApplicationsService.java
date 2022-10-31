@@ -10,7 +10,7 @@ import cougar.graph.model.vocabulary.Local;
 import cougar.graph.feature.applications.store.ApplicationsStore;
 
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang.NotImplementedException;
+import org.apache.commons.lang3.NotImplementedException;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
@@ -41,19 +41,17 @@ import java.util.List;
 public class ApplicationsService {
 
     private final ApplicationsStore applicationsStore;
-    private final ValueFactory valueFactory;
 
     public ApplicationsService(ApplicationsStore store) {
         this.applicationsStore = store;
-        this.valueFactory = SimpleValueFactory.getInstance();
     }
 
     /**
      * Creates a new application.
-     * @param label
-     * @param persistent
-     * @param authentication
-     * @return
+     * @param label Label for the application
+     * @param persistent True if data should be stored on disk
+     * @param authentication Current authentication information
+     * @return New application as mono
      */
     public Mono<Application> createApplication(String label, boolean persistent, Authentication authentication) {
 
