@@ -10,7 +10,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>graph-main</artifactId>
-    <name>Maverick.EntityGraph Application</name>
+    <name>Maverick.EntityGraph Main</name>
     <dependencies>
         <dependency>
             <groupId>ch.qos.logback.contrib</groupId>

@@ -16,7 +16,7 @@ Start locally with param ``spring_profiles_active=dev``
   - ``https://ghcr.io`` as server url
   - Your GIT PAT for the credentials
   - ``bechtleav360/maverick-entity-graph:latest`` as full image name
-3. Enable Application logging
+3. Enable io.av360.maverick.graph.Application logging
 4. Add application property "SPRING_APPLICATION_JSON" (see below)
 5. Add application property "PORT" in configuration 
 
