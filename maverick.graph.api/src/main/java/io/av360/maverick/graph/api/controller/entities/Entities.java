@@ -9,6 +9,8 @@ import io.av360.maverick.graph.services.EntityServices;
 import io.av360.maverick.graph.services.impl.QueryServicesImpl;
 import io.av360.maverick.graph.store.rdf.models.AbstractModel;
 import io.av360.maverick.graph.store.rdf.models.Incoming;
+import io.swagger.v3.oas.annotations.OpenAPIDefinition;
+import io.swagger.v3.oas.annotations.Operation;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.util.Assert;
@@ -62,6 +64,8 @@ public class Entities extends AbstractController {
                 });
     }
 
+
+    @Operation(summary = "Create entity")
     //@ApiOperation(value = "Create entity")
     @PostMapping(value = "",
             consumes = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.N3_VALUE},
