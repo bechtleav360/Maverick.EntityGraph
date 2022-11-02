@@ -22,7 +22,7 @@ public class ApplicationOpenApiConfiguration {
         return new Docket(DocumentationType.OAS_30)
                 .groupName("Applications API")
                 .apiInfo(new ApiInfoBuilder()
-                        .title("Cougar Applications API")
+                        .title("Maverick.EntityGraph Applications API")
                         .description("API to register applications and generate or revoke Api Keys (part of multi-tenancy feature). Requires admin authentication. ")
                         .version("0.2.0")
                         .license("Apache 2.0")
@@ -32,7 +32,7 @@ public class ApplicationOpenApiConfiguration {
                 .securitySchemes(List.of(apiKey()))
                 .securityContexts(List.of(securityContext()))
                 .select()
-                .apis(RequestHandlerSelectors.basePackage("cougar.graph.feature.applications.api"))
+                .apis(RequestHandlerSelectors.basePackage("io.av360.maverick.graph.feature.applications.api"))
                 // .paths(PathSelectors.ant("/api/**"))
                 .build();
     }

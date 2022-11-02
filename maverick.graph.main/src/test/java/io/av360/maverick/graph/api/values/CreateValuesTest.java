@@ -131,7 +131,7 @@ public class CreateValuesTest extends TestsBase {
                 .expectStatus().isOk();
 
         RdfConsumer resultConsumer = super.loadEntity((IRI) video.getSubject());
-        Assert.equals(2, resultConsumer.countValues(video.getSubject(), vf.createIRI("http://schema.org/", "title")));
+        Assert.equals(3, resultConsumer.countValues(video.getSubject(), vf.createIRI("http://schema.org/", "title")));
     }
 
     @Test

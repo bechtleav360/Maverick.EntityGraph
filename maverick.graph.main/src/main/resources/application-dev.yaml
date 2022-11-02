@@ -14,7 +14,7 @@ application:
       admin: true
     schedulers:
       detectDuplicates: false
-      replaceGlobalIdentifiers: true
+      replaceGlobalIdentifiers: false
     transformers:
       replaceGlobalIdentifiers: true
       replaceAnonymousIdentifiers: true
@@ -37,5 +37,6 @@ logging:
     graph: TRACE
     org:
       springframework:
-        security: DEBUG
+        security: INFO
+    springfox: TRACE
 

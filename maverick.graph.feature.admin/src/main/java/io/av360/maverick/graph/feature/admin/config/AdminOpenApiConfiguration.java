@@ -21,7 +21,7 @@ public class AdminOpenApiConfiguration {
         return new Docket(DocumentationType.OAS_30)
                 .groupName("Admin API")
                 .apiInfo(new ApiInfoBuilder()
-                        .title("Cougar Admin API")
+                        .title("Maverick.EntityGraph Admin API")
                         .description("API for admin operations (part of admin feature).")
                         .version("0.0.1-SNAPSHOT")
                         .license("Apache 2.0")
@@ -31,7 +31,7 @@ public class AdminOpenApiConfiguration {
                 .securitySchemes(List.of(apiKey()))
                 .securityContexts(List.of(securityContext()))
                 .select()
-                .apis(RequestHandlerSelectors.basePackage("cougar.graph.feature.admin.api"))
+                .apis(RequestHandlerSelectors.basePackage("io.av360.maverick.graph.feature.admin.api"))
                 .build();
     }
 

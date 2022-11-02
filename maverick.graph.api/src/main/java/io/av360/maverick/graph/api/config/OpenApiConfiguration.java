@@ -84,7 +84,7 @@ class OpenApiConfiguration {
                 .securitySchemes(List.of(apiKey()))
                 .securityContexts(List.of(securityContext()))
                 .select()
-                .apis(RequestHandlerSelectors.basePackage("cougar.graph.api.controller.transactions"))
+                .apis(RequestHandlerSelectors.basePackage("io.av360.maverick.graph.api.controller.transactions"))
                 // .paths(PathSelectors.ant("/api/**"))
                 .build();
     }
