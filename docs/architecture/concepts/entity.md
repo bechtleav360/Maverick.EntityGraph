@@ -24,20 +24,22 @@ Values, or [literals](https://www.w3.org/TR/rdf11-concepts/#section-Graph-Litera
 *Characteristic properties* (Guarino) are used in the real world to infer identity. Typical examples for characteristic properties are values like location or addresses for buildings, name and birthday for persons, title and author for creative work, etc.  
 
 ### Identifier
-Identifiers are a special kind of characteristic property. They imply, by itself, identity (without the need of combining it with other properties). A book's ISBN Number, a person's tax identifier, URIs or UUIDs are typical examples.
+Identifiers are a special kind of characteristic property. They imply, by itself, identity (without the need of combining it with other properties). A book's ISBN Number, a person's tax identifier, URIs or UUIDs are typical examples. Identifiers have to be atomic values encodable in persistent urls. 
 
 ### Composites
-Values are atomic: Each value should represent exactly one observation. An object's geographic location is a value consisting of its longitude and latitude.  
+Values are atomic: Each value should represent exactly one observation. An object's geographic location is a value consisting of its longitude and latitude. A composite can be a characteristic property (e.g. a full name consisting of title, first and last name), but never an identifier. 
 
 
 
-## Links
+## Relations
+Relations link entities. On a technical level, everything in a triple store is such a link (including the values). A link which points to an an identifier is a relation. 
 
-### Classifiers
-Classifiers a categorical values, which can (and in fact, have to be) shared. 
+### Entity Relations
+Relations are in between entities. The link is always typed. The type must not be a characteristic property (e.g. labels, locations). 
 
-### Relations
-Relations are in between entities
+### Classification
+Classifiers a categorical values, which can (and in fact, have to be) shared. During upload, classifiers might be values which have to be resolved into individual entities. 
+
 
 # Requirements 
 The definitions above create these requirements: 
