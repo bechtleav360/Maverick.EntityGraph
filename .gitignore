@@ -12,3 +12,4 @@ buildNumber.properties
 .idea
 *.log
 *.gz
+.flattened-pom.xml
