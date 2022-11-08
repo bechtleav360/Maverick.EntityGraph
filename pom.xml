@@ -41,10 +41,7 @@
     </properties>
 
 
-
-
     <dependencyManagement>
-
         <dependencies>
             <dependency>
                 <groupId>com.google.guava</groupId>
