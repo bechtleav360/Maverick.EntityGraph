@@ -21,7 +21,11 @@
             <groupId>com.bechtle.maverick.graph</groupId>
             <artifactId>graph-model</artifactId>
         </dependency>
-
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <optional>true</optional>
+        </dependency>
     </dependencies>
 
 
