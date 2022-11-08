@@ -8,7 +8,7 @@ import io.av360.maverick.graph.model.rdf.NamespaceAwareStatement;
 import io.av360.maverick.graph.services.EntityServices;
 import io.av360.maverick.graph.services.impl.QueryServicesImpl;
 import io.av360.maverick.graph.store.rdf.models.AbstractModel;
-import io.av360.maverick.graph.store.rdf.models.Incoming;
+import io.av360.maverick.graph.store.rdf.models.StatementsBag;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
@@ -69,7 +69,7 @@ public class Entities extends AbstractController {
             consumes = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.N3_VALUE},
             produces = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.N3_VALUE})
     @ResponseStatus(HttpStatus.ACCEPTED)
-    Flux<NamespaceAwareStatement> create(@RequestBody Incoming request) {
+    Flux<NamespaceAwareStatement> create(@RequestBody StatementsBag request) {
         Assert.isTrue(request.getModel().size() > 0, "No statements in request detected.");
 
         return super.getAuthentication()
@@ -86,7 +86,7 @@ public class Entities extends AbstractController {
             consumes = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE},
             produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE})
     @ResponseStatus(HttpStatus.CREATED)
-    Flux<NamespaceAwareStatement> embed(@PathVariable String id, @PathVariable String prefixedKey, @RequestBody Incoming value) {
+    Flux<NamespaceAwareStatement> embed(@PathVariable String id, @PathVariable String prefixedKey, @RequestBody StatementsBag value) {
 
         String[] property = splitPrefixedIdentifier(prefixedKey);
         return super.getAuthentication()

@@ -3,7 +3,7 @@ package io.av360.maverick.graph.api.converter.decoder;
 import io.av360.maverick.graph.store.rdf.helpers.RdfUtils;
 import io.av360.maverick.graph.store.rdf.helpers.TriplesCollector;
 import io.av360.maverick.graph.store.rdf.models.AbstractModel;
-import io.av360.maverick.graph.store.rdf.models.Incoming;
+import io.av360.maverick.graph.store.rdf.models.StatementsBag;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.rdf4j.rio.RDFFormat;
 import org.eclipse.rdf4j.rio.RDFParser;
@@ -21,7 +21,7 @@ import java.util.List;
 import java.util.Map;
 
 @Slf4j(topic = "graph.api.decoder")
-public class StatementsDecoder implements Decoder<Incoming> {
+public class StatementsDecoder implements Decoder<StatementsBag> {
     private static final List<MimeType> mimeTypes;
 
     static {
@@ -46,19 +46,19 @@ public class StatementsDecoder implements Decoder<Incoming> {
     }
 
     @Override
-    public Flux<Incoming> decode(Publisher<DataBuffer> inputStream, ResolvableType elementType, MimeType mimeType, Map<String, Object> hints) {
+    public Flux<StatementsBag> decode(Publisher<DataBuffer> inputStream, ResolvableType elementType, MimeType mimeType, Map<String, Object> hints) {
         return Flux.from(this.parse(inputStream, mimeType));
     }
 
     @Override
-    public Mono<Incoming> decodeToMono(Publisher<DataBuffer> inputStream, ResolvableType elementType, MimeType mimeType, Map<String, Object> hints) {
+    public Mono<StatementsBag> decodeToMono(Publisher<DataBuffer> inputStream, ResolvableType elementType, MimeType mimeType, Map<String, Object> hints) {
         return this.parse(inputStream, mimeType);
     }
 
 
 
 
-    private Mono<Incoming> parse(Publisher<DataBuffer> publisher, MimeType mimeType) {
+    private Mono<StatementsBag> parse(Publisher<DataBuffer> publisher, MimeType mimeType) {
 
         return DataBufferUtils.join(publisher)
                 .flatMap(dataBuffer -> {

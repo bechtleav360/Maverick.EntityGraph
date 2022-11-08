@@ -14,7 +14,7 @@ import io.av360.maverick.graph.store.EntityStore;
 import io.av360.maverick.graph.store.SchemaStore;
 import io.av360.maverick.graph.store.TransactionsStore;
 import io.av360.maverick.graph.store.rdf.models.Entity;
-import io.av360.maverick.graph.store.rdf.models.Incoming;
+import io.av360.maverick.graph.store.rdf.models.StatementsBag;
 import io.av360.maverick.graph.store.rdf.models.Transaction;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.rdf4j.model.*;
@@ -75,7 +75,7 @@ public class EntityServicesImpl implements EntityServices {
         return this.deleteEntity(LocalIRI.withDefaultNamespace(id), authentication);
     }
 
-    @Override public Mono<Transaction> createEntity(Incoming triples, Map<String, String> parameters, Authentication authentication) {
+    @Override public Mono<Transaction> createEntity(StatementsBag triples, Map<String, String> parameters, Authentication authentication) {
         return this.prepareEntity(triples, parameters, new Transaction(), authentication)
                 .flatMap(transaction -> entityStore.commit(transaction, authentication))
                 .doOnSuccess(transaction -> {
@@ -96,7 +96,7 @@ public class EntityServicesImpl implements EntityServices {
      * @param linkedEntities  value
      * @return transaction model
      */
-    @Override public Mono<Transaction> linkEntityTo(String id, String predicatePrefix, String predicateKey, Incoming linkedEntities, Authentication authentication) {
+    @Override public Mono<Transaction> linkEntityTo(String id, String predicatePrefix, String predicateKey, StatementsBag linkedEntities, Authentication authentication) {
 
         LocalIRI entityIdentifier = LocalIRI.withDefaultNamespace(id);
         IRI predicate = LocalIRI.withDefinedNamespace(schema.getNamespaceFor(predicatePrefix), predicateKey);
@@ -134,7 +134,7 @@ public class EntityServicesImpl implements EntityServices {
     /**
      * Make sure you store the transaction once you are finished
      */
-    Mono<Transaction> prepareEntity(Incoming triples, Map<String, String> parameters, Transaction transaction, Authentication authentication) {
+    Mono<Transaction> prepareEntity(StatementsBag triples, Map<String, String> parameters, Transaction transaction, Authentication authentication) {
         if (log.isDebugEnabled())
             log.debug("(Service) {} statements incoming for creating new entity. Parameters: {}", triples.streamStatements().count(), parameters.size() > 0 ? parameters : "none");
 
