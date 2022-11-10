@@ -126,7 +126,7 @@ public class Entities extends AbstractController {
             produces = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.N3_VALUE})
     @ResponseStatus(HttpStatus.OK)
     Flux<NamespaceAwareStatement> deleteEntity(@PathVariable String id){
-        Assert.isTrue(id.length() == GeneratedIdentifier.LENGTH, "Incorrect length for identifier.");
+        /*Assert.isTrue(id.length() == GeneratedIdentifier.LENGTH, "Incorrect length for identifier.");
         boolean assertion = Boolean.TRUE.equals(
                 super.getAuthentication()
                         .flatMap(authentication -> entityServices.entityExists(id, authentication))
@@ -134,6 +134,8 @@ public class Entities extends AbstractController {
         );
         Assert.isTrue(assertion, "Entity with id" + id + ". \\" +
                 "does not exist");
+
+         */
 
         return super.getAuthentication()
                 .flatMap(authentication ->  entityServices.deleteEntity(id, authentication))

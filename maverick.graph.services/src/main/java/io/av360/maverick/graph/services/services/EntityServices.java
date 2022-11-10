@@ -55,9 +55,16 @@ public class EntityServices {
 
 
     public Mono<Transaction> deleteEntity(IRI identifier, Authentication authentication) {
-        return this.entityStore.listStatements(identifier, null, null, authentication)
-                .flatMap(statements -> this.entityStore.removeStatements(statements, new Transaction()))
+        return this.entityStore.getEntity(identifier, authentication)
+                .switchIfEmpty(Mono.error(new EntityNotFound(identifier.stringValue())))
+                .map(entity -> new Transaction().affected(entity))
+                .flatMap(transaction -> {
+                    return this.entityStore.listStatements(identifier, null, null, authentication)
+                            .flatMap(statements -> this.entityStore.removeStatements(statements, transaction));
+
+                })
                 .flatMap(trx -> this.entityStore.commit(trx, authentication));
+
     }
 
 
