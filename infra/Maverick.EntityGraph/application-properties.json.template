@@ -1,0 +1,64 @@
+{   
+    "application": {
+        "security": {
+            "enabled": true, 
+            "apiKey": "xxx"
+        },
+        "features": {
+            "modules": {
+                "applications": true,
+                "admin": true
+            }, 
+            "schedulers": {
+                "detectDuplicates": true,
+                "replaceGlobalIdentifiers": true
+            }, 
+            "transformers": {
+                "replaceGlobalIdentifiers": true,
+                "replaceAnonymousIdentifiers": true, 
+                "mergeDuplicates": true
+            },  
+            "validators": {
+                "checkRequiredType": true
+            }
+        }, 
+        "storage": {
+            "default": {
+                "path": "/var/data/repositories"
+            }, 
+            "entities" : {
+                "path": "/var/data/entities"
+            }, 
+            "transactions" : {
+                "path": "/var/data/transactions"
+            }, 
+            "schema" : {
+                "path": "/var/data/schema"
+            }
+        }
+    },
+
+    "spring": {
+        "profiles": {
+            "active": "stage"
+        },
+        "security": {
+            "user": {
+                "name": "admin",
+                "password": "xxx"
+            }
+        }
+    },
+    "logging": {
+        "level": {
+            "com": {
+                "bechtle": "DEBUG"
+            },
+            "org": {
+                "springframework": {
+                    "security": "INFO"
+                }
+            }
+        }
+    }
+}

@@ -1,9 +1,0 @@
-kind: ConfigMap
-apiVersion: v1
-metadata:
-  name: {{ include "cougar.fullname" . }}-application-properties
-data:
-  application.properties: |-
-{{ .Files.Get "application.properties" | indent 4 }}
-  application-properties.json: |-
-{{ .Files.Get "application-properties.json" | indent 4 }}
