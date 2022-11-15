@@ -1,5 +1,6 @@
 package io.av360.maverick.graph.feature.applications.domain;
 
+import io.av360.maverick.graph.feature.applications.api.dto.Requests;
 import io.av360.maverick.graph.feature.applications.domain.model.ApplicationApiKey;
 import io.av360.maverick.graph.feature.applications.domain.model.Application;
 import io.av360.maverick.graph.model.errors.DuplicateRecordsException;
@@ -292,5 +293,31 @@ public class ApplicationsService {
         return Mono.error(new NotImplementedException());
     }
 
+    public Mono<?> updateApplicationConfig(String applicationId, String s3Host, String s3Bucket, String exportFrequency, Authentication authentication) {
+        log.debug("(Service) Updating application config for application '{}'", applicationId);
+        //TODO: Implement
+        return Mono.error(new NotImplementedException());
+    }
 
+    public Mono<?> getApplicationConfig(String applicationId, Authentication authentication) {
+        log.debug("(Service) Getting application config for application '{}'", applicationId);
+        //TODO: Implement
+        return Mono.error(new NotImplementedException());
+    }
+
+    public Mono<?> exportApplication(String applicationId, Authentication authentication) {
+        log.debug("(Service) Exporting application '{}'", applicationId);
+        // TODO: Implement
+        // Select All Sparql Query for application
+        // Export to S3
+
+
+        return Mono.error(new NotImplementedException());
+    }
+
+    public Mono<?> getExport(String applicationId, String exportId, Authentication authentication) {
+        log.debug("(Service) Getting export '{}' for application '{}'", exportId, applicationId);
+        //TODO: Implement
+        return Mono.error(new NotImplementedException());
+    }
 }

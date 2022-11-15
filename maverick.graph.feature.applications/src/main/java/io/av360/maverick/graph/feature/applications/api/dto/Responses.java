@@ -1,5 +1,6 @@
 package io.av360.maverick.graph.feature.applications.api.dto;
 
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -20,6 +21,18 @@ public class Responses {
     }
 
     public record ApplicationWithApiKeys(String key, String label, boolean persistent, List<ApiKeyResponse> keys) {
+
+    }
+
+    public record ApplicationConfigResponse(String s3Host, String s3BucketId, String exportFrequency) {
+
+    }
+
+    public record ExportResponse(String id, String status, Date createdAt, Date updatedAt) {
+
+    }
+
+    public record GetExportResponse(String id, String status, Date createdAt, Date updatedAt, String s3Host, String s3BucketId, String s3ObjectId) {
 
     }
 }
