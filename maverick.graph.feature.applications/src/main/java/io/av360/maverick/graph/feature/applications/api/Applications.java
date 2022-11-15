@@ -145,6 +145,7 @@ public class Applications extends AbstractController {
                 .doOnSubscribe(subscription -> log.info("Updating application configuration"));
     }
 
+
     @ApiOperation(value = "Get application configuration")
     @GetMapping(value = "/{applicationId}/config")
     @ResponseStatus(HttpStatus.OK)
