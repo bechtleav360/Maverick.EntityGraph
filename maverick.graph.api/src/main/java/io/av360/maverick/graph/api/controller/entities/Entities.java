@@ -55,15 +55,18 @@ public class Entities extends AbstractController {
     @ApiOperation(value = "List entities")
     @GetMapping(value = "", produces = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.N3_VALUE})
     @ResponseStatus(HttpStatus.OK)
-    Flux<NamespaceAwareStatement> list() {
+    Flux<NamespaceAwareStatement> list(
+            @RequestParam(value = "limit", defaultValue = "5000") Integer limit,
+            @RequestParam(value = "offset", defaultValue = "0") Integer offset) {
 
         return super.getAuthentication()
-                .flatMapMany(queryServices::listEntities)
+                .flatMapMany(authentication -> queryServices.listEntities(authentication, limit, offset))
                 .flatMapIterable(AbstractModel::asStatements)
                 .doOnSubscribe(s -> {
                     if(log.isDebugEnabled()) log.debug("Request to list entities");
                 });
     }
+
 
     @ApiOperation(value = "Create entity")
     @PostMapping(value = "",

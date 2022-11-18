@@ -64,6 +64,17 @@ public class QueryServices {
                 .flatMap(id -> this.entityStore.getEntity(id, authentication));
     }
 
+    public Flux<Entity> listEntities(Authentication authentication, int limit, int offset) {
+        Variable idVariable = SparqlBuilder.var("id");
+
+        SelectQuery query = Queries.SELECT(idVariable).where(
+                idVariable.isA(Local.Entities.TYPE)).limit(limit).offset(offset);
+
+        return this.queryValues(query.getQueryString(), authentication)
+                .map(bindings -> (IRI) bindings.getValue(idVariable.getVarName()))
+                .flatMap(id -> this.entityStore.getEntity(id, authentication));
+    }
+
 
 
     @Autowired
