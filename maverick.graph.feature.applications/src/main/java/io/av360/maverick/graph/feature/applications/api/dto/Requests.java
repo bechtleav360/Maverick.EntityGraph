@@ -7,6 +7,6 @@ public class Requests {
 
     public record CreateApiKeyRequest(String label) {}
 
-    public record UpdateApplicationConfigRequest(String s3Host, String s3BucketId, String exportFrequency) {}
+    public record SetApplicationConfigRequest(String s3Host, String s3BucketId, String exportFrequency) {}
 
 }

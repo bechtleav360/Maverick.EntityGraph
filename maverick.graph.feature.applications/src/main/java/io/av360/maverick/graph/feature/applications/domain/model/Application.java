@@ -21,8 +21,9 @@ public record Application(IRI iri, String label, String key, boolean persistent)
     public static final IRI HAS_KEY = DC.IDENTIFIER;
     public static final IRI HAS_LABEL = RDFS.LABEL;
     public static final IRI IS_PERSISTENT = LocalIRI.from(NAMESPACE, "isPersistent");
-
-
+    public static final IRI HAS_S3_HOST = LocalIRI.from(NAMESPACE, "hasS3Host");
+    public static final IRI HAS_S3_BUCKET_ID = LocalIRI.from(NAMESPACE, "hasS3BucketId");
+    public static final IRI HAS_EXPORT_FREQUENCY = LocalIRI.from(NAMESPACE, "hasExportFrequency");
 
 }
 

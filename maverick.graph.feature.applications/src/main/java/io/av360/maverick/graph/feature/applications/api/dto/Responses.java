@@ -28,11 +28,11 @@ public class Responses {
 
     }
 
-    public record ExportResponse(String id, String status, Date createdAt, Date updatedAt) {
+    public record ExportResponse(String id) {
 
     }
 
-    public record GetExportResponse(String id, String status, Date createdAt, Date updatedAt, String s3Host, String s3BucketId, String s3ObjectId) {
+    public record GetExportResponse(String id, String s3Host, String s3BucketId, String s3ObjectId) {
 
     }
 }

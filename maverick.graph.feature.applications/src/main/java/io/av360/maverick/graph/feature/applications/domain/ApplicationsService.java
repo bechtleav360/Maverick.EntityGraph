@@ -1,6 +1,5 @@
 package io.av360.maverick.graph.feature.applications.domain;
 
-import io.av360.maverick.graph.feature.applications.api.dto.Requests;
 import io.av360.maverick.graph.feature.applications.domain.model.ApplicationApiKey;
 import io.av360.maverick.graph.feature.applications.domain.model.Application;
 import io.av360.maverick.graph.model.errors.DuplicateRecordsException;
@@ -20,6 +19,7 @@ import org.eclipse.rdf4j.sparqlbuilder.core.SparqlBuilder;
 import org.eclipse.rdf4j.sparqlbuilder.core.Variable;
 import org.eclipse.rdf4j.sparqlbuilder.core.query.Queries;
 import org.eclipse.rdf4j.sparqlbuilder.core.query.SelectQuery;
+import org.eclipse.rdf4j.sparqlbuilder.graphpattern.TriplePattern;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
@@ -30,6 +30,7 @@ import io.av360.maverick.graph.api.security.errors.UnknownApiKey;
 
 import java.time.ZonedDateTime;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Applications separate tenants. Each application has its own separate stores.
@@ -293,26 +294,42 @@ public class ApplicationsService {
         return Mono.error(new NotImplementedException());
     }
 
-    public Mono<?> updateApplicationConfig(String applicationId, String s3Host, String s3Bucket, String exportFrequency, Authentication authentication) {
-        log.debug("(Service) Updating application config for application '{}'", applicationId);
-        //TODO: Implement
+    public Mono<?> setApplicationConfig(String applicationId, String s3Host, String s3Bucket, String exportFrequency, Authentication authentication) {
+        log.debug("(Service) Setting application config for application '{}'", applicationId);
+        Variable node = SparqlBuilder.var("n");
+        SelectQuery q = Queries.MODIFY()
+                .where(node.isA(Application.TYPE)
+                        .andHas(Application.HAS_KEY, applicationId)
+                )
+                .delete((TriplePattern) node, (TriplePattern) Application.HAS_S3_HOST, (TriplePattern) SparqlBuilder.var("a"))
+                .delete((TriplePattern) node, (TriplePattern) Application.HAS_S3_BUCKET_ID, (TriplePattern) SparqlBuilder.var("b"))
+                .delete((TriplePattern) node, (TriplePattern) Application.HAS_EXPORT_FREQUENCY, (TriplePattern) SparqlBuilder.var("c"))
+                .insert((TriplePattern) node, (TriplePattern) Application.HAS_S3_HOST, (TriplePattern) s3Host)
+                .insert(node, Application.HAS_S3_BUCKET, s3Bucket)
+                .insert(node, Application.HAS_EXPORT_FREQUENCY, exportFrequency);
+
+
         return Mono.error(new NotImplementedException());
     }
 
     public Mono<?> getApplicationConfig(String applicationId, Authentication authentication) {
         log.debug("(Service) Getting application config for application '{}'", applicationId);
-        //TODO: Implement
+
         return Mono.error(new NotImplementedException());
     }
 
     public Mono<?> exportApplication(String applicationId, Authentication authentication) {
         log.debug("(Service) Exporting application '{}'", applicationId);
         // TODO: Implement
-        // Select All Sparql Query for application
-        // Export to S3
+        String exportIdentifier = GeneratedIdentifier.generateRandomKey(32);
 
+        Variable node = SparqlBuilder.var("n");
 
-        return Mono.error(new NotImplementedException());
+        SelectQuery q = Queries.SELECT().where(node.has(Application.HAS_KEY, applicationId));
+
+        this.applicationsStore.query(q, authentication, Authorities.APPLICATION);
+
+        return Mono.just(exportIdentifier);
     }
 
     public Mono<?> getExport(String applicationId, String exportId, Authentication authentication) {

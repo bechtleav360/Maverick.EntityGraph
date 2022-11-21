@@ -9,7 +9,6 @@ import io.av360.maverick.graph.feature.applications.domain.model.Application;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
-import org.checkerframework.checker.units.qual.A;
 import org.springframework.http.HttpStatus;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
@@ -124,10 +123,10 @@ public class Applications extends AbstractController {
                 .doOnSubscribe(subscription -> log.info("Generating a new token for an application"));
     }
 
-    @ApiOperation(value = "Update application configuration")
+    @ApiOperation(value = "Set application configuration")
     @PostMapping(value = "/{applicationId}/config")
     @ResponseStatus(HttpStatus.OK)
-    Mono<Void> updateApplicationConfig(@PathVariable String applicationId, @RequestBody Requests.UpdateApplicationConfigRequest request) {
+    Mono<Void> setApplicationConfig(@PathVariable String applicationId, @RequestBody Requests.SetApplicationConfigRequest request) {
         Assert.isTrue(StringUtils.hasLength(applicationId), "Application ID is a required parameter");
         Assert.isTrue(StringUtils.hasLength(request.s3Host()), "S3 Host is a required parameter");
         Assert.isTrue(StringUtils.hasLength(request.s3BucketId()), "S3 Bucket ID is a required parameter");
@@ -135,14 +134,14 @@ public class Applications extends AbstractController {
 
         return super.getAuthentication()
                 .flatMap(authentication ->
-                        this.applicationsService.updateApplicationConfig(
+                        this.applicationsService.setApplicationConfig(
                                 applicationId,
                                 request.s3Host(),
                                 request.s3BucketId(),
                                 request.exportFrequency(),
                                 authentication))
                 .then()
-                .doOnSubscribe(subscription -> log.info("Updating application configuration"));
+                .doOnSubscribe(subscription -> log.info("Setting application configuration"));
     }
 
 
@@ -156,6 +155,8 @@ public class Applications extends AbstractController {
                 .flatMap(authentication -> this.applicationsService.getApplicationConfig(applicationId, authentication))
                 .map(config ->
                         new Responses.ApplicationConfigResponse(
+                                config.label(),
+                                config.persistent(),
                                 config.s3Host(),
                                 config.s3BucketId(),
                                 config.exportFrequency()))
@@ -171,12 +172,7 @@ public class Applications extends AbstractController {
         return super.getAuthentication()
                 .flatMap(authentication -> this.applicationsService.exportApplication(applicationId, authentication))
                 .map(export ->
-                        new Responses.ExportResponse(
-                                export.id(),
-                                export.status(),
-                                export.createdAt(),
-                                export.updatedAt()
-                        )
+                        new Responses.ExportResponse(export.id())
                 ).doOnSubscribe(subscription -> log.info("Exporting an application"));
     }
 
@@ -192,9 +188,6 @@ public class Applications extends AbstractController {
                 .map(export ->
                         new Responses.GetExportResponse(
                                 export.id(),
-                                export.status(),
-                                export.createdAt(),
-                                export.updatedAt(),
                                 export.s3Host(),
                                 export.s3BucketId(),
                                 export.s3ObjectId()
