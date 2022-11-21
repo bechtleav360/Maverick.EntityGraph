@@ -294,46 +294,100 @@ public class ApplicationsService {
         return Mono.error(new NotImplementedException());
     }
 
-    public Mono<?> setApplicationConfig(String applicationId, String s3Host, String s3Bucket, String exportFrequency, Authentication authentication) {
-        log.debug("(Service) Setting application config for application '{}'", applicationId);
+    public Mono<?> setApplicationConfig(String applicationIdentifier, String s3Host, String s3Bucket, String exportFrequency, Authentication authentication) {
+        log.debug("(Service) Setting application config for application '{}'", applicationIdentifier);
+
         Variable node = SparqlBuilder.var("n");
+        Variable s3HostVar = SparqlBuilder.var("d");
+        Variable s3BucketVar = SparqlBuilder.var("e");
+        Variable exportFrequencyVar = SparqlBuilder.var("f");
+
         SelectQuery q = Queries.MODIFY()
                 .where(node.isA(Application.TYPE)
-                        .andHas(Application.HAS_KEY, applicationId)
+                        .andHas(Application.HAS_KEY, applicationIdentifier)
                 )
-                .delete((TriplePattern) node, (TriplePattern) Application.HAS_S3_HOST, (TriplePattern) SparqlBuilder.var("a"))
-                .delete((TriplePattern) node, (TriplePattern) Application.HAS_S3_BUCKET_ID, (TriplePattern) SparqlBuilder.var("b"))
-                .delete((TriplePattern) node, (TriplePattern) Application.HAS_EXPORT_FREQUENCY, (TriplePattern) SparqlBuilder.var("c"))
-                .insert((TriplePattern) node, (TriplePattern) Application.HAS_S3_HOST, (TriplePattern) s3Host)
+                .delete(node, Application.HAS_S3_HOST, s3HostVar)
+                .delete(node, Application.HAS_S3_BUCKET, s3BucketVar)
+                .delete(node, Application.HAS_EXPORT_FREQUENCY, exportFrequencyVar)
+                .insert(node, Application.HAS_S3_HOST, s3Host)
                 .insert(node, Application.HAS_S3_BUCKET, s3Bucket)
                 .insert(node, Application.HAS_EXPORT_FREQUENCY, exportFrequency);
 
+        return this.applicationsStore.update(q, authentication, Authorities.APPLICATION)
+                .doOnSubscribe(sub -> log.debug("Setting application config for application with key '{}'", applicationIdentifier));
 
-        return Mono.error(new NotImplementedException());
+
+        //return Mono.error(new NotImplementedException());
     }
 
-    public Mono<?> getApplicationConfig(String applicationId, Authentication authentication) {
-        log.debug("(Service) Getting application config for application '{}'", applicationId);
+    public Mono<?> getApplicationConfig(String applicationIdentifier, Authentication authentication) {
+        Variable node = SparqlBuilder.var("n");
+        Variable label = SparqlBuilder.var("b");
+        Variable persistent = SparqlBuilder.var("c");
+        Variable s3Host = SparqlBuilder.var("d");
+        Variable s3Bucket = SparqlBuilder.var("e");
+        Variable exportFrequency = SparqlBuilder.var("f");
 
-        return Mono.error(new NotImplementedException());
+        SelectQuery q = Queries.SELECT()
+                .where(node.isA(Application.TYPE)
+                        .andHas(Application.HAS_KEY, applicationIdentifier)
+                        .andHas(Application.HAS_LABEL, label)
+                        .andHas(Application.IS_PERSISTENT, persistent)
+                        .andHas(Application.HAS_S3_HOST, s3Host)
+                        .andHas(Application.HAS_S3_BUCKET_ID, s3Bucket)
+                        .andHas(Application.HAS_EXPORT_FREQUENCY, exportFrequency)
+                )
+                .limit(1);
+
+        return this.applicationsStore.query(q, authentication, Authorities.APPLICATION)
+                .collectList()
+                .flatMap(this::getUniqueBindingSet)
+                .map(BindingsAccessor::new)
+                .map(ba ->
+                        new ApplicationConfig(
+                                ba.asString(label),
+                                ba.asString(persistent),
+                                ba.asString(s3Host),
+                                ba.asString(s3Bucket),
+                                ba.asString(exportFrequency)
+                        )
+                )
+                .doOnSubscribe(sub -> log.debug("Getting application config for application with key '{}'", applicationIdentifier));
+
+        //return Mono.error(new NotImplementedException());
+
     }
 
-    public Mono<?> exportApplication(String applicationId, Authentication authentication) {
-        log.debug("(Service) Exporting application '{}'", applicationId);
+    public Mono<?> exportApplication(String applicationIdentifier, Authentication authentication) {
+        log.debug("(Service) Exporting application '{}'", applicationIdentifier);
         // TODO: Implement
         String exportIdentifier = GeneratedIdentifier.generateRandomKey(32);
 
         Variable node = SparqlBuilder.var("n");
 
-        SelectQuery q = Queries.SELECT().where(node.has(Application.HAS_KEY, applicationId));
+        SelectQuery q = Queries.SELECT()
+                .where(node.isA(Application.TYPE)
+                        .andHas(Application.HAS_KEY, applicationIdentifier)
+                )
+                .limit(1);
 
-        this.applicationsStore.query(q, authentication, Authorities.APPLICATION);
+        return this.applicationsStore.query(q, authentication, Authorities.APPLICATION)
+                .collectList()
+                .flatMap(this::getUniqueBindingSet)
+                .map(BindingsAccessor::new)
+                .map(ba -> ba.asString(node))
+                .flatMap(applicationIri -> {
+                    ModelBuilder modelBuilder = new ModelBuilder();
+                    modelBuilder.subject(applicationIri);
+                    return this.applicationsStore.insert(modelBuilder.build(), authentication, Authorities.APPLICATION);
+                })
+                .doOnSubscribe(sub -> log.debug("Exporting application with key '{}'", applicationIdentifier));
 
-        return Mono.just(exportIdentifier);
+        //return Mono.just(exportIdentifier);
     }
 
-    public Mono<?> getExport(String applicationId, String exportId, Authentication authentication) {
-        log.debug("(Service) Getting export '{}' for application '{}'", exportId, applicationId);
+    public Mono<?> getExport(String applicationIdentifier, String exportId, Authentication authentication) {
+        log.debug("(Service) Getting export '{}' for application '{}'", exportId, applicationIdentifier);
         //TODO: Implement
         return Mono.error(new NotImplementedException());
     }
