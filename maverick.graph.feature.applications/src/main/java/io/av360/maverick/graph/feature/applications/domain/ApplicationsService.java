@@ -5,6 +5,9 @@ import io.av360.maverick.graph.feature.applications.domain.model.Application;
 import io.av360.maverick.graph.model.errors.DuplicateRecordsException;
 import io.av360.maverick.graph.model.rdf.GeneratedIdentifier;
 import io.av360.maverick.graph.model.security.Authorities;
+import io.av360.maverick.graph.services.services.EntityServices;
+import io.av360.maverick.graph.services.services.QueryServices;
+import io.av360.maverick.graph.store.EntityStore;
 import io.av360.maverick.graph.store.rdf.helpers.BindingsAccessor;
 import io.av360.maverick.graph.model.vocabulary.Local;
 import io.av360.maverick.graph.feature.applications.store.ApplicationsStore;
@@ -27,8 +30,19 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import io.av360.maverick.graph.api.security.errors.RevokedApiKeyUsed;
 import io.av360.maverick.graph.api.security.errors.UnknownApiKey;
+import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.ListObjectsRequest;
+import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.services.s3.model.ListObjectsResponse;
+import software.amazon.awssdk.services.s3.model.S3Exception;
+import software.amazon.awssdk.services.s3.model.S3Object;
 
+import java.net.URI;
+import java.nio.file.Paths;
+import java.text.SimpleDateFormat;
 import java.time.ZonedDateTime;
+import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 
@@ -41,15 +55,19 @@ import java.util.UUID;
 public class ApplicationsService {
 
     private final ApplicationsStore applicationsStore;
+    private final QueryServices queryServices;
 
-    public ApplicationsService(ApplicationsStore store) {
+    public ApplicationsService(ApplicationsStore store, EntityServices entityServices, QueryServices queryServices) {
         this.applicationsStore = store;
+
+        this.queryServices = queryServices;
     }
 
     /**
      * Creates a new application.
-     * @param label Label for the application
-     * @param persistent True if data should be stored on disk
+     *
+     * @param label          Label for the application
+     * @param persistent     True if data should be stored on disk
      * @param authentication Current authentication information
      * @return New application as mono
      */
@@ -294,8 +312,7 @@ public class ApplicationsService {
         return Mono.error(new NotImplementedException());
     }
 
-    public Mono<?> setApplicationConfig(String applicationIdentifier, String s3Host, String s3Bucket, String exportFrequency, Authentication authentication) {
-        log.debug("(Service) Setting application config for application '{}'", applicationIdentifier);
+    public Mono<Void> setApplicationConfig(String applicationIdentifier, String s3Host, String s3Bucket, String exportFrequency, Authentication authentication) {
 
         Variable node = SparqlBuilder.var("n");
         Variable s3HostVar = SparqlBuilder.var("d");
@@ -306,21 +323,24 @@ public class ApplicationsService {
                 .where(node.isA(Application.TYPE)
                         .andHas(Application.HAS_KEY, applicationIdentifier)
                 )
-                .delete(node, Application.HAS_S3_HOST, s3HostVar)
+                .delete(node.has(Application.HAS_S3_HOST, s3HostVar))
                 .delete(node, Application.HAS_S3_BUCKET, s3BucketVar)
                 .delete(node, Application.HAS_EXPORT_FREQUENCY, exportFrequencyVar)
                 .insert(node, Application.HAS_S3_HOST, s3Host)
                 .insert(node, Application.HAS_S3_BUCKET, s3Bucket)
                 .insert(node, Application.HAS_EXPORT_FREQUENCY, exportFrequency);
 
-        return this.applicationsStore.update(q, authentication, Authorities.APPLICATION)
+        ModelBuilder modelBuilder = new ModelBuilder();
+        modelBuilder.subject().add(Application.HAS_S3_HOST, s3Host);
+
+        return this.applicationsStore.query(q, authentication, Authorities.APPLICATION)
+                .then()
                 .doOnSubscribe(sub -> log.debug("Setting application config for application with key '{}'", applicationIdentifier));
 
-
-        //return Mono.error(new NotImplementedException());
     }
 
     public Mono<?> getApplicationConfig(String applicationIdentifier, Authentication authentication) {
+
         Variable node = SparqlBuilder.var("n");
         Variable label = SparqlBuilder.var("b");
         Variable persistent = SparqlBuilder.var("c");
@@ -353,42 +373,76 @@ public class ApplicationsService {
                         )
                 )
                 .doOnSubscribe(sub -> log.debug("Getting application config for application with key '{}'", applicationIdentifier));
-
-        //return Mono.error(new NotImplementedException());
-
     }
 
-    public Mono<?> exportApplication(String applicationIdentifier, Authentication authentication) {
-        log.debug("(Service) Exporting application '{}'", applicationIdentifier);
-        // TODO: Implement
-        String exportIdentifier = GeneratedIdentifier.generateRandomKey(32);
+    public Mono<String> exportApplication(String applicationIdentifier, Authentication authentication) {
+
+        String exportIdentifier = applicationIdentifier + "_" + new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss-SSS").format(new Date());
 
         Variable node = SparqlBuilder.var("n");
+        Variable label = SparqlBuilder.var("b");
+        Variable persistent = SparqlBuilder.var("c");
+        Variable s3Host = SparqlBuilder.var("d");
+        Variable s3Bucket = SparqlBuilder.var("e");
 
         SelectQuery q = Queries.SELECT()
                 .where(node.isA(Application.TYPE)
                         .andHas(Application.HAS_KEY, applicationIdentifier)
+                        .andHas(Application.HAS_LABEL, label)
+                        .andHas(Application.IS_PERSISTENT, persistent)
+                        .andHas(Application.HAS_S3_HOST, s3Host)
+                        .andHas(Application.HAS_S3_BUCKET_ID, s3Bucket)
                 )
                 .limit(1);
+
 
         return this.applicationsStore.query(q, authentication, Authorities.APPLICATION)
                 .collectList()
                 .flatMap(this::getUniqueBindingSet)
                 .map(BindingsAccessor::new)
-                .map(ba -> ba.asString(node))
-                .flatMap(applicationIri -> {
-                    ModelBuilder modelBuilder = new ModelBuilder();
-                    modelBuilder.subject(applicationIri);
-                    return this.applicationsStore.insert(modelBuilder.build(), authentication, Authorities.APPLICATION);
+                .map(ba -> {
+                    this.queryServices.queryGraph()
+                    try {
+                        S3Client s3 = S3Client.builder()
+                                .endpointOverride(URI.create(ba.asString(s3Host)))
+                                .build();
+                        PutObjectRequest objectRequest = PutObjectRequest.builder()
+                                .bucket(ba.asString(s3Bucket))
+                                .key(exportIdentifier)
+                                .build();
+                        s3.putObject(objectRequest, RequestBody.fromString(ba.asString(node)));
+
+                    } catch (S3Exception e) {
+                        log.error(e.awsErrorDetails().errorMessage());
+                    }
+
+                    return exportIdentifier;
                 })
                 .doOnSubscribe(sub -> log.debug("Exporting application with key '{}'", applicationIdentifier));
 
-        //return Mono.just(exportIdentifier);
     }
 
     public Mono<?> getExport(String applicationIdentifier, String exportId, Authentication authentication) {
         log.debug("(Service) Getting export '{}' for application '{}'", exportId, applicationIdentifier);
-        //TODO: Implement
+
+        try {
+            S3Client s3 = S3Client.builder()
+                    .build();
+            ListObjectsRequest listObjects = ListObjectsRequest
+                    .builder()
+                    .bucket("test-bucket")
+                    .build();
+
+            ListObjectsResponse res = s3.listObjects(listObjects);
+            List<S3Object> objects = res.contents();
+            for (S3Object myValue : objects) {
+                System.out.print("\n The name of the key is " + myValue.key());
+            }
+
+        } catch (S3Exception e) {
+            log.error(e.awsErrorDetails().errorMessage());
+        }
+
         return Mono.error(new NotImplementedException());
     }
 }

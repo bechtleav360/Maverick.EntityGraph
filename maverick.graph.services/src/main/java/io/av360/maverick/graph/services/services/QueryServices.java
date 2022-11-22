@@ -10,6 +10,7 @@ import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.sparqlbuilder.core.SparqlBuilder;
 import org.eclipse.rdf4j.sparqlbuilder.core.Variable;
+import org.eclipse.rdf4j.sparqlbuilder.core.query.ConstructQuery;
 import org.eclipse.rdf4j.sparqlbuilder.core.query.Queries;
 import org.eclipse.rdf4j.sparqlbuilder.core.query.SelectQuery;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -48,6 +49,10 @@ public class QueryServices {
                     if(log.isTraceEnabled()) log.trace("Running query in entity store.");
                 });
 
+    }
+
+    public Flux<NamespaceAwareStatement> queryGraph(ConstructQuery query, String applicationId) {
+        throw new UnsupportedOperationException("Not implemented yet.");
     }
 
 

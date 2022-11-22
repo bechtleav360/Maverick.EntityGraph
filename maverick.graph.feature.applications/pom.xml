@@ -57,7 +57,14 @@
             <groupId>org.eclipse.rdf4j</groupId>
             <artifactId>rdf4j-sail-memory</artifactId>
         </dependency>
+        <dependency>
+            <groupId>software.amazon.awssdk</groupId>
+            <artifactId>s3</artifactId>
+            <version>2.18.21</version>
+        </dependency>
     </dependencies>
+
+
 
     <properties>
         <maven.compiler.source>17</maven.compiler.source>

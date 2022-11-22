@@ -24,7 +24,7 @@ public class Responses {
 
     }
 
-    public record ApplicationConfigResponse(String s3Host, String s3BucketId, String exportFrequency) {
+    public record ApplicationConfigResponse(String key, boolean persistent, String s3Host, String s3BucketId, String exportFrequency) {
 
     }
 

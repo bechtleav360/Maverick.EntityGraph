@@ -171,9 +171,8 @@ public class Applications extends AbstractController {
 
         return super.getAuthentication()
                 .flatMap(authentication -> this.applicationsService.exportApplication(applicationId, authentication))
-                .map(export ->
-                        new Responses.ExportResponse(export.id())
-                ).doOnSubscribe(subscription -> log.info("Exporting an application"));
+                .map(Responses.ExportResponse::new)
+                .doOnSubscribe(subscription -> log.info("Exporting an application"));
     }
 
     @ApiOperation(value = "Get export")
