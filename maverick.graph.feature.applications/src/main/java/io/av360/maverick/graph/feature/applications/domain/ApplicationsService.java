@@ -357,7 +357,7 @@ public class ApplicationsService {
                 .map(ba ->
                         new HashMap<String, String>() {{
                             put("label", ba.asString(label));
-                            put("persistent", ba.asBoolean(persistent));
+                            put("persistent", ba.asBoolean(persistent)); //TODO: should be String, but doesn't work either
                             put("s3Host", ba.asString(s3Host));
                             put("s3Bucket", ba.asString(s3Bucket));
                             put("exportFrequency", ba.asString(exportFrequency));
