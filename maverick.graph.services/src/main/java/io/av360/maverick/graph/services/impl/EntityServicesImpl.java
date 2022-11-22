@@ -134,7 +134,7 @@ public class EntityServicesImpl implements EntityServices {
     /**
      * Make sure you store the transaction once you are finished
      */
-    Mono<Transaction> prepareEntity(StatementsBag triples, Map<String, String> parameters, Transaction transaction, Authentication authentication) {
+    protected Mono<Transaction> prepareEntity(StatementsBag triples, Map<String, String> parameters, Transaction transaction, Authentication authentication) {
         if (log.isDebugEnabled())
             log.debug("(Service) {} statements incoming for creating new entity. Parameters: {}", triples.streamStatements().count(), parameters.size() > 0 ? parameters : "none");
 
