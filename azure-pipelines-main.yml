@@ -1,21 +1,7 @@
 # Don't forget to set the following variables for your (release) pipeline: ghcr.user, ghcr.password
     
 trigger:
-- develop
-- feature/*
-
-variables:
-  - name: docker.registry
-    value: ghcr.io
-  - name: docker.host
-    value: https://ghcr.io
-  - name: docker.image.name
-    value: maverick-entity-graph
-  - name: docker.image.version
-    value: develop
-  - name: docker.credentials.user
-  - name: docker.credentials.password
-
+- main
 
 pool:
   vmImage: ubuntu-latest
@@ -35,19 +21,19 @@ steps:
       mavenAuthenticateFeed: false
       effectivePomSkip: false
       sonarQubeRunAnalysis: false
-      options: '-DskipTests=true'
-  - script: echo "Publishing image with build number $(Build.BuildNumber) and name $(privateRegistry)/$(containerRepo)"
+  - script: echo "Publishing image with $(Build.BuildNumber) for user $(ghcr.user)"
   - task: Maven@3
-    displayName: Build and publish Docker Image to Harbor Registry
+    displayName: Build and publish Docker Image to Github Container Registry
     env:
-      IMAGE_PREFIX: $(docker.registry)
-      IMAGE_NAME: $(docker.image.name)
-      IMAGE_VERSION: $(docker.image.version)
-      DOCKER_HOST: $(docker.host)
+      IMAGE_PREFIX: ghcr.io/bechtleav360
+      IMAGE_NAME: maverick-entity-graph    
+      IMAGE_VERSION: release
+      DOCKER_HOST: https://ghcr.io
       DOCKER_USER: $(docker.credentials.user)
       DOCKER_PASSWORD: $(docker.credentials.password)
     inputs:
       mavenPomFile: 'maverick.graph.main/pom.xml'
       goals: 'spring-boot:build-image'
       publishJUnitResults: true
-      jdkVersionOption: 1.17  
+      jdkVersionOption: 1.17
+  

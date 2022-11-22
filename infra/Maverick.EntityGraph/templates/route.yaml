@@ -2,14 +2,13 @@
 kind: Route
 apiVersion: route.openshift.io/v1
 metadata:
-  name: {{ include "cougar.fullname" . }}
+  name: {{ include "template.fullname" . }}
   labels:
-    {{- include "cougar.labels" . | nindent 4 }}
+    {{- include "template.labels" . | nindent 4 }}
 spec:
-  host: {{ .Values.route.host }}
   to:
     kind: Service
-    name: {{ include "cougar.fullname" . }}
+    name: {{ include "template.fullname" . }}
     weight: 100
   port:
     targetPort: http

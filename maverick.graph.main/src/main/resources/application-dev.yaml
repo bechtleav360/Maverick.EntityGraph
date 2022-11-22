@@ -32,6 +32,8 @@ application:
       persistent: false
       path: ~
 
+
+
 logging:
   level:
     graph: TRACE

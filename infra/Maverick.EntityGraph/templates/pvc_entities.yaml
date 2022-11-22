@@ -2,14 +2,14 @@
 kind: PersistentVolumeClaim
 apiVersion: v1
 metadata:
-  name: {{ .Release.Name }}-pvc-application
+  name: {{ .Release.Name }}-pvc-entities
   namespace: {{ .Release.Namespace }}  
   labels:
-    {{- include "cougar.labels" . | nindent 4 }}
+    {{- include "template.labels" . | nindent 4 }}
 spec:
   accessModes:
     - {{ .Values.persistence.accessMode | quote }}
   resources:
     requests:
-      storage: {{ .Values.persistence.application.size | quote }}
+      storage: {{ .Values.persistence.entities.size | quote }}
 {{- end }}

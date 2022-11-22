@@ -1,16 +1,16 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "cougar.fullname" . }}
+  name: {{ include "template.fullname" . }}
   labels:
-    {{- include "cougar.labels" . | nindent 4 }}
+    {{- include "template.labels" . | nindent 4 }}
 spec:
   {{- if not .Values.autoscaling.enabled }}
   replicas: {{ .Values.replicaCount }}
   {{- end }}
   selector:
     matchLabels:
-      {{- include "cougar.selectorLabels" . | nindent 6 }}
+      {{- include "template.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       {{- with .Values.podAnnotations }}
@@ -18,13 +18,13 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       labels:
-        {{- include "cougar.selectorLabels" . | nindent 8 }}
+        {{- include "template.selectorLabels" . | nindent 8 }}
     spec:
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      serviceAccountName: {{ include "cougar.serviceAccountName" . }}
+      serviceAccountName: {{ include "template.serviceAccountName" . }}
       containers:
         - name: {{ .Chart.Name }}
           securityContext:
@@ -53,7 +53,7 @@ spec:
             - name: SPRING_APPLICATION_JSON
               valueFrom: 
                 configMapKeyRef:
-                  name: {{ include "cougar.fullname" . }}-application-properties
+                  name: {{ include "template.fullname" . }}-application-properties
                   key: application-properties.json
           volumeMounts:
           - name: {{ .Release.Name }}-spring-application-config
@@ -68,7 +68,7 @@ spec:
       volumes: 
       - name: {{ .Release.Name }}-spring-application-config
         configMap:
-          name: {{ include "cougar.fullname" . }}-application-properties
+          name: {{ include "template.fullname" . }}-application-properties
       - name: {{ .Release.Name }}-vol-application
         persistentVolumeClaim:
           claimName: {{ .Release.Name }}-pvc-application          
