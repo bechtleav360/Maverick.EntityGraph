@@ -32,7 +32,7 @@ public class Responses {
 
     }
 
-    public record GetExportResponse(String id, String s3Host, String s3BucketId, String s3ObjectId) {
+    public record GetExportResponse(String s3Host, String s3BucketId, String s3ObjectId) {
 
     }
 }

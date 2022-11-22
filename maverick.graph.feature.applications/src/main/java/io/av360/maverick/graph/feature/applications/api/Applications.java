@@ -139,8 +139,9 @@ public class Applications extends AbstractController {
                                 request.s3Host(),
                                 request.s3BucketId(),
                                 request.exportFrequency(),
-                                authentication))
-                .then()
+                                authentication
+                        )
+                ).then()
                 .doOnSubscribe(subscription -> log.info("Setting application configuration"));
     }
 
@@ -155,12 +156,13 @@ public class Applications extends AbstractController {
                 .flatMap(authentication -> this.applicationsService.getApplicationConfig(applicationId, authentication))
                 .map(config ->
                         new Responses.ApplicationConfigResponse(
-                                config.label(),
-                                config.persistent(),
-                                config.s3Host(),
-                                config.s3BucketId(),
-                                config.exportFrequency()))
-                .doOnSubscribe(subscription -> log.info("Fetching application configuration"));
+                                config.get("label"),
+                                Boolean.getBoolean(config.get("persistent")),
+                                config.get("s3Host"),
+                                config.get("s3BucketId"),
+                                config.get("exportFrequency")
+                        )
+                ).doOnSubscribe(subscription -> log.info("Fetching application configuration"));
     }
 
     @ApiOperation(value = "Export application")
@@ -186,10 +188,9 @@ public class Applications extends AbstractController {
                 .flatMap(authentication -> this.applicationsService.getExport(applicationId, exportId, authentication))
                 .map(export ->
                         new Responses.GetExportResponse(
-                                export.id(),
-                                export.s3Host(),
-                                export.s3BucketId(),
-                                export.s3ObjectId()
+                                export.get("s3Host"),
+                                export.get("s3BucketId"),
+                                export.get("s3ObjectId")
                         )
                 ).doOnSubscribe(subscription -> log.info("Fetching an export"));
     }

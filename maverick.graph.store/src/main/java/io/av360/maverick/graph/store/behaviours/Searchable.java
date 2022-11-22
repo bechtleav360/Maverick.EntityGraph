@@ -13,7 +13,6 @@ public interface Searchable extends RepositoryBehaviour {
     default Flux<BindingSet> query(SelectQuery all, Authentication authentication, GrantedAuthority requiredAuthority) {
         return this.query(all.getQueryString(), authentication, requiredAuthority);
     }
-
     Flux<BindingSet> query(String queryString, Authentication authentication, GrantedAuthority requiredAuthority);
 
 

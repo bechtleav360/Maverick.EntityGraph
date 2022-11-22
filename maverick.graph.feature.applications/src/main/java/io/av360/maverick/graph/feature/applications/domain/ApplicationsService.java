@@ -5,9 +5,7 @@ import io.av360.maverick.graph.feature.applications.domain.model.Application;
 import io.av360.maverick.graph.model.errors.DuplicateRecordsException;
 import io.av360.maverick.graph.model.rdf.GeneratedIdentifier;
 import io.av360.maverick.graph.model.security.Authorities;
-import io.av360.maverick.graph.services.services.EntityServices;
 import io.av360.maverick.graph.services.services.QueryServices;
-import io.av360.maverick.graph.store.EntityStore;
 import io.av360.maverick.graph.store.rdf.helpers.BindingsAccessor;
 import io.av360.maverick.graph.model.vocabulary.Local;
 import io.av360.maverick.graph.feature.applications.store.ApplicationsStore;
@@ -20,9 +18,9 @@ import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.sparqlbuilder.core.SparqlBuilder;
 import org.eclipse.rdf4j.sparqlbuilder.core.Variable;
+import org.eclipse.rdf4j.sparqlbuilder.core.query.ModifyQuery;
 import org.eclipse.rdf4j.sparqlbuilder.core.query.Queries;
 import org.eclipse.rdf4j.sparqlbuilder.core.query.SelectQuery;
-import org.eclipse.rdf4j.sparqlbuilder.graphpattern.TriplePattern;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
@@ -30,21 +28,17 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import io.av360.maverick.graph.api.security.errors.RevokedApiKeyUsed;
 import io.av360.maverick.graph.api.security.errors.UnknownApiKey;
+import software.amazon.awssdk.core.ResponseBytes;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.model.ListObjectsRequest;
-import software.amazon.awssdk.services.s3.model.PutObjectRequest;
-import software.amazon.awssdk.services.s3.model.ListObjectsResponse;
-import software.amazon.awssdk.services.s3.model.S3Exception;
-import software.amazon.awssdk.services.s3.model.S3Object;
+import software.amazon.awssdk.services.s3.model.*;
 
 import java.net.URI;
-import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.time.ZonedDateTime;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
-import java.util.UUID;
 
 /**
  * Applications separate tenants. Each application has its own separate stores.
@@ -57,9 +51,8 @@ public class ApplicationsService {
     private final ApplicationsStore applicationsStore;
     private final QueryServices queryServices;
 
-    public ApplicationsService(ApplicationsStore store, EntityServices entityServices, QueryServices queryServices) {
+    public ApplicationsService(ApplicationsStore store, QueryServices queryServices) {
         this.applicationsStore = store;
-
         this.queryServices = queryServices;
     }
 
@@ -319,27 +312,25 @@ public class ApplicationsService {
         Variable s3BucketVar = SparqlBuilder.var("e");
         Variable exportFrequencyVar = SparqlBuilder.var("f");
 
-        SelectQuery q = Queries.MODIFY()
+        ModifyQuery q = Queries.MODIFY()
                 .where(node.isA(Application.TYPE)
                         .andHas(Application.HAS_KEY, applicationIdentifier)
                 )
                 .delete(node.has(Application.HAS_S3_HOST, s3HostVar))
-                .delete(node, Application.HAS_S3_BUCKET, s3BucketVar)
-                .delete(node, Application.HAS_EXPORT_FREQUENCY, exportFrequencyVar)
-                .insert(node, Application.HAS_S3_HOST, s3Host)
-                .insert(node, Application.HAS_S3_BUCKET, s3Bucket)
-                .insert(node, Application.HAS_EXPORT_FREQUENCY, exportFrequency);
+                .delete(node.has(Application.HAS_S3_BUCKET_ID, s3BucketVar))
+                .delete(node.has(Application.HAS_EXPORT_FREQUENCY, exportFrequencyVar))
+                .insert(node.has(Application.HAS_S3_HOST, s3Host))
+                .insert(node.has(Application.HAS_S3_BUCKET_ID, s3Bucket))
+                .insert(node.has(Application.HAS_EXPORT_FREQUENCY, exportFrequency));
 
-        ModelBuilder modelBuilder = new ModelBuilder();
-        modelBuilder.subject().add(Application.HAS_S3_HOST, s3Host);
-
+        //TODO: maybe second query method that takes a modify query
         return this.applicationsStore.query(q, authentication, Authorities.APPLICATION)
                 .then()
                 .doOnSubscribe(sub -> log.debug("Setting application config for application with key '{}'", applicationIdentifier));
 
     }
 
-    public Mono<?> getApplicationConfig(String applicationIdentifier, Authentication authentication) {
+    public Mono<HashMap<String, String>> getApplicationConfig(String applicationIdentifier, Authentication authentication) {
 
         Variable node = SparqlBuilder.var("n");
         Variable label = SparqlBuilder.var("b");
@@ -364,20 +355,18 @@ public class ApplicationsService {
                 .flatMap(this::getUniqueBindingSet)
                 .map(BindingsAccessor::new)
                 .map(ba ->
-                        new ApplicationConfig(
-                                ba.asString(label),
-                                ba.asString(persistent),
-                                ba.asString(s3Host),
-                                ba.asString(s3Bucket),
-                                ba.asString(exportFrequency)
-                        )
+                        new HashMap<String, String>() {{
+                            put("label", ba.asString(label));
+                            put("persistent", ba.asBoolean(persistent));
+                            put("s3Host", ba.asString(s3Host));
+                            put("s3Bucket", ba.asString(s3Bucket));
+                            put("exportFrequency", ba.asString(exportFrequency));
+                        }}
                 )
                 .doOnSubscribe(sub -> log.debug("Getting application config for application with key '{}'", applicationIdentifier));
     }
 
     public Mono<String> exportApplication(String applicationIdentifier, Authentication authentication) {
-
-        String exportIdentifier = applicationIdentifier + "_" + new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss-SSS").format(new Date());
 
         Variable node = SparqlBuilder.var("n");
         Variable label = SparqlBuilder.var("b");
@@ -401,7 +390,9 @@ public class ApplicationsService {
                 .flatMap(this::getUniqueBindingSet)
                 .map(BindingsAccessor::new)
                 .map(ba -> {
+                    //TODO: fix this
                     this.queryServices.queryGraph()
+
                     try {
                         S3Client s3 = S3Client.builder()
                                 .endpointOverride(URI.create(ba.asString(s3Host)))
@@ -422,27 +413,55 @@ public class ApplicationsService {
 
     }
 
-    public Mono<?> getExport(String applicationIdentifier, String exportId, Authentication authentication) {
+    public Mono<HashMap<String, String>> getExport(String applicationIdentifier, String exportId, Authentication authentication) {
         log.debug("(Service) Getting export '{}' for application '{}'", exportId, applicationIdentifier);
 
-        try {
-            S3Client s3 = S3Client.builder()
-                    .build();
-            ListObjectsRequest listObjects = ListObjectsRequest
-                    .builder()
-                    .bucket("test-bucket")
-                    .build();
+        Variable node = SparqlBuilder.var("n");
+        Variable label = SparqlBuilder.var("b");
+        Variable persistent = SparqlBuilder.var("c");
+        Variable s3Host = SparqlBuilder.var("d");
+        Variable s3Bucket = SparqlBuilder.var("e");
 
-            ListObjectsResponse res = s3.listObjects(listObjects);
-            List<S3Object> objects = res.contents();
-            for (S3Object myValue : objects) {
-                System.out.print("\n The name of the key is " + myValue.key());
-            }
+        SelectQuery q = Queries.SELECT()
+                .where(node.isA(Application.TYPE)
+                        .andHas(Application.HAS_KEY, applicationIdentifier)
+                        .andHas(Application.HAS_LABEL, label)
+                        .andHas(Application.IS_PERSISTENT, persistent)
+                        .andHas(Application.HAS_S3_HOST, s3Host)
+                        .andHas(Application.HAS_S3_BUCKET_ID, s3Bucket)
+                )
+                .limit(1);
 
-        } catch (S3Exception e) {
-            log.error(e.awsErrorDetails().errorMessage());
-        }
+        return this.applicationsStore.query(q, authentication, Authorities.APPLICATION)
+                .collectList()
+                .flatMap(this::getUniqueBindingSet)
+                .map(BindingsAccessor::new)
+                .mapNotNull(ba -> {
 
-        return Mono.error(new NotImplementedException());
+                    try {
+                        S3Client s3 = S3Client.builder()
+                                .endpointOverride(URI.create(ba.asString(s3Host)))
+                                .build();
+                        GetObjectRequest objectRequest = GetObjectRequest.builder()
+                                .bucket(ba.asString(s3Bucket))
+                                .key(exportId)
+                                .build();
+                        ResponseBytes<GetObjectResponse> objectBytes = s3.getObjectAsBytes(objectRequest);
+
+                        return objectBytes.asUtf8String();
+                    } catch (S3Exception e) {
+                        log.error(e.awsErrorDetails().errorMessage());
+                    }
+
+                    return null;
+                })
+                .map(responseBody -> {
+                    HashMap<String, String> response = new HashMap<>();
+                    response.put("application", applicationIdentifier);
+                    response.put("exportId", exportId);
+                    response.put("export", responseBody);
+                    return response;
+                })
+                .doOnSubscribe(sub -> log.debug("Getting export '{}' for application '{}'", exportId, applicationIdentifier));
     }
 }
