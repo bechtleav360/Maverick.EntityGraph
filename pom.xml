@@ -37,7 +37,7 @@
         <java.version>17</java.version>
         <spring-cloud.version>2021.0.4</spring-cloud.version>
         <graph.version>0.1.0</graph.version>
-        <jackson.version>[2.13.4.1,)</jackson.version>
+        <jackson.version>2.14.1</jackson.version>
         <springfox.version>3.0.0</springfox.version>
     </properties>
 
