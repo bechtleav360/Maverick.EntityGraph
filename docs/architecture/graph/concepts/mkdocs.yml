@@ -1,0 +1,13 @@
+plugins:
+  - git-committers:
+      repository: squidfunk/mkdocs-material
+      branch: main
+
+plugins:
+  - git-committers:
+      enabled: !ENV [CI, false]
+
+plugins:
+  - git-committers:
+      repository: squidfunk/mkdocs-material
+
