@@ -12,4 +12,3 @@ buildNumber.properties
 .idea
 *.log
 *.gz
-.venv
