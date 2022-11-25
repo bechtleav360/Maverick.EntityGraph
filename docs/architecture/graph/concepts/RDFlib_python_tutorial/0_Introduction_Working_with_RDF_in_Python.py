@@ -29,7 +29,7 @@ from rdflib.namespace import FOAF, XSD
 
 
 # Generate a Graph
-g_1 = Graph()
+g = Graph()
 
 
 # Create a node and identify this node by the RDF-URI
