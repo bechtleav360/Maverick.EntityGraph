@@ -1,13 +1,112 @@
-plugins:
-  - git-committers:
-      repository: squidfunk/mkdocs-material
-      branch: main
+RDF Tutorial:
 
-plugins:
-  - git-committers:
-      enabled: !ENV [CI, false]
+1. introduction to RDF (Resource Description Framework)
 
-plugins:
-  - git-committers:
-      repository: squidfunk/mkdocs-material
+RDF is a recommendation of the W3C (World Wide Web Consortium).
+Purpose: To provide a framework for expressing information about resources in a machine-readable, interoperable environment.
+Resource: Can be anything we can tag with an identifier:
+- Web sites
+- Images
+- Abstract real things
+- Concepts
+- ...
+RDF is intended to model information that applications need to process.
 
+
+1.1 Internationalized Resource Identifier (IRI) 
+Namespaces & prefixed names:
+IRI's are the reason RDF's are so powerful:
+They provide a mechanism for identifying each resource globally.
+Regardless of who authors a dataset or where that data is physically stored, if we share an identical IRI with another dataset, they both know they are looking at the same thing. 
+In many datasets, we will see IRI's that start with "http://...".
+
+But: this does not necessarily mean that we can open that link in the browser and get something meaningful.
+Often IRI's are only used as unique identifiers and not as actual addresses.
+Some RDF sources ensure that our IRI's can be looked up on the web and they actually return data describing the resource identified by the IRI:
+
+    Linked Open Data (LOD):
+    https://de.wikipedia.org/wiki/Linked_Open_Data
+    Linked Open Data (LOD) refers to data that is freely available on the World Wide Web, is identified by a Uniform Resource Identifier (URI) and can be accessed directly via HTTP 
+    and also refers to other data by URI. Ideally, the Resource Description Framework (RDF) and standards based on it, such as the Web Ontology Language (OWL) and the SPARQL query 
+    language, are used to encode and link the data so that they can be correctly interpreted by machines in terms of their meaning. Thus, Linked Open Data is part of the Semantic Web. 
+    The interlinked data results in a worldwide network, which is also called "Linked [Open] Data Cloud" or "Giant Global Graph". Where the focus is less on the free usability of the 
+    data as with free content (Open Data), the term Linked Data is also common.
+
+ In RDF data, IRI's are represented in abbreviated form:
+<prefix>:<name>
+This is known as "prefixed names". It does not affect the meaning of the data, but it makes it easier to read.
+A prefix is defined to replace a namespace.
+A namespace is the first part of an IRI that is shared by multiple resources, e.g. shared IRI's:
+- http//example.org/Picasso
+- http//example.org/Rodin
+- http//example.org/ Rembrandt 
+the namespace: http//example.org/.
+By defining a new prefix ex as an abbreviation for this namespace, we can use the string ex:Picasso instead of the full IRI.
+
+
+1.2 Creation and reuse of IRI's
+We use a namespace prefix in our example:
+http://example.org/
+We use this for various resource and property IRI's that we want to use
+BUT: In a real-world scenario, this is not practical:
+We don't own the domain "example.org".
+It's not very expressive of what our resources are actually about.  
+---> So how do we choose good IRI's for our resources & properties?
+There's a lot to say about this, but we'll limit ourselves to the following options:
+
+   1. we use a domain name that we own for our own resources:
+We don't use anyone else's domain and we don't add new resources or properties to existing vocabularies.
+   2. we try to reuse existing vocabularies:
+Instead of creating new resources & relations to describe all our data, we look to see if someone else has already published a collection of IRI's (vocabulary or ontology) that describes the same kind of thing we want to describe.
+We then use their IRI's as part of our own data.
+Reusing existing vocabularies has several major advantages:
+We don't have to reinvent the wheel:
+If we share our data with third parties there is a good chance that they will also use the existing vocabulary, making data integration easier.
+While we can't list every possible reusable vocabulary here, there are some very common RDF vocabularies that are reused a lot:
+           
+           1. RDFS (RDF Schema)
+Definition: https://www.w3.org/TR/rdf-schema/
+RDF Schema provides a data modeling vocabulary for RDF data. It is supplemented by several companion documents that describe the basic concepts and abstract syntax of RDF [RDF11-CONCEPTS], the formal semantics of RDF [RDF11-MT], and several concrete syntaxes for RDF, such as Turtle [TURTLE] (more on this later), TriG, [TRIG], and JSON-LD [JSON-LD]. The RDF Primer [RDF11-PRIMER] provides an informal introduction and examples of how to use the concepts described in this document.
+RDF Schema is a semantic extension of RDF. It provides mechanisms for describing groups of related resources and the relationships between those resources. RDF Schema is written in RDF and uses the concepts described in this document. These resources are used to specify the characteristics of other resources, such as the ranges and domains of properties.
+
+RDF Schema's class and property system is similar to the type systems of object-oriented programming languages such as Java. RDF Schema differs from many of these systems in that it does not define a class in terms of the properties its instances may have, but describes properties in terms of the resource classes to which they apply. This is the role of the domain and range mechanisms described in this specification. For example, we might define the eg:author property to have a domain of eg:Document and a range of eg:Person, whereas a classical object-oriented system would typically define a class eg:Book with an attribute named eg:author of type eg:Person. Using the RDF approach, it is easy for others to subsequently define additional properties with a scope of eg:Document or a scope of eg:Person. This can be done without having to redefine the original description of these classes. An advantage of the RDF property-centric approach is that it allows anyone to extend the description of existing resources, one of the architectural principles of the Web [https://www.w3.org/DesignIssues/RDFnot.html].
+A commonly used property of RDFS is rdfs:label, which is used to give a resource a machine-readable name as a string value. 
+
+  2. OWL (Web Ontology Language). 
+OWL provides a rich and powerful (but also quite complex) set of resources & properties that can be used to model complex domain models, also called ontology.
+Definition: https://www.w3.org/TR/owl-features/
+The Semantic Web is a vision for the future of the Web in which information is given unique meaning so that machines facilitate the automatic processing and integration of information available on the Web. The Semantic Web builds on the ability of XML (eXtensible Markup Language) to define user-defined tagging schemes and on the flexible approach of RDF to representing data. The first layer above RDF that is required for the Semantic Web is an ontology language that can formally describe the meaning of terminology used in Web documents. If machines are expected to be able to draw useful inferences from these documents, the language must go beyond the basic semantics of the RDF schema. The OWL Use Cases and Requirements Document (https://www.w3.org/TR/webont-req/) provides more details about ontologies, justifies the need for a Web Ontology Language based on six use cases, and articulates design goals, requirements, and objectives for OWL.
+Ontologies can be used to express things like:
+"this class of things here is just the same as that class there".
+Resources of type BlueCar must have a property color with value Blue.
+OWL was developed to meet this need for a Web Ontology Language. OWL is part of the growing number of W3C recommendations related to the Semantic Web:
+XML provides a surface syntax for structured documents, but does not impose semantic constraints on the meaning of those documents (more on this later).
+XML Schema is a language for constraining the structure of XML documents and also extends XML to include data types.
+RDF is a data model for objects ("resources") and relationships between them, provides a simple semantics for this data model, and these data models can be represented in an XML syntax.
+RDF Schema is a vocabulary for describing properties and classes of RDF resources, with semantics for generalization hierarchies of such properties and classes.
+OWL adds further vocabulary for describing properties and classes: including relationships between classes (e.g., incompatibility), cardinality (e.g., "exactly one"), equality, broader typing of properties, features of properties (e.g., symmetry), and enumerated classes.
+
+            3. SKOS (Simple Knowledge Organization System).
+Definition: 
+SKOS is a model for describing the basic structure and content of concept schemas such as:
+Thesauri (https://op.europa.eu/de/web/eu-vocabularies/thesauri)
+Classification schemes
+Keyword lists
+Taxonomies
+Folksonomies (https://hpi.de/meinel/knowledge-tech/social-media/folksonomien.html)
+Other similar types of controlled vocabulary.
+It has properties such as:
+skos:broader (to indicate that one term is broader than another).
+skos:norrower (to indicate that one term is more concise than another).
+skos:prefLabel (to indicate preferred names for concepts).
+skos:altLabel (to indicate alternative names for concepts).
+
+           4. FOAF (Friend-Of-A-Friend).
+This vocabulary provides resources & properties for modeling people and their social networks.
+We can use it to say that a resource describes a foaf:person and use properties to describe all kinds of data about that person, such as:
+foaf:name
+foaf:surname
+foaf:mbox
+
+          5 DC (Dublin Core), DCMI (Dublin Core Metadata Initiative) 
+Dublin Core (DC) Elements - the Dublin Core Metadata Initiative (DCMI) has defined a vocabulary of 15 commonly used properties to describe resources from a library and digital archiving perspective. It includes properties such as dc:creator (to indicate the author of a work), dc:subject, dc:title, and others.
