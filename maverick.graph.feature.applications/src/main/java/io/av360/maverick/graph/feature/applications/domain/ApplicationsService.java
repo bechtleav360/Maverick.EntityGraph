@@ -323,7 +323,6 @@ public class ApplicationsService {
                 .insert(node.has(Application.HAS_S3_BUCKET_ID, s3Bucket))
                 .insert(node.has(Application.HAS_EXPORT_FREQUENCY, exportFrequency));
 
-        //TODO: maybe second query method that takes a modify query
         return this.applicationsStore.query(q, authentication, Authorities.APPLICATION)
                 .then()
                 .doOnSubscribe(sub -> log.debug("Setting application config for application with key '{}'", applicationIdentifier));
@@ -354,15 +353,15 @@ public class ApplicationsService {
                 .collectList()
                 .flatMap(this::getUniqueBindingSet)
                 .map(BindingsAccessor::new)
-                .map(ba ->
-                        new HashMap<String, String>() {{
-                            put("label", ba.asString(label));
-                            put("persistent", ba.asBoolean(persistent)); //TODO: should be String, but doesn't work either
-                            put("s3Host", ba.asString(s3Host));
-                            put("s3Bucket", ba.asString(s3Bucket));
-                            put("exportFrequency", ba.asString(exportFrequency));
-                        }}
-                )
+                .map(ba -> {
+                    HashMap<String, String> map = new HashMap<>();
+                    map.put("label", ba.asString(label));
+                    map.put("persistent", ba.asString(persistent));
+                    map.put("s3Host", ba.asString(s3Host));
+                    map.put("s3Bucket", ba.asString(s3Bucket));
+                    map.put("exportFrequency", ba.asString(exportFrequency));
+                    return map;
+                })
                 .doOnSubscribe(sub -> log.debug("Getting application config for application with key '{}'", applicationIdentifier));
     }
 
