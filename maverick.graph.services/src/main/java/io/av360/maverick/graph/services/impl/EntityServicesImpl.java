@@ -19,10 +19,15 @@ import io.av360.maverick.graph.store.rdf.models.Transaction;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.rdf4j.model.*;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
+import org.eclipse.rdf4j.sparqlbuilder.core.SparqlBuilder;
+import org.eclipse.rdf4j.sparqlbuilder.core.Variable;
+import org.eclipse.rdf4j.sparqlbuilder.core.query.Queries;
+import org.eclipse.rdf4j.sparqlbuilder.core.query.SelectQuery;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.*;
@@ -58,6 +63,17 @@ public class EntityServicesImpl implements EntityServices {
     @Override public Mono<Entity> readEntity(String identifier, Authentication authentication) {
         return entityStore.getEntity(LocalIRI.withDefaultNamespace(identifier), authentication)
                 .switchIfEmpty(Mono.error(new EntityNotFound(identifier)));
+    }
+
+    public Flux<Entity> listEntities(Authentication authentication) {
+        Variable idVariable = SparqlBuilder.var("id");
+
+        SelectQuery query = Queries.SELECT(idVariable).where(
+                idVariable.isA(Local.Entities.TYPE));
+
+        return this.queryServices.queryValues(query.getQueryString(), authentication)
+                .map(bindings -> (IRI) bindings.getValue(idVariable.getVarName()))
+                .flatMap(id -> this.entityStore.getEntity(id, authentication));
     }
 
 

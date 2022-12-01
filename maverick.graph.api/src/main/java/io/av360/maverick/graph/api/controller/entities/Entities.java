@@ -57,7 +57,7 @@ public class Entities extends AbstractController {
     Flux<NamespaceAwareStatement> list() {
 
         return super.getAuthentication()
-                .flatMapMany(queryServices::listEntities)
+                .flatMapMany(entityServices::listEntities)
                 .flatMapIterable(AbstractModel::asStatements)
                 .doOnSubscribe(s -> {
                     if(log.isDebugEnabled()) log.debug("Request to list entities");

@@ -5,6 +5,7 @@ import io.av360.maverick.graph.store.rdf.models.StatementsBag;
 import io.av360.maverick.graph.store.rdf.models.Transaction;
 import org.eclipse.rdf4j.model.IRI;
 import org.springframework.security.core.Authentication;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.Map;
@@ -19,6 +20,15 @@ public interface EntityServices {
      * @return Entity as Mono
      */
     Mono<Entity> readEntity(String entityIdentifier, Authentication authentication);
+
+
+    /**
+     * Lists all entities
+     *
+     * @param authentication
+     * @return
+     */
+     Flux<Entity> listEntities(Authentication authentication);
 
     /**
      * Deletes an entity with all its values from the store.

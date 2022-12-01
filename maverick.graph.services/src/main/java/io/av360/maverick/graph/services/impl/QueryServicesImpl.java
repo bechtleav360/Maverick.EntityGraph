@@ -11,6 +11,7 @@ import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.sparqlbuilder.core.SparqlBuilder;
 import org.eclipse.rdf4j.sparqlbuilder.core.Variable;
+import org.eclipse.rdf4j.sparqlbuilder.core.query.ConstructQuery;
 import org.eclipse.rdf4j.sparqlbuilder.core.query.Queries;
 import org.eclipse.rdf4j.sparqlbuilder.core.query.SelectQuery;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -55,17 +56,8 @@ public class QueryServicesImpl implements QueryServices {
     }
 
 
-
-
-    public Flux<Entity> listEntities(Authentication authentication) {
-        Variable idVariable = SparqlBuilder.var("id");
-
-        SelectQuery query = Queries.SELECT(idVariable).where(
-                idVariable.isA(Local.Entities.TYPE));
-
-        return this.queryValues(query.getQueryString(), authentication)
-                .map(bindings -> (IRI) bindings.getValue(idVariable.getVarName()))
-                .flatMap(id -> this.entityStore.getEntity(id, authentication));
+    public Flux<NamespaceAwareStatement> queryGraph(ConstructQuery query, String applicationId) {
+        throw new UnsupportedOperationException("Not implemented yet.");
     }
 
 
