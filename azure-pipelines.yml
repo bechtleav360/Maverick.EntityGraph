@@ -24,15 +24,15 @@ variables:
 stages:
   - stage: Building
     jobs:
-      - job: BuildAndTest
-        pool:
-          vmImage: ubuntu-latest
+      - job: Testing
+      #  pool:
+      #    vmImage: ubuntu-latest
         steps:
           - task: Maven@3
-            displayName: Test and Package
+            displayName: Run unit tests
             inputs:
               mavenPomFile: 'pom.xml'
-              goals: 'install'
+              goals: 'test'
               publishJUnitResults: true
               testResultsFiles: '**/surefire-reports/TEST-*.xml'
               javaHomeOption: 'JDKVersion'
@@ -42,17 +42,31 @@ stages:
               mavenAuthenticateFeed: false
               effectivePomSkip: false
               sonarQubeRunAnalysis: false
-              options: '-DskipTests=false'
   - stage: Publishing
     dependsOn: Building
     jobs:
-      - job: PackageAndPush
-        pool:
-          vmImage: ubuntu-latest
+      - job: Pushing
+     #   pool:
+     #     vmImage: ubuntu-latest
         steps:
           - script: echo "Publishing image with build number $(Build.BuildNumber) and name $(privateRegistry)/$(containerRepo)"
           - task: Maven@3
-            displayName: Build and publish Docker Image to Container Registry
+            displayName: Compile and package
+            inputs:
+              mavenPomFile: 'pom.xml'
+              goals: 'package'
+              publishJUnitResults: true
+              testResultsFiles: '**/surefire-reports/TEST-*.xml'
+              javaHomeOption: 'JDKVersion'
+              jdkVersionOption: 1.17
+              jdkArchitectureOption: x64
+              mavenVersionOption: 'Default'
+              mavenAuthenticateFeed: false
+              effectivePomSkip: false
+              sonarQubeRunAnalysis: false
+              options: '-DskipTests=true'
+          - task: Maven@3
+            displayName: Publish Docker Image to Container Registry
             env:
               IMAGE_PREFIX: $(docker.image.prefix)
               IMAGE_NAME: $(docker.image.name)
