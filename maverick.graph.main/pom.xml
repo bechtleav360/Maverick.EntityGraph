@@ -95,7 +95,7 @@
                             <!--suppress UnresolvedMavenProperty -->
                             <username>${env.DOCKER_USER}</username>
                             <!--suppress UnresolvedMavenProperty -->
-                            <password>${env.DOCKER_PASS}</password>
+                            <password>${env.DOCKER_PASSWORD}</password>
                             <!--suppress UnresolvedMavenProperty -->
                             <url>${env.DOCKER_URL}</url>
                         </publishRegistry>
