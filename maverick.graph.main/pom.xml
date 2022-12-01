@@ -8,6 +8,8 @@
         <version>${revision}</version>
     </parent>
 
+
+
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>graph-main</artifactId>
@@ -77,7 +79,10 @@
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <configuration>
                     <image>
-                        <name>${env.IMAGE}</name>
+                        <!--suppress UnresolvedMavenProperty -->
+                        <name>${env.IMAGE_PREFIX}/${env.IMAGE_NAME}</name>
+                        <!-- <name>ghcr.io/bechtleav360/maverick-entity-graph</name> -->
+
                         <publish>true</publish>
                         <verboseLogging>true</verboseLogging>
                         <env>
@@ -90,7 +95,7 @@
                             <username>${env.DOCKER_USER}</username>
                             <!--suppress UnresolvedMavenProperty -->
                             <password>${env.DOCKER_PASS}</password>
-                            <url>${env.DOCKER_HOST}</url>
+                           <!-- <url>${env.DOCKER_HOST}</url>-->
                         </publishRegistry>
                     </docker>
                 </configuration>

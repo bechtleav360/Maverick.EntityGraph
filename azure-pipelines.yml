@@ -5,49 +5,63 @@ trigger:
 - feature/*
 
 variables:
-  - name: docker.registry
-    value: ghcr.io
-  - name: docker.host
-    value: https://ghcr.io
+  - name: isRelease
+    value: $[eq(variables['Build.SourceBranchName'], 'main')]
+  - name: isDevelop
+    value: $[eq(variables['Build.SourceBranchName'], 'develop')]
+  - name: docker.image.prefix
+    value: ghcr.io/bechtleav360
   - name: docker.image.name
     value: maverick-entity-graph
   - name: docker.image.version
     value: develop
+  - name: docker.host
+    value: https://ghcr.io
   - name: docker.credentials.user
   - name: docker.credentials.password
 
 
-pool:
-  vmImage: ubuntu-latest
-
-steps:
-  - task: Maven@3
-    displayName: Test and Package
-    inputs:
-      mavenPomFile: 'pom.xml'
-      goals: 'install'
-      publishJUnitResults: true
-      testResultsFiles: '**/surefire-reports/TEST-*.xml'
-      javaHomeOption: 'JDKVersion'
-      jdkVersionOption: 1.17
-      jdkArchitectureOption: x64
-      mavenVersionOption: 'Default'
-      mavenAuthenticateFeed: false
-      effectivePomSkip: false
-      sonarQubeRunAnalysis: false
-      options: '-DskipTests=true'
-  - script: echo "Publishing image with build number $(Build.BuildNumber) and name $(privateRegistry)/$(containerRepo)"
-  - task: Maven@3
-    displayName: Build and publish Docker Image to Harbor Registry
-    env:
-      IMAGE_PREFIX: $(docker.registry)
-      IMAGE_NAME: $(docker.image.name)
-      IMAGE_VERSION: $(docker.image.version)
-      DOCKER_HOST: $(docker.host)
-      DOCKER_USER: $(docker.credentials.user)
-      DOCKER_PASSWORD: $(docker.credentials.password)
-    inputs:
-      mavenPomFile: 'maverick.graph.main/pom.xml'
-      goals: 'spring-boot:build-image'
-      publishJUnitResults: true
-      jdkVersionOption: 1.17  
+stages:
+  - stage: Building
+    jobs:
+      - job: Test and package
+        pool:
+          vmImage: ubuntu-latest
+        steps:
+          - task: Maven@3
+            displayName: Test and Package
+            inputs:
+              mavenPomFile: 'pom.xml'
+              goals: 'install'
+              publishJUnitResults: true
+              testResultsFiles: '**/surefire-reports/TEST-*.xml'
+              javaHomeOption: 'JDKVersion'
+              jdkVersionOption: 1.17
+              jdkArchitectureOption: x64
+              mavenVersionOption: 'Default'
+              mavenAuthenticateFeed: false
+              effectivePomSkip: false
+              sonarQubeRunAnalysis: false
+              options: '-DskipTests=false'
+  - stage: Publishing
+    dependsOn: Building
+    jobs:
+      - job: Test and package
+        pool:
+          vmImage: ubuntu-latest
+        steps:
+          - script: echo "Publishing image with build number $(Build.BuildNumber) and name $(privateRegistry)/$(containerRepo)"
+          - task: Maven@3
+            displayName: Build and publish Docker Image to Container Registry
+            env:
+              IMAGE_PREFIX: $(docker.image.prefix)
+              IMAGE_NAME: $(docker.image.name)
+              IMAGE_VERSION: $(Build.SourceBranchName)
+              DOCKER_HOST: $(docker.host)
+              DOCKER_USER: $(docker.credentials.user)
+              DOCKER_PASSWORD: $(docker.credentials.password)
+            inputs:
+              mavenPomFile: 'maverick.graph.main/pom.xml'
+              goals: 'spring-boot:build-image'
+              publishJUnitResults: true
+              jdkVersionOption: 1.17
