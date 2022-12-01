@@ -1,6 +1,6 @@
-package io.av360.maverick.graph.api.v1.jsonld;
+package io.av360.maverick.graph.main.api.v1.jsonld;
 
-import io.av360.maverick.graph.boot.TestConfigurations;
+import io.av360.maverick.graph.main.boot.TestConfigurations;
 import io.av360.maverick.graph.tests.api.v1.EntitiesTest;
 import io.av360.maverick.graph.tests.util.TestsBase;
 import org.junit.jupiter.api.Test;

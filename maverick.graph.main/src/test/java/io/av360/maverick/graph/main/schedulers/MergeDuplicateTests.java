@@ -1,6 +1,6 @@
-package io.av360.maverick.graph.services.schedulers;
+package io.av360.maverick.graph.main.schedulers;
 
-import io.av360.maverick.graph.boot.TestConfigurations;
+import io.av360.maverick.graph.main.boot.TestConfigurations;
 import io.av360.maverick.graph.model.security.Authorities;
 import io.av360.maverick.graph.services.schedulers.detectDuplicates.ScheduledDetectDuplicates;
 import io.av360.maverick.graph.store.RepositoryType;

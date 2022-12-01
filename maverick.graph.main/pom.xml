@@ -78,6 +78,7 @@
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <configuration>
+                    <mainClass>io.av360.maverick.graph.main.Application</mainClass>
                     <image>
                         <!--suppress UnresolvedMavenProperty -->
                         <name>${env.IMAGE_PREFIX}/${env.IMAGE_NAME}</name>

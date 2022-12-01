@@ -43,6 +43,7 @@ stages:
               mavenAuthenticateFeed: false
               effectivePomSkip: false
               sonarQubeRunAnalysis: false
+              options: '-DskipTests=false'
   - stage: Publishing
     dependsOn: Building
     jobs:
@@ -78,3 +79,5 @@ stages:
               goals: 'spring-boot:build-image'
               publishJUnitResults: true
               jdkVersionOption: 1.17
+              effectivePomSkip: false
+              options: '-DskipTests=true'

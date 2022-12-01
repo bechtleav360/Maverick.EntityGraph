@@ -1,6 +1,6 @@
-package io.av360.maverick.graph.api.v1.ttl;
+package io.av360.maverick.graph.main.api.v1.ttl;
 
-import io.av360.maverick.graph.boot.TestConfigurations;
+import io.av360.maverick.graph.main.boot.TestConfigurations;
 import io.av360.maverick.graph.store.rdf.helpers.RdfUtils;
 import io.av360.maverick.graph.model.vocabulary.SDO;
 import io.av360.maverick.graph.model.vocabulary.Transactions;

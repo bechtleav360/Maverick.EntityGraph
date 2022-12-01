@@ -1,7 +1,7 @@
-package io.av360.maverick.graph;
+package io.av360.maverick.graph.feature;
 
-// import jakarta.annotation.PostConstruct;
-import javax.annotation.PostConstruct;
+import jakarta.annotation.PostConstruct;
+// import javax.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.ComponentScan;
