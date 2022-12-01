@@ -81,8 +81,8 @@
                     <mainClass>io.av360.maverick.graph.main.Application</mainClass>
                     <image>
                         <!--suppress UnresolvedMavenProperty -->
-                        <name>${env.IMAGE_PREFIX}/${env.IMAGE_NAME}</name>
-                        <!-- <name>ghcr.io/bechtleav360/maverick-entity-graph</name> -->
+                        <!-- <name>${env.IMAGE_PREFIX}/${env.IMAGE_NAME}</name> -->
+                        <name>ghcr.io/bechtleav360/maverick-entity-graph</name>
 
                         <publish>true</publish>
                         <verboseLogging>true</verboseLogging>
@@ -96,7 +96,8 @@
                             <username>${env.DOCKER_USER}</username>
                             <!--suppress UnresolvedMavenProperty -->
                             <password>${env.DOCKER_PASS}</password>
-                           <!-- <url>${env.DOCKER_HOST}</url>-->
+                            <!--suppress UnresolvedMavenProperty -->
+                            <url>${env.DOCKER_URL}</url>
                         </publishRegistry>
                     </docker>
                 </configuration>

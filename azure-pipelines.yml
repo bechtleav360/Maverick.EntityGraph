@@ -16,6 +16,8 @@ variables:
     value: maverick-entity-graph
   - name: docker.image.version
     value: develop
+  - name: docker.url
+    value: https://ghcr.io
   - name: docker.credentials.user
   - name: docker.credentials.password
 
@@ -69,6 +71,7 @@ stages:
               IMAGE_VERSION: $(Build.SourceBranchName)
               DOCKER_USER: $(docker.credentials.user)
               DOCKER_PASSWORD: $(docker.credentials.password)
+              DOCKER_URL: $(docker.url)
             inputs:
               mavenPomFile: 'maverick.graph.main/pom.xml'
               goals: 'spring-boot:build-image'
