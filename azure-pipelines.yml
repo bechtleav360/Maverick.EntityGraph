@@ -1,6 +1,7 @@
 # Don't forget to set the following variables for your (release) pipeline: ghcr.user, ghcr.password
     
 trigger:
+- main
 - develop
 - feature/*
 
@@ -47,7 +48,7 @@ stages:
     jobs:
       - job: Pushing
         pool:
-          vmImage: docker
+          vmImage: ubuntu-latest
         steps:
           - script: echo "Publishing image with build number $(Build.BuildNumber) and name $(privateRegistry)/$(containerRepo)"
           - task: Maven@3
