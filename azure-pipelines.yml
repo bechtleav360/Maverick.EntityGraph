@@ -52,19 +52,17 @@ stages:
           vmImage: ubuntu-latest
         steps:
           - script: echo "Publishing image with build number $(Build.BuildNumber) and name $(privateRegistry)/$(containerRepo)"
-#          - task: Maven@3
-#            displayName: Compile and package
-#            inputs:
-#              mavenPomFile: 'pom.xml'
-#              goals: 'install'
-#              javaHomeOption: 'JDKVersion'
-#              jdkVersionOption: 1.17
-#              jdkArchitectureOption: x64
-#              mavenVersionOption: 'Default'
-#              mavenAuthenticateFeed: false
-#              effectivePomSkip: false
-#              sonarQubeRunAnalysis: false
-#              options: '-DskipTests=true'
+          - task: Maven@3
+            displayName: Install
+            inputs:
+              mavenPomFile: 'pom.xml'
+              goals: 'install'
+              javaHomeOption: 'JDKVersion'
+              jdkVersionOption: 1.17
+              jdkArchitectureOption: x64
+              mavenVersionOption: 'Default'
+              effectivePomSkip: false
+              options: '-DskipTests=true'
           - task: Maven@3
             displayName: Publish Docker Image to Container Registry
             env:
@@ -76,6 +74,6 @@ stages:
               DOCKER_PASSWORD: $(docker.credentials.password)
             inputs:
               mavenPomFile: 'maverick.graph.main/pom.xml'
-              goals: 'install spring-boot:build-image'
+              goals: 'spring-boot:build-image'
               jdkVersionOption: 1.17
               options: '-DskipTests=true'
