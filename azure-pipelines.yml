@@ -67,7 +67,6 @@ stages:
               IMAGE_PREFIX: $(docker.image.prefix)
               IMAGE_NAME: $(docker.image.name)
               IMAGE_VERSION: $(Build.SourceBranchName)
-              DOCKER_HOST: $(docker.host)
               DOCKER_USER: $(docker.credentials.user)
               DOCKER_PASSWORD: $(docker.credentials.password)
             inputs:
