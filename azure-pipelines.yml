@@ -24,7 +24,7 @@ variables:
 stages:
   - stage: Building
     jobs:
-      - job: Test and package
+      - job: BuildAndTest
         pool:
           vmImage: ubuntu-latest
         steps:
@@ -46,7 +46,7 @@ stages:
   - stage: Publishing
     dependsOn: Building
     jobs:
-      - job: Test and package
+      - job: PackageAndPush
         pool:
           vmImage: ubuntu-latest
         steps:
