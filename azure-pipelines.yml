@@ -46,17 +46,15 @@ stages:
     dependsOn: Building
     jobs:
       - job: Pushing
-     #   pool:
-     #     vmImage: ubuntu-latest
+        pool:
+          vmImage: docker
         steps:
           - script: echo "Publishing image with build number $(Build.BuildNumber) and name $(privateRegistry)/$(containerRepo)"
           - task: Maven@3
             displayName: Compile and package
             inputs:
               mavenPomFile: 'pom.xml'
-              goals: 'package'
-              publishJUnitResults: true
-              testResultsFiles: '**/surefire-reports/TEST-*.xml'
+              goals: 'install'
               javaHomeOption: 'JDKVersion'
               jdkVersionOption: 1.17
               jdkArchitectureOption: x64
