@@ -16,8 +16,6 @@ variables:
     value: maverick-entity-graph
   - name: docker.image.version
     value: develop
-  - name: docker.host
-    value: https://ghcr.io
   - name: docker.credentials.user
   - name: docker.credentials.password
 
