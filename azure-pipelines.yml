@@ -46,8 +46,7 @@ stages:
     dependsOn: Building
     jobs:
       - job: Pushing
-        pool:
-          vmImage: ubuntu-latest
+        pool: 'Docker'
         steps:
           - script: echo "Publishing image with build number $(Build.BuildNumber) and name $(privateRegistry)/$(containerRepo)"
           - task: Maven@3
