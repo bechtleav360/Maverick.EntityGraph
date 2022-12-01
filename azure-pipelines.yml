@@ -76,6 +76,6 @@ stages:
               DOCKER_PASSWORD: $(docker.credentials.password)
             inputs:
               mavenPomFile: 'maverick.graph.main/pom.xml'
-              goals: 'spring-boot:build-image'
+              goals: 'install spring-boot:build-image'
               jdkVersionOption: 1.17
               options: '-DskipTests=true'
