@@ -65,15 +65,19 @@ stages:
               options: '-DskipTests=true'
           - task: Maven@3
             displayName: Publish Docker Image to Container Registry
-            env:
-              IMAGE_PREFIX: $(docker.image.prefix)
-              IMAGE_NAME: $(docker.image.name)
-              IMAGE_VERSION: $(Build.SourceBranchName)
-              DOCKER_USER: $(docker.credentials.user)
-              DOCKER_PASSWORD: $(docker.credentials.password)
-              DOCKER_URL: $(docker.url)
+          #  env:
+          #    IMAGE_PREFIX: $(docker.image.prefix)
+          #    IMAGE_NAME: $(docker.image.name)
+          #    IMAGE_VERSION: $(Build.SourceBranchName)
+          #    DOCKER_USER: $(docker.credentials.user)
+          #    DOCKER_PASSWORD: $(docker.credentials.password)
+          #    DOCKER_URL: $(docker.url)
             inputs:
               mavenPomFile: 'maverick.graph.main/pom.xml'
               goals: 'spring-boot:build-image'
               jdkVersionOption: 1.17
-              options: '-DskipTests=true'
+              options: >
+                -DskipTests=true 
+                -Ddocker.credentials.user=$(docker.credentials.user)
+                -Ddocker.credentials.password=$(docker.credentials.password)
+                -Ddocker.registry.host=$(docker.url)
