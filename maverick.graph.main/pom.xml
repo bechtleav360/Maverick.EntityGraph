@@ -8,11 +8,10 @@
         <version>${revision}</version>
     </parent>
     <properties>
-        <image.name>ghcr.io/bechtleav360/maverick-entity-graph</image.name>
+        <image.name>ghcr.io/bechtleav360/maverick.entity-graph</image.name>
         <docker.registry.host>https://ghcr.io</docker.registry.host>
-        <docker.credentials.user>override this</docker.credentials.user>
-        <docker.credentials.password>override this</docker.credentials.password>
-
+        <docker.credentials.user>xxx</docker.credentials.user>
+        <docker.credentials.password>xxx</docker.credentials.password>
     </properties>
 
 
@@ -90,7 +89,6 @@
                         <!--suppress UnresolvedMavenProperty -->
                         <name>${image.name}</name>
                         <!-- <name>ghcr.io/bechtleav360/maverick-entity-graph</name> -->
-
                         <publish>true</publish>
                         <verboseLogging>true</verboseLogging>
                         <env>
