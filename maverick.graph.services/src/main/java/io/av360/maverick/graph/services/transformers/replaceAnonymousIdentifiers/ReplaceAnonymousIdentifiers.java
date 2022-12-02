@@ -1,6 +1,6 @@
 package io.av360.maverick.graph.services.transformers.replaceAnonymousIdentifiers;
 
-import io.av360.maverick.graph.services.services.handler.Transformer;
+import io.av360.maverick.graph.services.transformers.Transformer;
 import io.av360.maverick.graph.store.rdf.models.AbstractModel;
 import lombok.extern.slf4j.Slf4j;
 import io.av360.maverick.graph.model.rdf.GeneratedIdentifier;

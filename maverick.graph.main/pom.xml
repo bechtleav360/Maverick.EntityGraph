@@ -9,6 +9,7 @@
     </parent>
     <properties>
         <image.name>ghcr.io/bechtleav360/maverick.entity-graph</image.name>
+        <docker.publish>false</docker.publish>
         <docker.registry.host>https://ghcr.io</docker.registry.host>
         <docker.credentials.user>xxx</docker.credentials.user>
         <docker.credentials.password>xxx</docker.credentials.password>
@@ -71,7 +72,10 @@
             <artifactId>reactor-test</artifactId>
             <scope>test</scope>
         </dependency>
-
+        <dependency>
+            <groupId>org.springdoc</groupId>
+            <artifactId>springdoc-openapi-starter-webflux-ui</artifactId>
+        </dependency>
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
@@ -89,7 +93,7 @@
                         <!--suppress UnresolvedMavenProperty -->
                         <name>${image.name}</name>
                         <!-- <name>ghcr.io/bechtleav360/maverick-entity-graph</name> -->
-                        <publish>true</publish>
+                        <publish>${docker.publish}</publish>
                         <verboseLogging>true</verboseLogging>
                         <env>
                             <BP_OCI_SOURCE>https://github.com/bechtleav360/Maverick.EntityGraph</BP_OCI_SOURCE>

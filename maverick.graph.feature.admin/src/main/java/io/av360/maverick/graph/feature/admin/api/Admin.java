@@ -4,9 +4,6 @@ import io.av360.maverick.graph.api.controller.AbstractController;
 import io.av360.maverick.graph.feature.admin.domain.AdminServices;
 import io.av360.maverick.graph.store.RepositoryType;
 import io.av360.maverick.graph.store.rdf.helpers.RdfUtils;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiParam;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.rdf4j.rio.RDFParserFactory;
 import org.springframework.core.io.buffer.DataBuffer;
@@ -25,7 +22,7 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping(path = "/api/admin/bulk")
-@Api(tags = "Admin Operations")
+//@Api(tags = "Admin Operations")
 @Slf4j(topic = "graph.feature.admin.api")
 public class Admin extends AbstractController {
     protected final AdminServices adminServices;
@@ -34,7 +31,7 @@ public class Admin extends AbstractController {
         this.adminServices = adminServices;
     }
 
-    @ApiOperation(value = "Empty repository", tags = {})
+    //@ApiOperation(value = "Empty repository", tags = {})
     @GetMapping(value = "/reset", produces = MediaType.TEXT_PLAIN_VALUE)
     @ResponseStatus(HttpStatus.ACCEPTED)
     Mono<Void> queryBindings(@RequestParam(name = "name") String repositoryTypeName) {
@@ -53,12 +50,13 @@ public class Admin extends AbstractController {
     }
 
 
-    @ApiOperation(value = "Import RDF into entity repository", tags = {})
+    //@ApiOperation(value = "Import RDF into entity repository", tags = {})
     @PostMapping(value = "/import/entities", consumes = MediaType.APPLICATION_OCTET_STREAM_VALUE)
     @ResponseStatus(HttpStatus.ACCEPTED)
     Mono<Void> importEntities(
             @RequestBody Flux<DataBuffer> bytes,
-            @ApiParam(example = "text/turtle") @RequestParam String mimetype) {
+            // @ApiParam(example = "text/turtle")
+            @RequestParam String mimetype) {
         Assert.isTrue(StringUtils.hasLength(mimetype), "Mimetype is a required parameter");
 
         return super.getAuthentication()
@@ -67,12 +65,13 @@ public class Admin extends AbstractController {
                 .doOnSubscribe(s -> log.debug("Request to import a request of mimetype {}", mimetype));
     }
 
-    @ApiOperation(value = "Import RDF file into entity repository", tags = {})
+    //@ApiOperation(value = "Import RDF file into entity repository", tags = {})
     @PostMapping(value = "/import/file", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @ResponseStatus(HttpStatus.ACCEPTED)
     Mono<Void> importFile(
             @RequestPart Mono<FilePart> fileMono,
-            @ApiParam(example = "text/turtle") @RequestParam String mimetype) {
+            //@ApiParam(example = "text/turtle")
+            @RequestParam String mimetype) {
         Assert.isTrue(StringUtils.hasLength(mimetype), "Mimetype is a required parameter");
 
         Optional<RDFParserFactory> parserFactory = RdfUtils.getParserFactory(MimeType.valueOf(mimetype));

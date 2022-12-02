@@ -1,4 +1,4 @@
-package io.av360.maverick.graph.main.boot;
+package io.av360.maverick.graph.main.config;
 
 import io.av360.maverick.graph.model.security.Authorities;
 import lombok.extern.slf4j.Slf4j;

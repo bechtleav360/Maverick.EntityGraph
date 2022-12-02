@@ -82,14 +82,14 @@ public class DefaultRepositoryBuilder implements RepositoryBuilder {
         }
         if(Authorities.satisfies(Authorities.SYSTEM, authentication.getAuthorities())) {
             log.trace("Resolving repository with admin authentication.");
-            return this.resolveRepositoryForAdminAuthentication(repositoryType, (ApiKeyAuthenticationToken) authentication);
+            return this.resolveRepositoryForAdminAuthentication(repositoryType, authentication);
         }
 
         throw new IOException(String.format("Cannot resolve repository of type '%s' for authentication of type '%s'", repositoryType, authentication.getClass()));
     }
 
 
-    protected Repository resolveRepositoryForAdminAuthentication(RepositoryType repositoryType, ApiKeyAuthenticationToken authentication) {
+    protected Repository resolveRepositoryForAdminAuthentication(RepositoryType repositoryType, Authentication authentication) {
         return switch (repositoryType) {
             case ENTITIES -> this.buildEntityRepository("default");
             case TRANSACTIONS -> this.buildTransactionsRepository("default");

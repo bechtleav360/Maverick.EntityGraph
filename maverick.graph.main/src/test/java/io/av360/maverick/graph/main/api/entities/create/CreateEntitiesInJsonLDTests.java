@@ -1,8 +1,8 @@
-package io.av360.maverick.graph.main.api.v1.jsonld;
+package io.av360.maverick.graph.main.api.entities.create;
 
-import io.av360.maverick.graph.main.boot.TestConfigurations;
-import io.av360.maverick.graph.tests.api.v1.EntitiesTest;
+import io.av360.maverick.graph.main.config.TestConfigurations;
 import io.av360.maverick.graph.tests.util.TestsBase;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -15,19 +15,14 @@ import org.springframework.test.context.event.RecordApplicationEvents;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import org.springframework.web.reactive.function.BodyInserters;
 
-
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ContextConfiguration(classes = TestConfigurations.class)
 @RecordApplicationEvents
 @ActiveProfiles("test")
-public class JsonLdEntitiesTest extends TestsBase implements EntitiesTest {
-
-
+public class CreateEntitiesInJsonLDTests extends TestsBase {
     @Autowired
     private WebTestClient webClient;
 
-
-    @Override
     @Test
     public void createEntity() {
         Resource file = new ClassPathResource("requests/create-valid.jsonld");
@@ -40,10 +35,8 @@ public class JsonLdEntitiesTest extends TestsBase implements EntitiesTest {
 
 
         // check if correct application events have been recorded
-
     }
 
-    @Override
     @Test
     public void createEntityWithMissingType() {
         Resource file = new ClassPathResource("requests/create-invalid-missingType.jsonld");
@@ -55,7 +48,6 @@ public class JsonLdEntitiesTest extends TestsBase implements EntitiesTest {
                 .expectStatus().isBadRequest();
     }
 
-    @Override
     @Test
     public void createEntityWithInvalidSyntax() {
         Resource file = new ClassPathResource("requests/create-invalid-syntax.jsonld");
@@ -67,7 +59,6 @@ public class JsonLdEntitiesTest extends TestsBase implements EntitiesTest {
                 .expectStatus().isBadRequest();
     }
 
-    @Override
     @Test
     public void createEntityWithValidId() {
         Resource file = new ClassPathResource("requests/create-validWithId.jsonld");
@@ -93,7 +84,6 @@ public class JsonLdEntitiesTest extends TestsBase implements EntitiesTest {
     }
 
     @Test
-    @Override
     /**
      * The parser fails here, bug was reported: https://github.com/eclipse/rdf4j/issues/3658
      */
@@ -107,7 +97,6 @@ public class JsonLdEntitiesTest extends TestsBase implements EntitiesTest {
                 .expectStatus().isBadRequest();
     }
 
-    @Override
     @Test
     public void createMultipleEntities() {
         Resource file = new ClassPathResource("requests/create-valid_multiple.jsonld");
@@ -118,7 +107,6 @@ public class JsonLdEntitiesTest extends TestsBase implements EntitiesTest {
                 .exchange()
                 .expectStatus().isAccepted();
     }
-
 
     @Test
     public void createMultipleEntitiesWithNoType() {
@@ -131,33 +119,9 @@ public class JsonLdEntitiesTest extends TestsBase implements EntitiesTest {
                 .expectStatus().isBadRequest();
     }
 
-    @Override
+    @Test
+    @Disabled
     public void createMultipleEntitiesWithMixedIds() {
-
-    }
-
-    @Override
-    public void createValue() {
-
-    }
-
-    @Override
-    public void createEmbeddedEntity() {
-
-    }
-
-    @Override
-    public void createEdgeWithIdInPayload() {
-
-    }
-
-    @Override
-    public void createEdge() {
-
-    }
-
-    @Override
-    public void createEdgeWithInvalidDestinationId() {
 
     }
 }

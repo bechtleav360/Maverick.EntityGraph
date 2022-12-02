@@ -1,4 +1,4 @@
-package io.av360.maverick.graph.main.boot;
+package io.av360.maverick.graph.main.config;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

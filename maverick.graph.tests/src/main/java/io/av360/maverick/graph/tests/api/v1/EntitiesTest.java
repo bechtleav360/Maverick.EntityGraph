@@ -39,11 +39,6 @@ public interface EntitiesTest {
     /**
      * POST /api/rs/{id}/{prefix.key}
      */
-    void createValue();
-
-    /**
-     * POST /api/rs/{id}/{prefix.key}
-     */
     void createEmbeddedEntity();
 
     /**
