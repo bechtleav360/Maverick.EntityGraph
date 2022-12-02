@@ -19,7 +19,9 @@ variables:
   - name: docker.url
     value: https://ghcr.io
   - name: docker.credentials.user
+    value: xxx
   - name: docker.credentials.password
+    value: xxx
 
 
 stages:
