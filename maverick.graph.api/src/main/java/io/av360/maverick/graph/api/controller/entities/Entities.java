@@ -11,6 +11,8 @@ import io.av360.maverick.graph.store.rdf.models.AbstractModel;
 import io.av360.maverick.graph.store.rdf.models.Incoming;
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.info.Info;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.util.Assert;
@@ -23,6 +25,7 @@ import java.util.Map;
 @RequestMapping(path = "/api/entities")
 //@Api(tags = "Entities")
 @Slf4j(topic = "graph.api.entities")
+@SecurityRequirement(name = "api_key")
 public class Entities extends AbstractController {
 
     protected final ObjectMapper objectMapper;

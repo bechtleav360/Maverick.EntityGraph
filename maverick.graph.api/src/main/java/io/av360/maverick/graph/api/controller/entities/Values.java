@@ -6,6 +6,7 @@ import io.av360.maverick.graph.model.rdf.NamespaceAwareStatement;
 import io.av360.maverick.graph.services.EntityServices;
 import io.av360.maverick.graph.services.ValueServices;
 import io.av360.maverick.graph.store.rdf.models.AbstractModel;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -17,6 +18,7 @@ import reactor.core.publisher.Flux;
 @RequestMapping(path = "/api/entities")
 //@Api(tags = "Values")
 @Slf4j(topic = "graph.api.entities")
+@SecurityRequirement(name = "api_key")
 public class Values extends AbstractController {
 
 

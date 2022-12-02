@@ -3,6 +3,7 @@ package io.av360.maverick.graph.api.controller.queries;
 import io.av360.maverick.graph.api.controller.AbstractController;
 import io.av360.maverick.graph.model.rdf.NamespaceAwareStatement;
 import io.av360.maverick.graph.services.QueryServices;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.rdf4j.query.BindingSet;
 import org.springframework.http.HttpStatus;
@@ -13,6 +14,7 @@ import reactor.core.publisher.Flux;
 @RequestMapping(path = "/api/query")
 //@Api(tags = "Queries")
 @Slf4j(topic = "graph.api.queries")
+@SecurityRequirement(name = "api_key")
 public class Queries extends AbstractController {
     protected final QueryServices queryServices;
 
