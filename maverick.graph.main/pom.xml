@@ -91,7 +91,7 @@
                         <name>${image.name}</name>
                         <!-- <name>ghcr.io/bechtleav360/maverick-entity-graph</name> -->
 
-                        <publish>false</publish>
+                        <publish>true</publish>
                         <verboseLogging>true</verboseLogging>
                         <env>
                             <BP_OCI_SOURCE>https://github.com/bechtleav360/Maverick.EntityGraph</BP_OCI_SOURCE>
