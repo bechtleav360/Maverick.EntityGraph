@@ -53,7 +53,7 @@ stages:
 #        pool:
 #          vmImage: ubuntu-latest
         steps:
-          - script: echo "Publishing image with build number $(Build.BuildNumber) and name $(privateRegistry)/$(containerRepo)"
+          - script: echo "Publishing image with build number $(Build.BuildNumber) and name $(docker.image.prefix)/$(docker.image.name) with user $(docker.credentials.user)"
           - task: Maven@3
             displayName: Install
             inputs:
