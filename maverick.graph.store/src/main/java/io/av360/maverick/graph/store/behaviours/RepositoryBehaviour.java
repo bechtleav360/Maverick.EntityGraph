@@ -1,7 +1,6 @@
 package io.av360.maverick.graph.store.behaviours;
 
 
-import brave.internal.Nullable;
 import io.av360.maverick.graph.model.security.Authorities;
 import io.av360.maverick.graph.store.rdf.models.Transaction;
 import io.av360.maverick.graph.store.RepositoryBuilder;
@@ -10,6 +9,7 @@ import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
+import org.springframework.lang.Nullable;
 import org.springframework.security.authentication.InsufficientAuthenticationException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
@@ -59,7 +59,7 @@ public interface RepositoryBehaviour {
     default RepositoryConnection getConnection(Authentication authentication, RepositoryType repositoryType, GrantedAuthority requiredAuthority) throws IOException {
         if(! Authorities.satisfies(requiredAuthority, authentication.getAuthorities())) {
             throw new InsufficientAuthenticationException(String.format("Missing authority '%s' for initializing connection to requested repository for authentication", requiredAuthority.getAuthority()));
-        };
+        }
         return getBuilder().buildRepository(repositoryType, authentication).getConnection();
     }
 

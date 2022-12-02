@@ -7,11 +7,36 @@
         <groupId>com.bechtle.maverick.graph</groupId>
         <version>${revision}</version>
     </parent>
+    <properties>
+        <image.name>ghcr.io/bechtleav360/maverick.entity-graph</image.name>
+        <docker.registry.host>https://ghcr.io</docker.registry.host>
+        <docker.credentials.user>xxx</docker.credentials.user>
+        <docker.credentials.password>xxx</docker.credentials.password>
+    </properties>
+
+
+
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>graph-main</artifactId>
     <name>Maverick.EntityGraph Main</name>
     <dependencies>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-webflux</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-sleuth</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-security</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
         <dependency>
             <groupId>ch.qos.logback.contrib</groupId>
             <artifactId>logback-json-classic</artifactId>
@@ -46,6 +71,12 @@
             <artifactId>reactor-test</artifactId>
             <scope>test</scope>
         </dependency>
+
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
     <build>
         <plugins>
@@ -53,9 +84,11 @@
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <configuration>
+                    <mainClass>io.av360.maverick.graph.main.Application</mainClass>
                     <image>
-                        <!-- with version <label>ghcr.io/bechtleav360/${project.artifactId}:${project.version}</label> -->
-                        <name>ghcr.io/bechtleav360/${project.artifactId}</name>
+                        <!--suppress UnresolvedMavenProperty -->
+                        <name>${image.name}</name>
+                        <!-- <name>ghcr.io/bechtleav360/maverick-entity-graph</name> -->
                         <publish>true</publish>
                         <verboseLogging>true</verboseLogging>
                         <env>
@@ -65,15 +98,15 @@
                     <docker>
                         <publishRegistry>
                             <!--suppress UnresolvedMavenProperty -->
-                            <username>${env.GHCR_USER}</username>
+                            <username>${docker.credentials.user}</username>
                             <!--suppress UnresolvedMavenProperty -->
-                            <password>${env.GHCR_PASSWORD}</password>
-                            <url>https://ghcr.io</url>
+                            <password>${docker.credentials.password}</password>
+                            <!--suppress UnresolvedMavenProperty -->
+                            <url>${docker.registry.host}</url>
                         </publishRegistry>
                     </docker>
                 </configuration>
             </plugin>
         </plugins>
     </build>
-
 </project>

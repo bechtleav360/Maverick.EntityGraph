@@ -1,0 +1,6 @@
+apiVersion: v2
+name: maverick-entity-graph
+description: Helm chart for the Maverick.EntityGraph
+type: application
+version: 0.1.0
+appVersion: "1.0.1"
