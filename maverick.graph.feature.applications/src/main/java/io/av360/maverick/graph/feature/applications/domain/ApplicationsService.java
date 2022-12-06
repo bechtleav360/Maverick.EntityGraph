@@ -323,7 +323,7 @@ public class ApplicationsService {
                 .insert(node.has(Application.HAS_S3_BUCKET_ID, s3Bucket))
                 .insert(node.has(Application.HAS_EXPORT_FREQUENCY, exportFrequency));
 
-        return this.applicationsStore.query(q, authentication, Authorities.APPLICATION)
+        return this.applicationsStore.modify(q, authentication, Authorities.APPLICATION)
                 .then()
                 .doOnSubscribe(sub -> log.debug("Setting application config for application with key '{}'", applicationIdentifier));
 

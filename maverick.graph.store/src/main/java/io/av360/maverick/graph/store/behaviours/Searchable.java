@@ -15,11 +15,13 @@ public interface Searchable extends RepositoryBehaviour {
         return this.query(all.getQueryString(), authentication, requiredAuthority);
     }
 
-    default Flux<BindingSet> query(ModifyQuery all, Authentication authentication, GrantedAuthority requiredAuthority) {
-        return this.query(all.getQueryString(), authentication, requiredAuthority);
+    default Flux<BindingSet> modify(ModifyQuery all, Authentication authentication, GrantedAuthority requiredAuthority) {
+        return this.modify(all.getQueryString(), authentication, requiredAuthority);
     }
 
     Flux<BindingSet> query(String queryString, Authentication authentication, GrantedAuthority requiredAuthority);
+
+    Flux<BindingSet> modify(String queryString, Authentication authentication, GrantedAuthority requiredAuthority);
 
 
     Flux<NamespaceAwareStatement> construct(String query, Authentication authentication, GrantedAuthority requiredAuthority);

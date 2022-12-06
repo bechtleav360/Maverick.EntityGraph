@@ -96,6 +96,7 @@ public class AbstractRepository implements RepositoryBehaviour, Statements, Mode
         });
     }
 
+    //TODO: This is a bit of a hack, but it works for now. We should probably use a proper RDF parser
     public Mono<Void> modify(String query, Authentication authentication, GrantedAuthority requiredAuthority) {
         return Mono.create(c -> {
             try (RepositoryConnection connection = getConnection(authentication, requiredAuthority)) {
