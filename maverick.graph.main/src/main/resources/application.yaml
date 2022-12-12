@@ -1,6 +1,7 @@
 info:
   app:
     version: '@project.version@'
+    git: '@git.commit.id@'
 
 spring:
   profiles:
@@ -8,6 +9,12 @@ spring:
 
 
 management:
+  info:
+    env:
+      enabled: true
+    git:
+      enabled: true
+      mode: full
   health:
     defaults:
       enabled: false
