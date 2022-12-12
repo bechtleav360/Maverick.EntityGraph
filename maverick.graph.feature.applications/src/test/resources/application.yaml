@@ -38,10 +38,7 @@ application:
 
 logging:
   level:
-    cougar:
-      graph: TRACE
-    com:
-      bechtle: TRACE
+    graph: TRACE
     org:
       springframework:
         security: INFO

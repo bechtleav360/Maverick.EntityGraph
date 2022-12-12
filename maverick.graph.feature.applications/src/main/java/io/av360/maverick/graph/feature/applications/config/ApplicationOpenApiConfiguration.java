@@ -5,24 +5,16 @@ import java.util.List;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import springfox.documentation.builders.ApiInfoBuilder;
-import springfox.documentation.builders.RequestHandlerSelectors;
-import springfox.documentation.service.ApiKey;
-import springfox.documentation.service.AuthorizationScope;
-import springfox.documentation.service.SecurityReference;
-import springfox.documentation.spi.DocumentationType;
-import springfox.documentation.spi.service.contexts.SecurityContext;
-import springfox.documentation.spring.web.plugins.Docket;
 
 @Configuration
 public class ApplicationOpenApiConfiguration {
 
-    @Bean
+/*    @Bean
     public Docket applicationApiDocket() {
         return new Docket(DocumentationType.OAS_30)
                 .groupName("Applications API")
                 .apiInfo(new ApiInfoBuilder()
-                        .title("Cougar Applications API")
+                        .title("Maverick.EntityGraph Applications API")
                         .description("API to register applications and generate or revoke Api Keys (part of multi-tenancy feature). Requires admin authentication. ")
                         .version("0.2.0")
                         .license("Apache 2.0")
@@ -32,7 +24,7 @@ public class ApplicationOpenApiConfiguration {
                 .securitySchemes(List.of(apiKey()))
                 .securityContexts(List.of(securityContext()))
                 .select()
-                .apis(RequestHandlerSelectors.basePackage("cougar.graph.feature.applications.api"))
+                .apis(RequestHandlerSelectors.basePackage("io.av360.maverick.graph.feature.applications.api"))
                 // .paths(PathSelectors.ant("/api/**"))
                 .build();
     }
@@ -51,5 +43,5 @@ public class ApplicationOpenApiConfiguration {
     private ApiKey apiKey() {
         return new ApiKey("X-API-KEY", "X-API-KEY", "header");
     }
-
+    */
 }

@@ -115,6 +115,7 @@ public class Transaction extends AbstractModel {
 
 
 
+
     public static boolean isTransaction(Model model) {
         return model.contains(null, RDF.TYPE, Transactions.TRANSACTION);
     }

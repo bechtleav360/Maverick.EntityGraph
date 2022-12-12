@@ -6,7 +6,7 @@ import io.av360.maverick.graph.model.security.Authorities;
 import io.av360.maverick.graph.store.rdf.models.Transaction;
 import io.av360.maverick.graph.model.vocabulary.Local;
 import io.av360.maverick.graph.model.vocabulary.Transactions;
-import io.av360.maverick.graph.services.services.QueryServices;
+import io.av360.maverick.graph.services.QueryServices;
 import io.av360.maverick.graph.store.EntityStore;
 import io.av360.maverick.graph.store.TransactionsStore;
 import lombok.extern.slf4j.Slf4j;
