@@ -80,6 +80,7 @@ public class EntityServicesImpl implements EntityServices {
                 .flatMap(transaction -> entityStore.commit(transaction, authentication))
                 .doOnSuccess(transaction -> {
                     eventPublisher.publishEvent(new EntityCreatedEvent(transaction));
+                    // TODO: throw event for every entity in payload
                 });
 
     }
