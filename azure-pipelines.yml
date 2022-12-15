@@ -18,6 +18,8 @@ variables:
     value: develop
   - name: docker.url
     value: https://ghcr.io
+  - name: docker.publish
+    value: true
   - name: docker.credentials.user
     value: xxx
   - name: docker.credentials.password
@@ -79,7 +81,8 @@ stages:
               goals: 'spring-boot:build-image'
               jdkVersionOption: 1.17
               options: >
-                -DskipTests=true 
+                -DskipTests=false 
+                -Ddocker.publish=$(docker.publish)
                 -Ddocker.credentials.user=$(docker.credentials.user)
                 -Ddocker.credentials.password=$(docker.credentials.password)
                 -Ddocker.registry.host=$(docker.url)
