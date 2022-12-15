@@ -15,18 +15,18 @@ variables:
   - name: docker.image.name
     value: maverick-entity-graph
   - name: docker.image.version
-    ${{ if eq(variables['isRelease'], true) }}:
+    ${{ if eq(variables['Build.SourceBranchName'], 'main') }}:
       value: "latest"
-    ${{ if eq(variables['isDevelop'], true) }}:
+    ${{ if eq(variables['Build.SourceBranchName'], 'develop') }}:
       value: "develop"
     ${{ else }}:
       value: variables['Build.SourceBranchName']
   - name: docker.url
     value: https://ghcr.io
   - name: docker.publish
-    ${{ if eq(variables['isRelease'], true)  }}:
+    ${{ if eq(variables['Build.SourceBranchName'], 'main')  }}:
       value: true
-    ${{ if eq(variables['isDevelop'], true) }}:
+    ${{ if eq(variables['Build.SourceBranchName'], 'develop') }}:
       value: true
     ${{ else }}:
       value: false
