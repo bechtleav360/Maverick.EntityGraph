@@ -1,0 +1,1 @@
+This feature consumes internal application events and forwards them as CloudEvent to a configured webhook 

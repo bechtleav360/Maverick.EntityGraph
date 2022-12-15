@@ -27,6 +27,7 @@
         <module>maverick.graph.feature.admin</module>
         <module>maverick.graph.feature.applications</module>
         <module>maverick.graph.tests</module>
+        <module>maverick.graph.feature.webhooks</module>
     </modules>
 
     <description>Provides access to the graph through json-ld api</description>
