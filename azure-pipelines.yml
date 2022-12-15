@@ -2,7 +2,7 @@
     
 trigger:
 - main
-#- develop
+- develop
 - feature/*
 
 variables:
@@ -15,11 +15,21 @@ variables:
   - name: docker.image.name
     value: maverick-entity-graph
   - name: docker.image.version
-    value: develop
+    ${{ if isRelease }}:
+      value: "latest"
+    ${{ if isDevelop }}:
+      value: "develop"
+    ${{ else }}:
+      value: variables['Build.SourceBranchName']
   - name: docker.url
     value: https://ghcr.io
   - name: docker.publish
-    value: true
+    ${{ if isRelease }}:
+      value: true
+    ${{ if isDevelop }}:
+      value: true
+    ${{ else }}:
+      value: false
   - name: docker.credentials.user
     value: xxx
   - name: docker.credentials.password
