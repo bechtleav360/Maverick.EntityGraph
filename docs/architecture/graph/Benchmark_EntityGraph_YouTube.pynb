@@ -1,0 +1,178 @@
+# try to tickle out a GPU. Please change the runtime to GPU in the tab above.
+%tensorflow_version 2.x
+import tensorflow as tf
+device_name = tf.test.gpu_device_name()
+if device_name != '/device:GPU:0':
+  raise SystemError('GPU device not found')
+print('Found GPU at: {}'.format(device_name))
+
+%tensorflow_version 2.x
+import timeit
+
+device_name = tf.test.gpu_device_name()
+if device_name != '/device:GPU:0':
+  print(
+      '\n\nThis error most likely means that this notebook is not '
+      'configured to use a GPU.  Change this in Notebook Settings via the '
+      'command palette (cmd/ctrl-shift-P) or the Edit menu.\n\n')
+  raise SystemError('GPU device not found')
+
+def cpu():
+  with tf.device('/cpu:0'):
+    random_image_cpu = tf.random.normal((100, 100, 100, 3))
+    net_cpu = tf.keras.layers.Conv2D(32, 7)(random_image_cpu)
+    return tf.math.reduce_sum(net_cpu)
+
+def gpu():
+  with tf.device('/device:GPU:0'):
+    random_image_gpu = tf.random.normal((100, 100, 100, 3))
+    net_gpu = tf.keras.layers.Conv2D(32, 7)(random_image_gpu)
+    return tf.math.reduce_sum(net_gpu)
+  
+# We run each op once to warm up; see: https://stackoverflow.com/a/45067900
+cpu()
+gpu()
+
+# Run the op several times.
+print('Time (s) to convolve 32x7x7x3 filter over random 100x100x100x3 images '
+      '(batch x height x width x channel). Sum of ten runs.')
+print('CPU (s):')
+cpu_time = timeit.timeit('cpu()', number=10, setup="from __main__ import cpu")
+print(cpu_time)
+print('GPU (s):')
+gpu_time = timeit.timeit('gpu()', number=10, setup="from __main__ import gpu")
+print(gpu_time)
+print('GPU speedup over CPU: {}x'.format(int(cpu_time/gpu_time)))
+
+
+!pip install pafy
+!pip install youtube-dl==2020.12.2
+!pip install pytube
+!pip install git+https://github.com/openai/whisper.git
+!pip install jiwer
+!pip install rdflib
+!pip install pydotplus
+!pip install graphviz
+
+
+
+import pafy
+import youtube_dl
+from pytube import YouTube 
+import whisper
+import io
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import operator
+import random as rd
+from rdflib import Graph, Literal, RDF, URIRef, BNode, Namespace
+from rdflib.namespace import FOAF, DCTERMS as dc, XSD, RDF, SDO, SKOS as skos, RDFS
+import pydotplus
+from IPython.display import display, Image
+from rdflib.tools.rdf2dot import rdf2dot
+import statistics
+import collections
+
+
+# videos from crawler
+def get_youtube_video_IDs():
+    video_IDs = pd.read_csv(r'/content/drive/MyDrive/RDF-Tutorial/Data/Video_IDs.csv')
+    video_IDs = video_IDs['0']
+    complete = pd.read_csv(r'/content/drive/MyDrive/RDF-Tutorial/Data/complete.csv')
+    complete_IDs = complete['id']
+    complete_IDs = np.array(complete_IDs)
+    video_IDs = np.array(video_IDs)
+    video_IDs = np.append(video_IDs, complete_IDs)
+    return video_IDs
+
+video_IDs = get_youtube_video_IDs()
+print(len(video_IDs))
+print(video_IDs)
+
+
+# randomly compare some videos
+url_0 = 'https://www.youtube.com/watch?v=' + video_IDs[0]
+url_1 = 'https://www.youtube.com/watch?v=' + video_IDs[10]
+url_2 = 'https://www.youtube.com/watch?v=' + video_IDs[1000]
+
+
+# subtitles. It does not matter if the video in youtube has a subtitle, but sometimes the words are wrong :(
+def get_videotxt(url):
+     try: 
+        yt = YouTube(url) 
+     except: 
+        print("Connection Error")
+     yt.streams.filter(file_extension='mp4')
+     stream = yt.streams.get_by_itag(139)
+     stream.download('',"GoogleImagen.mp4")
+     model = whisper.load_model("base")
+     result = model.transcribe("GoogleImagen.mp4")
+     return result['text']
+
+videotxt_0 = get_videotxt(url_0)
+videotxt_1 = get_videotxt(url_1)
+videotxt_2 = get_videotxt(url_2)
+
+
+# video-info as entity in node
+def video_info(url):        
+    video = pafy.new(url)
+    info = video.rating, video.viewcount, video.author, video.length, video.duration, video.likes, video.dislikes, video.thumb
+    print(f'\nrating:{video.rating}')
+    print(f'\nviewcount:{video.viewcount}, author:{video.author}, length:{video.length}')
+    print(f'\nduration:{video.duration}, likes:{video.likes}, dislikes:{video.dislikes}')
+    print(f'thumb:{video.thumb}')
+    print(f'\nVideo:{video}')
+    return video
+
+video_0 = video_info(url_0)
+video_1 = video_info(url_1)
+video_2 = video_info(url_2)
+
+# graph initialization
+g = Graph()
+
+# fill the graph
+video_entity_0 = URIRef("http://example.org/Video_0")
+video_entity_1 = URIRef("http://example.org/Video_1")
+video_entity_2 = URIRef("http://example.org/Video_2")
+
+g.add((video_entity_0, RDF.Property, Literal(video_0)))
+g.add((video_entity_1, RDF.Property, Literal(video_1)))
+g.add((video_entity_2, RDF.Property, Literal(video_2)))
+
+# first 200 words from the lyrics
+g.add((video_entity_0, RDF.Property, Literal(videotxt_0[:200]))) 
+g.add((video_entity_1, RDF.Property, Literal(videotxt_1[:200]))) 
+g.add((video_entity_2, RDF.Property, Literal(videotxt_2[:200]))) 
+
+# get graph & triples (s,p,o)
+print('Graph g:\n', g.serialize(format='ttl'))
+print(f'Graph g has {len(g)} facts')
+for triples in g:
+    print(f'triples{triples}')
+    
+# define esco skills    
+skill_0 = URIRef('http://data.europa.eu/esco/model#Skills_Video_0')
+skill_1 = URIRef('http://data.europa.eu/esco/model#Skills_Video_1')
+skill_2 = URIRef('http://data.europa.eu/esco/model#Skills_Video_2')
+
+skill_type = URIRef('http://data.europa.eu/esco/model#skillType')
+
+g.add((video_entity_0, skill_type, skill_0))
+g.add((video_entity_1, skill_type, skill_1))
+g.add((video_entity_2, skill_type, skill_2))
+
+# plot the graph
+def visualize(current_graph):
+    stream = io.StringIO()
+    rdf2dot(current_graph, stream, opts = {display})
+    dg = pydotplus.graph_from_dot_data(stream.getvalue())
+    png = dg.create_png()
+    display(Image(png))
+
+visualize(g)
+
+# download graph & get a better plot!--> https://www.ldf.fi/service/rdf-grapher
+g.serialize(destination='beispiel_1_own.ttl')
