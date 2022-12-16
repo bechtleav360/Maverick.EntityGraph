@@ -1,1 +1,6 @@
 rdflib
+pafy
+youtube_dl
+pytube
+whisper
+jiwer
