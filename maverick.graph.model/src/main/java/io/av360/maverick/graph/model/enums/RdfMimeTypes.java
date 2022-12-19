@@ -18,11 +18,11 @@ public class RdfMimeTypes extends MediaType {
     public static final String TURTLESTAR_VALUE = "text/x-turtlestar";
     public static final String RDFXML_VALUE = "application/rdf+xml";
     public static final String RDFJSON_VALUE = "application/rdf+json";
-    public static final String NTRIPLES_VALUE= "application/n-triples";
-    public static final String JSONLD_VALUE= "application/ld+json";
-    public static final String BINARY_VALUE= "application/x-binary-rdf";
-    public static final String NQUADS_VALUE= "application/n-quads";
-    public static final String N3_VALUE= "text/n3";
+    public static final String NTRIPLES_VALUE = "application/n-triples";
+    public static final String JSONLD_VALUE = "application/ld+json";
+    public static final String BINARY_VALUE = "application/x-binary-rdf";
+    public static final String NQUADS_VALUE = "application/n-quads";
+    public static final String N3_VALUE = "text/n3";
 
     static {
         RDFJSON = new RdfMimeTypes(RDFFormat.RDFJSON);

@@ -2,7 +2,7 @@
 #  datasource:
 #    url: jdbc:h2:file:/data/demo
 
-application: 
+application:
   security:
     enabled: true
     apiKey: "xxx"
@@ -20,13 +20,13 @@ application:
       checkRequiredType: true
   storage:
     default:
-      persistent: true    
+      persistent: true
       path: "/var/data/application"
     entities:
-      persistent: true        
+      persistent: true
       path: "/var/data/entities"
     transactions:
-      persistent: true        
+      persistent: true
       path: "/var/data/transactions"
 
 spring:

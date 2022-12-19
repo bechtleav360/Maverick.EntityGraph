@@ -3,7 +3,6 @@ package io.av360.maverick.graph.api.security;
 import io.av360.maverick.graph.model.security.ApiKeyAuthenticationToken;
 import io.av360.maverick.graph.model.security.Authorities;
 import jakarta.annotation.PostConstruct;
-// import javax.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.text.RandomStringGenerator;
 import org.springframework.beans.factory.annotation.Value;
@@ -16,7 +15,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 import reactor.core.publisher.Mono;
-
 
 import java.util.Set;
 
@@ -35,7 +33,7 @@ public class DefaultAuthenticationManager implements ReactiveAuthenticationManag
 
     @PostConstruct
     public void checkKey() {
-        if(! StringUtils.hasLength(this.key)) {
+        if (!StringUtils.hasLength(this.key)) {
             this.key = new RandomStringGenerator.Builder().withinRange('a', 'z').build().generate(16);
             log.info("No admin key set, using the following randomly generated api key for this session: '{}' ", this.key);
         } else {
@@ -49,7 +47,7 @@ public class DefaultAuthenticationManager implements ReactiveAuthenticationManag
         Assert.notNull(authentication, "Authentication is null in Authentication Manager");
         log.trace("(Filter) Handling authentication of type {} in system authentication manager (default)", authentication.getClass().getSimpleName());
 
-        if(authentication instanceof TestingAuthenticationToken) {
+        if (authentication instanceof TestingAuthenticationToken) {
             log.warn("Test authentication token detected, disabling security.");
             authentication.setAuthenticated(true);
         }
@@ -72,7 +70,7 @@ public class DefaultAuthenticationManager implements ReactiveAuthenticationManag
     private Mono<? extends Authentication> handleApiKeyAuthentication(ApiKeyAuthenticationToken authentication) {
         log.trace("Handling request with API Key authentication");
         // check if this is the admin user
-        if(StringUtils.hasLength(this.key) && authentication.getApiKey().isPresent() && authentication.getApiKey().get().equalsIgnoreCase(this.key)) {
+        if (StringUtils.hasLength(this.key) && authentication.getApiKey().isPresent() && authentication.getApiKey().get().equalsIgnoreCase(this.key)) {
             log.debug("Valid System API Key for system authentication provided.");
 
             authentication.grantAuthority(Authorities.SYSTEM);
@@ -88,15 +86,16 @@ public class DefaultAuthenticationManager implements ReactiveAuthenticationManag
 
     /**
      * Some endpoints (e.g. the actuators) fall back to basic authentication.
-     *
+     * <p>
      * For now, we expect only the system password here.
+     *
      * @param authentication Current basic authentication
      * @return Authentication with relevant authorities
      */
     private Mono<? extends Authentication> handleBasicAuthentication(UsernamePasswordAuthenticationToken authentication) {
         log.trace("Handling request with basic authentication");
 
-        if(StringUtils.hasLength(this.key) && StringUtils.hasLength(authentication.getCredentials().toString()) && authentication.getCredentials().toString().equalsIgnoreCase(this.key)) {
+        if (StringUtils.hasLength(this.key) && StringUtils.hasLength(authentication.getCredentials().toString()) && authentication.getCredentials().toString().equalsIgnoreCase(this.key)) {
             log.debug("Valid password for system authentication provided.");
 
 

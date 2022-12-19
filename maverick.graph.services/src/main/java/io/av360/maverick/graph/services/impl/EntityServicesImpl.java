@@ -4,20 +4,21 @@ import io.av360.maverick.graph.model.enums.Activity;
 import io.av360.maverick.graph.model.errors.EntityNotFound;
 import io.av360.maverick.graph.model.rdf.LocalIRI;
 import io.av360.maverick.graph.model.vocabulary.Local;
-import io.av360.maverick.graph.services.events.EntityCreatedEvent;
-import io.av360.maverick.graph.services.events.EntityDeletedEvent;
 import io.av360.maverick.graph.services.EntityServices;
 import io.av360.maverick.graph.services.QueryServices;
+import io.av360.maverick.graph.services.events.EntityCreatedEvent;
+import io.av360.maverick.graph.services.events.EntityDeletedEvent;
 import io.av360.maverick.graph.services.transformers.DelegatingTransformer;
 import io.av360.maverick.graph.services.validators.DelegatingValidator;
 import io.av360.maverick.graph.store.EntityStore;
 import io.av360.maverick.graph.store.SchemaStore;
 import io.av360.maverick.graph.store.TransactionsStore;
 import io.av360.maverick.graph.store.rdf.models.Entity;
-import io.av360.maverick.graph.store.rdf.models.StatementsBag;
+import io.av360.maverick.graph.store.rdf.models.TripleBag;
 import io.av360.maverick.graph.store.rdf.models.Transaction;
 import lombok.extern.slf4j.Slf4j;
-import org.eclipse.rdf4j.model.*;
+import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
@@ -25,7 +26,10 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
 @Slf4j(topic = "graph.service.entity")
 @Service
@@ -45,9 +49,9 @@ public class EntityServicesImpl implements EntityServices {
     private QueryServices queryServices;
 
     public EntityServicesImpl(EntityStore graph,
-                          TransactionsStore trxStore,
-                          SchemaStore schema,
-                          ApplicationEventPublisher eventPublisher) {
+                              TransactionsStore trxStore,
+                              SchemaStore schema,
+                              ApplicationEventPublisher eventPublisher) {
         this.entityStore = graph;
         this.trxStore = trxStore;
         this.schema = schema;
@@ -55,13 +59,15 @@ public class EntityServicesImpl implements EntityServices {
     }
 
 
-    @Override public Mono<Entity> readEntity(String identifier, Authentication authentication) {
+    @Override
+    public Mono<Entity> readEntity(String identifier, Authentication authentication) {
         return entityStore.getEntity(LocalIRI.withDefaultNamespace(identifier), authentication)
                 .switchIfEmpty(Mono.error(new EntityNotFound(identifier)));
     }
 
 
-    @Override public Mono<Transaction> deleteEntity(IRI identifier, Authentication authentication) {
+    @Override
+    public Mono<Transaction> deleteEntity(IRI identifier, Authentication authentication) {
         return this.entityStore.listStatements(identifier, null, null, authentication)
                 .flatMap(statements -> this.entityStore.removeStatements(statements, new Transaction()))
                 .flatMap(trx -> this.entityStore.commit(trx, authentication))
@@ -71,11 +77,13 @@ public class EntityServicesImpl implements EntityServices {
     }
 
 
-    @Override public Mono<Transaction> deleteEntity(String id, Authentication authentication) {
+    @Override
+    public Mono<Transaction> deleteEntity(String id, Authentication authentication) {
         return this.deleteEntity(LocalIRI.withDefaultNamespace(id), authentication);
     }
 
-    @Override public Mono<Transaction> createEntity(StatementsBag triples, Map<String, String> parameters, Authentication authentication) {
+    @Override
+    public Mono<Transaction> createEntity(TripleBag triples, Map<String, String> parameters, Authentication authentication) {
         return this.prepareEntity(triples, parameters, new Transaction(), authentication)
                 .flatMap(transaction -> entityStore.commit(transaction, authentication))
                 .doOnSuccess(transaction -> {
@@ -96,7 +104,8 @@ public class EntityServicesImpl implements EntityServices {
      * @param linkedEntities  value
      * @return transaction model
      */
-    @Override public Mono<Transaction> linkEntityTo(String id, String predicatePrefix, String predicateKey, StatementsBag linkedEntities, Authentication authentication) {
+    @Override
+    public Mono<Transaction> linkEntityTo(String id, String predicatePrefix, String predicateKey, TripleBag linkedEntities, Authentication authentication) {
 
         LocalIRI entityIdentifier = LocalIRI.withDefaultNamespace(id);
         IRI predicate = LocalIRI.withDefinedNamespace(schema.getNamespaceFor(predicatePrefix), predicateKey);
@@ -134,7 +143,7 @@ public class EntityServicesImpl implements EntityServices {
     /**
      * Make sure you store the transaction once you are finished
      */
-    protected Mono<Transaction> prepareEntity(StatementsBag triples, Map<String, String> parameters, Transaction transaction, Authentication authentication) {
+    protected Mono<Transaction> prepareEntity(TripleBag triples, Map<String, String> parameters, Transaction transaction, Authentication authentication) {
         if (log.isDebugEnabled())
             log.debug("(Service) {} statements incoming for creating new entity. Parameters: {}", triples.streamStatements().count(), parameters.size() > 0 ? parameters : "none");
 
@@ -159,8 +168,8 @@ public class EntityServicesImpl implements EntityServices {
                     Set<Resource> identifiers = new HashSet<>(sts.getModel().filter(null, RDF.TYPE, null).subjects());
 
                     identifiers.forEach(id ->
-                                    sts.getModel().add(id, RDF.TYPE, Local.Entities.TYPE)
-                            );
+                            sts.getModel().add(id, RDF.TYPE, Local.Entities.TYPE)
+                    );
 
                     return sts;
 

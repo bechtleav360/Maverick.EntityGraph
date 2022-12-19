@@ -38,7 +38,7 @@ public class CompactJsonLD {
             JsonObject obj = JsonLd.compact(of, context)
                     .get();
 
-            Map<String,String> config = new HashMap<>();
+            Map<String, String> config = new HashMap<>();
             config.put(JsonGenerator.PRETTY_PRINTING, "");
             Json.createWriterFactory(config).createWriter(System.out).write(obj);
         }

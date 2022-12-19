@@ -1,8 +1,9 @@
 package io.av360.maverick.graph.feature.applications.security;
 
+import io.av360.maverick.graph.api.security.errors.NoSubscriptionFound;
 import io.av360.maverick.graph.feature.applications.domain.ApplicationsService;
-import io.av360.maverick.graph.model.security.Authorities;
 import io.av360.maverick.graph.model.security.ApiKeyAuthenticationToken;
+import io.av360.maverick.graph.model.security.Authorities;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.ReactiveAuthenticationManager;
 import org.springframework.security.core.Authentication;
@@ -10,21 +11,19 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 import reactor.core.publisher.Mono;
-import io.av360.maverick.graph.api.security.errors.NoSubscriptionFound;
 
 /**
  * This authentication manager augments the default admin authentication manager (which assumes only one api key exists).
  * <p>
  * It checks whether the given api key is part of an active application. Each application has its own repositories, you
  * can only access the data linked to the api key.
- *
+ * <p>
  * It does not check for the validity of the admin key (this is still responsibility of the admin authentication manager).
  * This class must not give Admin Authority.
  */
 @Component
 @Slf4j(topic = "graph.feature.apps.security")
 public class ApplicationAuthenticationManager implements ReactiveAuthenticationManager {
-
 
 
     private static final String SUBSCRIPTION_KEY_HEADER = "X-SUBSCRIPTION-KEY";
@@ -48,15 +47,14 @@ public class ApplicationAuthenticationManager implements ReactiveAuthenticationM
         if (authentication instanceof ApiKeyAuthenticationToken) {
             // default case, we only asserted before that a valid api key was in the header
             return handleApiKeyHader((ApiKeyAuthenticationToken) authentication)
-                            .map(auth -> this.handleSubscriptionKeyHeader((ApiKeyAuthenticationToken) auth))
-                            .map(auth -> (Authentication) auth);
+                    .map(auth -> this.handleSubscriptionKeyHeader((ApiKeyAuthenticationToken) auth))
+                    .map(auth -> (Authentication) auth);
         } /*else {
             // fallback to default application (which is always declined)
             log.warn("Invalid authentication of type {} found and refused", authentication.getClass());
             authentication.setAuthenticated(false);
             return Mono.just(authentication);
-        }*/
-        else return Mono.just(authentication);
+        }*/ else return Mono.just(authentication);
 
     }
 

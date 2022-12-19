@@ -2,9 +2,9 @@ package io.av360.maverick.graph.store;
 
 import io.av360.maverick.graph.model.rdf.NamespaceAwareStatement;
 import io.av360.maverick.graph.model.security.Authorities;
-import io.av360.maverick.graph.store.rdf.models.Transaction;
 import io.av360.maverick.graph.store.behaviours.*;
 import io.av360.maverick.graph.store.rdf.models.Entity;
+import io.av360.maverick.graph.store.rdf.models.Transaction;
 import org.eclipse.rdf4j.model.*;
 import org.eclipse.rdf4j.query.BindingSet;
 import org.springframework.security.core.Authentication;
@@ -19,8 +19,6 @@ import java.util.List;
 public interface EntityStore extends Searchable, Resettable, ModelUpdates, Selectable, Statements {
 
     Mono<Entity> getEntity(Resource id, Authentication authentication, GrantedAuthority requiredAuthority);
-
-
 
 
     Mono<Transaction> delete(Collection<Statement> statements, Transaction transaction);

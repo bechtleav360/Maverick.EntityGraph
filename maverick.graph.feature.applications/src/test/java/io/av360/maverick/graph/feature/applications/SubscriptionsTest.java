@@ -26,6 +26,7 @@ class SubscriptionsTest extends TestsBase implements Subscriptions {
     public void createSubscription() {
         this.postSubscription("test", false).jsonPath("$.key").isNotEmpty();
     }
+
     private WebTestClient.BodyContentSpec postSubscription(String label, boolean persistent) {
         Requests.RegisterApplicationRequest req = new Requests.RegisterApplicationRequest(label, persistent);
 
@@ -36,7 +37,7 @@ class SubscriptionsTest extends TestsBase implements Subscriptions {
                 .expectStatus().isCreated()
                 //.expectBody(Responses.CreateSubscriptionResponse.class)
                 .expectBody();
-                // .jsonPath("$.key").isNotEmpty();
+        // .jsonPath("$.key").isNotEmpty();
     }
 
     @Override

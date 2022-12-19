@@ -50,8 +50,8 @@ public class BufferedStatementsEncoder implements Encoder<Statement> {
     public Flux<DataBuffer> encode(Publisher<? extends Statement> inputStream, DataBufferFactory bufferFactory, ResolvableType elementType, MimeType mimeType, Map<String, Object> hints) {
 
         return Flux.from(inputStream)
-                .doOnSubscribe(c ->  {
-                    if(log.isTraceEnabled()) {
+                .doOnSubscribe(c -> {
+                    if (log.isTraceEnabled()) {
                         log.trace("Setting up buffered statements stream for response with mimetype '{}'", mimeType != null ? mimeType.toString() : "unset");
                     }
                 })
@@ -68,7 +68,7 @@ public class BufferedStatementsEncoder implements Encoder<Statement> {
                         boolean namespaceHandled = false;
 
                         writer.startRDF();
-                        for(Statement st : statements) {
+                        for (Statement st : statements) {
                             /* write namespaces taken from first statement in collection */
                             namespaceHandled = this.registerNamespaces(writer, st, namespaceHandled);
                             writer.handleStatement(st);
@@ -80,7 +80,7 @@ public class BufferedStatementsEncoder implements Encoder<Statement> {
                         log.error("Failed to write response of mimetype '{}'", mimeType.toString(), e);
                         return Flux.error(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to write response"));
                     } finally {
-                        if(log.isTraceEnabled()) {
+                        if (log.isTraceEnabled()) {
                             log.trace("Completed writing buffered statements response with mimetype '{}'", mimeType != null ? mimeType.toString() : "unset");
                         }
                     }

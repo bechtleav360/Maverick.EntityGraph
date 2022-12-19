@@ -1,13 +1,11 @@
 package io.av360.maverick.graph.store.rdf.models;
 
-import com.google.common.collect.Iterables;
 import io.av360.maverick.graph.model.rdf.NamespaceAwareStatement;
 import io.av360.maverick.graph.model.rdf.NamespacedModelBuilder;
 import org.eclipse.rdf4j.model.*;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 
 import java.io.Serializable;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -15,15 +13,15 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
-public class AbstractModel implements NamespaceAware, Serializable {
+public class TripleModel implements NamespaceAware, Serializable {
 
     private NamespacedModelBuilder modelBuilder;
 
-    protected AbstractModel(Model model) {
+    protected TripleModel(Model model) {
         this.modelBuilder = new NamespacedModelBuilder(model, Set.of());
     }
 
-    protected AbstractModel() {
+    protected TripleModel() {
         this.modelBuilder = new NamespacedModelBuilder();
     }
 
@@ -44,10 +42,6 @@ public class AbstractModel implements NamespaceAware, Serializable {
     public void reset() {
         this.modelBuilder = new NamespacedModelBuilder();
     }
-
-
-
-
 
 
     @Override
@@ -72,7 +66,7 @@ public class AbstractModel implements NamespaceAware, Serializable {
         this.getModel().unmodifiable().objects().forEach(object -> {
                     this.getModel().stream()
                             .filter(statement -> statement.getObject().equals(object))
-                            .filter(statement -> ! statement.getPredicate().equals(RDF.TYPE))
+                            .filter(statement -> !statement.getPredicate().equals(RDF.TYPE))
                             .findFirst()
                             .ifPresent(statement -> result.add(statement.getSubject()));
                 }
@@ -89,7 +83,7 @@ public class AbstractModel implements NamespaceAware, Serializable {
         return StreamSupport.stream(statements.spliterator(), true);
     }
 
-    public Stream<Statement> streamStatements(Resource subject, IRI predicate, Value object, Resource ... contexts) {
+    public Stream<Statement> streamStatements(Resource subject, IRI predicate, Value object, Resource... contexts) {
         Iterable<Statement> statements = this.getModel().getStatements(subject, predicate, object, contexts);
         return StreamSupport.stream(statements.spliterator(), true);
     }
@@ -102,18 +96,17 @@ public class AbstractModel implements NamespaceAware, Serializable {
         return this.streamStatements(subject, predicate, object).collect(Collectors.toList());
     }
 
-    public Stream<Statement> streamStatements(Resource ... contexts) {
+    public Stream<Statement> streamStatements(Resource... contexts) {
         return this.streamStatements(null, null, null, contexts);
     }
 
     public Iterable<NamespaceAwareStatement> asStatements() {
-        return this.streamStatements().map(statement ->  NamespaceAwareStatement.wrap(statement, this.getNamespaces())).toList();
+        return this.streamStatements().map(statement -> NamespaceAwareStatement.wrap(statement, this.getNamespaces())).toList();
     }
 
-    public Iterable<NamespaceAwareStatement> asStatements(Resource ... context) {
-        return this.streamStatements(context).map(statement ->  NamespaceAwareStatement.wrap(statement, this.getNamespaces())).toList();
+    public Iterable<NamespaceAwareStatement> asStatements(Resource... context) {
+        return this.streamStatements(context).map(statement -> NamespaceAwareStatement.wrap(statement, this.getNamespaces())).toList();
     }
-
 
 
     public Stream<Value> streamValues(Resource subject, IRI predicate) {
@@ -123,6 +116,4 @@ public class AbstractModel implements NamespaceAware, Serializable {
     public boolean hasStatement(Resource obj, IRI pred, Value val) {
         return this.getModel().getStatements(obj, pred, val).iterator().hasNext();
     }
-
-
 }

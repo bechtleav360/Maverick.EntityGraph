@@ -1,9 +1,9 @@
 package io.av360.maverick.graph.services.impl;
 
+import io.av360.maverick.graph.model.rdf.NamespaceAwareStatement;
 import io.av360.maverick.graph.model.vocabulary.Local;
 import io.av360.maverick.graph.services.QueryServices;
 import io.av360.maverick.graph.services.transformers.DelegatingTransformer;
-import io.av360.maverick.graph.model.rdf.NamespaceAwareStatement;
 import io.av360.maverick.graph.store.EntityStore;
 import io.av360.maverick.graph.store.rdf.models.Entity;
 import lombok.extern.slf4j.Slf4j;
@@ -30,13 +30,11 @@ public class QueryServicesImpl implements QueryServices {
     }
 
 
-
-
     @Override
     public Flux<BindingSet> queryValues(String query, Authentication authentication) {
         return this.entityStore.query(query, authentication)
                 .doOnSubscribe(subscription -> {
-                    if(log.isTraceEnabled()) log.trace("Running query in entity store.");
+                    if (log.isTraceEnabled()) log.trace("Running query in entity store.");
                 });
     }
 
@@ -49,12 +47,10 @@ public class QueryServicesImpl implements QueryServices {
     public Flux<NamespaceAwareStatement> queryGraph(String query, Authentication authentication) {
         return this.entityStore.construct(query, authentication)
                 .doOnSubscribe(subscription -> {
-                    if(log.isTraceEnabled()) log.trace("Running query in entity store.");
+                    if (log.isTraceEnabled()) log.trace("Running query in entity store.");
                 });
 
     }
-
-
 
 
     public Flux<Entity> listEntities(Authentication authentication) {
@@ -78,7 +74,6 @@ public class QueryServicesImpl implements QueryServices {
                 .map(bindings -> (IRI) bindings.getValue(idVariable.getVarName()))
                 .flatMap(id -> this.entityStore.getEntity(id, authentication));
     }
-
 
 
     @Autowired

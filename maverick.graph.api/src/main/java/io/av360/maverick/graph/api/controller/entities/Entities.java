@@ -7,10 +7,8 @@ import io.av360.maverick.graph.model.rdf.GeneratedIdentifier;
 import io.av360.maverick.graph.model.rdf.NamespaceAwareStatement;
 import io.av360.maverick.graph.services.EntityServices;
 import io.av360.maverick.graph.services.impl.QueryServicesImpl;
-import io.av360.maverick.graph.store.rdf.models.AbstractModel;
-import io.av360.maverick.graph.store.rdf.models.StatementsBag;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
+import io.av360.maverick.graph.store.rdf.models.TripleBag;
+import io.av360.maverick.graph.store.rdf.models.TripleModel;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -37,16 +35,16 @@ public class Entities extends AbstractController {
     }
 
     @GetMapping(value = "/{id:[\\w|\\d|-|_]+}",
-                produces = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.N3_VALUE})
+            produces = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.N3_VALUE})
     @ResponseStatus(HttpStatus.OK)
     Flux<NamespaceAwareStatement> read(@PathVariable String id) {
         Assert.isTrue(id.length() == GeneratedIdentifier.LENGTH, "Incorrect length for identifier.");
 
         return super.getAuthentication()
                 .flatMap(authentication -> entityServices.readEntity(id, authentication))
-                .flatMapIterable(AbstractModel::asStatements)
+                .flatMapIterable(TripleModel::asStatements)
                 .doOnSubscribe(s -> {
-                    if(log.isDebugEnabled()) log.debug("Request to read entity with id: {}", id);
+                    if (log.isDebugEnabled()) log.debug("Request to read entity with id: {}", id);
                 });
     }
 
@@ -59,23 +57,22 @@ public class Entities extends AbstractController {
 
         return super.getAuthentication()
                 .flatMapMany(authentication -> queryServices.listEntities(authentication, limit, offset))
-                .flatMapIterable(AbstractModel::asStatements)
+                .flatMapIterable(TripleModel::asStatements)
                 .doOnSubscribe(s -> {
-                    if(log.isDebugEnabled()) log.debug("Request to list entities");
+                    if (log.isDebugEnabled()) log.debug("Request to list entities");
                 });
     }
 
-    @ApiOperation(value = "Create entity")
     @PostMapping(value = "",
             consumes = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.N3_VALUE},
             produces = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.N3_VALUE})
     @ResponseStatus(HttpStatus.ACCEPTED)
-    Flux<NamespaceAwareStatement> create(@RequestBody StatementsBag request) {
+    Flux<NamespaceAwareStatement> create(@RequestBody TripleBag request) {
         Assert.isTrue(request.getModel().size() > 0, "No statements in request detected.");
 
         return super.getAuthentication()
-                .flatMap(authentication ->  entityServices.createEntity(request, Map.of(), authentication))
-                .flatMapIterable(AbstractModel::asStatements)
+                .flatMap(authentication -> entityServices.createEntity(request, Map.of(), authentication))
+                .flatMapIterable(TripleModel::asStatements)
                 .doOnSubscribe(s -> {
                     if (log.isDebugEnabled()) log.debug("Request to create a new Entity");
                     if (log.isTraceEnabled()) log.trace("Payload: \n {}", request.toString());
@@ -86,28 +83,28 @@ public class Entities extends AbstractController {
             consumes = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE},
             produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE})
     @ResponseStatus(HttpStatus.CREATED)
-    Flux<NamespaceAwareStatement> embed(@PathVariable String id, @PathVariable String prefixedKey, @RequestBody StatementsBag value) {
+    Flux<NamespaceAwareStatement> embed(@PathVariable String id, @PathVariable String prefixedKey, @RequestBody TripleBag value) {
 
         String[] property = splitPrefixedIdentifier(prefixedKey);
         return super.getAuthentication()
-                .flatMap(authentication ->  entityServices.linkEntityTo(id, property[0], property[1], value, authentication))
-                .flatMapIterable(AbstractModel::asStatements)
+                .flatMap(authentication -> entityServices.linkEntityTo(id, property[0], property[1], value, authentication))
+                .flatMapIterable(TripleModel::asStatements)
                 .doOnSubscribe(s -> {
-                    if (log.isDebugEnabled()) log.debug("Request to add embedded entities as property '{}' to entity '{}'", prefixedKey, id);
+                    if (log.isDebugEnabled())
+                        log.debug("Request to add embedded entities as property '{}' to entity '{}'", prefixedKey, id);
                 });
     }
-
 
 
     @DeleteMapping(value = "/{id:[\\w|\\d|-|_]+}",
             produces = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.N3_VALUE})
     @ResponseStatus(HttpStatus.OK)
-    Flux<NamespaceAwareStatement> delete(@PathVariable String id){
+    Flux<NamespaceAwareStatement> delete(@PathVariable String id) {
         Assert.isTrue(id.length() == GeneratedIdentifier.LENGTH, "Incorrect length for identifier.");
 
         return super.getAuthentication()
-                .flatMap(authentication ->  entityServices.deleteEntity(id, authentication))
-                .flatMapIterable(AbstractModel::asStatements)
+                .flatMap(authentication -> entityServices.deleteEntity(id, authentication))
+                .flatMapIterable(TripleModel::asStatements)
                 .doOnSubscribe(s -> {
                     if (log.isDebugEnabled()) log.debug("Delete an Entity");
                     if (log.isTraceEnabled()) log.trace("id: \n {}", id);

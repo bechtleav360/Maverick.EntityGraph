@@ -9,6 +9,6 @@ public class EntityNotFound extends Exception {
 
     @Override
     public String getMessage() {
-        return "Entity with id '"+identifier+"' does not exist.";
+        return "Entity with id '" + identifier + "' does not exist.";
     }
 }

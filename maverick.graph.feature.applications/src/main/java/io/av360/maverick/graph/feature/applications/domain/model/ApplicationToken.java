@@ -7,7 +7,8 @@ import org.eclipse.rdf4j.model.Namespace;
 import org.eclipse.rdf4j.model.vocabulary.DC;
 import org.eclipse.rdf4j.model.vocabulary.RDFS;
 
-public record ApplicationToken(IRI iri, String label, String key, boolean active, String issueDate, Application application) {
+public record ApplicationToken(IRI iri, String label, String key, boolean active, String issueDate,
+                               Application application) {
 
     public static final String NAMESPACE = Application.NAMESPACE;
     public static final String PREFIX = Application.PREFIX;

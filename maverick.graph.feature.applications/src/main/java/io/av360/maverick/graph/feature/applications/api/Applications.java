@@ -1,8 +1,8 @@
 package io.av360.maverick.graph.feature.applications.api;
 
+import io.av360.maverick.graph.api.controller.AbstractController;
 import io.av360.maverick.graph.feature.applications.api.dto.Requests;
 import io.av360.maverick.graph.feature.applications.api.dto.Responses;
-import io.av360.maverick.graph.api.controller.AbstractController;
 import io.av360.maverick.graph.feature.applications.domain.ApplicationsService;
 import io.av360.maverick.graph.feature.applications.domain.errors.InvalidApplication;
 import io.av360.maverick.graph.feature.applications.domain.model.Application;

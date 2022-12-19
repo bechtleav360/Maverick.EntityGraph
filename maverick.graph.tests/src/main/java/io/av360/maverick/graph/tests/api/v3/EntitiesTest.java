@@ -1,15 +1,11 @@
 package io.av360.maverick.graph.tests.api.v3;
 
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * scope:
- *  - Patching of entities
- *  -
+ * - Patching of entities
+ * -
  *
  * @version 3
  */
@@ -17,7 +13,6 @@ import static org.junit.jupiter.api.Assertions.*;
 interface EntitiesTest {
 
     /**
-     *
      *
      */
     void createEntity();
