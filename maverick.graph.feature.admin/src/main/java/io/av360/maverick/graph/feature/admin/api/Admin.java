@@ -4,6 +4,7 @@ import io.av360.maverick.graph.api.controller.AbstractController;
 import io.av360.maverick.graph.feature.admin.domain.AdminServices;
 import io.av360.maverick.graph.store.RepositoryType;
 import io.av360.maverick.graph.store.rdf.helpers.RdfUtils;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.rdf4j.rio.RDFParserFactory;
 import org.springframework.core.io.buffer.DataBuffer;
@@ -24,6 +25,7 @@ import java.util.Optional;
 @RequestMapping(path = "/api/admin/bulk")
 //@Api(tags = "Admin Operations")
 @Slf4j(topic = "graph.feature.admin.api")
+@SecurityRequirement(name = "api_key")
 public class Admin extends AbstractController {
     protected final AdminServices adminServices;
 

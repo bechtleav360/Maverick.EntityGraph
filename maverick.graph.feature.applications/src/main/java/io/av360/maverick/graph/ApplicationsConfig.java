@@ -1,4 +1,4 @@
-package io.av360.maverick.graph.feature;
+package io.av360.maverick.graph;
 
 //
 // import javax.annotation.PostConstruct;
