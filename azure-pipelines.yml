@@ -30,10 +30,12 @@ variables:
       value: true
     ${{ else }}:
       value: false
+
+parameters:
   - name: docker.credentials.user
-    value: xxx
+    type: string
   - name: docker.credentials.password
-    value: xxx
+    type: string
 
 
 stages:
