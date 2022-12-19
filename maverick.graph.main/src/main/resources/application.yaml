@@ -1,8 +1,7 @@
 info:
   app:
     version: '@project.version@'
-    git: '@git.commit.id@'
-
+    
 spring:
   profiles:
     active: dev
