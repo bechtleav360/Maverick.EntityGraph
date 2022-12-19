@@ -7,6 +7,15 @@
         <groupId>com.bechtle.maverick.graph</groupId>
         <version>${revision}</version>
     </parent>
+    <properties>
+        <image.name>ghcr.io/bechtleav360/maverick.entity-graph</image.name>
+        <docker.publish>false</docker.publish>
+        <docker.registry.host>https://ghcr.io</docker.registry.host>
+        <docker.credentials.user>xxx</docker.credentials.user>
+        <docker.credentials.password>xxx</docker.credentials.password>
+    </properties>
+
+
 
     <modelVersion>4.0.0</modelVersion>
 
@@ -63,7 +72,10 @@
             <artifactId>reactor-test</artifactId>
             <scope>test</scope>
         </dependency>
-
+        <dependency>
+            <groupId>org.springdoc</groupId>
+            <artifactId>springdoc-openapi-starter-webflux-ui</artifactId>
+        </dependency>
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
@@ -76,9 +88,12 @@
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <configuration>
+                    <mainClass>io.av360.maverick.graph.main.Application</mainClass>
                     <image>
-                        <name>${env.IMAGE}</name>
-                        <publish>true</publish>
+                        <!--suppress UnresolvedMavenProperty -->
+                        <name>${image.name}</name>
+                        <!-- <name>ghcr.io/bechtleav360/maverick-entity-graph</name> -->
+                        <publish>${docker.publish}</publish>
                         <verboseLogging>true</verboseLogging>
                         <env>
                             <BP_OCI_SOURCE>https://github.com/bechtleav360/Maverick.EntityGraph</BP_OCI_SOURCE>
@@ -87,10 +102,11 @@
                     <docker>
                         <publishRegistry>
                             <!--suppress UnresolvedMavenProperty -->
-                            <username>${env.DOCKER_USER}</username>
+                            <username>${docker.credentials.user}</username>
                             <!--suppress UnresolvedMavenProperty -->
-                            <password>${env.DOCKER_PASS}</password>
-                            <url>${env.DOCKER_HOST}</url>
+                            <password>${docker.credentials.password}</password>
+                            <!--suppress UnresolvedMavenProperty -->
+                            <url>${docker.registry.host}</url>
                         </publishRegistry>
                     </docker>
                 </configuration>

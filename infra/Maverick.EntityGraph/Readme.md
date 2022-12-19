@@ -11,9 +11,21 @@ Copy file `application-properties.json.template` to `application-properties.json
 
 Run command to install
 
-`> helm upgrade --install -f values.yaml name-of-your-deployment .`   
+`$ helm upgrade --install -f values.yaml name-of-your-deployment .`   
 
 
 
 # Configuring the secret 
-If the package 
+The images are pushed to the Github Container Registry. If it is set to private, you need to have the image pull secret defined in the values. Create it with the following commands. 
+
+Generate a personal access token in Github with scope `package:read`
+
+Run `$ docker login https://ghcr.io -u <User name>` to create the file `~/.docker/config.json`. 
+
+Create the secret with the following command: 
+
+``
+oc create secret generic registry.ghcr.<postfix> \
+    --from-file=.dockerconfigjson=<path to config.json> \
+    --type=kubernetes.io/dockerconfigjson
+``

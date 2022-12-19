@@ -2,8 +2,8 @@ package io.av360.maverick.graph.api.security;
 
 import io.av360.maverick.graph.model.security.ApiKeyAuthenticationToken;
 import io.av360.maverick.graph.model.security.Authorities;
-// import jakarta.annotation.PostConstruct;
-import javax.annotation.PostConstruct;
+import jakarta.annotation.PostConstruct;
+// import javax.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.text.RandomStringGenerator;
 import org.springframework.beans.factory.annotation.Value;
