@@ -1,6 +1,6 @@
-package io.av360.maverick.graph.api.values;
+package io.av360.maverick.graph.main.api.entities.values;
 
-import io.av360.maverick.graph.boot.TestConfigurations;
+import io.av360.maverick.graph.main.config.TestConfigurations;
 import io.av360.maverick.graph.tests.util.RdfConsumer;
 import io.av360.maverick.graph.tests.util.TestsBase;
 import org.eclipse.rdf4j.model.IRI;

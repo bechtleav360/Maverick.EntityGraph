@@ -6,8 +6,7 @@ import io.av360.maverick.graph.model.rdf.NamespaceAwareStatement;
 import io.av360.maverick.graph.services.EntityServices;
 import io.av360.maverick.graph.services.ValueServices;
 import io.av360.maverick.graph.store.rdf.models.AbstractModel;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -17,8 +16,9 @@ import reactor.core.publisher.Flux;
 
 @RestController
 @RequestMapping(path = "/api/entities")
-@Api(tags = "Values")
+//@Api(tags = "Values")
 @Slf4j(topic = "graph.api.entities")
+@SecurityRequirement(name = "api_key")
 public class Values extends AbstractController {
 
 
@@ -31,7 +31,7 @@ public class Values extends AbstractController {
         this.entities = entities;
     }
 
-    @ApiOperation(value = "Sets a value for an entity. Replaces an existing value. ")
+    //  @ApiOperation(value = "Sets a value for an entity. Replaces an existing value. ")
     @PostMapping(value = "/{id:[\\w|\\d|-|_]+}/{prefixedKey:[\\w|\\d]+\\.[\\w|\\d]+}",
             consumes = MediaType.TEXT_PLAIN_VALUE,
             produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE})
@@ -49,7 +49,7 @@ public class Values extends AbstractController {
 
     }
 
-    @ApiOperation(value = "Removes value")
+    //@ApiOperation(value = "Removes value")
     @DeleteMapping(value = "/{id:[\\w|\\d|-|_]+}/{prefixedKey:[\\w|\\d]+\\.[\\w|\\d]+}",
             produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE})
     @ResponseStatus(HttpStatus.OK)

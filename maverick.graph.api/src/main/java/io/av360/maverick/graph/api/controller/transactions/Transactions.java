@@ -7,8 +7,7 @@ import io.av360.maverick.graph.model.rdf.GeneratedIdentifier;
 import io.av360.maverick.graph.model.rdf.NamespaceAwareStatement;
 import io.av360.maverick.graph.store.rdf.models.AbstractModel;
 import io.av360.maverick.graph.services.EntityServices;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.util.Assert;
@@ -20,8 +19,9 @@ import reactor.core.publisher.Flux;
  */
 @RestController
 @RequestMapping(path = "/api/transactions")
-@Api(tags = "Transactions")
+//@Api(tags = "Transactions")
 @Slf4j(topic = "graph.api.transactions")
+@SecurityRequirement(name = "api_key")
 public class Transactions extends AbstractController {
 
     protected final ObjectMapper objectMapper;
@@ -32,7 +32,7 @@ public class Transactions extends AbstractController {
         this.graphService = graphService;
     }
 
-    @ApiOperation(value = "Read transaction")
+    //@ApiOperation(value = "Read transaction")
     @GetMapping(value = "/{id:[\\w|\\d|-|_]+}", produces = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.NQUADS_VALUE, RdfMimeTypes.N3_VALUE})
     @ResponseStatus(HttpStatus.OK)
     Flux<NamespaceAwareStatement> read(@PathVariable String id) {

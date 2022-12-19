@@ -11,6 +11,7 @@ import io.av360.maverick.graph.store.rdf.models.AbstractModel;
 import io.av360.maverick.graph.store.rdf.models.StatementsBag;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.util.Assert;
@@ -21,8 +22,8 @@ import java.util.Map;
 
 @RestController
 @RequestMapping(path = "/api/entities")
-@Api(tags = "Entities")
 @Slf4j(topic = "graph.api.entities")
+@SecurityRequirement(name = "api_key")
 public class Entities extends AbstractController {
 
     protected final ObjectMapper objectMapper;
@@ -35,7 +36,6 @@ public class Entities extends AbstractController {
         this.queryServices = queryServices;
     }
 
-    @ApiOperation(value = "Read entity")
     @GetMapping(value = "/{id:[\\w|\\d|-|_]+}",
                 produces = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.N3_VALUE})
     @ResponseStatus(HttpStatus.OK)
@@ -51,13 +51,14 @@ public class Entities extends AbstractController {
     }
 
 
-    @ApiOperation(value = "List entities")
     @GetMapping(value = "", produces = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.N3_VALUE})
     @ResponseStatus(HttpStatus.OK)
-    Flux<NamespaceAwareStatement> list() {
+    Flux<NamespaceAwareStatement> list(
+            @RequestParam(value = "limit", defaultValue = "5000") Integer limit,
+            @RequestParam(value = "offset", defaultValue = "0") Integer offset) {
 
         return super.getAuthentication()
-                .flatMapMany(queryServices::listEntities)
+                .flatMapMany(authentication -> queryServices.listEntities(authentication, limit, offset))
                 .flatMapIterable(AbstractModel::asStatements)
                 .doOnSubscribe(s -> {
                     if(log.isDebugEnabled()) log.debug("Request to list entities");
@@ -81,7 +82,6 @@ public class Entities extends AbstractController {
                 });
     }
 
-    @ApiOperation(value = "Create embedded entity")
     @PostMapping(value = "/{id:[\\w|\\d|-|_]+}/{prefixedKey:[\\w|\\d]+\\.[\\w|\\d]+}",
             consumes = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE},
             produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE})
@@ -99,7 +99,6 @@ public class Entities extends AbstractController {
 
 
 
-    @ApiOperation(value = "Delete entity")
     @DeleteMapping(value = "/{id:[\\w|\\d|-|_]+}",
             produces = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.N3_VALUE})
     @ResponseStatus(HttpStatus.OK)
