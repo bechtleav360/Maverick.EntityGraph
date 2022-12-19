@@ -22,8 +22,10 @@ management:
   endpoints:
     web:
       exposure:
-        include: "health, info, env, loggers, metrics, scheduledTasks, logfile, mappings"
+        include: "health, info, env, git, loggers, metrics, scheduledTasks, logfile, mappings"
   endpoint:
+    discovery:
+      enabled: true
     health:
       enabled: true
       show-details: always
