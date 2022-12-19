@@ -6,6 +6,7 @@ import io.av360.maverick.graph.api.controller.AbstractController;
 import io.av360.maverick.graph.feature.applications.domain.ApplicationsService;
 import io.av360.maverick.graph.feature.applications.domain.errors.InvalidApplication;
 import io.av360.maverick.graph.feature.applications.domain.model.Application;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.util.Assert;
@@ -20,6 +21,7 @@ import java.util.List;
 @RequestMapping(path = "/api/applications")
 //@Api(tags = "Manage applications")
 @Slf4j(topic = "graph.feature.apps.api")
+@SecurityRequirement(name = "api_key")
 public class Applications extends AbstractController {
 
     private final ApplicationsService applicationsService;

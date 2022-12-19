@@ -2,7 +2,7 @@
     
 trigger:
 - main
-#- develop
+- develop
 - feature/*
 
 variables:
@@ -15,13 +15,21 @@ variables:
   - name: docker.image.name
     value: maverick-entity-graph
   - name: docker.image.version
-    value: develop
+    ${{ if eq(variables['Build.SourceBranchName'], 'main') }}:
+      value: "latest"
+    ${{ if eq(variables['Build.SourceBranchName'], 'develop') }}:
+      value: "develop"
+    ${{ else }}:
+      value: variables['Build.SourceBranchName']
   - name: docker.url
     value: https://ghcr.io
-  - name: docker.credentials.user
-    value: xxx
-  - name: docker.credentials.password
-    value: xxx
+  - name: docker.publish
+    ${{ if eq(variables['Build.SourceBranchName'], 'main')  }}:
+      value: true
+    ${{ if eq(variables['Build.SourceBranchName'], 'develop') }}:
+      value: true
+    ${{ else }}:
+      value: false
 
 
 stages:
@@ -79,7 +87,8 @@ stages:
               goals: 'spring-boot:build-image'
               jdkVersionOption: 1.17
               options: >
-                -DskipTests=true 
+                -DskipTests=false 
+                -Ddocker.publish=$(docker.publish)
                 -Ddocker.credentials.user=$(docker.credentials.user)
                 -Ddocker.credentials.password=$(docker.credentials.password)
                 -Ddocker.registry.host=$(docker.url)
