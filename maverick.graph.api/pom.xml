@@ -52,4 +52,5 @@
             <artifactId>jakarta.json</artifactId>
         </dependency>
     </dependencies>
+
 </project>
