@@ -12,7 +12,7 @@ import org.springdoc.core.models.GroupedOpenApi;
 public class ApplicationOpenApiConfiguration {
 
     @Bean
-    public GroupedOpenApi entitiesAPI(@Value("${info.app.version:unknown}") String version) {
+    public GroupedOpenApi applicationsApiDefinition(@Value("${info.app.version:unknown}") String version) {
         return GroupedOpenApi.builder()
                 .group("Applications API")
                 .addOpenApiCustomizer(openApi -> {
