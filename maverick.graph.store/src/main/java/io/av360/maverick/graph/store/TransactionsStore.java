@@ -12,7 +12,6 @@ import java.util.Collection;
 public interface TransactionsStore {
 
 
-
     Mono<Transaction> store(Transaction transaction, Authentication authentication, GrantedAuthority requiredAuthority);
 
 

@@ -3,12 +3,12 @@ package io.av360.maverick.graph.services.schedulers.replaceGlobalIdentifiers;
 import io.av360.maverick.graph.model.rdf.GeneratedIdentifier;
 import io.av360.maverick.graph.model.security.ApiKeyAuthenticationToken;
 import io.av360.maverick.graph.model.security.Authorities;
-import io.av360.maverick.graph.store.rdf.models.Transaction;
 import io.av360.maverick.graph.model.vocabulary.Local;
 import io.av360.maverick.graph.model.vocabulary.Transactions;
 import io.av360.maverick.graph.services.QueryServices;
 import io.av360.maverick.graph.store.EntityStore;
 import io.av360.maverick.graph.store.TransactionsStore;
+import io.av360.maverick.graph.store.rdf.models.Transaction;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Statement;
@@ -30,12 +30,12 @@ import java.util.List;
 /**
  * If we have any global identifiers (externally set) in the repo, we have to replace them with our internal identifiers.
  * Otherwise we cannot address the entities through our API.
- *
+ * <p>
  * Periodically runs the following sparql queries, grabs the entity definition for it and regenerates the identifiers
  * <p>
  * SELECT ?a WHERE { ?a a ?c . }
  * FILTER NOT EXISTS {
- *    FILTER STRSTARTS(str(?a), "http://graphs.azurewebsites.net/api/entities/").
+ * FILTER STRSTARTS(str(?a), "http://graphs.azurewebsites.net/api/entities/").
  * }
  * LIMIT 100
  */
@@ -71,7 +71,7 @@ public class ScheduledReplaceGlobalIdentifiers {
                     Integer reduce = list.stream()
                             .map(transaction -> transaction.listModifiedResources().size())
                             .reduce(0, Integer::sum);
-                    if(reduce > 0) {
+                    if (reduce > 0) {
                         log.debug("(Scheduled) Checking for invalided identifiers completed, {} resources were updated.", reduce);
                     } else {
                         log.debug("(Scheduled) No invalided identifiers found");
@@ -89,12 +89,12 @@ public class ScheduledReplaceGlobalIdentifiers {
                 .buffer(50)
                 .flatMap(transactions -> this.commit(transactions, authentication))
                 .doOnNext(transaction -> {
-                    Assert.isTrue(transaction.hasStatement(null, Transactions.STATUS, Transactions.SUCCESS), "Failed transaction: \n"+transaction);
+                    Assert.isTrue(transaction.hasStatement(null, Transactions.STATUS, Transactions.SUCCESS), "Failed transaction: \n" + transaction);
                 })
                 .buffer(50)
                 .flatMap(transactions -> this.storeTransactions(transactions, authentication))
                 .doOnError(throwable -> {
-                    log.error("Exception during check for global identifiers: {}",throwable.getMessage());
+                    log.error("Exception during check for global identifiers: {}", throwable.getMessage());
                 })
                 ;
     }
@@ -137,6 +137,7 @@ public class ScheduledReplaceGlobalIdentifiers {
 
     /**
      * find all statements where the culprit is either subject or object
+     *
      * @param value
      * @return
      */
@@ -145,7 +146,7 @@ public class ScheduledReplaceGlobalIdentifiers {
         if (value.isResource()) {
             return Mono.zip(
                     this.entityStore.listStatements((Resource) value, null, null, authentication),
-                            //.map(statements -> statements.stream().filter(statement -> !statement.getPredicate().equals(RDF.TYPE)).toList()),
+                    //.map(statements -> statements.stream().filter(statement -> !statement.getPredicate().equals(RDF.TYPE)).toList()),
                     this.entityStore.listStatements(null, null, value, authentication)
             ).map(pair -> new StatementsBag(pair.getT1(), pair.getT2(), (Resource) value, new Transaction()));
         }

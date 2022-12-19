@@ -32,7 +32,6 @@ public class TransactionsRepository extends AbstractRepository implements Transa
     }
 
 
-
     @Override
     public Flux<Transaction> store(Collection<Transaction> transactions, Authentication authentication, GrantedAuthority requiredAuthority) {
         return Flux.create(c -> {

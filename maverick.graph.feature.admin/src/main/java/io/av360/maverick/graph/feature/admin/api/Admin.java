@@ -77,10 +77,10 @@ public class Admin extends AbstractController {
         Assert.isTrue(StringUtils.hasLength(mimetype), "Mimetype is a required parameter");
 
         Optional<RDFParserFactory> parserFactory = RdfUtils.getParserFactory(MimeType.valueOf(mimetype));
-        Assert.isTrue(parserFactory.isPresent(), "Unsupported mimetype for parsing the file. Supported mimetypes are: "+RdfUtils.getSupportedMimeTypes());
+        Assert.isTrue(parserFactory.isPresent(), "Unsupported mimetype for parsing the file. Supported mimetypes are: " + RdfUtils.getSupportedMimeTypes());
 
         return Mono.zip(super.getAuthentication(), fileMono)
-                .flatMap(objects -> adminServices.importEntities(objects.getT2().content() , mimetype, objects.getT1()))
+                .flatMap(objects -> adminServices.importEntities(objects.getT2().content(), mimetype, objects.getT1()))
                 .doOnError(throwable -> log.error("Error while importing to repository.", throwable))
                 .doOnSubscribe(s -> log.debug("Request to import a file of mimetype {}", mimetype));
     }

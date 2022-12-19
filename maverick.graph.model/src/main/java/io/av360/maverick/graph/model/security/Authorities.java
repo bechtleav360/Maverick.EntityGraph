@@ -15,6 +15,7 @@ public class Authorities {
     public static WeightedAuthority READER = new WeightedAuthority(200, "READER");
 
     public static List<WeightedAuthority> NO_AUTHORITIES = Collections.emptyList();
+
     /**
      * Checks if the granted authorities satisfy the required authority. Authorities are inclusive and transitive
      * SYSTEM > APPLICATION > CONTRIBUTOR > READER
@@ -24,7 +25,7 @@ public class Authorities {
      * @return
      */
     public static boolean satisfies(WeightedAuthority requiredAuthority, Collection<? extends GrantedAuthority> grantedAuthorities) {
-        return grantedAuthorities.stream().anyMatch(granted -> granted instanceof WeightedAuthority && ((WeightedAuthority)granted).getInfluence() >= requiredAuthority.getInfluence());
+        return grantedAuthorities.stream().anyMatch(granted -> granted instanceof WeightedAuthority && ((WeightedAuthority) granted).getInfluence() >= requiredAuthority.getInfluence());
     }
 
     public static boolean satisfies(GrantedAuthority requiredAuthority, Collection<? extends GrantedAuthority> authorities) {
@@ -50,14 +51,15 @@ public class Authorities {
         public int getInfluence() {
             return this.influence;
         }
+
         public boolean equals(Object obj) {
             if (this == obj) {
                 return true;
-            } else if(obj instanceof WeightedAuthority) {
-                return this.influence == ((WeightedAuthority)obj).getInfluence();
-            } else if(obj instanceof GrantedAuthority) {
-                return this.label.equals(((GrantedAuthority)obj).getAuthority());
-            }else return false;
+            } else if (obj instanceof WeightedAuthority) {
+                return this.influence == ((WeightedAuthority) obj).getInfluence();
+            } else if (obj instanceof GrantedAuthority) {
+                return this.label.equals(((GrantedAuthority) obj).getAuthority());
+            } else return false;
         }
 
         public int hashCode() {

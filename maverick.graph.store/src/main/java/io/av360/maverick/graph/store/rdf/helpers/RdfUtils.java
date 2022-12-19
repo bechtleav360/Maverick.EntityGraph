@@ -29,7 +29,7 @@ public class RdfUtils {
                 .findFirst();
     }
 
-    protected static  Collection<RDFParserFactory> getAvailableParserFactories() {
+    protected static Collection<RDFParserFactory> getAvailableParserFactories() {
         return RDFParserRegistry.getInstance().getAll();
     }
 
@@ -37,7 +37,9 @@ public class RdfUtils {
     public static List<MimeType> getSupportedMimeTypes() {
         return getAvailableParserFactories().parallelStream()
                 .map(rdfParserFactory -> rdfParserFactory.getRDFFormat().getMIMETypes())
-                .mapMulti((mimetypes, consumer) ->  { for(String mimetype : mimetypes) consumer.accept(mimetype); })
+                .mapMulti((mimetypes, consumer) -> {
+                    for (String mimetype : mimetypes) consumer.accept(mimetype);
+                })
                 .map(mimetypeObj -> MimeType.valueOf(mimetypeObj.toString()))
                 .collect(Collectors.toList());
     }
@@ -49,12 +51,12 @@ public class RdfUtils {
     protected static List<MediaType> getSupportedMediaTypes() {
         return getAvailableParserFactories().parallelStream()
                 .map(rdfParserFactory -> rdfParserFactory.getRDFFormat().getMIMETypes())
-                .mapMulti((mimetypes, consumer) ->  { for(String mimetype : mimetypes) consumer.accept(mimetype); })
+                .mapMulti((mimetypes, consumer) -> {
+                    for (String mimetype : mimetypes) consumer.accept(mimetype);
+                })
                 .map(mimetypeObj -> MediaType.parseMediaType(mimetypeObj.toString()))
                 .collect(Collectors.toList());
     }
-
-
 
 
     public static MediaType getMediaType(RDFFormat format) {

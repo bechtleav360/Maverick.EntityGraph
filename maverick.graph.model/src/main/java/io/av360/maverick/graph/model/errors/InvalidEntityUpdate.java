@@ -16,7 +16,7 @@ public class InvalidEntityUpdate extends Exception {
     @Override
     public String getMessage() {
         StringBuilder sb = new StringBuilder("Invalid update for entity with id '").append(identifier).append("'.");
-        if(StringUtils.hasLength(this.reason)) {
+        if (StringUtils.hasLength(this.reason)) {
             sb.append(this.reason).append(".");
         }
         return sb.toString();

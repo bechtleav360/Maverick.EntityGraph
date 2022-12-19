@@ -37,7 +37,7 @@ public class QueryTest {
         Variable p = SparqlBuilder.var("p");
         Variable o = SparqlBuilder.var("o");
         SelectQuery q = Queries.SELECT()
-                .where(s.has(p,o));
+                .where(s.has(p, o));
 
         try (RepositoryConnection conn = testRepository.getConnection()) {
             Resource file = new ClassPathResource("schema/sparql-examples.ttl");
@@ -90,8 +90,7 @@ public class QueryTest {
         final String queryStr = "PREFIX : <urn:> SELECT ?x WHERE {?x :p+ ?x}";
 
 
-
-        try(SailRepositoryConnection conn = sailRepository.getConnection()) {
+        try (SailRepositoryConnection conn = sailRepository.getConnection()) {
             conn.add(new StringReader("@prefix : <urn:> . :a :p :b . :b :p :a ."), "", RDFFormat.TURTLE);
 
             TupleQuery query = conn.prepareTupleQuery(QueryLanguage.SPARQL, queryStr);
@@ -122,7 +121,7 @@ public class QueryTest {
         Variable sublabel = SparqlBuilder.var("g");
 
 
-        try(SailRepositoryConnection conn = sailRepository.getConnection()) {
+        try (SailRepositoryConnection conn = sailRepository.getConnection()) {
             conn.add(new StringReader("@prefix : <urn:> . :a :p :b . :b :p :a ."), "", RDFFormat.TURTLE);
 
             TupleQuery query = conn.prepareTupleQuery(QueryLanguage.SPARQL, queryStr);

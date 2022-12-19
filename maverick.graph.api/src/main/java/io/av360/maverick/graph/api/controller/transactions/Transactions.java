@@ -5,8 +5,8 @@ import io.av360.maverick.graph.api.controller.AbstractController;
 import io.av360.maverick.graph.model.enums.RdfMimeTypes;
 import io.av360.maverick.graph.model.rdf.GeneratedIdentifier;
 import io.av360.maverick.graph.model.rdf.NamespaceAwareStatement;
-import io.av360.maverick.graph.store.rdf.models.AbstractModel;
 import io.av360.maverick.graph.services.EntityServices;
+import io.av360.maverick.graph.store.rdf.models.TripleModel;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -41,7 +41,7 @@ public class Transactions extends AbstractController {
         // FIXME: marker to use transactions repository
         return super.getAuthentication()
                 .flatMap(authentication -> graphService.readEntity(id, authentication))
-                .flatMapIterable(AbstractModel::asStatements)
+                .flatMapIterable(TripleModel::asStatements)
                 .doOnSubscribe(s -> {
                     if (log.isTraceEnabled()) log.trace("Reading transaction with id: {}", id);
                 });

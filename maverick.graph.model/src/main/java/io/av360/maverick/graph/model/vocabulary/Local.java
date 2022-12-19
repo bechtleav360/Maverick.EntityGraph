@@ -7,15 +7,13 @@ import org.eclipse.rdf4j.model.Namespace;
 
 /**
  * Constructed from the local domain. Constructed through configuration
- *
+ * <p>
  * The prefixes here are also used to identify the responsible repository.
  */
 public class Local {
 
     public static final String NAMESPACE = "http://bechtleav360.github.io/vocab/graph#";
     public static final IRI ORIGINAL_IDENTIFIER = LocalIRI.from(NAMESPACE, "sourceId");
-
-
 
 
     public static class Entities {
