@@ -14,7 +14,6 @@ import org.springframework.boot.test.context.SpringBootTest;
  * - Delete Edges
  * - Update Values
  *
- *
  * @version 2
  */
 @SpringBootTest
@@ -44,7 +43,6 @@ interface EntitiesTest {
      *
      */
     void readEntityWithAnnotations();
-
 
 
 }

@@ -2,11 +2,10 @@ package io.av360.maverick.graph.store.rdf4j.config;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
-import io.av360.maverick.graph.store.rdf.LabeledRepository;
-import io.av360.maverick.graph.model.security.ApiKeyAuthenticationToken;
 import io.av360.maverick.graph.model.security.Authorities;
 import io.av360.maverick.graph.store.RepositoryBuilder;
 import io.av360.maverick.graph.store.RepositoryType;
+import io.av360.maverick.graph.store.rdf.LabeledRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
@@ -51,14 +50,10 @@ public class DefaultRepositoryBuilder implements RepositoryBuilder {
     private Map<String, String> security;
 
 
-
-
-
-    public DefaultRepositoryBuilder( ) {
+    public DefaultRepositoryBuilder() {
 
         cache = Caffeine.newBuilder().expireAfterAccess(60, TimeUnit.MINUTES).build();
     }
-
 
 
     /**
@@ -78,9 +73,9 @@ public class DefaultRepositoryBuilder implements RepositoryBuilder {
         }
 
         if (authentication instanceof TestingAuthenticationToken) {
-            return this.cache.get(repositoryType.name(), s -> new LabeledRepository("Test:"+repositoryType.name(), new SailRepository(new MemoryStore())));
+            return this.cache.get(repositoryType.name(), s -> new LabeledRepository("Test:" + repositoryType.name(), new SailRepository(new MemoryStore())));
         }
-        if(Authorities.satisfies(Authorities.SYSTEM, authentication.getAuthorities())) {
+        if (Authorities.satisfies(Authorities.SYSTEM, authentication.getAuthorities())) {
             log.trace("Resolving repository with admin authentication.");
             return this.resolveRepositoryForAdminAuthentication(repositoryType, authentication);
         }
@@ -99,17 +94,15 @@ public class DefaultRepositoryBuilder implements RepositoryBuilder {
     }
 
 
-
-
     protected Repository buildApplicationRepository(String scope) {
-        String key = "applications: "+scope;
+        String key = "applications: " + scope;
         // TODO: check if application has individual schema repo, otherwise we return default
         return this.cache.get(key, s -> new LabeledRepository(key, this.buildDefaultRepository(this.applicationsPath, "applications")));
     }
 
 
     protected Repository buildSchemaRepository(String scope) {
-        String key = "schema: "+scope;
+        String key = "schema: " + scope;
         // TODO: check if application has individual schema repo, otherwise we return default
         return this.cache.get(key, s -> new LabeledRepository(key, this.buildDefaultRepository(this.schemaPath, "schema")));
     }
@@ -126,8 +119,8 @@ public class DefaultRepositoryBuilder implements RepositoryBuilder {
     }
 
 
-    protected Repository buildDefaultRepository(String basePath, String label)  {
-        if(!StringUtils.hasLength(basePath)) {
+    protected Repository buildDefaultRepository(String basePath, String label) {
+        if (!StringUtils.hasLength(basePath)) {
             return this.initializeVolatileRepository(label);
         } else {
             return this.initializePersistentRepository(Paths.get(basePath, label, "lmdb"), label);

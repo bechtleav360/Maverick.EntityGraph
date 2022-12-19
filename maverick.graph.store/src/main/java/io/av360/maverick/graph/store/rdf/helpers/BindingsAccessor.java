@@ -2,7 +2,7 @@ package io.av360.maverick.graph.store.rdf.helpers;
 
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.util.Literals;
-import org.eclipse.rdf4j.query.BindingSet;  //FIXME
+import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.sparqlbuilder.core.Variable;
 
 /**

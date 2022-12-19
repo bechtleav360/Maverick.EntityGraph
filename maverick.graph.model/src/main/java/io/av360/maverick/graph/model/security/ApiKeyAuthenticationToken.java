@@ -43,6 +43,7 @@ public class ApiKeyAuthenticationToken implements Authentication {
 
     /**
      * Since different authentication managers might need different authorities, we keep this list mutable.
+     *
      * @param authority
      */
     public void grantAuthority(Authorities.WeightedAuthority authority) {
@@ -70,7 +71,7 @@ public class ApiKeyAuthenticationToken implements Authentication {
 
     @Override
     public void setAuthenticated(boolean isAuthenticated) {
-        this.isAuthenticated = isAuthenticated; 
+        this.isAuthenticated = isAuthenticated;
     }
 
 

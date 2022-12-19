@@ -16,6 +16,6 @@ public class MissingType extends RuntimeException {
 
     @Override
     public String getMessage() {
-        return "Entity with id '"+this.identifier+"' in request is missing a type definition.";
+        return "Entity with id '" + this.identifier + "' in request is missing a type definition.";
     }
 }

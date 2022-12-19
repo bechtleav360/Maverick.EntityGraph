@@ -1,9 +1,9 @@
 # Don't forget to set the following variables for your (release) pipeline: ghcr.user, ghcr.password
-    
+
 trigger:
-- main
-- develop
-- feature/*
+  - main
+  - develop
+  - feature/*
 
 variables:
   - name: isRelease
@@ -36,8 +36,8 @@ stages:
   - stage: Building
     jobs:
       - job: Testing
-      #  pool:
-      #    vmImage: ubuntu-latest
+        #  pool:
+        #    vmImage: ubuntu-latest
         steps:
           - task: Maven@3
             displayName: Run unit tests
@@ -58,8 +58,8 @@ stages:
     dependsOn: Building
     jobs:
       - job: Pushing
-#        pool:
-#          vmImage: ubuntu-latest
+        #        pool:
+        #          vmImage: ubuntu-latest
         steps:
           - script: echo "Publishing image with build number $(Build.BuildNumber) and name $(docker.image.prefix)/$(docker.image.name) with user $(docker.credentials.user)"
           - task: Maven@3
@@ -75,13 +75,13 @@ stages:
               options: '-DskipTests=true'
           - task: Maven@3
             displayName: Publish Docker Image to Container Registry
-          #  env:
-          #    IMAGE_PREFIX: $(docker.image.prefix)
-          #    IMAGE_NAME: $(docker.image.name)
-          #    IMAGE_VERSION: $(Build.SourceBranchName)
-          #    DOCKER_USER: $(docker.credentials.user)
-          #    DOCKER_PASSWORD: $(docker.credentials.password)
-          #    DOCKER_URL: $(docker.url)
+            #  env:
+            #    IMAGE_PREFIX: $(docker.image.prefix)
+            #    IMAGE_NAME: $(docker.image.name)
+            #    IMAGE_VERSION: $(Build.SourceBranchName)
+            #    DOCKER_USER: $(docker.credentials.user)
+            #    DOCKER_PASSWORD: $(docker.credentials.password)
+            #    DOCKER_URL: $(docker.url)
             inputs:
               mavenPomFile: 'maverick.graph.main/pom.xml'
               goals: 'spring-boot:build-image'

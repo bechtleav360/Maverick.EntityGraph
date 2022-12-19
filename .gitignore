@@ -13,3 +13,4 @@ buildNumber.properties
 *.log
 *.gz
 .flattened-pom.xml
+logs.*

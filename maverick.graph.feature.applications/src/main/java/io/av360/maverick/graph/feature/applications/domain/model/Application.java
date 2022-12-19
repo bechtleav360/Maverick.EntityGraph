@@ -23,6 +23,5 @@ public record Application(IRI iri, String label, String key, boolean persistent)
     public static final IRI IS_PERSISTENT = LocalIRI.from(NAMESPACE, "isPersistent");
 
 
-
 }
 

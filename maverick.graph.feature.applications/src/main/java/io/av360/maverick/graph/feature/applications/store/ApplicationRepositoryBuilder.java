@@ -2,13 +2,13 @@ package io.av360.maverick.graph.feature.applications.store;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
+import io.av360.maverick.graph.feature.applications.domain.model.Application;
 import io.av360.maverick.graph.feature.applications.security.ApplicationAuthenticationToken;
-import io.av360.maverick.graph.store.rdf.LabeledRepository;
 import io.av360.maverick.graph.model.security.ApiKeyAuthenticationToken;
 import io.av360.maverick.graph.model.security.Authorities;
 import io.av360.maverick.graph.store.RepositoryBuilder;
 import io.av360.maverick.graph.store.RepositoryType;
-import io.av360.maverick.graph.feature.applications.domain.model.Application;
+import io.av360.maverick.graph.store.rdf.LabeledRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
@@ -33,13 +33,11 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * Replaces the @see DefaultRepositoryBuilder
- *
  */
 @Component
 @Slf4j(topic = "graph.repository.config")
 @Primary
 public class ApplicationRepositoryBuilder implements RepositoryBuilder {
-
 
 
     @Value("${application.storage.entities.path:#{null}}")
@@ -53,11 +51,9 @@ public class ApplicationRepositoryBuilder implements RepositoryBuilder {
     private final Cache<String, Repository> cache;
 
 
-    public ApplicationRepositoryBuilder()  {
+    public ApplicationRepositoryBuilder() {
         cache = Caffeine.newBuilder().expireAfterAccess(60, TimeUnit.MINUTES).build();
     }
-
-
 
 
     /**
@@ -65,14 +61,14 @@ public class ApplicationRepositoryBuilder implements RepositoryBuilder {
      * <p>
      * We assert a valid and positive authentication at this point.
      *
-     * @param repositoryType    the type, e.g. for schema or entities
+     * @param repositoryType the type, e.g. for schema or entities
      * @return the repository
      * @throws IOException if repository cannot be resolved
      */
     @Override
     public Repository buildRepository(RepositoryType repositoryType, Authentication authentication) throws IOException {
         Assert.notNull(authentication, "Failed to resolve repository due to missing authentication");
-        Assert.isTrue(authentication.isAuthenticated(), "Authentication is set to 'false' within a "+authentication.getClass().getSimpleName());
+        Assert.isTrue(authentication.isAuthenticated(), "Authentication is set to 'false' within a " + authentication.getClass().getSimpleName());
 
 
         if (authentication instanceof TestingAuthenticationToken) {
@@ -129,9 +125,6 @@ public class ApplicationRepositoryBuilder implements RepositoryBuilder {
     }
 
 
-
-
-
     private Repository getApplicationRepository() {
         String key = "applications: default";
         return this.cache.get(key, s -> new LabeledRepository(key, this.buildDefaultRepository(this.applicationsPath, "applications")));
@@ -139,7 +132,7 @@ public class ApplicationRepositoryBuilder implements RepositoryBuilder {
 
 
     private Repository getSchemaRepository(@Nullable Application application) {
-        if(application == null) {
+        if (application == null) {
             String key = "schema: default";
             return this.cache.get(key, s -> new LabeledRepository(key, this.buildDefaultRepository(this.schemaPath, "schema")));
         } else {
@@ -154,7 +147,7 @@ public class ApplicationRepositoryBuilder implements RepositoryBuilder {
 
 
     private Repository getEntityRepository(@Nullable Application application) {
-        if(application == null) {
+        if (application == null) {
             String key = "entities: default";
             return this.cache.get(key, s -> new LabeledRepository(key, this.buildDefaultRepository(this.applicationsPath, "entities")));
         } else {
@@ -165,7 +158,7 @@ public class ApplicationRepositoryBuilder implements RepositoryBuilder {
     }
 
     private Repository getTransactionsRepository(@Nullable Application application) {
-        if(application == null) {
+        if (application == null) {
             String key = "transactions: default";
             return this.cache.get(key, s -> new LabeledRepository(key, this.buildDefaultRepository(this.transactionsPath, "entities")));
         } else {

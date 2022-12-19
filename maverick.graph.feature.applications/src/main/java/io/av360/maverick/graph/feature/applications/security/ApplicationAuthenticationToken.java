@@ -1,7 +1,7 @@
 package io.av360.maverick.graph.feature.applications.security;
 
 import io.av360.maverick.graph.feature.applications.domain.model.Application;
-import io.av360.maverick.graph.feature.applications.domain.model.ApplicationApiKey;
+import io.av360.maverick.graph.feature.applications.domain.model.ApplicationToken;
 import io.av360.maverick.graph.model.security.ApiKeyAuthenticationToken;
 
 
@@ -13,28 +13,25 @@ public class ApplicationAuthenticationToken extends ApiKeyAuthenticationToken {
     public static final String USER_AUTHORITY = "USER";
 
 
+    private final ApplicationToken applicationToken;
 
-    private final ApplicationApiKey applicationApiKey;
 
-
-    public ApplicationAuthenticationToken(ApiKeyAuthenticationToken apiKeyAuthenticationToken, ApplicationApiKey application) {
+    public ApplicationAuthenticationToken(ApiKeyAuthenticationToken apiKeyAuthenticationToken, ApplicationToken application) {
         // TODO (if needed): check enabled features through application/application to add individual authorities
         super(apiKeyAuthenticationToken.getDetails());
-        this.applicationApiKey = application;
+        this.applicationToken = application;
         super.setAuthenticated(apiKeyAuthenticationToken.isAuthenticated());
 
     }
 
 
     public Application getSubscription() {
-        return this.applicationApiKey.application();
+        return this.applicationToken.application();
     }
 
-    public ApplicationApiKey getApplicationApiKey() {
-        return applicationApiKey;
+    public ApplicationToken getApplicationApiKey() {
+        return applicationToken;
     }
-
-
 
 
 }
