@@ -31,13 +31,6 @@ variables:
     ${{ else }}:
       value: false
 
-parameters:
-  - name: docker.credentials.user
-    type: string
-    default: $(docker.credentials.user)
-  - name: docker.credentials.password
-    type: string
-
 
 stages:
   - stage: Building
