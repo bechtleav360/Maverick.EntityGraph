@@ -27,4 +27,4 @@ print(f'Graph h has {len(h)} facts')
 print(h.serialize())
 
 for triples in h:
-    print(triples)
+    print(f'example triples: {triples}')
