@@ -4,3 +4,4 @@ youtube_dl
 pytube
 whisper
 jiwer
+SPARQLWrapper
