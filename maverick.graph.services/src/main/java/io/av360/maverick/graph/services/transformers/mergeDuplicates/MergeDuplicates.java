@@ -1,10 +1,10 @@
 package io.av360.maverick.graph.services.transformers.mergeDuplicates;
 
-import io.av360.maverick.graph.model.rdf.GeneratedIdentifier;
 import io.av360.maverick.graph.model.errors.MissingType;
-import io.av360.maverick.graph.store.rdf.models.AbstractModel;
-import io.av360.maverick.graph.services.services.QueryServices;
-import io.av360.maverick.graph.services.services.handler.Transformer;
+import io.av360.maverick.graph.model.rdf.GeneratedIdentifier;
+import io.av360.maverick.graph.services.QueryServices;
+import io.av360.maverick.graph.services.transformers.Transformer;
+import io.av360.maverick.graph.store.rdf.models.TripleModel;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.Triple;
 import org.eclipse.rdf4j.model.Model;
@@ -68,7 +68,7 @@ public class MergeDuplicates implements Transformer {
 
 
     @Override
-    public Mono<? extends AbstractModel> handle(AbstractModel model, Map<String, String> parameters, Authentication authentication) {
+    public Mono<? extends TripleModel> handle(TripleModel model, Map<String, String> parameters, Authentication authentication) {
 
         return Mono.just(model)
                 .doOnSubscribe(c -> log.debug("Check if linked entities already exist and merge if required."))
@@ -87,7 +87,7 @@ public class MergeDuplicates implements Transformer {
      *
      * @return true, if named embedded entities are in payload
      */
-    private boolean checkForEmbeddedNamedEntities(AbstractModel triples) {
+    private boolean checkForEmbeddedNamedEntities(TripleModel triples) {
         return triples.embeddedObjects()
                 .stream()
                 .anyMatch(object -> object.isIRI() && (!(object instanceof GeneratedIdentifier)));
@@ -98,7 +98,7 @@ public class MergeDuplicates implements Transformer {
      *
      * @return true, if anonymous embedded entities are in payload
      */
-    private boolean checkForEmbeddedAnonymousEntities(AbstractModel triples) {
+    private boolean checkForEmbeddedAnonymousEntities(TripleModel triples) {
         return triples.embeddedObjects()
                 .stream()
                 .anyMatch(object -> object.isBNode() || object instanceof GeneratedIdentifier);
@@ -121,7 +121,7 @@ public class MergeDuplicates implements Transformer {
      *
      * @param triples
      */
-    public Mono<AbstractModel> mergeDuplicatedWithinModel(AbstractModel triples) {
+    public Mono<TripleModel> mergeDuplicatedWithinModel(TripleModel triples) {
         log.trace("Merging duplicates within the model with {} statements", triples.streamStatements().count());
         Model unmodifiable = new LinkedHashModel(triples.getModel()).unmodifiable();
 
@@ -174,7 +174,7 @@ public class MergeDuplicates implements Transformer {
 
     }
 
-    public void reroute(AbstractModel triples, Resource duplicateIdentifier, Resource originalIdentifier) {
+    public void reroute(TripleModel triples, Resource duplicateIdentifier, Resource originalIdentifier) {
 
         Model unmodifiable = new LinkedHashModel(triples.getModel()).unmodifiable();
 
@@ -187,7 +187,8 @@ public class MergeDuplicates implements Transformer {
             triples.getModel().add(statement.getSubject(), statement.getPredicate(), originalIdentifier);
         });
 
-        if (log.isTraceEnabled()) log.trace("{} statements in the model after rerouting", triples.streamStatements().count());
+        if (log.isTraceEnabled())
+            log.trace("{} statements in the model after rerouting", triples.streamStatements().count());
 
     }
 
@@ -199,7 +200,7 @@ public class MergeDuplicates implements Transformer {
      *
      * @param model, the current model
      */
-    public Mono<AbstractModel> mergeDuplicatesInEntityGraph(AbstractModel model, Authentication authentication) {
+    public Mono<TripleModel> mergeDuplicatesInEntityGraph(TripleModel model, Authentication authentication) {
         return Mono.just(model)
                 .doOnSuccess(subscription -> log.trace("Checked if anonymous embedded entities already exist in graph."))
                 .flatMapMany(triples -> {
@@ -258,7 +259,7 @@ public class MergeDuplicates implements Transformer {
      *
      * @param triples
      */
-    public Mono<AbstractModel> checkIfLinkedNamedEntityExistsInGraph(AbstractModel triples) {
+    public Mono<TripleModel> checkIfLinkedNamedEntityExistsInGraph(TripleModel triples) {
         log.trace("(Transformer) Checking for duplicates in graph skipped");
 
         return Mono.just(triples);

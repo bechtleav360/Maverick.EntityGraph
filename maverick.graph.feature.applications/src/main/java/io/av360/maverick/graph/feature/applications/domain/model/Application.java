@@ -25,5 +25,7 @@ public record Application(IRI iri, String label, String key, boolean persistent)
     public static final IRI HAS_S3_BUCKET_ID = LocalIRI.from(NAMESPACE, "hasS3BucketId");
     public static final IRI HAS_EXPORT_FREQUENCY = LocalIRI.from(NAMESPACE, "hasExportFrequency");
 
+
+
 }
 

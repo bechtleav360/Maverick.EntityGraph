@@ -81,6 +81,11 @@ public class GlobalExceptionHandler extends DefaultErrorAttributes {
             errorAttributes.replace("error", HttpStatus.UNAUTHORIZED.getReasonPhrase());
             errorAttributes.remove("exception");
             errorAttributes.remove("trace");
+        } else if (error instanceof InvalidEntityUpdate) {
+            errorAttributes.replace("status", HttpStatus.BAD_REQUEST.value());
+            errorAttributes.replace("error", HttpStatus.BAD_REQUEST.getReasonPhrase());
+            errorAttributes.remove("exception");
+            errorAttributes.remove("trace");
         }
 
 

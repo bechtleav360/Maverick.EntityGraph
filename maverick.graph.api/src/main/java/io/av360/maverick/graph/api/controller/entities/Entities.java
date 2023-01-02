@@ -5,15 +5,13 @@ import io.av360.maverick.graph.api.controller.AbstractController;
 import io.av360.maverick.graph.model.enums.RdfMimeTypes;
 import io.av360.maverick.graph.model.rdf.GeneratedIdentifier;
 import io.av360.maverick.graph.model.rdf.NamespaceAwareStatement;
-import io.av360.maverick.graph.services.services.EntityServices;
-import io.av360.maverick.graph.services.services.QueryServices;
-import io.av360.maverick.graph.store.rdf.models.AbstractModel;
-import io.av360.maverick.graph.store.rdf.models.Incoming;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
+import io.av360.maverick.graph.services.EntityServices;
+import io.av360.maverick.graph.services.impl.QueryServicesImpl;
+import io.av360.maverick.graph.store.rdf.models.TripleBag;
+import io.av360.maverick.graph.store.rdf.models.TripleModel;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.util.Assert;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
@@ -22,176 +20,99 @@ import java.util.Map;
 
 @RestController
 @RequestMapping(path = "/api/entities")
-@Api(tags = "Entities")
 @Slf4j(topic = "graph.api.entities")
+@SecurityRequirement(name = "api_key")
 public class Entities extends AbstractController {
 
     protected final ObjectMapper objectMapper;
     protected final EntityServices entityServices;
-    protected final QueryServices queryServices;
+    protected final QueryServicesImpl queryServices;
 
-    public Entities(ObjectMapper objectMapper, EntityServices graphService, QueryServices queryServices) {
+    public Entities(ObjectMapper objectMapper, EntityServices graphService, QueryServicesImpl queryServices) {
         this.objectMapper = objectMapper;
         this.entityServices = graphService;
         this.queryServices = queryServices;
     }
 
-    @ApiOperation(value = "Read entity")
     @GetMapping(value = "/{id:[\\w|\\d|-|_]+}",
-                produces = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.N3_VALUE})
+            produces = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.N3_VALUE})
     @ResponseStatus(HttpStatus.OK)
     Flux<NamespaceAwareStatement> read(@PathVariable String id) {
         Assert.isTrue(id.length() == GeneratedIdentifier.LENGTH, "Incorrect length for identifier.");
 
         return super.getAuthentication()
                 .flatMap(authentication -> entityServices.readEntity(id, authentication))
-                .flatMapIterable(AbstractModel::asStatements)
+                .flatMapIterable(TripleModel::asStatements)
                 .doOnSubscribe(s -> {
-                    if(log.isDebugEnabled()) log.debug("Request to read entity with id: {}", id);
+                    if (log.isDebugEnabled()) log.debug("Request to read entity with id: {}", id);
                 });
     }
 
 
-    @ApiOperation(value = "List entities")
     @GetMapping(value = "", produces = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.N3_VALUE})
     @ResponseStatus(HttpStatus.OK)
-    Flux<NamespaceAwareStatement> list() {
+    Flux<NamespaceAwareStatement> list(
+            @RequestParam(value = "limit", defaultValue = "5000") Integer limit,
+            @RequestParam(value = "offset", defaultValue = "0") Integer offset) {
 
         return super.getAuthentication()
-                .flatMapMany(queryServices::listEntities)
-                .flatMapIterable(AbstractModel::asStatements)
+                .flatMapMany(authentication -> queryServices.listEntities(authentication, limit, offset))
+                .flatMapIterable(TripleModel::asStatements)
                 .doOnSubscribe(s -> {
-                    if(log.isDebugEnabled()) log.debug("Request to list entities");
+                    if (log.isDebugEnabled()) log.debug("Request to list entities");
                 });
     }
 
-    @ApiOperation(value = "Create entity")
     @PostMapping(value = "",
             consumes = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.N3_VALUE},
             produces = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.N3_VALUE})
     @ResponseStatus(HttpStatus.ACCEPTED)
-    Flux<NamespaceAwareStatement> createEntity(@RequestBody Incoming request) {
+    Flux<NamespaceAwareStatement> create(@RequestBody TripleBag request) {
         Assert.isTrue(request.getModel().size() > 0, "No statements in request detected.");
 
         return super.getAuthentication()
-                .flatMap(authentication ->  entityServices.createEntity(request, Map.of(), authentication))
-                .flatMapIterable(AbstractModel::asStatements)
+                .flatMap(authentication -> entityServices.createEntity(request, Map.of(), authentication))
+                .flatMapIterable(TripleModel::asStatements)
                 .doOnSubscribe(s -> {
                     if (log.isDebugEnabled()) log.debug("Request to create a new Entity");
                     if (log.isTraceEnabled()) log.trace("Payload: \n {}", request.toString());
                 });
     }
 
-
-    @ApiOperation(value = "Create value or relation")
-    @PostMapping(value = "/{id:[\\w|\\d|-|_]+}/{prefixedKey:[\\w|\\d]+\\.[\\w|\\d]+}",
-            consumes = MediaType.TEXT_PLAIN_VALUE,
-            produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE})
-    @ResponseStatus(HttpStatus.CREATED)
-    Flux<NamespaceAwareStatement> createValue(@PathVariable String id, @PathVariable String prefixedKey, @RequestBody String value) {
-        Assert.isTrue(!value.matches("(?s).*[\\n\\r].*"), "Newlines in request body are not supported");
-
-        String[] property = splitPrefixedIdentifier(prefixedKey);
-        return super.getAuthentication()
-                .flatMap(authentication ->  entityServices.setValue(id, property[0], property[1], value, authentication))
-                .flatMapIterable(AbstractModel::asStatements)
-                .doOnSubscribe(s -> {
-                    if (log.isDebugEnabled()) log.debug("Request to set property '{}' of entity '{}' to value '{}'", prefixedKey, id, value.length() > 64 ? value.substring(0, 64) : value);
-                });
-
-    }
-
-    @ApiOperation(value = "Create value or relation")
     @PostMapping(value = "/{id:[\\w|\\d|-|_]+}/{prefixedKey:[\\w|\\d]+\\.[\\w|\\d]+}",
             consumes = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE},
             produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE})
     @ResponseStatus(HttpStatus.CREATED)
-    Flux<NamespaceAwareStatement> createEmbedded(@PathVariable String id, @PathVariable String prefixedKey, @RequestBody Incoming value) {
+    Flux<NamespaceAwareStatement> embed(@PathVariable String id, @PathVariable String prefixedKey, @RequestBody TripleBag value) {
 
         String[] property = splitPrefixedIdentifier(prefixedKey);
         return super.getAuthentication()
-                .flatMap(authentication ->  entityServices.linkEntityTo(id, property[0], property[1], value, authentication))
-                .flatMapIterable(AbstractModel::asStatements)
+                .flatMap(authentication -> entityServices.linkEntityTo(id, property[0], property[1], value, authentication))
+                .flatMapIterable(TripleModel::asStatements)
                 .doOnSubscribe(s -> {
-                    if (log.isDebugEnabled()) log.debug("Request to add embedded entities as property '{}' to entity '{}'", prefixedKey, id);
+                    if (log.isDebugEnabled())
+                        log.debug("Request to add embedded entities as property '{}' to entity '{}'", prefixedKey, id);
                 });
-
-
     }
-    //-----------------------------------------------------------------
 
 
-    @ApiOperation(value = "Delete entity")
     @DeleteMapping(value = "/{id:[\\w|\\d|-|_]+}",
             produces = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.N3_VALUE})
     @ResponseStatus(HttpStatus.OK)
-    Flux<NamespaceAwareStatement> deleteEntity(@PathVariable String id){
+    Flux<NamespaceAwareStatement> delete(@PathVariable String id) {
         Assert.isTrue(id.length() == GeneratedIdentifier.LENGTH, "Incorrect length for identifier.");
-        boolean assertion = Boolean.TRUE.equals(
-                super.getAuthentication()
-                        .flatMap(authentication -> entityServices.entityExists(id, authentication))
-                        .block()
-        );
-        Assert.isTrue(assertion, "Entity with id" + id + ". \\" +
-                "does not exist");
 
         return super.getAuthentication()
-                .flatMap(authentication ->  entityServices.deleteEntity(id, authentication))
-                .flatMapIterable(AbstractModel::asStatements)
+                .flatMap(authentication -> entityServices.deleteEntity(id, authentication))
+                .flatMapIterable(TripleModel::asStatements)
                 .doOnSubscribe(s -> {
                     if (log.isDebugEnabled()) log.debug("Delete an Entity");
                     if (log.isTraceEnabled()) log.trace("id: \n {}", id);
                 });
     }
 
-    @ApiOperation(value = "Delete value or relation", tags = {"v2", "entity"})
-    @DeleteMapping(value = "/{id:[\\w|\\d|-|_]+}/{prefixedKey:[\\w|\\d]+\\.[\\w|\\d]+}",
-            consumes = MediaType.TEXT_PLAIN_VALUE,
-            produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE})
-    @ResponseStatus(HttpStatus.CREATED)
-    Flux<NamespaceAwareStatement> deleteValue(@PathVariable String id, @PathVariable String prefixedKey, @RequestBody String value) {
-        Assert.isTrue(!value.matches("(?s).*[\\n\\r].*"), "Newlines in request body are not supported");
 
-        String[] property = splitPrefixedIdentifier(prefixedKey);
-        boolean assertion = Boolean.TRUE.equals(
-                super.getAuthentication()
-                        .flatMap(authentication -> entityServices.valueIsSet(id, property[0], property[1], authentication))
-                        .block()
-        );
-        Assert.isTrue(assertion, "Property " + prefixedKey + " is not set for entity " + id + ". \\" +
-                "Property must be set prior to delete request.");
-        return super.getAuthentication()
-                .flatMap(authentication ->  entityServices.deleteValue(id, property[0], property[1], value, authentication))
-                .flatMapIterable(AbstractModel::asStatements)
-                .doOnSubscribe(s -> {
-                    if (log.isDebugEnabled()) log.debug("Deleted property '{}' of entity '{}'", prefixedKey, id);
-                });
 
-    }
-
-    @ApiOperation(value = "Update value", tags = {"v3", "entity"})
-    @PutMapping(value = "/{id:[\\w|\\d|-|_]+}/{prefixedKey:[\\w|\\d]+\\.[\\w|\\d]+}",
-            consumes = MediaType.TEXT_PLAIN_VALUE,
-            produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE})
-    @ResponseStatus(HttpStatus.CREATED)
-    Flux<NamespaceAwareStatement> updateValue(@PathVariable String id, @PathVariable String prefixedKey, @RequestBody String value) {
-        String[] property = splitPrefixedIdentifier(prefixedKey);
-        boolean assertion = Boolean.TRUE.equals(
-                super.getAuthentication()
-                        .flatMap(authentication -> entityServices.valueIsSet(id, property[0], property[1], authentication))
-                        .block()
-        );
-        Assert.isTrue(assertion, "Property " + prefixedKey + " is not set for entity " + id + ". \\" +
-                "Property must be set prior to put request.");
-
-        return super.getAuthentication()
-                .flatMap(authentication -> entityServices.setValue(id, property[0], property[1], value, authentication))
-                .flatMapIterable(AbstractModel::asStatements)
-                .doOnSubscribe(s -> {
-                    if (log.isDebugEnabled())
-                        log.debug("Set property '{}' of entity '{}' to value '{}'", prefixedKey, id, value.length() > 64 ? value.substring(0, 64) : value);
-                });
-    }
 
     /* //
     @ApiOperation(value = "Update entity", tags = {"v3", "entity"})

@@ -7,6 +7,14 @@
         <groupId>com.bechtle.maverick.graph</groupId>
         <version>${revision}</version>
     </parent>
+    <properties>
+        <image.name>ghcr.io/bechtleav360/maverick.entity-graph</image.name>
+        <docker.publish>false</docker.publish>
+        <docker.registry.host>https://ghcr.io</docker.registry.host>
+        <docker.credentials.user>xxx</docker.credentials.user>
+        <docker.credentials.password>xxx</docker.credentials.password>
+    </properties>
+
 
     <modelVersion>4.0.0</modelVersion>
 
@@ -63,7 +71,10 @@
             <artifactId>reactor-test</artifactId>
             <scope>test</scope>
         </dependency>
-
+        <dependency>
+            <groupId>org.springdoc</groupId>
+            <artifactId>springdoc-openapi-starter-webflux-ui</artifactId>
+        </dependency>
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
@@ -73,12 +84,39 @@
     <build>
         <plugins>
             <plugin>
+                <groupId>io.github.git-commit-id</groupId>
+                <artifactId>git-commit-id-maven-plugin</artifactId>
+                <version>5.0.0</version>
+                <executions>
+                    <execution>
+                        <id>get-the-git-infos</id>
+                        <goals>
+                            <goal>revision</goal>
+                        </goals>
+                        <phase>initialize</phase>
+                    </execution>
+                </executions>
+                <configuration>
+                    <injectAllReactorProjects>true</injectAllReactorProjects>
+                    <generateGitPropertiesFile>true</generateGitPropertiesFile>
+                    <generateGitPropertiesFilename>${project.build.outputDirectory}/git.properties</generateGitPropertiesFilename>
+                    <includeOnlyProperties>
+                        <includeOnlyProperty>^git.build.(time|version)$</includeOnlyProperty>
+                        <includeOnlyProperty>^git.commit.id.(abbrev|full)$</includeOnlyProperty>
+                    </includeOnlyProperties>
+                    <commitIdGenerationMode>full</commitIdGenerationMode>
+                </configuration>
+            </plugin>
+            <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <configuration>
+                    <mainClass>io.av360.maverick.graph.main.Application</mainClass>
                     <image>
-                        <name>${env.IMAGE}</name>
-                        <publish>true</publish>
+                        <!--suppress UnresolvedMavenProperty -->
+                        <name>${image.name}</name>
+                        <!-- <name>ghcr.io/bechtleav360/maverick-entity-graph</name> -->
+                        <publish>${docker.publish}</publish>
                         <verboseLogging>true</verboseLogging>
                         <env>
                             <BP_OCI_SOURCE>https://github.com/bechtleav360/Maverick.EntityGraph</BP_OCI_SOURCE>
@@ -87,10 +125,11 @@
                     <docker>
                         <publishRegistry>
                             <!--suppress UnresolvedMavenProperty -->
-                            <username>${env.DOCKER_USER}</username>
+                            <username>${docker.credentials.user}</username>
                             <!--suppress UnresolvedMavenProperty -->
-                            <password>${env.DOCKER_PASS}</password>
-                            <url>${env.DOCKER_HOST}</url>
+                            <password>${docker.credentials.password}</password>
+                            <!--suppress UnresolvedMavenProperty -->
+                            <url>${docker.registry.host}</url>
                         </publishRegistry>
                     </docker>
                 </configuration>

@@ -1,11 +1,11 @@
 package io.av360.maverick.graph.services.transformers.replaceAnonymousIdentifiers;
 
-import io.av360.maverick.graph.services.services.handler.Transformer;
-import io.av360.maverick.graph.store.rdf.models.AbstractModel;
-import lombok.extern.slf4j.Slf4j;
 import io.av360.maverick.graph.model.rdf.GeneratedIdentifier;
 import io.av360.maverick.graph.model.rdf.NamespaceAwareStatement;
 import io.av360.maverick.graph.model.vocabulary.Local;
+import io.av360.maverick.graph.services.transformers.Transformer;
+import io.av360.maverick.graph.store.rdf.models.TripleModel;
+import lombok.extern.slf4j.Slf4j;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Statement;
@@ -35,7 +35,7 @@ public class ReplaceAnonymousIdentifiers implements Transformer {
 
 
     @Override
-    public Mono<? extends AbstractModel> handle(AbstractModel triples, Map<String, String> parameters, Authentication authentication) {
+    public Mono<? extends TripleModel> handle(TripleModel triples, Map<String, String> parameters, Authentication authentication) {
         log.trace("Generating local identifiers for anonymous identifiers in incoming model.");
 
         for (Resource obj : new ArrayList<>(triples.getModel().subjects())) {
@@ -48,7 +48,7 @@ public class ReplaceAnonymousIdentifiers implements Transformer {
         return Mono.just(triples);
     }
 
-    public void skolemize(Resource subj, AbstractModel triples) {
+    public void skolemize(Resource subj, TripleModel triples) {
 
         IRI identifier = new GeneratedIdentifier(Local.Entities.NS);
 

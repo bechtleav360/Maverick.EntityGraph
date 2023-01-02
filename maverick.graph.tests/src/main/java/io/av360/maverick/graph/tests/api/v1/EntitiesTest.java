@@ -5,24 +5,23 @@ public interface EntitiesTest {
 
     /**
      * <pre>POST /api/rs</pre>
-     *
      */
     void createEntity();
 
     void createEntityWithMissingType();
 
     /**
-     *  <pre>POST /api/rs</pre>
+     * <pre>POST /api/rs</pre>
      */
     void createEntityWithInvalidSyntax();
 
     /**
-     *  <pre>POST /api/rs</pre>
+     * <pre>POST /api/rs</pre>
      */
     void createEntityWithValidId();
 
     /**
-     *  <pre>POST /api/rs</pre>
+     * <pre>POST /api/rs</pre>
      */
     void createEntityWithInvalidId();
 
@@ -35,11 +34,6 @@ public interface EntitiesTest {
      * <pre>POST /api/rs</pre>
      */
     void createMultipleEntitiesWithMixedIds();
-
-    /**
-     * POST /api/rs/{id}/{prefix.key}
-     */
-    void createValue();
 
     /**
      * POST /api/rs/{id}/{prefix.key}

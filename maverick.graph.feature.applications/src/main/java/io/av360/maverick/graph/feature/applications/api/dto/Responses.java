@@ -12,7 +12,8 @@ public class Responses {
 
     }
 
-    public record ApiKeyWithApplicationResponse(String key, String issueDate, boolean active, ApplicationResponse subscription) {
+    public record ApiKeyWithApplicationResponse(String key, String issueDate, boolean active,
+                                                ApplicationResponse subscription) {
 
     }
 

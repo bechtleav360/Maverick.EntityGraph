@@ -1,10 +1,10 @@
 package io.av360.maverick.graph.store.rdf.models;
 
+import io.av360.maverick.graph.model.enums.Activity;
 import io.av360.maverick.graph.model.rdf.GeneratedIdentifier;
 import io.av360.maverick.graph.model.rdf.NamespaceAwareStatement;
 import io.av360.maverick.graph.model.vocabulary.Local;
 import io.av360.maverick.graph.model.vocabulary.Transactions;
-import io.av360.maverick.graph.model.enums.Activity;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.rdf4j.model.*;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
@@ -17,17 +17,17 @@ import java.util.stream.Stream;
 
 /**
  * The Transaction consists of three models:
- *
+ * <p>
  * - the transaction statements (persisted in transactions graph)
  * - the affected model (what is returned to the client, comprises the changeset and its context)
  * - the changeset model (the actual content of the transaction)
- *
+ * <p>
  * The are individual named graphs in the model.
  */
 
 
 @Slf4j
-public class Transaction extends AbstractModel {
+public class Transaction extends TripleModel {
     private final IRI transactionIdentifier;
 
 
@@ -44,8 +44,6 @@ public class Transaction extends AbstractModel {
                 .add(RDF.TYPE, Transactions.TRANSACTION)
                 .add(Transactions.AT, SimpleValueFactory.getInstance().createLiteral(new Date()));
     }
-
-
 
 
     public Transaction remove(Collection<Statement> statements, Activity activity) {
@@ -84,9 +82,7 @@ public class Transaction extends AbstractModel {
     }
 
 
-
-
-    public Transaction affected(AbstractModel wrappedModel) {
+    public Transaction affected(TripleModel wrappedModel) {
         return this.affected(wrappedModel.getModel());
     }
 
@@ -96,6 +92,7 @@ public class Transaction extends AbstractModel {
 
     /**
      * The affected model is unchanged
+     *
      * @param statements
      * @return
      */
@@ -113,23 +110,22 @@ public class Transaction extends AbstractModel {
     }
 
 
-
-
     public static boolean isTransaction(Model model) {
         return model.contains(null, RDF.TYPE, Transactions.TRANSACTION);
     }
 
-    public List<Value> listModifiedResources(Activity ... activities) {
+    public List<Value> listModifiedResources(Activity... activities) {
         List<Value> result = new ArrayList<>();
-        Arrays.stream(activities).forEach(activity ->  {
+        Arrays.stream(activities).forEach(activity -> {
             List<Value> values = super.streamStatements(transactionIdentifier, activity.toIRI(), null).map(Statement::getObject).toList();
             result.addAll(values);
         });
-        return  result;
+        return result;
     }
 
     /**
      * We merge the named graphs of the transaction and affected model (but not the actual change itself)
+     *
      * @return
      */
     @Override

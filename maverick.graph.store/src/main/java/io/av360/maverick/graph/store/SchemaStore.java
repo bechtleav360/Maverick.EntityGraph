@@ -1,9 +1,9 @@
 package io.av360.maverick.graph.store;
 
-import org.eclipse.rdf4j.model.Namespace;
-
-import java.util.Optional;
+import org.eclipse.rdf4j.model.ValueFactory;
 
 public interface SchemaStore {
-    Optional<Namespace> getNamespaceFor(String prefix);
+    String getNamespaceFor(String prefix);
+
+    ValueFactory getValueFactory();
 }

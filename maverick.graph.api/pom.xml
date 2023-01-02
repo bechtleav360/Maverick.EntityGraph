@@ -36,12 +36,16 @@
         </dependency>
         <dependency>
             <groupId>com.bechtle.maverick.graph</groupId>
+            <artifactId>graph-store</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.bechtle.maverick.graph</groupId>
             <artifactId>graph-store-rdf4j</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>io.springfox</groupId>
-            <artifactId>springfox-spring-webflux</artifactId>
+            <groupId>org.springdoc</groupId>
+            <artifactId>springdoc-openapi-starter-webflux-ui</artifactId>
         </dependency>
         <dependency>
             <groupId>com.apicatalog</groupId>
@@ -50,10 +54,6 @@
         <dependency>
             <groupId>org.glassfish</groupId>
             <artifactId>jakarta.json</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.springfox</groupId>
-            <artifactId>springfox-boot-starter</artifactId>
         </dependency>
     </dependencies>
 

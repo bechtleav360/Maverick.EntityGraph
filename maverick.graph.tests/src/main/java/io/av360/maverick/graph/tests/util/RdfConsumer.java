@@ -18,13 +18,14 @@ import java.io.StringWriter;
 import java.util.Collection;
 import java.util.Map;
 import java.util.function.Consumer;
+import java.util.stream.StreamSupport;
 
 @Slf4j
 public class RdfConsumer implements Consumer<EntityExchangeResult<byte[]>> {
 
     private final RDFParser parser;
     private boolean printStatements = false;
-    private  ContextStatementCollector collector;
+    private ContextStatementCollector collector;
 
     public RdfConsumer(RDFFormat format) {
         parser = Rio.createParser(format);
@@ -42,8 +43,9 @@ public class RdfConsumer implements Consumer<EntityExchangeResult<byte[]>> {
         writer.startRDF();
         this.asModel().forEach(writer::handleStatement);
         writer.endRDF();
-        return  sw.toString();
+        return sw.toString();
     }
+
     @Override
     public void accept(EntityExchangeResult<byte[]> entityExchangeResult) {
 
@@ -54,14 +56,14 @@ public class RdfConsumer implements Consumer<EntityExchangeResult<byte[]>> {
         Assert.notNull(entityExchangeResult.getResponseBody(), "Null response body");
 
 
-        try(ByteArrayInputStream bais = new ByteArrayInputStream(entityExchangeResult.getResponseBody())) {
+        try (ByteArrayInputStream bais = new ByteArrayInputStream(entityExchangeResult.getResponseBody())) {
             parser.parse(bais);
         } catch (IOException e) {
             e.printStackTrace();
         }
 
 
-        if(printStatements) {
+        if (printStatements) {
             StringBuilder sb = new StringBuilder();
             collector.getStatements().forEach(statement -> sb.append(statement).append('\n'));
             log.trace("Statements in model: \n {}", sb);
@@ -89,5 +91,13 @@ public class RdfConsumer implements Consumer<EntityExchangeResult<byte[]>> {
 
     public boolean hasStatement(Resource subject, IRI predicate, Value object) {
         return this.asModel().getStatements(subject, predicate, object).iterator().hasNext();
+    }
+
+    public Statement findStatement(Resource s, IRI p, IRI o) {
+        return StreamSupport.stream(this.asModel().getStatements(s, p, o).spliterator(), false).findFirst().orElseThrow();
+    }
+
+    public int countValues(Resource s, IRI p) {
+        return Long.valueOf(StreamSupport.stream(this.asModel().getStatements(s, p, null).spliterator(), false).count()).intValue();
     }
 }

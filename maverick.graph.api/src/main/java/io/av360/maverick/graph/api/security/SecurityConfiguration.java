@@ -31,9 +31,6 @@ import static io.av360.maverick.graph.model.security.ApiKeyAuthenticationToken.A
 public class SecurityConfiguration {
 
 
-
-
-
     @Bean
     @ConditionalOnProperty(name = "application.security.enabled", havingValue = "true")
     public SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity http,
@@ -54,8 +51,10 @@ public class SecurityConfiguration {
                 .pathMatchers(HttpMethod.DELETE, "/api/**").hasAnyAuthority(Authorities.SYSTEM.getAuthority(), Authorities.APPLICATION.getAuthority(), Authorities.CONTRIBUTOR.getAuthority())
                 .pathMatchers(HttpMethod.POST, "/api/**").hasAnyAuthority(Authorities.SYSTEM.getAuthority(), Authorities.APPLICATION.getAuthority(), Authorities.CONTRIBUTOR.getAuthority())
                 .pathMatchers("/api/admin/**").hasAnyAuthority(Authorities.SYSTEM.getAuthority(), Authorities.APPLICATION.getAuthority())
+                .pathMatchers(HttpMethod.GET, "/swagger-ui/*").permitAll()
                 .matchers(EndpointRequest.to("env", "logfile", "loggers", "metrics", "scheduledTasks")).hasAuthority(Authorities.SYSTEM.getAuthority())
                 .matchers(EndpointRequest.to("health")).permitAll()
+
                 .anyExchange().permitAll()
                 .and()
                 .addFilterAt(authenticationWebFilter, SecurityWebFiltersOrder.AUTHENTICATION)
@@ -87,10 +86,6 @@ public class SecurityConfiguration {
             return Mono.just(apiKeyToken);
         };
     }
-
-
-
-
 
 
 }

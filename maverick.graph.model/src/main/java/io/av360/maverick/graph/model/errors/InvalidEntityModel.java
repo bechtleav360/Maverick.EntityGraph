@@ -1,9 +1,11 @@
 package io.av360.maverick.graph.model.errors;
 
 import org.eclipse.rdf4j.model.Resource;
+import org.springframework.util.StringUtils;
 
 public class InvalidEntityModel extends Exception {
     private final String identifier;
+    private String detail;
 
     public InvalidEntityModel(String identifier) {
         this.identifier = identifier;
@@ -13,8 +15,17 @@ public class InvalidEntityModel extends Exception {
         this(identifier.stringValue());
     }
 
+    public InvalidEntityModel(Resource identifier, String detail) {
+        this(identifier.stringValue());
+        this.detail = detail;
+    }
+
     @Override
     public String getMessage() {
-        return "Entity with id '"+identifier+"' has an invalid model.";
+        StringBuilder sb = new StringBuilder("Invalid model for entity with id '").append(identifier).append("'.");
+        if (StringUtils.hasLength(this.detail)) {
+            sb.append(this.detail).append(".");
+        }
+        return sb.toString();
     }
 }

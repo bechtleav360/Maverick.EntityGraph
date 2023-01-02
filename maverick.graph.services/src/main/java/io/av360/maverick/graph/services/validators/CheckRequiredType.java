@@ -1,9 +1,8 @@
 package io.av360.maverick.graph.services.validators;
 
 import io.av360.maverick.graph.model.errors.MissingType;
-import io.av360.maverick.graph.store.rdf.models.AbstractModel;
-import io.av360.maverick.graph.services.services.EntityServices;
-import io.av360.maverick.graph.services.services.handler.Validator;
+import io.av360.maverick.graph.services.EntityServices;
+import io.av360.maverick.graph.store.rdf.models.TripleModel;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
@@ -19,7 +18,7 @@ import java.util.Map;
 public class CheckRequiredType implements Validator {
 
     @Override
-    public Mono<? extends AbstractModel> handle(EntityServices entityServices, AbstractModel model, Map<String, String> parameters) {
+    public Mono<? extends TripleModel> handle(EntityServices entityServicesImpl, TripleModel model, Map<String, String> parameters) {
         log.trace("(Validator) Checking if type is defined");
 
         for (Resource obj : model.getModel().subjects()) {

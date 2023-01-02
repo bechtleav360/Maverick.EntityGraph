@@ -3,8 +3,10 @@ package io.av360.maverick.graph.services.schedulers.detectDuplicates;
 
 import io.av360.maverick.graph.model.security.ApiKeyAuthenticationToken;
 import io.av360.maverick.graph.model.security.Authorities;
+import io.av360.maverick.graph.services.EntityServices;
+import io.av360.maverick.graph.services.QueryServices;
+import io.av360.maverick.graph.services.ValueServices;
 import io.av360.maverick.graph.store.rdf.models.Transaction;
-import io.av360.maverick.graph.services.services.EntityServices;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
@@ -23,7 +25,6 @@ import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
-import io.av360.maverick.graph.services.services.QueryServices;
 
 import java.util.HashMap;
 import java.util.List;
@@ -69,11 +70,14 @@ public class ScheduledDetectDuplicates {
 
     private final EntityServices entityServices;
     private final QueryServices queryServices;
+
+    private final ValueServices valueServices;
     private final SimpleValueFactory valueFactory;
 
-    public ScheduledDetectDuplicates(EntityServices service, QueryServices queryServices) {
+    public ScheduledDetectDuplicates(EntityServices service, QueryServices queryServices, ValueServices valueServices) {
         this.entityServices = service;
         this.queryServices = queryServices;
+        this.valueServices = valueServices;
         this.valueFactory = SimpleValueFactory.getInstance();
     }
 
@@ -148,16 +152,17 @@ public class ScheduledDetectDuplicates {
 
     /**
      * Method to merge the duplicates. We do the following steps
-     *
+     * <p>
      * Take the head in list as original, the tail are the duplicates which are removed.
      * For each duplicate in the tail:
      * - find all statements pointing to the duplicate and reroute it to the original
      * - remove the duplicate
-     *
+     * <p>
      * TODO: We remove all statements, no attempts are made to preserve additional statements in the duplicate. We should probably
      * a) keep the duplicate and mark it as deleted or
      * b) copy additional statements to the original or
      * c) keep the duplicate with most details as original
+     *
      * @param duplicates
      * @param authentication
      * @return
@@ -186,12 +191,13 @@ public class ScheduledDetectDuplicates {
                 .then();
     }
 
+
     private Mono<Transaction> removeDuplicate(IRI object, Authentication authentication) {
         return this.entityServices.deleteEntity(object, authentication);
     }
 
     private Mono<Transaction> relinkEntity(Resource subject, IRI predicate, Value object, Value id, Authentication authentication) {
-        return this.entityServices.relinkEntityProperty(subject, predicate, object, id, authentication);
+        return this.valueServices.replaceValue(subject, predicate, object, id, authentication);
     }
 
 
