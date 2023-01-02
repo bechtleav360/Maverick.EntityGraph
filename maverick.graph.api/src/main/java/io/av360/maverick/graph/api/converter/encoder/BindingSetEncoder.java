@@ -47,8 +47,6 @@ public class BindingSetEncoder implements Encoder<BindingSet> {
     }
 
 
-
-
     @Override
     public Flux<DataBuffer> encode(Publisher<? extends BindingSet> publisher, DataBufferFactory bufferFactory, ResolvableType elementType, MimeType mimeType, Map<String, Object> hints) {
 

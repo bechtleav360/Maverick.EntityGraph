@@ -31,9 +31,6 @@ import static io.av360.maverick.graph.model.security.ApiKeyAuthenticationToken.A
 public class SecurityConfiguration {
 
 
-
-
-
     @Bean
     @ConditionalOnProperty(name = "application.security.enabled", havingValue = "true")
     public SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity http,
@@ -89,10 +86,6 @@ public class SecurityConfiguration {
             return Mono.just(apiKeyToken);
         };
     }
-
-
-
-
 
 
 }

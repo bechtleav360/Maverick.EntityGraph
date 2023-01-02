@@ -1,4 +1,5 @@
 # Schema
+
 Endpoints to manage the schema
 
 ---
@@ -15,22 +16,22 @@ Lists all configured types currently in schema database.
 * `limit`
 * `page`
 
-
 *Response*:
-It returns a JSON-LD Graph, such as as the schema.org example: https://schema.org/version/latest/schemaorg-current-https.ttl
+It returns a JSON-LD Graph, such as as the schema.org
+example: https://schema.org/version/latest/schemaorg-current-https.ttl
 
 Supported formats are:
 
 - JSON (as JSON-LD)
 - Turtle
 
-## Create type 
+## Create type
+
 Version: 1
 
 Creates one or more type definitions.
 
 `POST /api/types`
-
 
 *Payload:*
 A valid type definition. The definition can include as many types as needed
@@ -84,12 +85,13 @@ and the following using json-ld (as graph)
 }
 ```
 
-
 *Possible Errors:*
+
 - ``NamespaceConflict``, if a prefix in the given type definition is already assigned to a different namespace
 - ``TypeAlreadyExists``, if the given type already exists within the namespace
 
 ## Get type
+
 Version: 1
 
 `GET /api/types/{prefix}.{type}`
@@ -99,42 +101,43 @@ Version: 1
 Returns the schema definition of this particular type
 
 *Possible Errors:*
+
 * `NotFound`
 
-
 ## Update type
+
 Version: 3
 
 `POST /api/types/{prefix}.{type}`
 
 *Notes on conflicts:*
 
-* Schema versioning makes sense. But what are the implications: 
-    * Adding a version tag to the type name (e.g. `"@type": "mav:WikipediaEntry#1`). Hard to handle and breaks JSON-LD Handlers
+* Schema versioning makes sense. But what are the implications:
+    * Adding a version tag to the type name (e.g. `"@type": "mav:WikipediaEntry#1`). Hard to handle and breaks JSON-LD
+      Handlers
     * Adding a new prefix: will result in a lot of prefixes, produces just chaos
 * But e.g. adding a new (mandatory) value to a type automatically means an invalid schema?
-* Making versioning implicit through timestamps, e.g. an entity with last_creation_date before the schema update means it is still valid, any new update to the entity will enforce the new rules
-
+* Making versioning implicit through timestamps, e.g. an entity with last_creation_date before the schema update means
+  it is still valid, any new update to the entity will enforce the new rules
 
 ## Delete type
+
 Version: 3
 
 `DELETE /api/types/{prefix}.{type}`
 
 is only possible if no entites of this type exist in the graph
 
-Another option would be automatic upcasting of all entities to the more general type of the deleted type. 
-
-
-
+Another option would be automatic upcasting of all entities to the more general type of the deleted type.
 
 ## Get namespaces
-Provides access to the supported schemas identified by namespaces and prefixes
 
+Provides access to the supported schemas identified by namespaces and prefixes
 
 `GET /api/namespaces`
 
-Provides a list of all supported prefixes as valid @Context definitions. Those are automatically determined from the uploaded types
+Provides a list of all supported prefixes as valid @Context definitions. Those are automatically determined from the
+uploaded types
 
 ```json
 {

@@ -39,7 +39,6 @@ public class LocalIRI extends AbstractIRI {
     }
 
 
-
     protected void setLocalName(String localName) {
         this.localName = localName;
     }
@@ -59,7 +58,6 @@ public class LocalIRI extends AbstractIRI {
     public String getNamespace() {
         return this.namespace;
     }
-
 
 
     @Override

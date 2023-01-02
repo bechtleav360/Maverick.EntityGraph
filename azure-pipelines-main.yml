@@ -1,7 +1,7 @@
 # Don't forget to set the following variables for your (release) pipeline: ghcr.user, ghcr.password
-    
+
 trigger:
-- main
+  - main
 
 pool:
   vmImage: ubuntu-latest
@@ -26,7 +26,7 @@ steps:
     displayName: Build and publish Docker Image to Github Container Registry
     env:
       IMAGE_PREFIX: ghcr.io/bechtleav360
-      IMAGE_NAME: maverick-entity-graph    
+      IMAGE_NAME: maverick-entity-graph
       IMAGE_VERSION: release
       DOCKER_HOST: https://ghcr.io
       DOCKER_USER: $(docker.credentials.user)

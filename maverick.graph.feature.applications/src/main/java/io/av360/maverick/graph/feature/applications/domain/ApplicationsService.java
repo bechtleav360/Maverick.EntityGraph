@@ -1,24 +1,30 @@
 package io.av360.maverick.graph.feature.applications.domain;
 
-import io.av360.maverick.graph.feature.applications.domain.model.ApplicationApiKey;
+import io.av360.maverick.graph.api.security.errors.RevokedApiKeyUsed;
+import io.av360.maverick.graph.api.security.errors.UnknownApiKey;
+import io.av360.maverick.graph.feature.applications.domain.events.ApplicationCreatedEvent;
+import io.av360.maverick.graph.feature.applications.domain.events.TokenCreatedEvent;
 import io.av360.maverick.graph.feature.applications.domain.model.Application;
+import io.av360.maverick.graph.feature.applications.domain.model.ApplicationToken;
+import io.av360.maverick.graph.feature.applications.store.ApplicationsStore;
 import io.av360.maverick.graph.model.errors.DuplicateRecordsException;
 import io.av360.maverick.graph.model.rdf.GeneratedIdentifier;
 import io.av360.maverick.graph.model.security.Authorities;
+import io.av360.maverick.graph.services.services.QueryServices;
 import io.av360.maverick.graph.store.rdf.helpers.BindingsAccessor;
 import io.av360.maverick.graph.model.vocabulary.Local;
-import io.av360.maverick.graph.feature.applications.store.ApplicationsStore;
-
+import io.av360.maverick.graph.store.rdf.helpers.BindingsAccessor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.NotImplementedException;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.util.ModelBuilder;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.sparqlbuilder.core.SparqlBuilder;
 import org.eclipse.rdf4j.sparqlbuilder.core.Variable;
+import org.eclipse.rdf4j.sparqlbuilder.core.query.ModifyQuery;
 import org.eclipse.rdf4j.sparqlbuilder.core.query.Queries;
 import org.eclipse.rdf4j.sparqlbuilder.core.query.SelectQuery;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
@@ -26,8 +32,16 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import io.av360.maverick.graph.api.security.errors.RevokedApiKeyUsed;
 import io.av360.maverick.graph.api.security.errors.UnknownApiKey;
+import software.amazon.awssdk.core.ResponseBytes;
+import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.*;
 
+import java.net.URI;
+import java.text.SimpleDateFormat;
 import java.time.ZonedDateTime;
+import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 
 /**
@@ -40,14 +54,19 @@ public class ApplicationsService {
 
     private final ApplicationsStore applicationsStore;
 
-    public ApplicationsService(ApplicationsStore store) {
+    private final ApplicationEventPublisher eventPublisher;
+
+
+    public ApplicationsService(ApplicationsStore store, ApplicationEventPublisher eventPublisher) {
         this.applicationsStore = store;
+        this.eventPublisher = eventPublisher;
     }
 
     /**
      * Creates a new application.
-     * @param label Label for the application
-     * @param persistent True if data should be stored on disk
+     *
+     * @param label          Label for the application
+     * @param persistent     True if data should be stored on disk
      * @param authentication Current authentication information
      * @return New application as mono
      */
@@ -76,12 +95,14 @@ public class ApplicationsService {
 
         return this.applicationsStore.insert(modelBuilder.build(), authentication, Authorities.SYSTEM)
                 .then(Mono.just(application))
+                .doOnSuccess(app -> {
+                    this.eventPublisher.publishEvent(new ApplicationCreatedEvent(app));
+                })
                 .doOnSubscribe(subs -> log.debug("Creating a new application with label '{}' and persistence set to '{}' ", label, persistent));
-
-
     }
 
-    public Mono<ApplicationApiKey> getKey(String keyIdentifier, Authentication authentication) {
+
+    public Mono<ApplicationToken> getKey(String keyIdentifier, Authentication authentication) {
 
         Variable nodeKey = SparqlBuilder.var("n1");
         Variable nodeSubscription = SparqlBuilder.var("n2");
@@ -94,11 +115,11 @@ public class ApplicationsService {
         Variable sublabel = SparqlBuilder.var("g");
 
         SelectQuery q = Queries.SELECT()
-                .where(nodeKey.has(ApplicationApiKey.HAS_KEY, keyIdentifier)
-                        .andHas(ApplicationApiKey.HAS_LABEL, keyName)
-                        .andHas(ApplicationApiKey.HAS_ISSUE_DATE, keyDate)
-                        .andHas(ApplicationApiKey.IS_ACTIVE, keyActive)
-                        .andHas(ApplicationApiKey.OF_SUBSCRIPTION, nodeSubscription)
+                .where(nodeKey.has(ApplicationToken.HAS_KEY, keyIdentifier)
+                        .andHas(ApplicationToken.HAS_LABEL, keyName)
+                        .andHas(ApplicationToken.HAS_ISSUE_DATE, keyDate)
+                        .andHas(ApplicationToken.IS_ACTIVE, keyActive)
+                        .andHas(ApplicationToken.OF_SUBSCRIPTION, nodeSubscription)
                         .and(nodeSubscription.has(Application.HAS_KEY, subscriptionIdentifier)
                                 .andHas(Application.IS_PERSISTENT, subActive)
                                 .andHas(Application.HAS_LABEL, sublabel)
@@ -113,7 +134,7 @@ public class ApplicationsService {
                 })
                 .map(BindingsAccessor::new)
                 .map(ba ->
-                        new ApplicationApiKey(
+                        new ApplicationToken(
                                 ba.asIRI(nodeKey),
                                 ba.asString(keyName),
                                 keyIdentifier,
@@ -128,7 +149,7 @@ public class ApplicationsService {
                         )
                 )
                 .switchIfEmpty(Mono.error(new UnknownApiKey(keyIdentifier)))
-                .filter(ApplicationApiKey::active)
+                .filter(ApplicationToken::active)
                 .switchIfEmpty(Mono.error(new RevokedApiKeyUsed(keyIdentifier)))
                 .doOnSubscribe(subs -> log.debug("Requesting application details for application key '{}'", keyIdentifier));
 
@@ -139,7 +160,7 @@ public class ApplicationsService {
         return (IRI) bindings.getValue(var.getVarName());
     }
 
-    public Flux<ApplicationApiKey> getKeysForApplication(String applicationIdentifier, Authentication authentication) {
+    public Flux<ApplicationToken> getKeysForApplication(String applicationIdentifier, Authentication authentication) {
 
 
         Variable nodeKey = SparqlBuilder.var("n1");
@@ -153,11 +174,11 @@ public class ApplicationsService {
         Variable sublabel = SparqlBuilder.var("g");
 
         SelectQuery q = Queries.SELECT()
-                .where(nodeKey.has(ApplicationApiKey.HAS_KEY, keyIdentifier)
-                        .andHas(ApplicationApiKey.HAS_LABEL, keyName)
-                        .andHas(ApplicationApiKey.HAS_ISSUE_DATE, keyDate)
-                        .andHas(ApplicationApiKey.IS_ACTIVE, keyActive)
-                        .andHas(ApplicationApiKey.OF_SUBSCRIPTION, nodeSubscription)
+                .where(nodeKey.has(ApplicationToken.HAS_KEY, keyIdentifier)
+                        .andHas(ApplicationToken.HAS_LABEL, keyName)
+                        .andHas(ApplicationToken.HAS_ISSUE_DATE, keyDate)
+                        .andHas(ApplicationToken.IS_ACTIVE, keyActive)
+                        .andHas(ApplicationToken.OF_SUBSCRIPTION, nodeSubscription)
                         .and(nodeSubscription.has(Application.HAS_KEY, applicationIdentifier)
                                 .andHas(Application.IS_PERSISTENT, subPersistent)
                                 .andHas(Application.HAS_LABEL, sublabel)
@@ -169,7 +190,7 @@ public class ApplicationsService {
         return this.applicationsStore.query(q, authentication, Authorities.APPLICATION)
                 .map(BindingsAccessor::new)
                 .map(ba ->
-                        new ApplicationApiKey(
+                        new ApplicationToken(
                                 ba.asIRI(nodeKey),
                                 ba.asString(keyName),
                                 ba.asString(keyIdentifier),
@@ -219,7 +240,13 @@ public class ApplicationsService {
 
     }
 
-    public Mono<ApplicationApiKey> generateApiKey(String applicationIdentifier, String name, Authentication authentication) {
+    public Mono<Void> revokeToken(String subscriptionId, String name, Authentication authentication) {
+        log.debug("(Service) Revoking api key for application '{}'", subscriptionId);
+
+        return Mono.error(new UnsupportedOperationException());
+    }
+
+    public Mono<ApplicationToken> generateToken(String applicationIdentifier, String name, Authentication authentication) {
 
 
         Variable node = SparqlBuilder.var("node");
@@ -249,7 +276,7 @@ public class ApplicationsService {
                         )
                 )
                 .map(subscription ->
-                        new ApplicationApiKey(
+                        new ApplicationToken(
                                 new GeneratedIdentifier(Local.Subscriptions.NAMESPACE),
                                 name,
                                 GeneratedIdentifier.generateRandomKey(16),
@@ -261,15 +288,18 @@ public class ApplicationsService {
                 .flatMap(apiKey -> {
                     ModelBuilder modelBuilder = new ModelBuilder();
                     modelBuilder.subject(apiKey.iri());
-                    modelBuilder.add(RDF.TYPE, ApplicationApiKey.TYPE);
-                    modelBuilder.add(ApplicationApiKey.HAS_KEY, apiKey.key());
-                    modelBuilder.add(ApplicationApiKey.HAS_LABEL, apiKey.label());
-                    modelBuilder.add(ApplicationApiKey.HAS_ISSUE_DATE, apiKey.issueDate());
-                    modelBuilder.add(ApplicationApiKey.IS_ACTIVE, apiKey.active());
-                    modelBuilder.add(ApplicationApiKey.OF_SUBSCRIPTION, apiKey.application().key());
+                    modelBuilder.add(RDF.TYPE, ApplicationToken.TYPE);
+                    modelBuilder.add(ApplicationToken.HAS_KEY, apiKey.key());
+                    modelBuilder.add(ApplicationToken.HAS_LABEL, apiKey.label());
+                    modelBuilder.add(ApplicationToken.HAS_ISSUE_DATE, apiKey.issueDate());
+                    modelBuilder.add(ApplicationToken.IS_ACTIVE, apiKey.active());
+                    modelBuilder.add(ApplicationToken.OF_SUBSCRIPTION, apiKey.application().key());
                     modelBuilder.add(apiKey.application().iri(), Application.HAS_API_KEY, apiKey.iri());
 
                     return this.applicationsStore.insert(modelBuilder.build(), authentication, Authorities.APPLICATION).then(Mono.just(apiKey));
+                })
+                .doOnSuccess(token -> {
+                    this.eventPublisher.publishEvent(new TokenCreatedEvent(token));
                 })
                 .doOnSubscribe(subs -> log.debug("Generating new api key for subscriptions '{}'", applicationIdentifier));
     }
@@ -286,11 +316,163 @@ public class ApplicationsService {
 
     }
 
-    public Mono<Void> revokeApiKey(String subscriptionId, String name, Authentication authentication) {
-        log.debug("(Service) Revoking api key for application '{}'", subscriptionId);
 
-        return Mono.error(new NotImplementedException());
+    public Mono<Void> setApplicationConfig(String applicationIdentifier, String s3Host, String s3Bucket, String exportFrequency, Authentication authentication) {
+
+        Variable node = SparqlBuilder.var("n");
+        Variable s3HostVar = SparqlBuilder.var("d");
+        Variable s3BucketVar = SparqlBuilder.var("e");
+        Variable exportFrequencyVar = SparqlBuilder.var("f");
+
+        ModifyQuery q = Queries.MODIFY()
+                .where(node.isA(Application.TYPE)
+                        .andHas(Application.HAS_KEY, applicationIdentifier)
+                )
+                .delete(node.has(Application.HAS_S3_HOST, s3HostVar))
+                .delete(node.has(Application.HAS_S3_BUCKET_ID, s3BucketVar))
+                .delete(node.has(Application.HAS_EXPORT_FREQUENCY, exportFrequencyVar))
+                .insert(node.has(Application.HAS_S3_HOST, s3Host))
+                .insert(node.has(Application.HAS_S3_BUCKET_ID, s3Bucket))
+                .insert(node.has(Application.HAS_EXPORT_FREQUENCY, exportFrequency));
+
+        return this.applicationsStore.modify(q, authentication, Authorities.APPLICATION)
+                .then()
+                .doOnSubscribe(sub -> log.debug("Setting application config for application with key '{}'", applicationIdentifier));
+
     }
 
+    public Mono<HashMap<String, String>> getApplicationConfig(String applicationIdentifier, Authentication authentication) {
 
+        Variable node = SparqlBuilder.var("n");
+        Variable label = SparqlBuilder.var("b");
+        Variable persistent = SparqlBuilder.var("c");
+        Variable s3Host = SparqlBuilder.var("d");
+        Variable s3Bucket = SparqlBuilder.var("e");
+        Variable exportFrequency = SparqlBuilder.var("f");
+
+        SelectQuery q = Queries.SELECT()
+                .where(node.isA(Application.TYPE)
+                        .andHas(Application.HAS_KEY, applicationIdentifier)
+                        .andHas(Application.HAS_LABEL, label)
+                        .andHas(Application.IS_PERSISTENT, persistent)
+                        .andHas(Application.HAS_S3_HOST, s3Host)
+                        .andHas(Application.HAS_S3_BUCKET_ID, s3Bucket)
+                        .andHas(Application.HAS_EXPORT_FREQUENCY, exportFrequency)
+                )
+                .limit(1);
+
+        return this.applicationsStore.query(q, authentication, Authorities.APPLICATION)
+                .collectList()
+                .flatMap(this::getUniqueBindingSet)
+                .map(BindingsAccessor::new)
+                .map(ba -> {
+                    HashMap<String, String> map = new HashMap<>();
+                    map.put("label", ba.asString(label));
+                    map.put("persistent", ba.asString(persistent));
+                    map.put("s3Host", ba.asString(s3Host));
+                    map.put("s3Bucket", ba.asString(s3Bucket));
+                    map.put("exportFrequency", ba.asString(exportFrequency));
+                    return map;
+                })
+                .doOnSubscribe(sub -> log.debug("Getting application config for application with key '{}'", applicationIdentifier));
+    }
+
+    public Mono<String> exportApplication(String applicationIdentifier, Authentication authentication) {
+
+        Variable node = SparqlBuilder.var("n");
+        Variable label = SparqlBuilder.var("b");
+        Variable persistent = SparqlBuilder.var("c");
+        Variable s3Host = SparqlBuilder.var("d");
+        Variable s3Bucket = SparqlBuilder.var("e");
+
+        SelectQuery q = Queries.SELECT()
+                .where(node.isA(Application.TYPE)
+                        .andHas(Application.HAS_KEY, applicationIdentifier)
+                        .andHas(Application.HAS_LABEL, label)
+                        .andHas(Application.IS_PERSISTENT, persistent)
+                        .andHas(Application.HAS_S3_HOST, s3Host)
+                        .andHas(Application.HAS_S3_BUCKET_ID, s3Bucket)
+                )
+                .limit(1);
+
+
+        return this.applicationsStore.query(q, authentication, Authorities.APPLICATION)
+                .collectList()
+                .flatMap(this::getUniqueBindingSet)
+                .map(BindingsAccessor::new)
+                .map(ba -> {
+                    //TODO: fix this
+                    this.queryServices.queryGraph()
+
+                    try {
+                        S3Client s3 = S3Client.builder()
+                                .endpointOverride(URI.create(ba.asString(s3Host)))
+                                .build();
+                        PutObjectRequest objectRequest = PutObjectRequest.builder()
+                                .bucket(ba.asString(s3Bucket))
+                                .key(exportIdentifier)
+                                .build();
+                        s3.putObject(objectRequest, RequestBody.fromString(ba.asString(node)));
+
+                    } catch (S3Exception e) {
+                        log.error(e.awsErrorDetails().errorMessage());
+                    }
+
+                    return exportIdentifier;
+                })
+                .doOnSubscribe(sub -> log.debug("Exporting application with key '{}'", applicationIdentifier));
+
+    }
+
+    public Mono<HashMap<String, String>> getExport(String applicationIdentifier, String exportId, Authentication authentication) {
+        log.debug("(Service) Getting export '{}' for application '{}'", exportId, applicationIdentifier);
+
+        Variable node = SparqlBuilder.var("n");
+        Variable label = SparqlBuilder.var("b");
+        Variable persistent = SparqlBuilder.var("c");
+        Variable s3Host = SparqlBuilder.var("d");
+        Variable s3Bucket = SparqlBuilder.var("e");
+
+        SelectQuery q = Queries.SELECT()
+                .where(node.isA(Application.TYPE)
+                        .andHas(Application.HAS_KEY, applicationIdentifier)
+                        .andHas(Application.HAS_LABEL, label)
+                        .andHas(Application.IS_PERSISTENT, persistent)
+                        .andHas(Application.HAS_S3_HOST, s3Host)
+                        .andHas(Application.HAS_S3_BUCKET_ID, s3Bucket)
+                )
+                .limit(1);
+
+        return this.applicationsStore.query(q, authentication, Authorities.APPLICATION)
+                .collectList()
+                .flatMap(this::getUniqueBindingSet)
+                .map(BindingsAccessor::new)
+                .mapNotNull(ba -> {
+
+                    try {
+                        S3Client s3 = S3Client.builder()
+                                .endpointOverride(URI.create(ba.asString(s3Host)))
+                                .build();
+                        GetObjectRequest objectRequest = GetObjectRequest.builder()
+                                .bucket(ba.asString(s3Bucket))
+                                .key(exportId)
+                                .build();
+                        ResponseBytes<GetObjectResponse> objectBytes = s3.getObjectAsBytes(objectRequest);
+
+                        return objectBytes.asUtf8String();
+                    } catch (S3Exception e) {
+                        log.error(e.awsErrorDetails().errorMessage());
+                    }
+
+                    return null;
+                })
+                .map(responseBody -> {
+                    HashMap<String, String> response = new HashMap<>();
+                    response.put("application", applicationIdentifier);
+                    response.put("exportId", exportId);
+                    response.put("export", responseBody);
+                    return response;
+                })
+                .doOnSubscribe(sub -> log.debug("Getting export '{}' for application '{}'", exportId, applicationIdentifier));
+    }
 }

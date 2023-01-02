@@ -17,7 +17,6 @@ public abstract class TestsBase {
     protected static ValueFactory vf = SimpleValueFactory.getInstance();
 
 
-
     protected WebTestClient webClient;
 
     @Autowired
@@ -26,7 +25,7 @@ public abstract class TestsBase {
     }
 
 
-    protected void dump()  {
+    protected void dump() {
 
         CsvConsumer csvConsumer = new CsvConsumer();
         webClient
@@ -48,9 +47,9 @@ public abstract class TestsBase {
     protected void resetRepository(String repositoryType) {
         webClient.get()
                 .uri(uriBuilder ->
-                    uriBuilder.path("/api/admin/bulk/reset")
-                            .queryParam("name", repositoryType)
-                            .build()
+                        uriBuilder.path("/api/admin/bulk/reset")
+                                .queryParam("name", repositoryType)
+                                .build()
 
                 )
                 .exchange()
@@ -62,6 +61,7 @@ public abstract class TestsBase {
         return this.upload(file);
 
     }
+
     protected RdfConsumer upload(Resource file) {
         RdfConsumer rdfConsumer = new RdfConsumer(RDFFormat.TURTLE, true);
 

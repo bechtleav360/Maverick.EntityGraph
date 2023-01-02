@@ -45,7 +45,7 @@ public class ListEntities {
                 .expectStatus().isOk()
                 .expectBody()
                 .consumeWith(rdfConsumer);
-                ;
+        ;
         System.out.println(rdfConsumer.dump(RDFFormat.TURTLE));
 
         Assertions.assertEquals(9, (long) rdfConsumer.asModel().filter(null, RDF.TYPE, null).size());

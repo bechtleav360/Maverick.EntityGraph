@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
-    <include resource="org/springframework/boot/logging/logback/defaults.xml" />
+    <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
     <property name="LOG_FILE" value="logs.json"/>
 
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
@@ -16,7 +16,7 @@
         </encoder>
         <file>${LOG_FILE}</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-        <fileNamePattern>${LOG_FILE}.%d</fileNamePattern>
+            <fileNamePattern>${LOG_FILE}.%d</fileNamePattern>
         </rollingPolicy>
     </appender>
 
@@ -50,17 +50,17 @@
 
     <springProfile name="prod">
         <root level="INFO">
-            <appender-ref ref="JSON_FILE" />
+            <appender-ref ref="JSON_FILE"/>
         </root>
     </springProfile>
     <springProfile name="stage">
         <root level="DEBUG">
-            <appender-ref ref="JSON_CONSOLE" />
+            <appender-ref ref="JSON_CONSOLE"/>
         </root>
     </springProfile>
     <springProfile name="persistent | dev">
         <root level="INFO">
-            <appender-ref ref="CONSOLE" />
+            <appender-ref ref="CONSOLE"/>
         </root>
     </springProfile>
 

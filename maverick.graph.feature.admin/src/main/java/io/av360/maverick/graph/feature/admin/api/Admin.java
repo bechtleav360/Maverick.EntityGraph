@@ -4,6 +4,7 @@ import io.av360.maverick.graph.api.controller.AbstractController;
 import io.av360.maverick.graph.feature.admin.domain.AdminServices;
 import io.av360.maverick.graph.store.RepositoryType;
 import io.av360.maverick.graph.store.rdf.helpers.RdfUtils;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.rdf4j.rio.RDFParserFactory;
 import org.springframework.core.io.buffer.DataBuffer;
@@ -24,6 +25,7 @@ import java.util.Optional;
 @RequestMapping(path = "/api/admin/bulk")
 //@Api(tags = "Admin Operations")
 @Slf4j(topic = "graph.feature.admin.api")
+@SecurityRequirement(name = "api_key")
 public class Admin extends AbstractController {
     protected final AdminServices adminServices;
 
@@ -75,10 +77,10 @@ public class Admin extends AbstractController {
         Assert.isTrue(StringUtils.hasLength(mimetype), "Mimetype is a required parameter");
 
         Optional<RDFParserFactory> parserFactory = RdfUtils.getParserFactory(MimeType.valueOf(mimetype));
-        Assert.isTrue(parserFactory.isPresent(), "Unsupported mimetype for parsing the file. Supported mimetypes are: "+RdfUtils.getSupportedMimeTypes());
+        Assert.isTrue(parserFactory.isPresent(), "Unsupported mimetype for parsing the file. Supported mimetypes are: " + RdfUtils.getSupportedMimeTypes());
 
         return Mono.zip(super.getAuthentication(), fileMono)
-                .flatMap(objects -> adminServices.importEntities(objects.getT2().content() , mimetype, objects.getT1()))
+                .flatMap(objects -> adminServices.importEntities(objects.getT2().content(), mimetype, objects.getT1()))
                 .doOnError(throwable -> log.error("Error while importing to repository.", throwable))
                 .doOnSubscribe(s -> log.debug("Request to import a file of mimetype {}", mimetype));
     }

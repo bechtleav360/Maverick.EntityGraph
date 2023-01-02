@@ -6,13 +6,10 @@ import org.eclipse.rdf4j.repository.RepositoryResult;
 
 /**
  * Represents a named graph of one particular entity.
- *
+ * <p>
  * Stores all items for one particular entity.
- *
- *
- *
  */
-public class Entity extends AbstractModel {
+public class Entity extends TripleModel {
 
 
     public Entity(Model model) {

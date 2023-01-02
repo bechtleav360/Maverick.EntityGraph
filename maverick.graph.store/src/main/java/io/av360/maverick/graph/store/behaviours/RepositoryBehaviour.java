@@ -2,9 +2,9 @@ package io.av360.maverick.graph.store.behaviours;
 
 
 import io.av360.maverick.graph.model.security.Authorities;
-import io.av360.maverick.graph.store.rdf.models.Transaction;
 import io.av360.maverick.graph.store.RepositoryBuilder;
 import io.av360.maverick.graph.store.RepositoryType;
+import io.av360.maverick.graph.store.rdf.models.Transaction;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
@@ -57,7 +57,7 @@ public interface RepositoryBehaviour {
     }
 
     default RepositoryConnection getConnection(Authentication authentication, RepositoryType repositoryType, GrantedAuthority requiredAuthority) throws IOException {
-        if(! Authorities.satisfies(requiredAuthority, authentication.getAuthorities())) {
+        if (!Authorities.satisfies(requiredAuthority, authentication.getAuthorities())) {
             throw new InsufficientAuthenticationException(String.format("Missing authority '%s' for initializing connection to requested repository for authentication", requiredAuthority.getAuthority()));
         }
         return getBuilder().buildRepository(repositoryType, authentication).getConnection();

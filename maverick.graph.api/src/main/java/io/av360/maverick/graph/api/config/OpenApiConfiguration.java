@@ -2,11 +2,7 @@ package io.av360.maverick.graph.api.config;
 
 import io.swagger.v3.oas.annotations.enums.SecuritySchemeType;
 import io.swagger.v3.oas.annotations.security.SecurityScheme;
-import io.swagger.v3.oas.models.ExternalDocumentation;
-import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Info;
-import io.swagger.v3.oas.models.info.License;
-import io.swagger.v3.oas.models.security.SecurityRequirement;
 import org.springdoc.core.models.GroupedOpenApi;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -15,7 +11,6 @@ import org.springframework.web.reactive.function.server.RouterFunction;
 import org.springframework.web.reactive.function.server.ServerResponse;
 
 import java.net.URI;
-import java.util.List;
 
 import static org.springframework.web.reactive.function.server.RequestPredicates.GET;
 import static org.springframework.web.reactive.function.server.RouterFunctions.route;
@@ -42,7 +37,7 @@ public class OpenApiConfiguration {
     }
 
     @Bean
-    public GroupedOpenApi queryApi(@Value("${info.app.version:unknown}")String version) {
+    public GroupedOpenApi queryApi(@Value("${info.app.version:unknown}") String version) {
         return GroupedOpenApi.builder()
                 .group("Query API")
                 .addOpenApiCustomizer(openApi -> {
@@ -53,7 +48,7 @@ public class OpenApiConfiguration {
     }
 
     @Bean
-    public GroupedOpenApi transactionsApi(@Value("${info.app.version:unknown}")String version) {
+    public GroupedOpenApi transactionsApi(@Value("${info.app.version:unknown}") String version) {
         return GroupedOpenApi.builder()
                 .group("Transactions API")
                 .addOpenApiCustomizer(openApi -> {

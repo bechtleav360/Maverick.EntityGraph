@@ -2,8 +2,8 @@ package io.av360.maverick.graph.api.converter.decoder;
 
 import io.av360.maverick.graph.store.rdf.helpers.RdfUtils;
 import io.av360.maverick.graph.store.rdf.helpers.TriplesCollector;
-import io.av360.maverick.graph.store.rdf.models.AbstractModel;
-import io.av360.maverick.graph.store.rdf.models.Incoming;
+import io.av360.maverick.graph.store.rdf.models.TripleModel;
+import io.av360.maverick.graph.store.rdf.models.TripleBag;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.rdf4j.rio.RDFFormat;
 import org.eclipse.rdf4j.rio.RDFParser;
@@ -21,7 +21,7 @@ import java.util.List;
 import java.util.Map;
 
 @Slf4j(topic = "graph.api.decoder")
-public class StatementsDecoder implements Decoder<Incoming> {
+public class StatementsDecoder implements Decoder<TripleBag> {
     private static final List<MimeType> mimeTypes;
 
     static {
@@ -42,23 +42,21 @@ public class StatementsDecoder implements Decoder<Incoming> {
 
     @Override
     public boolean canDecode(ResolvableType elementType, MimeType mimeType) {
-        return mimeType != null && AbstractModel.class.isAssignableFrom(elementType.toClass()) && mimeType.isPresentIn(mimeTypes);
+        return mimeType != null && TripleModel.class.isAssignableFrom(elementType.toClass()) && mimeType.isPresentIn(mimeTypes);
     }
 
     @Override
-    public Flux<Incoming> decode(Publisher<DataBuffer> inputStream, ResolvableType elementType, MimeType mimeType, Map<String, Object> hints) {
+    public Flux<TripleBag> decode(Publisher<DataBuffer> inputStream, ResolvableType elementType, MimeType mimeType, Map<String, Object> hints) {
         return Flux.from(this.parse(inputStream, mimeType));
     }
 
     @Override
-    public Mono<Incoming> decodeToMono(Publisher<DataBuffer> inputStream, ResolvableType elementType, MimeType mimeType, Map<String, Object> hints) {
+    public Mono<TripleBag> decodeToMono(Publisher<DataBuffer> inputStream, ResolvableType elementType, MimeType mimeType, Map<String, Object> hints) {
         return this.parse(inputStream, mimeType);
     }
 
 
-
-
-    private Mono<Incoming> parse(Publisher<DataBuffer> publisher, MimeType mimeType) {
+    private Mono<TripleBag> parse(Publisher<DataBuffer> publisher, MimeType mimeType) {
 
         return DataBufferUtils.join(publisher)
                 .flatMap(dataBuffer -> {
@@ -76,13 +74,10 @@ public class StatementsDecoder implements Decoder<Incoming> {
                         log.error("Failed to parse request of mimetype '{}'", mimeType, e);
                         return Mono.error(e);
                     }
-        });
+                });
 
 
     }
-
-
-
 
 
 }

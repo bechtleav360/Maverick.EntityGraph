@@ -36,6 +36,10 @@
         </dependency>
         <dependency>
             <groupId>com.bechtle.maverick.graph</groupId>
+            <artifactId>graph-store</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.bechtle.maverick.graph</groupId>
             <artifactId>graph-store-rdf4j</artifactId>
             <scope>test</scope>
         </dependency>

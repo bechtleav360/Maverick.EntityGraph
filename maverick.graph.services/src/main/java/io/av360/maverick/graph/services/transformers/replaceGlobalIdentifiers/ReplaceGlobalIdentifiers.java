@@ -1,14 +1,14 @@
 package io.av360.maverick.graph.services.transformers.replaceGlobalIdentifiers;
 
-import io.av360.maverick.graph.services.EntityServices;
-import io.av360.maverick.graph.services.QueryServices;
-import io.av360.maverick.graph.services.transformers.Transformer;
-import io.av360.maverick.graph.store.rdf.models.AbstractModel;
-import lombok.extern.slf4j.Slf4j;
 import io.av360.maverick.graph.model.rdf.GeneratedIdentifier;
 import io.av360.maverick.graph.model.rdf.NamespaceAwareStatement;
 import io.av360.maverick.graph.model.rdf.NamespacedModelBuilder;
 import io.av360.maverick.graph.model.vocabulary.Local;
+import io.av360.maverick.graph.services.EntityServices;
+import io.av360.maverick.graph.services.QueryServices;
+import io.av360.maverick.graph.services.transformers.Transformer;
+import io.av360.maverick.graph.store.rdf.models.TripleModel;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.Pair;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
@@ -26,13 +26,11 @@ import java.util.stream.Collectors;
 
 /**
  * Will check any entity IRI in the model, if doesn't conform to the internal schema, a new identifier is generated (we keep the old one)
- *
+ * <p>
  * Potential for conflict:
- *
+ * <p>
  * the new identifier is a hash of the old identifier to have reproducible results. If the identifier is reused (e.g. example.org/identifier), all
  * new statements are aggregated to one big entity. We could add a random see into it, but that means we cannot reproduce it anymore
- *
- *
  */
 @Slf4j(topic = "graph.transformer.identifiers")
 @Component
@@ -40,7 +38,7 @@ import java.util.stream.Collectors;
 public class ReplaceGlobalIdentifiers implements Transformer {
 
     @Override
-    public Mono<? extends AbstractModel> handle(AbstractModel triples, Map<String, String> parameters, Authentication authentication) {
+    public Mono<? extends TripleModel> handle(TripleModel triples, Map<String, String> parameters, Authentication authentication) {
 
 
         log.trace("Replacing global identifiers in incoming model with local identifiers.");

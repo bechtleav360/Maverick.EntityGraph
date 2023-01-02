@@ -17,7 +17,7 @@ public class MutableValueFactory extends SimpleValueFactory {
 
     @Override
     public Statement createStatement(Resource subject, IRI predicate, Value object, Resource context) {
-        return super.createStatement(subject,predicate,object,context);
+        return super.createStatement(subject, predicate, object, context);
     }
 
 }

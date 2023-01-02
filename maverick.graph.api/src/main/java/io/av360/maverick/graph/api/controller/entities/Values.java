@@ -5,7 +5,7 @@ import io.av360.maverick.graph.model.enums.RdfMimeTypes;
 import io.av360.maverick.graph.model.rdf.NamespaceAwareStatement;
 import io.av360.maverick.graph.services.EntityServices;
 import io.av360.maverick.graph.services.ValueServices;
-import io.av360.maverick.graph.store.rdf.models.AbstractModel;
+import io.av360.maverick.graph.store.rdf.models.TripleModel;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -41,10 +41,11 @@ public class Values extends AbstractController {
 
         String[] property = splitPrefixedIdentifier(prefixedKey);
         return super.getAuthentication()
-                .flatMap(authentication ->  values.insertValue(id, property[0], property[1], value, authentication))
-                .flatMapIterable(AbstractModel::asStatements)
+                .flatMap(authentication -> values.insertValue(id, property[0], property[1], value, authentication))
+                .flatMapIterable(TripleModel::asStatements)
                 .doOnSubscribe(s -> {
-                    if (log.isDebugEnabled()) log.debug("Request to set property '{}' of entity '{}' to value '{}'", prefixedKey, id, value.length() > 64 ? value.substring(0, 64) : value);
+                    if (log.isDebugEnabled())
+                        log.debug("Request to set property '{}' of entity '{}' to value '{}'", prefixedKey, id, value.length() > 64 ? value.substring(0, 64) : value);
                 });
 
     }
@@ -58,14 +59,13 @@ public class Values extends AbstractController {
         String[] property = splitPrefixedIdentifier(prefixedKey);
 
         return super.getAuthentication()
-                .flatMap(authentication ->  values.removeValue(id, property[0], property[1], lang, authentication))
-                .flatMapIterable(AbstractModel::asStatements)
+                .flatMap(authentication -> values.removeValue(id, property[0], property[1], lang, authentication))
+                .flatMapIterable(TripleModel::asStatements)
                 .doOnSubscribe(s -> {
                     if (log.isDebugEnabled()) log.debug("Deleted property '{}' of entity '{}'", prefixedKey, id);
                 });
 
     }
-
 
 
 }
