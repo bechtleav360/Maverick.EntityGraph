@@ -1,6 +1,6 @@
-package io.av360.maverick.graph.api.v2;
+package io.av360.maverick.graph.main.api.entities.read;
 
-import io.av360.maverick.graph.boot.TestConfigurations;
+import io.av360.maverick.graph.main.config.TestConfigurations;
 import io.av360.maverick.graph.tests.util.RdfConsumer;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.rio.RDFFormat;
@@ -45,7 +45,7 @@ public class ListEntities {
                 .expectStatus().isOk()
                 .expectBody()
                 .consumeWith(rdfConsumer);
-                ;
+        ;
         System.out.println(rdfConsumer.dump(RDFFormat.TURTLE));
 
         Assertions.assertEquals(9, (long) rdfConsumer.asModel().filter(null, RDF.TYPE, null).size());

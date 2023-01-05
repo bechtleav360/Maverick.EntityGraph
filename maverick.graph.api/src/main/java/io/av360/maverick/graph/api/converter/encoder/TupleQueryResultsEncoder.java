@@ -1,11 +1,12 @@
 package io.av360.maverick.graph.api.converter.encoder;
 
 import lombok.extern.slf4j.Slf4j;
-import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.query.TupleQueryResult;
 import org.eclipse.rdf4j.query.TupleQueryResultHandlerException;
-import org.eclipse.rdf4j.query.resultio.*;
-import org.eclipse.rdf4j.rio.Rio;
+import org.eclipse.rdf4j.query.resultio.QueryResultFormat;
+import org.eclipse.rdf4j.query.resultio.QueryResultIO;
+import org.eclipse.rdf4j.query.resultio.TupleQueryResultFormat;
+import org.eclipse.rdf4j.query.resultio.UnsupportedQueryResultFormatException;
 import org.reactivestreams.Publisher;
 import org.springframework.core.ResolvableType;
 import org.springframework.core.codec.Encoder;
@@ -19,7 +20,8 @@ import reactor.core.publisher.Flux;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.util.*;
+import java.util.List;
+import java.util.Map;
 
 @Slf4j(topic = "graph.api.encoder")
 public class TupleQueryResultsEncoder implements Encoder<TupleQueryResult> {

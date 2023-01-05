@@ -13,7 +13,6 @@ public class ApplicationAuthenticationToken extends ApiKeyAuthenticationToken {
     public static final String USER_AUTHORITY = "USER";
 
 
-
     private final ApplicationToken applicationToken;
 
 
@@ -33,8 +32,6 @@ public class ApplicationAuthenticationToken extends ApiKeyAuthenticationToken {
     public ApplicationToken getApplicationApiKey() {
         return applicationToken;
     }
-
-
 
 
 }

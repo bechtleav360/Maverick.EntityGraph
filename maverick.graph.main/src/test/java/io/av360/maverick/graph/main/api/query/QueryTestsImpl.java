@@ -1,6 +1,6 @@
-package io.av360.maverick.graph.api.v1;
+package io.av360.maverick.graph.main.api.query;
 
-import io.av360.maverick.graph.boot.TestConfigurations;
+import io.av360.maverick.graph.main.config.TestConfigurations;
 import io.av360.maverick.graph.store.RepositoryType;
 import io.av360.maverick.graph.tests.api.v1.QueriesTest;
 import io.av360.maverick.graph.tests.util.CsvConsumer;
@@ -53,7 +53,6 @@ public class QueryTestsImpl extends TestsBase implements QueriesTest {
                 .expectStatus().isAccepted()
                 .expectBody()
                 .consumeWith(csvConsumer);
-
 
 
         Assertions.assertEquals(6, csvConsumer.getRows().size());

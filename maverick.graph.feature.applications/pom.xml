@@ -10,7 +10,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>graph-feature-applications</artifactId>
-    <name>Maverick.EntityGraph Feature: Applications and Subscriptions</name>
+    <name>Maverick.EntityGraph Feature: Application</name>
 
     <dependencies>
         <dependency>
@@ -44,7 +44,6 @@
             <artifactId>graph-feature-admin</artifactId>
             <scope>test</scope>
         </dependency>
-
         <dependency>
             <groupId>org.eclipse.rdf4j</groupId>
             <artifactId>rdf4j-repository-sail</artifactId>
@@ -59,9 +58,5 @@
         </dependency>
     </dependencies>
 
-    <properties>
-        <maven.compiler.source>17</maven.compiler.source>
-        <maven.compiler.target>17</maven.compiler.target>
-    </properties>
 
 </project>

@@ -22,6 +22,4 @@ public interface ModelUpdates extends RepositoryBehaviour {
     Mono<Void> insert(Model model, Authentication authentication, GrantedAuthority requiredAuthority);
 
 
-
-
 }

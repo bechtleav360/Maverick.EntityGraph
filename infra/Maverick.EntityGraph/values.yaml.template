@@ -1,7 +1,7 @@
 replicaCount: 1
 
 image:
-  repository: ghcr.io/bechtleav360/maverick-entity-graph
+  repository: ghcr.io/bechtleav360/maverick.entity-graph
   pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion.
   tag: "latest"

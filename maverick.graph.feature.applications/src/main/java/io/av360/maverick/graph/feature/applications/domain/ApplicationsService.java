@@ -1,16 +1,17 @@
 package io.av360.maverick.graph.feature.applications.domain;
 
+import io.av360.maverick.graph.api.security.errors.RevokedApiKeyUsed;
+import io.av360.maverick.graph.api.security.errors.UnknownApiKey;
 import io.av360.maverick.graph.feature.applications.domain.events.ApplicationCreatedEvent;
 import io.av360.maverick.graph.feature.applications.domain.events.TokenCreatedEvent;
-import io.av360.maverick.graph.feature.applications.domain.model.ApplicationToken;
 import io.av360.maverick.graph.feature.applications.domain.model.Application;
+import io.av360.maverick.graph.feature.applications.domain.model.ApplicationToken;
+import io.av360.maverick.graph.feature.applications.store.ApplicationsStore;
 import io.av360.maverick.graph.model.errors.DuplicateRecordsException;
 import io.av360.maverick.graph.model.rdf.GeneratedIdentifier;
 import io.av360.maverick.graph.model.security.Authorities;
-import io.av360.maverick.graph.store.rdf.helpers.BindingsAccessor;
 import io.av360.maverick.graph.model.vocabulary.Local;
-import io.av360.maverick.graph.feature.applications.store.ApplicationsStore;
-
+import io.av360.maverick.graph.store.rdf.helpers.BindingsAccessor;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.util.ModelBuilder;
@@ -26,8 +27,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import io.av360.maverick.graph.api.security.errors.RevokedApiKeyUsed;
-import io.av360.maverick.graph.api.security.errors.UnknownApiKey;
 
 import java.time.ZonedDateTime;
 import java.util.List;
@@ -52,8 +51,9 @@ public class ApplicationsService {
 
     /**
      * Creates a new application.
-     * @param label Label for the application
-     * @param persistent True if data should be stored on disk
+     *
+     * @param label          Label for the application
+     * @param persistent     True if data should be stored on disk
      * @param authentication Current authentication information
      * @return New application as mono
      */
@@ -87,7 +87,6 @@ public class ApplicationsService {
                 })
                 .doOnSubscribe(subs -> log.debug("Creating a new application with label '{}' and persistence set to '{}' ", label, persistent));
     }
-
 
 
     public Mono<ApplicationToken> getKey(String keyIdentifier, Authentication authentication) {
@@ -303,8 +302,6 @@ public class ApplicationsService {
         return Mono.just(result.get(0));
 
     }
-
-
 
 
 }

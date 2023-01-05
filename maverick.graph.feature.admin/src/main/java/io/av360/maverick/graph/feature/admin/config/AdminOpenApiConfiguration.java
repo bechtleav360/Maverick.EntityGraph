@@ -1,21 +1,26 @@
 package io.av360.maverick.graph.feature.admin.config;
 
+import io.swagger.v3.oas.models.info.Info;
+import org.springdoc.core.models.GroupedOpenApi;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import springfox.documentation.builders.ApiInfoBuilder;
-import springfox.documentation.builders.RequestHandlerSelectors;
-import springfox.documentation.service.ApiKey;
-import springfox.documentation.service.AuthorizationScope;
-import springfox.documentation.service.SecurityReference;
-import springfox.documentation.spi.DocumentationType;
-import springfox.documentation.spi.service.contexts.SecurityContext;
-import springfox.documentation.spring.web.plugins.Docket;
-
-import java.util.List;
 
 @Configuration
 public class AdminOpenApiConfiguration {
 
+    @Bean
+    public GroupedOpenApi adminApiDefinition(@Value("${info.app.version:unknown}") String version) {
+        return GroupedOpenApi.builder()
+                .group("Admin API")
+                .addOpenApiCustomizer(openApi -> {
+                    openApi.info(new Info().title("Admin API").description("API for admin operations (part of admin feature).").version(version));
+                })
+                .pathsToMatch("/api/admin/**")
+                .build();
+    }
+
+    /*
     @Bean
     public Docket adminApiDocket() {
         return new Docket(DocumentationType.OAS_30)
@@ -49,5 +54,6 @@ public class AdminOpenApiConfiguration {
     private ApiKey apiKey() {
         return new ApiKey("X-API-KEY", "X-API-KEY", "header");
     }
+     */
 
 }

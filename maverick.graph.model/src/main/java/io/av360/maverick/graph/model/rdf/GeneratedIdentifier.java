@@ -12,17 +12,17 @@ import java.util.Base64;
 
 /**
  * The generated entity identifier needs to resolve, it should be in the form
- *
+ * <p>
  * http://example.org/api/entities/{id}
  * http://example.org/api/transactions/{id}
- *
+ * <p>
  * FIXME: should require the current id (either bnode or externally set) to create reproducible ids
  * FIXME: should also keep track of the original id (we should store this in the provenance)
  */
 public class GeneratedIdentifier extends LocalIRI {
     private static final SecureRandom secureRandom;
     private static final RandomStringGenerator randomStringGenerator;
-    private static final char[][] range = { {'a', 'z'}, {'0', '9'} };
+    private static final char[][] range = {{'a', 'z'}, {'0', '9'}};
     public static int LENGTH = 12;
 
     static {
@@ -41,7 +41,7 @@ public class GeneratedIdentifier extends LocalIRI {
     public GeneratedIdentifier(String namespace, Resource oldIdentifier) {
         super(namespace);
 
-        if(oldIdentifier.isIRI()) {
+        if (oldIdentifier.isIRI()) {
             super.setLocalName(generateDerivedIdentifier(((IRI) oldIdentifier).getLocalName()));
         } else {
             super.setLocalName(generateRandomKey());
@@ -56,22 +56,19 @@ public class GeneratedIdentifier extends LocalIRI {
     }
 
 
-
     public GeneratedIdentifier(Namespace defaultNamespace) {
         this(defaultNamespace.getName());
     }
 
     /**
-     *
      * @param obj, the IRI to check
      * @return true, if the given resource conforms to a local identifier
      */
     public static boolean is(IRI obj, String ns) {
         return (obj instanceof GeneratedIdentifier)
                 ||
-               (obj.getNamespace().equalsIgnoreCase(ns))  && (obj.getLocalName().length() == LENGTH);
+                (obj.getNamespace().equalsIgnoreCase(ns)) && (obj.getLocalName().length() == LENGTH);
     }
-
 
 
     private String generateSecureRandom() {
@@ -91,7 +88,7 @@ public class GeneratedIdentifier extends LocalIRI {
     public synchronized static String generateDerivedIdentifier(String localName) {
         String s = Hashing.fingerprint2011().hashString(localName, StandardCharsets.UTF_8).toString();
 
-        if(s.length() < LENGTH) s = s.concat(s);
+        if (s.length() < LENGTH) s = s.concat(s);
         return s.substring(0, LENGTH);
     }
 

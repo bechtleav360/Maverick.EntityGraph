@@ -6,7 +6,10 @@ import org.eclipse.rdf4j.model.*;
 import org.eclipse.rdf4j.model.util.ModelBuilder;
 import org.eclipse.rdf4j.model.util.Namespaces;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
 
 /**
  *
@@ -16,7 +19,7 @@ public class NamespacedModelBuilder extends ModelBuilder {
     private final static Map<String, Namespace> namespaceMap;
 
     static {
-        namespaceMap = new HashMap<>(Namespaces.DEFAULT_RDF4J.size()+10);
+        namespaceMap = new HashMap<>(Namespaces.DEFAULT_RDF4J.size() + 10);
         Namespaces.DEFAULT_RDF4J.forEach(namespace -> namespaceMap.put(namespace.getName(), namespace));
         namespaceMap.put(Local.Entities.NAMESPACE, Local.Entities.NS);
         namespaceMap.put(Local.Transactions.NAMESPACE, Local.Transactions.NS);
@@ -46,7 +49,7 @@ public class NamespacedModelBuilder extends ModelBuilder {
         return this;
     }
 
-    public NamespacedModelBuilder add(Collection<Statement> statements, Resource ... contexts) {
+    public NamespacedModelBuilder add(Collection<Statement> statements, Resource... contexts) {
         statements.forEach(sts -> {
             super.build().add(sts.getSubject(), sts.getPredicate(), sts.getObject(), contexts);
         });
@@ -60,13 +63,13 @@ public class NamespacedModelBuilder extends ModelBuilder {
 
 
     public ModelBuilder add(Resource subject, IRI predicate, Object object) {
-        if(subject.isIRI()) {
+        if (subject.isIRI()) {
             this.registerNamespace(((IRI) subject).getNamespace());
         }
 
         this.registerNamespace(predicate.getNamespace());
 
-        if(object instanceof IRI) {
+        if (object instanceof IRI) {
             this.registerNamespace(((IRI) object).getNamespace());
         }
 
@@ -74,9 +77,8 @@ public class NamespacedModelBuilder extends ModelBuilder {
     }
 
     private void registerNamespace(String namespace) {
-        if(namespaceMap.containsKey(namespace)) super.setNamespace(namespaceMap.get(namespace));
+        if (namespaceMap.containsKey(namespace)) super.setNamespace(namespaceMap.get(namespace));
     }
-
 
 
 }

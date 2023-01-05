@@ -17,7 +17,7 @@ public class EntityExistsAlready extends Throwable {
 
     @Override
     public String getMessage() {
-        return "Conflict: Entity with id '"+identifier+"' already exists.";
+        return "Conflict: Entity with id '" + identifier + "' already exists.";
     }
 
 }

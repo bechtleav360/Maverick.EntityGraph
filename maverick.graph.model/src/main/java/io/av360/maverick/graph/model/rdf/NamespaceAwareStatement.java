@@ -5,8 +5,8 @@ import org.eclipse.rdf4j.model.*;
 import java.util.Set;
 
 /**
- *  Simple Statement Wrapper which also keeps a pointer to the model (which gives access to the namespaces, these
- *     are needed to write the correct headers in a response)
+ * Simple Statement Wrapper which also keeps a pointer to the model (which gives access to the namespaces, these
+ * are needed to write the correct headers in a response)
  */
 public class NamespaceAwareStatement implements Statement, NamespaceAware {
 
@@ -18,7 +18,7 @@ public class NamespaceAwareStatement implements Statement, NamespaceAware {
         this.namespaces = namespaces;
     }
 
-    public static NamespaceAwareStatement wrap(Statement statement, Set<Namespace> namespaces ) {
+    public static NamespaceAwareStatement wrap(Statement statement, Set<Namespace> namespaces) {
         return new NamespaceAwareStatement(statement, namespaces);
     }
 

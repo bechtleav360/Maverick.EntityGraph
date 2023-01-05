@@ -1,9 +1,8 @@
 package io.av360.maverick.graph.services.transformers;
 
-import io.av360.maverick.graph.services.transformers.Transformer;
-import io.av360.maverick.graph.store.rdf.models.AbstractModel;
 import io.av360.maverick.graph.services.EntityServices;
 import io.av360.maverick.graph.services.QueryServices;
+import io.av360.maverick.graph.store.rdf.models.TripleModel;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
@@ -36,15 +35,14 @@ public class DelegatingTransformer implements Transformer {
     }
 
     public List<Transformer> getRegisteredTransformers() {
-        if(this.transformers == null || this.transformers.isEmpty()) {
+        if (this.transformers == null || this.transformers.isEmpty()) {
             log.warn("Default transformers are missing (not injected), check your spring configuration");
             return List.of();
-        }
-        else return this.transformers;
+        } else return this.transformers;
     }
 
     @Override
-    public Mono<? extends AbstractModel> handle(AbstractModel triples, Map<String, String> parameters, Authentication authentication) {
+    public Mono<? extends TripleModel> handle(TripleModel triples, Map<String, String> parameters, Authentication authentication) {
         if (this.transformers == null) {
             log.trace("No transformers registered, skip.");
             return Mono.just(triples);
@@ -52,9 +50,9 @@ public class DelegatingTransformer implements Transformer {
 
         return Flux.fromIterable(transformers)
                 .reduce(Mono.just(triples), (modelMono, transformer) ->
-                            modelMono
-                                    .map(model -> transformer.handle(model, parameters, authentication))
-                                    .flatMap(mono -> mono))
+                        modelMono
+                                .map(model -> transformer.handle(model, parameters, authentication))
+                                .flatMap(mono -> mono))
                 .flatMap(mono -> mono);
     }
 }

@@ -3,8 +3,7 @@ package io.av360.maverick.graph.api.controller.queries;
 import io.av360.maverick.graph.api.controller.AbstractController;
 import io.av360.maverick.graph.model.rdf.NamespaceAwareStatement;
 import io.av360.maverick.graph.services.QueryServices;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.rdf4j.query.BindingSet;
 import org.springframework.http.HttpStatus;
@@ -13,8 +12,8 @@ import reactor.core.publisher.Flux;
 
 @RestController
 @RequestMapping(path = "/api/query")
-@Api(tags = "Queries")
 @Slf4j(topic = "graph.api.queries")
+@SecurityRequirement(name = "api_key")
 public class Queries extends AbstractController {
     protected final QueryServices queryServices;
 
@@ -22,7 +21,6 @@ public class Queries extends AbstractController {
         this.queryServices = queryServices;
     }
 
-    @ApiOperation(value = "Run a query")
     @PostMapping(value = "/select", consumes = "text/plain", produces = {"text/csv", "application/sparql-results+json"})
     @ResponseStatus(HttpStatus.ACCEPTED)
     Flux<BindingSet> queryBindings(@RequestBody String query) {
@@ -35,7 +33,6 @@ public class Queries extends AbstractController {
     }
 
 
-    @ApiOperation(value = "Run a query")
     @PostMapping(value = "/construct", consumes = "text/plain", produces = {"text/turtle", "application/ld+json"})
     @ResponseStatus(HttpStatus.ACCEPTED)
     Flux<NamespaceAwareStatement> queryStatements(@RequestBody String query) {

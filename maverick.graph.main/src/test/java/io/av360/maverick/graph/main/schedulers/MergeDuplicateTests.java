@@ -1,6 +1,6 @@
-package io.av360.maverick.graph.services.schedulers;
+package io.av360.maverick.graph.main.schedulers;
 
-import io.av360.maverick.graph.boot.TestConfigurations;
+import io.av360.maverick.graph.main.config.TestConfigurations;
 import io.av360.maverick.graph.model.security.Authorities;
 import io.av360.maverick.graph.services.schedulers.detectDuplicates.ScheduledDetectDuplicates;
 import io.av360.maverick.graph.store.RepositoryType;
@@ -43,7 +43,6 @@ import java.util.stream.StreamSupport;
 public class MergeDuplicateTests extends TestsBase implements MergeDuplicatesScheduler {
 
 
-
     @Autowired
     private ScheduledDetectDuplicates scheduledDetectDuplicates;
 
@@ -53,7 +52,9 @@ public class MergeDuplicateTests extends TestsBase implements MergeDuplicatesSch
     }
 
 
-    /** Verify that embedded items in one request are merged */
+    /**
+     * Verify that embedded items in one request are merged
+     */
     @Override
     @Test
     public void createEmbeddedEntitiesWithSharedItems() {
@@ -127,8 +128,6 @@ public class MergeDuplicateTests extends TestsBase implements MergeDuplicatesSch
          */
 
 
-
-
         CsvConsumer csvConsumer = new CsvConsumer();
         Variable id = SparqlBuilder.var("id");
         Variable term = SparqlBuilder.var("term");
@@ -147,8 +146,6 @@ public class MergeDuplicateTests extends TestsBase implements MergeDuplicatesSch
         Assertions.assertEquals(1, csvConsumer.getRows().size());
 
     }
-
-
 
 
 }

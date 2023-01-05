@@ -47,12 +47,12 @@ public class ValueServicesImpl implements ValueServices {
     public Mono<Transaction> insertValue(String id, String predicatePrefix, String predicateKey, String value, Authentication authentication) {
         Literal literal = null;
         if (value.matches(".*@\\w\\w-?[\\w\\d-]*$")) {
-            String tag = value.substring(value.lastIndexOf('@')+1);
+            String tag = value.substring(value.lastIndexOf('@') + 1);
             value = value.substring(0, value.lastIndexOf('@'));
 
             LanguageHandler languageHandler = LanguageHandlerRegistry.getInstance().get(LanguageHandler.BCP47).orElseThrow();
             if (languageHandler.isRecognizedLanguage(tag)) {
-                literal  = languageHandler.normalizeLanguage(value, tag, SimpleValueFactory.getInstance());
+                literal = languageHandler.normalizeLanguage(value, tag, SimpleValueFactory.getInstance());
             } else {
                 log.warn("Failed to identify language tag in literal. We treat it as string.");
                 literal = SimpleValueFactory.getInstance().createLiteral(value);
@@ -153,7 +153,7 @@ public class ValueServicesImpl implements ValueServices {
      * Deletes a value with a new transaction. Fails if no entity exists with the given subject
      */
     @Override
-    public Mono<Transaction> removeValue(Resource entityIdentifier, IRI predicate, String lang,  Authentication authentication) {
+    public Mono<Transaction> removeValue(Resource entityIdentifier, IRI predicate, String lang, Authentication authentication) {
         return this.removeValue(entityIdentifier, predicate, lang, new Transaction(), authentication)
                 .doOnSuccess(trx -> {
                     eventPublisher.publishEvent(new ValueRemovedEvent(trx));
@@ -167,21 +167,21 @@ public class ValueServicesImpl implements ValueServices {
 
         return this.entityStore.listStatements(entityIdentifier, predicate, null, authentication)
                 .flatMap(statements -> {
-                    if(statements.size() > 1) {
+                    if (statements.size() > 1) {
                         List<Statement> statementsToRemove = new ArrayList<>();
-                        if(StringUtils.isEmpty(lang)) {
-                            return Mono.error(new InvalidEntityUpdate(entityIdentifier,"Multiple values for given predicate detected, but no language tag in request."));
+                        if (StringUtils.isEmpty(lang)) {
+                            return Mono.error(new InvalidEntityUpdate(entityIdentifier, "Multiple values for given predicate detected, but no language tag in request."));
                         }
                         for (Statement st : statements) {
                             Value object = st.getObject();
-                            if(object.isBNode()) {
+                            if (object.isBNode()) {
                                 log.warn("Found a link to an anonymous node. Purge it from repository.");
                                 statementsToRemove.add(st);
-                            } else if(object.isIRI()) {
-                                return Mono.error(new InvalidEntityUpdate(entityIdentifier,"Invalid to remove links via the values api."));
-                            } else if(object.isLiteral()) {
+                            } else if (object.isIRI()) {
+                                return Mono.error(new InvalidEntityUpdate(entityIdentifier, "Invalid to remove links via the values api."));
+                            } else if (object.isLiteral()) {
                                 Literal currentLiteral = (Literal) object;
-                                if(StringUtils.equals(currentLiteral.getLanguage().orElse("invalid"), lang)) {
+                                if (StringUtils.equals(currentLiteral.getLanguage().orElse("invalid"), lang)) {
                                     statementsToRemove.add(st);
                                 }
                             }
@@ -190,8 +190,8 @@ public class ValueServicesImpl implements ValueServices {
 
                         return this.entityStore.removeStatements(statementsToRemove, transaction);
                     } else {
-                        if(statements.size() == 1 && statements.get(0).getObject().isIRI()) {
-                            return Mono.error(new InvalidEntityUpdate(entityIdentifier,"Invalid to remove links via the values api."));
+                        if (statements.size() == 1 && statements.get(0).getObject().isIRI()) {
+                            return Mono.error(new InvalidEntityUpdate(entityIdentifier, "Invalid to remove links via the values api."));
                         }
                         return this.entityStore.removeStatements(statements, transaction);
                     }
