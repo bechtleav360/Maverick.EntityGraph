@@ -11,7 +11,6 @@ import org.eclipse.rdf4j.model.Namespace;
 import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.util.Namespaces;
-import org.eclipse.rdf4j.model.vocabulary.SKOS;
 import org.springframework.stereotype.Component;
 
 import java.util.HashSet;
@@ -41,6 +40,7 @@ public class SchemaRepository extends AbstractRepository implements SchemaStore 
     public String getNamespaceFor(String prefix) throws UnknownPrefix {
         return namespaces.stream().filter(ns -> ns.getPrefix().equalsIgnoreCase(prefix)).findFirst().orElseThrow(() -> new UnknownPrefix(prefix)).getName();
     }
+
     @Override
     public ValueFactory getValueFactory() {
         return SimpleValueFactory.getInstance();

@@ -1,11 +1,12 @@
 package io.av360.maverick.graph.feature.applications.api;
 
+import io.av360.maverick.graph.api.controller.AbstractController;
 import io.av360.maverick.graph.feature.applications.api.dto.Requests;
 import io.av360.maverick.graph.feature.applications.api.dto.Responses;
-import io.av360.maverick.graph.api.controller.AbstractController;
 import io.av360.maverick.graph.feature.applications.domain.ApplicationsService;
 import io.av360.maverick.graph.feature.applications.domain.errors.InvalidApplication;
 import io.av360.maverick.graph.feature.applications.domain.model.Application;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.util.Assert;
@@ -20,6 +21,7 @@ import java.util.List;
 @RequestMapping(path = "/api/applications")
 //@Api(tags = "Manage applications")
 @Slf4j(topic = "graph.feature.apps.api")
+@SecurityRequirement(name = "api_key")
 public class Applications extends AbstractController {
 
     private final ApplicationsService applicationsService;
@@ -71,7 +73,7 @@ public class Applications extends AbstractController {
         Assert.isTrue(StringUtils.hasLength(request.label()), "Name is a required parameter");
 
         return super.getAuthentication()
-                .flatMap(authentication -> this.applicationsService.generateApiKey(applicationId, request.label(), authentication))
+                .flatMap(authentication -> this.applicationsService.generateToken(applicationId, request.label(), authentication))
                 .map(apiKey ->
                         new Responses.ApiKeyWithApplicationResponse(
                                 apiKey.key(),
@@ -118,7 +120,7 @@ public class Applications extends AbstractController {
         Assert.isTrue(StringUtils.hasLength(label), "Name is a required parameter");
 
         return super.getAuthentication()
-                .flatMapMany(authentication -> this.applicationsService.revokeApiKey(applicationId, label, authentication))
+                .flatMapMany(authentication -> this.applicationsService.revokeToken(applicationId, label, authentication))
                 .then()
                 .doOnSubscribe(subscription -> log.info("Generating a new token for an application"));
     }

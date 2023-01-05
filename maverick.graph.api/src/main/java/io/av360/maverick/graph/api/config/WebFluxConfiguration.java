@@ -20,7 +20,6 @@ public class WebFluxConfiguration implements WebFluxConfigurer {
     }
 
 
-
     public void configureHttpMessageCodecs(ServerCodecConfigurer configurer) {
         configurer.customCodecs().register(new BufferedStatementsEncoder());
         configurer.customCodecs().register(new StatementsEncoder());
@@ -29,8 +28,6 @@ public class WebFluxConfiguration implements WebFluxConfigurer {
         configurer.customCodecs().register(new StatementsDecoder());
 
     }
-
-
 
 
 }

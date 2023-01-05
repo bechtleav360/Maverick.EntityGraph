@@ -23,7 +23,7 @@ public class InvalidEntityModel extends Exception {
     @Override
     public String getMessage() {
         StringBuilder sb = new StringBuilder("Invalid model for entity with id '").append(identifier).append("'.");
-        if(StringUtils.hasLength(this.detail)) {
+        if (StringUtils.hasLength(this.detail)) {
             sb.append(this.detail).append(".");
         }
         return sb.toString();

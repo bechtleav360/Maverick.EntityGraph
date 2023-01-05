@@ -1,7 +1,7 @@
 package io.av360.maverick.graph.api.converter.encoder;
 
-import io.av360.maverick.graph.store.rdf.helpers.RdfUtils;
 import io.av360.maverick.graph.model.rdf.NamespaceAwareStatement;
+import io.av360.maverick.graph.store.rdf.helpers.RdfUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.rio.RDFFormat;
