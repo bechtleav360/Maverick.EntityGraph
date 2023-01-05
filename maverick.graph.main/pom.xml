@@ -9,7 +9,7 @@
     </parent>
     <properties>
         <image.name>ghcr.io/bechtleav360/maverick.entity-graph</image.name>
-        <docker.publish>false</docker.publish>
+        <docker.publish>true</docker.publish>
         <docker.registry.host>https://ghcr.io</docker.registry.host>
         <docker.credentials.user>xxx</docker.credentials.user>
         <docker.credentials.password>xxx</docker.credentials.password>
@@ -80,6 +80,7 @@
             <artifactId>lombok</artifactId>
             <scope>test</scope>
         </dependency>
+
     </dependencies>
     <build>
         <plugins>
@@ -120,6 +121,7 @@
                         <verboseLogging>true</verboseLogging>
                         <env>
                             <BP_OCI_SOURCE>https://github.com/bechtleav360/Maverick.EntityGraph</BP_OCI_SOURCE>
+                            <BP_JVM_VERSION>${java.version}</BP_JVM_VERSION>
                         </env>
                     </image>
                     <docker>

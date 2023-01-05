@@ -9,6 +9,7 @@ import io.av360.maverick.graph.services.EntityServices;
 import io.av360.maverick.graph.services.impl.QueryServicesImpl;
 import io.av360.maverick.graph.store.rdf.models.TripleBag;
 import io.av360.maverick.graph.store.rdf.models.TripleModel;
+import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -21,6 +22,9 @@ import java.util.Map;
 @RestController
 @RequestMapping(path = "/api/entities")
 @Slf4j(topic = "graph.api.entities")
+@OpenAPIDefinition(
+
+)
 @SecurityRequirement(name = "api_key")
 public class Entities extends AbstractController {
 

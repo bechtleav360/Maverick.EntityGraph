@@ -9,11 +9,14 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpMethod;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.authentication.DelegatingReactiveAuthenticationManager;
 import org.springframework.security.authentication.ReactiveAuthenticationManager;
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
 import org.springframework.security.config.web.server.SecurityWebFiltersOrder;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.security.web.server.SecurityWebFilterChain;
 import org.springframework.security.web.server.authentication.AuthenticationWebFilter;
 import org.springframework.security.web.server.authentication.ServerAuthenticationConverter;
@@ -45,7 +48,6 @@ public class SecurityConfiguration {
         SecurityWebFilterChain build = http
                 .authorizeExchange()
 
-
                 .pathMatchers(HttpMethod.GET, "/api/**").hasAnyAuthority(Authorities.SYSTEM.getAuthority(), Authorities.APPLICATION.getAuthority(), Authorities.CONTRIBUTOR.getAuthority(), Authorities.READER.getAuthority())
                 .pathMatchers(HttpMethod.HEAD, "/api/**").hasAnyAuthority(Authorities.SYSTEM.getAuthority(), Authorities.APPLICATION.getAuthority(), Authorities.CONTRIBUTOR.getAuthority(), Authorities.READER.getAuthority())
                 .pathMatchers(HttpMethod.DELETE, "/api/**").hasAnyAuthority(Authorities.SYSTEM.getAuthority(), Authorities.APPLICATION.getAuthority(), Authorities.CONTRIBUTOR.getAuthority())
@@ -76,9 +78,20 @@ public class SecurityConfiguration {
         return exchange -> {
             List<String> apiKeys = exchange.getRequest().getHeaders().get(API_KEY_HEADER);
             if (apiKeys == null || apiKeys.size() == 0) {
-                // lets fallback to the standard authentication (basic)
-                ServerHttpBasicAuthenticationConverter basicAuthenticationConverter = new ServerHttpBasicAuthenticationConverter();
-                return basicAuthenticationConverter.convert(exchange);
+
+                if(exchange.getRequest().getPath().value().startsWith("/api")) {
+                    log.warn("API Request to path '{}' without an API Key Header", exchange.getRequest().getPath().value());
+                    Authentication anonymous = new AnonymousAuthenticationToken("key", "anonymous",
+                            AuthorityUtils.createAuthorityList("ROLE_ANONYMOUS"));
+                    return Mono.just(anonymous);
+                } else {
+                    // lets fallback to the standard authentication (basic) (for actuators and others)
+                    ServerHttpBasicAuthenticationConverter basicAuthenticationConverter = new ServerHttpBasicAuthenticationConverter();
+                    return basicAuthenticationConverter.convert(exchange);
+                }
+
+
+
             }
 
             log.trace("Found a valid api key in request, delegating authentication.");

@@ -12,7 +12,6 @@ import reactor.core.publisher.Flux;
 
 @RestController
 @RequestMapping(path = "/api/query")
-//@Api(tags = "Queries")
 @Slf4j(topic = "graph.api.queries")
 @SecurityRequirement(name = "api_key")
 public class Queries extends AbstractController {
@@ -22,7 +21,6 @@ public class Queries extends AbstractController {
         this.queryServices = queryServices;
     }
 
-    //@ApiOperation(value = "Run a query")
     @PostMapping(value = "/select", consumes = "text/plain", produces = {"text/csv", "application/sparql-results+json"})
     @ResponseStatus(HttpStatus.ACCEPTED)
     Flux<BindingSet> queryBindings(@RequestBody String query) {
@@ -35,7 +33,6 @@ public class Queries extends AbstractController {
     }
 
 
-    //@ApiOperation(value = "Run a query")
     @PostMapping(value = "/construct", consumes = "text/plain", produces = {"text/turtle", "application/ld+json"})
     @ResponseStatus(HttpStatus.ACCEPTED)
     Flux<NamespaceAwareStatement> queryStatements(@RequestBody String query) {

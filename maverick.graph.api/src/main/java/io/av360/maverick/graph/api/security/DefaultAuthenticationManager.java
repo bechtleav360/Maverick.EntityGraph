@@ -7,6 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.text.RandomStringGenerator;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Primary;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.authentication.ReactiveAuthenticationManager;
 import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -45,11 +46,16 @@ public class DefaultAuthenticationManager implements ReactiveAuthenticationManag
     @Override
     public Mono<Authentication> authenticate(Authentication authentication) {
         Assert.notNull(authentication, "Authentication is null in Authentication Manager");
-        log.trace("(Filter) Handling authentication of type {} in system authentication manager (default)", authentication.getClass().getSimpleName());
+        log.trace("Handling authentication of type {} in system authentication manager (default)", authentication.getClass().getSimpleName());
 
         if (authentication instanceof TestingAuthenticationToken) {
             log.warn("Test authentication token detected, disabling security.");
             authentication.setAuthenticated(true);
+        }
+
+        if (authentication instanceof AnonymousAuthenticationToken) {
+            log.info("Anonymous authentication token detected, setting to unauthorized.");
+            authentication.setAuthenticated(false);
         }
 
         if (authentication instanceof UsernamePasswordAuthenticationToken) {
