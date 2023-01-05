@@ -8,7 +8,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.0.0</version>
+        <version>3.0.1</version>
         <relativePath/>
         <!-- lookup parent from repository -->
     </parent>
@@ -35,7 +35,8 @@
         <maven.compiler.source>${java.version}</maven.compiler.source>
         <maven.compiler.target>${java.version}</maven.compiler.target>
         <java.version>17</java.version>
-        <spring-cloud.version>2021.0.5</spring-cloud.version>
+        <spring-cloud.version>2022.0.0</spring-cloud.version>
+        <micrometer-tracing.version>1.0.0</micrometer-tracing.version>
         <graph.version>0.1.0</graph.version>
         <jackson.version>2.14.1</jackson.version>
     </properties>
@@ -64,11 +65,17 @@
             <dependency>
                 <groupId>org.eclipse.rdf4j</groupId>
                 <artifactId>rdf4j-bom</artifactId>
-                <version>4.2.0</version>
+                <version>4.2.2</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
-
+            <dependency>
+                <groupId>io.micrometer</groupId>
+                <artifactId>micrometer-tracing-bom</artifactId>
+                <version>${micrometer-tracing.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
             <dependency>
                 <groupId>com.bechtle.maverick.graph</groupId>
                 <artifactId>graph-model</artifactId>
@@ -188,7 +195,8 @@
                 <configuration>
                     <injectAllReactorProjects>true</injectAllReactorProjects>
                     <generateGitPropertiesFile>true</generateGitPropertiesFile>
-                    <generateGitPropertiesFilename>${project.build.outputDirectory}/git.properties</generateGitPropertiesFilename>
+                    <generateGitPropertiesFilename>${project.build.outputDirectory}/git.properties
+                    </generateGitPropertiesFilename>
                     <includeOnlyProperties>
                         <includeOnlyProperty>^git.build.(time|version)$</includeOnlyProperty>
                         <includeOnlyProperty>^git.commit.id.(abbrev|full)$</includeOnlyProperty>
