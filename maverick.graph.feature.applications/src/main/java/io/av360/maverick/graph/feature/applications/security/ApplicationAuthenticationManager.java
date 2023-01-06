@@ -31,7 +31,7 @@ public class ApplicationAuthenticationManager implements ReactiveAuthenticationM
     private final ApplicationsService subscriptionsService;
 
     public ApplicationAuthenticationManager(ApplicationsService subscriptionsService) {
-        log.trace("(Startup) Activated Application Authentication Manager (checking subscription api keys)");
+        log.trace("Activated Application Authentication Manager (checking subscription api keys)");
         this.subscriptionsService = subscriptionsService;
     }
 

@@ -28,7 +28,7 @@ public class OpenApiConfiguration {
         );
     }
 
-    @Bean
+    @Bean("EntityApiDefinition")
     public GroupedOpenApi entitiesAPI(@Value("${info.app.version:unknown}") String version) {
         return GroupedOpenApi.builder()
                 .group("Entities API")
@@ -39,7 +39,7 @@ public class OpenApiConfiguration {
                 .build();
     }
 
-    @Bean
+    @Bean("QueryApiDefinition")
     public GroupedOpenApi queryApi(@Value("${info.app.version:unknown}") String version) {
         return GroupedOpenApi.builder()
                 .group("Query API")
@@ -50,7 +50,7 @@ public class OpenApiConfiguration {
                 .build();
     }
 
-    @Bean
+    @Bean("TransactionsApiDefinition")
     public GroupedOpenApi transactionsApi(@Value("${info.app.version:unknown}") String version) {
         return GroupedOpenApi.builder()
                 .group("Transactions API")

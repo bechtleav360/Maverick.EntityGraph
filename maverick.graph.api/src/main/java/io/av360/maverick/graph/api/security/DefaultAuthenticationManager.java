@@ -20,7 +20,7 @@ import reactor.core.publisher.Mono;
 import java.util.Set;
 
 @Component
-@Slf4j(topic = "graph.config.security.default")
+@Slf4j(topic = "graph.config.security")
 @Primary
 public class DefaultAuthenticationManager implements ReactiveAuthenticationManager {
 
@@ -53,17 +53,17 @@ public class DefaultAuthenticationManager implements ReactiveAuthenticationManag
             authentication.setAuthenticated(true);
         }
 
-        if (authentication instanceof AnonymousAuthenticationToken) {
+        else if (authentication instanceof AnonymousAuthenticationToken) {
             log.info("Anonymous authentication token detected, setting to unauthorized.");
             authentication.setAuthenticated(false);
         }
 
-        if (authentication instanceof UsernamePasswordAuthenticationToken) {
+        else if (authentication instanceof UsernamePasswordAuthenticationToken) {
             return handleBasicAuthentication((UsernamePasswordAuthenticationToken) authentication)
                     .map(auth -> (Authentication) auth);
         }
 
-        if (authentication instanceof ApiKeyAuthenticationToken) {
+        else if (authentication instanceof ApiKeyAuthenticationToken) {
             return handleApiKeyAuthentication((ApiKeyAuthenticationToken) authentication)
                     .map(auth -> (Authentication) auth);
 

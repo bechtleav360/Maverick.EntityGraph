@@ -21,7 +21,6 @@ public interface EntityServices {
      */
     Mono<Entity> readEntity(String entityIdentifier, Authentication authentication);
 
-
     /**
      * Lists all entities
      *

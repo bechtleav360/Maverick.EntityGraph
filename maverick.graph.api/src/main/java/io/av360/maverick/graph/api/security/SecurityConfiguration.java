@@ -89,13 +89,10 @@ public class SecurityConfiguration {
                     ServerHttpBasicAuthenticationConverter basicAuthenticationConverter = new ServerHttpBasicAuthenticationConverter();
                     return basicAuthenticationConverter.convert(exchange);
                 }
-
-
-
             }
 
             log.trace("Found a valid api key in request, delegating authentication.");
-            ApiKeyAuthenticationToken apiKeyToken = new ApiKeyAuthenticationToken(exchange.getRequest().getHeaders().toSingleValueMap());
+            ApiKeyAuthenticationToken apiKeyToken = new ApiKeyAuthenticationToken(exchange.getRequest().getHeaders().toSingleValueMap(), exchange.getRequest().getPath());
             return Mono.just(apiKeyToken);
         };
     }

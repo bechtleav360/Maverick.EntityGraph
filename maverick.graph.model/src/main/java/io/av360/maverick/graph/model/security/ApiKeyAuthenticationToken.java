@@ -1,5 +1,6 @@
 package io.av360.maverick.graph.model.security;
 
+import org.springframework.http.server.RequestPath;
 import org.springframework.security.core.Authentication;
 
 import java.util.*;
@@ -14,11 +15,20 @@ public class ApiKeyAuthenticationToken implements Authentication {
     private final Set<Authorities.WeightedAuthority> authorities;
 
     private final Map<String, String> headers;
+    private final String path;
     private boolean isAuthenticated;
+    private String application;
 
 
     public ApiKeyAuthenticationToken(Map<String, String> headers) {
         this.headers = headers;
+        this.path = "";
+        this.authorities = new HashSet<>(Authorities.NO_AUTHORITIES);
+    }
+
+    public ApiKeyAuthenticationToken(Map<String, String> headers, RequestPath path) {
+        this.headers = headers;
+        this.path = path.value();
         this.authorities = new HashSet<>(Authorities.NO_AUTHORITIES);
     }
 
@@ -78,5 +88,10 @@ public class ApiKeyAuthenticationToken implements Authentication {
     @Override
     public String getName() {
         return "API Key";
+    }
+
+
+    public String getRequestedPath() {
+        return path;
     }
 }

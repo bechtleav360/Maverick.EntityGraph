@@ -14,6 +14,7 @@ public class ApplicationAuthenticationToken extends ApiKeyAuthenticationToken {
 
 
     private final ApplicationToken applicationToken;
+    private String application;
 
 
     public ApplicationAuthenticationToken(ApiKeyAuthenticationToken apiKeyAuthenticationToken, ApplicationToken application) {
@@ -34,4 +35,15 @@ public class ApplicationAuthenticationToken extends ApiKeyAuthenticationToken {
     }
 
 
+    /**
+     * Sets the requested application (which doesn't have to be the one where this token is valid for).
+     * @param application
+     */
+    public void setRequestedApplication(String application) {
+        this.application = application;
+    }
+
+    public String getRequestedApplication() {
+        return application;
+    }
 }

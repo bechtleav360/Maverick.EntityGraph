@@ -1,10 +1,15 @@
 package io.av360.maverick.graph.feature.applications.config;
 
+import io.swagger.v3.oas.models.PathItem;
 import io.swagger.v3.oas.models.info.Info;
 import org.springdoc.core.models.GroupedOpenApi;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+
+import java.util.List;
 
 @Configuration
 public class ApplicationOpenApiConfiguration {
@@ -19,5 +24,7 @@ public class ApplicationOpenApiConfiguration {
                 .pathsToMatch("/api/applications/**")
                 .build();
     }
+
+
 
 }

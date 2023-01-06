@@ -70,6 +70,8 @@ public class EntityServicesImpl implements EntityServices {
                 .switchIfEmpty(Mono.error(new EntityNotFound(identifier)));
     }
 
+
+
     public Flux<Entity> listEntities(Authentication authentication) {
         Variable idVariable = SparqlBuilder.var("id");
 

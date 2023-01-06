@@ -1,5 +1,6 @@
 package io.av360.maverick.graph.api.controller;
 
+import io.av360.maverick.graph.model.security.ApiKeyAuthenticationToken;
 import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
 import org.springframework.security.authentication.InsufficientAuthenticationException;
 import org.springframework.security.core.Authentication;
@@ -18,6 +19,8 @@ public class AbstractController {
                 .filter(Authentication::isAuthenticated)
                 .switchIfEmpty(Mono.error(new InsufficientAuthenticationException("Request couldn't be authenticated.")));
     }
+
+
 
     protected String[] splitPrefixedIdentifier(String prefixedKey) {
         String[] property = prefixedKey.split("\\.");
