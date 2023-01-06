@@ -3,6 +3,8 @@ package io.av360.maverick.graph.api.controller.queries;
 import io.av360.maverick.graph.api.controller.AbstractController;
 import io.av360.maverick.graph.model.rdf.NamespaceAwareStatement;
 import io.av360.maverick.graph.services.QueryServices;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.rdf4j.query.BindingSet;
@@ -22,6 +24,13 @@ public class Queries extends AbstractController {
     }
 
     @PostMapping(value = "/select", consumes = "text/plain", produces = {"text/csv", "application/sparql-results+json"})
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(
+            description = "Sparql Query",
+            content = @Content(examples = {
+                    @ExampleObject(name = "Select types", value = "SELECT ?entity  ?type WHERE { ?entity a ?type }"),
+                    @ExampleObject(name = "Query everything", value = "SELECT ?a ?b ?c  ?type WHERE { ?a ?b ?c }")
+            })
+    )
     @ResponseStatus(HttpStatus.ACCEPTED)
     Flux<BindingSet> queryBindings(@RequestBody String query) {
 
