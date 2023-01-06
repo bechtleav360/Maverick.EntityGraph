@@ -10,7 +10,7 @@ application:
       enabled: false
   features:
     modules:
-      applications: true
+      applications: false
       admin: true
     schedulers:
       detectDuplicates: false

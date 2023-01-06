@@ -20,6 +20,7 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.lang.Nullable;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
@@ -75,21 +76,27 @@ public class ApplicationRepositoryBuilder implements RepositoryBuilder {
             return this.cache.get(repositoryType.name(), s -> new LabeledRepository("test:" + repositoryType.name(), new SailRepository(new MemoryStore())));
         }
 
-        if (authentication instanceof ApiKeyAuthenticationToken && Authorities.satisfies(Authorities.SYSTEM, authentication.getAuthorities())) {
-            return this.resolveRepositoryForSystemAuthentication(repositoryType, (ApiKeyAuthenticationToken) authentication);
-        }
-
         if (authentication instanceof ApplicationAuthenticationToken && Authorities.satisfies(Authorities.READER, authentication.getAuthorities())) {
             return this.resolveRepositoryForApplicationAuthentication(repositoryType, (ApplicationAuthenticationToken) authentication);
         }
 
+        if (authentication instanceof ApiKeyAuthenticationToken && Authorities.satisfies(Authorities.SYSTEM, authentication.getAuthorities())) {
+            return this.resolveRepositoryForDefaultAuthentication(repositoryType, authentication);
+        }
+
+        if (authentication instanceof AnonymousAuthenticationToken && Authorities.satisfies(Authorities.READER, authentication.getAuthorities())) {
+            return this.resolveRepositoryForDefaultAuthentication(repositoryType, authentication);
+        }
+
+
         throw new IOException(String.format("Cannot resolve repository of type '%s' for authentication of type '%s'", repositoryType, authentication.getClass()));
     }
+
 
     private Repository resolveRepositoryForApplicationAuthentication(RepositoryType repositoryType, ApplicationAuthenticationToken authentication) throws IOException {
         Assert.isTrue(Authorities.satisfies(Authorities.READER, authentication.getAuthorities()), "Missing authorization: " + Authorities.READER.getAuthority());
 
-        log.trace("(Store) Resolving repository with application authentication.");
+        log.trace("Resolving repository with application authentication.");
         return switch (repositoryType) {
             case ENTITIES -> this.getEntityRepository(authentication.getSubscription());
             case TRANSACTIONS -> this.getTransactionsRepository(authentication.getSubscription());
@@ -100,6 +107,36 @@ public class ApplicationRepositoryBuilder implements RepositoryBuilder {
         };
     }
 
+    private Repository resolveRepositoryForDefaultAuthentication(RepositoryType repositoryType, Authentication authentication) {
+        if (Authorities.satisfies(Authorities.SYSTEM, authentication.getAuthorities()) && authentication instanceof ApplicationAuthenticationToken) {
+                log.trace("Resolving repository with admin authentication and additional subscription key.");
+                Application subscription = ((ApplicationAuthenticationToken) authentication).getSubscription();
+                return switch (repositoryType) {
+                    case ENTITIES -> this.getEntityRepository(subscription);
+                    case TRANSACTIONS -> this.getTransactionsRepository(subscription);
+                    case APPLICATION -> this.getApplicationRepository();
+                    case SCHEMA -> this.getSchemaRepository(subscription);
+                };
+        } else {
+            if(authentication instanceof AnonymousAuthenticationToken) {
+                log.trace("Resolving repository with anonymous authentication with read access. Entities and transactions are default (probably in-memory) .");
+            } else {
+                log.trace("Resolving repository with admin token without additional subscription key). Entities and transactions are default (probably in-memory) .");
+            }
+
+            return switch (repositoryType) {
+                case ENTITIES -> this.getEntityRepository(null);
+                case TRANSACTIONS -> this.getTransactionsRepository(null);
+                case APPLICATION -> this.getApplicationRepository();
+                case SCHEMA -> this.getSchemaRepository(null);
+            };
+        }
+    }
+
+
+
+
+    @Deprecated
     private Repository resolveRepositoryForSystemAuthentication(RepositoryType repositoryType, ApiKeyAuthenticationToken authentication) throws IOException {
         Assert.isTrue(Authorities.satisfies(Authorities.SYSTEM, authentication.getAuthorities()), "Missing authorization: " + Authorities.SYSTEM.getAuthority());
 
