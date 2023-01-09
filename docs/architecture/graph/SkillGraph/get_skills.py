@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 
 def get_esco_skills():
-    skills_frame = pd.read_csv('SkillGraph\Data\skills_de.csv')
+    skills_frame = pd.read_csv('skills_de.csv')
     skills = np.array(skills_frame['preferredLabel'])
     skillType = np.array(skills_frame['skillType'])
     conceptURI = np.array(skills_frame['conceptUri'])
