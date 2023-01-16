@@ -9,10 +9,17 @@ import io.av360.maverick.graph.api.converter.encoder.TupleQueryResultsEncoder;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.codec.ServerCodecConfigurer;
 import org.springframework.web.reactive.accept.RequestedContentTypeResolverBuilder;
+import org.springframework.web.reactive.config.CorsRegistry;
 import org.springframework.web.reactive.config.WebFluxConfigurer;
 
 @Configuration
 public class WebFluxConfiguration implements WebFluxConfigurer {
+    @Override
+    public void addCorsMappings(CorsRegistry corsRegistry) {
+        corsRegistry.addMapping("/**")
+                .allowedMethods("GET")
+                .maxAge(3600);
+    }
 
     public void configureContentTypeResolver(RequestedContentTypeResolverBuilder builder) {
         builder.headerResolver();
