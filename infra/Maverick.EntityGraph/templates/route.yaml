@@ -1,14 +1,14 @@
-{ { - if .Values.route.enabled - } }
+{{- if .Values.route.enabled }}
 kind: Route
 apiVersion: route.openshift.io/v1
 metadata:
-  name: { { include "template.fullname" . } }
+  name: {{ include "template.fullname" . }}
   labels:
-    { { - include "template.labels" . | nindent 4 } }
+    {{- include "template.labels" . | nindent 4 }}
 spec:
   to:
     kind: Service
-    name: { { include "template.fullname" . } }
+    name: {{ include "template.fullname" . }}
     weight: 100
   port:
     targetPort: http
@@ -16,4 +16,4 @@ spec:
     termination: edge
     insecureEdgeTerminationPolicy: Redirect
   wildcardPolicy: None
-  { { - end } }
+{{- end }}

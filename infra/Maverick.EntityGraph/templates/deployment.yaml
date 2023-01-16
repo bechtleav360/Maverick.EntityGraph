@@ -1,36 +1,36 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: { { include "template.fullname" . } }
+  name: {{ include "template.fullname" . }}
   labels:
-    { { - include "template.labels" . | nindent 4 } }
+    {{- include "template.labels" . | nindent 4 }}
 spec:
-  { { - if not .Values.autoscaling.enabled } }
-  replicas: { { .Values.replicaCount } }
-  { { - end } }
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
   selector:
     matchLabels:
-      { { - include "template.selectorLabels" . | nindent 6 } }
+      {{- include "template.selectorLabels" . | nindent 6 }}
   template:
     metadata:
-      { { - with .Values.podAnnotations } }
+      {{- with .Values.podAnnotations }}
       annotations:
-        { { - toYaml . | nindent 8 } }
-      { { - end } }
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       labels:
-        { { - include "template.selectorLabels" . | nindent 8 } }
+        {{- include "template.selectorLabels" . | nindent 8 }}
     spec:
-      { { - with .Values.imagePullSecrets } }
+      {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
-        { { - toYaml . | nindent 8 } }
-      { { - end } }
-      serviceAccountName: { { include "template.serviceAccountName" . } }
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "template.serviceAccountName" . }}
       containers:
-        - name: { { .Chart.Name } }
+        - name: {{ .Chart.Name }}
           securityContext:
-            { { - toYaml .Values.securityContext | nindent 12 } }
+            {{- toYaml .Values.securityContext | nindent 12 }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
-          imagePullPolicy: { { .Values.image.pullPolicy } }
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
             - name: http
               containerPort: 8080
@@ -48,47 +48,47 @@ spec:
             initialDelaySeconds: 30
             timeoutSeconds: 1
           resources:
-            { { - toYaml .Values.resources | nindent 12 } }
+            {{- toYaml .Values.resources | nindent 12 }}
           env:
             - name: SPRING_APPLICATION_JSON
               valueFrom:
                 configMapKeyRef:
-                  name: { { include "template.fullname" . } }-application-properties
+                  name: {{ include "template.fullname" . }}-application-properties
                   key: application-properties.json
           volumeMounts:
-            - name: { { .Release.Name } }-spring-application-config
+            - name: {{ .Release.Name }}-spring-application-config
               mountPath: /workspace/config
-            - name: { { .Release.Name } }-vol-application
+            - name: {{ .Release.Name }}-vol-application
               mountPath: "/var/data/application"
-            - name: { { .Release.Name } }-vol-entities
+            - name: {{ .Release.Name }}-vol-entities
               mountPath: "/var/data/entities"
-            - name: { { .Release.Name } }-vol-transactions
+            - name: {{ .Release.Name }}-vol-transactions
               mountPath: "/var/data/transactions"
 
       volumes:
-        - name: { { .Release.Name } }-spring-application-config
+        - name: {{ .Release.Name }}-spring-application-config
           configMap:
-            name: { { include "template.fullname" . } }-application-properties
-      - name: { { .Release.Name } }-vol-application
-      persistentVolumeClaim:
-        claimName: { { .Release.Name } }-pvc-application
-      - name: { { .Release.Name } }-vol-entities
-      persistentVolumeClaim:
-        claimName: { { .Release.Name } }-pvc-entities
-      - name: { { .Release.Name } }-vol-transactions
-      persistentVolumeClaim:
-        claimName: { { .Release.Name } }-pvc-transactions
+            name: {{ include "template.fullname" . }}-application-properties
+        - name: {{ .Release.Name }}-vol-application
+          persistentVolumeClaim:
+            claimName: {{ .Release.Name }}-pvc-application
+        - name: {{ .Release.Name }}-vol-entities
+          persistentVolumeClaim:
+            claimName: {{ .Release.Name }}-pvc-entities
+        - name: {{ .Release.Name }}-vol-transactions
+          persistentVolumeClaim:
+            claimName: {{ .Release.Name }}-pvc-transactions
 
 
-      { { - with .Values.nodeSelector } }
+      {{- with .Values.nodeSelector }}
       nodeSelector:
-        { { - toYaml . | nindent 8 } }
-      { { - end } }
-      { { - with .Values.affinity } }
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
       affinity:
-        { { - toYaml . | nindent 8 } }
-      { { - end } }
-      { { - with .Values.tolerations } }
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
       tolerations:
-        { { - toYaml . | nindent 8 } }
-      { { - end } }
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
