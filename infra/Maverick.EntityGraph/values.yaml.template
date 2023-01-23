@@ -46,25 +46,22 @@ service:
   type: ClusterIP
   port: 80
 
+# openshift route
 route: 
- enabled: true
+ enabled: false
  host: "place your route here"
 
+
+# AKS Nginx-Ingress example
 ingress:
-  enabled: false
-  className: ""
-  annotations: {}
-    # kubernetes.io/ingress.class: nginx
-    # kubernetes.io/tls-acme: "true"
+  enabled: true
+  className: "nginx"
   hosts:
-    - host: chart-example.local
+    - host: user-profile-service.io
       paths:
         - path: /
-          pathType: ImplementationSpecific
+          pathType: Prefix
   tls: []
-  #  - secretName: chart-example-tls
-  #    hosts:
-  #      - chart-example.local
 
 resources: 
   # We usually recommend not to specify default resources and to leave this as a conscious
