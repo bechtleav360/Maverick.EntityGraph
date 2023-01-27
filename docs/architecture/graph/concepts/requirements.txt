@@ -1,0 +1,8 @@
+pandas
+numpy
+youtube-dl
+pytube
+pydub
+SpeechRecognition 
+ffmpeg
+langdetect
