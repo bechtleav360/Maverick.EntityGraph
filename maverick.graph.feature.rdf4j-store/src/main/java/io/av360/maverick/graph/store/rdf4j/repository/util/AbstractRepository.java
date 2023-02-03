@@ -102,7 +102,7 @@ public class AbstractRepository implements RepositoryBehaviour, Statements, Mode
 
                 TupleQuery q = connection.prepareTupleQuery(QueryLanguage.SPARQL, query);
                 if (log.isTraceEnabled())
-                    log.trace("Querying repository '{}' with SPQARL Query: {}", connection.getRepository(), query.replace('\n', ' ').trim());
+                    log.trace("Querying repository '{}' with query: {}", connection.getRepository(), query.replace('\n', ' ').trim());
                 try (TupleQueryResult result = q.evaluate()) {
                     result.stream().forEach(emitter::next);
                 } finally {

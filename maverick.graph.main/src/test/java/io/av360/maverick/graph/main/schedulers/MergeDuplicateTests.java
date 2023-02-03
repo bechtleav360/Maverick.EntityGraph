@@ -78,7 +78,7 @@ public class MergeDuplicateTests extends TestsBase implements MergeDuplicatesSch
 
         statements.forEach(System.out::println);
 
-        long videos = StreamSupport.stream(statements.getStatements(null, RDF.TYPE, TestsBase.vf.createIRI("http://schema.org/", "VideoObject")).spliterator(), false).count();
+        long videos = StreamSupport.stream(statements.getStatements(null, RDF.TYPE, TestsBase.vf.createIRI("https://schema.org/", "VideoObject")).spliterator(), false).count();
         Assertions.assertEquals(2, videos);
 
         //long terms = StreamSupport.stream(statements.getStatements(null, RDFS.LABEL, TestsBase.vf.createLiteral("Term 1")).spliterator(), false).count();
@@ -111,19 +111,19 @@ public class MergeDuplicateTests extends TestsBase implements MergeDuplicatesSch
                 .expectBody();
 
 
-        StepVerifier.create(this.scheduledDetectDuplicates.checkForDuplicates(new TestingAuthenticationToken("", "", List.of(Authorities.SYSTEM)))).verifyComplete();
+        StepVerifier.create(this.scheduledDetectDuplicates.checkForDuplicates(RDFS.LABEL, new TestingAuthenticationToken("", "", List.of(Authorities.SYSTEM)))).verifyComplete();
 
         /**
          * SELECT DISTINCT * WHERE {
-         *   ?id a <http://schema.org/VideoObject> ;
-         * 		 <http://schema.org/hasDefinedTerm> ?term .
+         *   ?id a <https://schema.org/VideoObject> ;
+         * 		 <https://schema.org/hasDefinedTerm> ?term .
          *   ?term  <http://www.w3.org/2000/01/rdf-schema#label> "Term 1" .
          * }
          * LIMIT 10
          *
          * SELECT *
-         * WHERE { ?id a <http://schema.org/VideoObject> ;
-         *     <http://schema.org/hasDefinedTerm> ?term .
+         * WHERE { ?id a <https://schema.org/VideoObject> ;
+         *     <https://schema.org/hasDefinedTerm> ?term .
          * ?term <http://www.w3.org/2000/01/rdf-schema#label> "Term 1" . }
          */
 

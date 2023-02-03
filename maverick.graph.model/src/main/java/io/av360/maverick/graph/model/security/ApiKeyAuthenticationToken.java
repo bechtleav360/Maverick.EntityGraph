@@ -19,7 +19,12 @@ public class ApiKeyAuthenticationToken implements Authentication {
 
 
     public ApiKeyAuthenticationToken(Map<String, String> headers) {
-        this.headers = new HashMap<>(headers);
+
+
+        this.headers = new HashMap<>();
+        // headers are case insensitive according to RFC 2616
+        headers.forEach((key, val) -> this.headers.put(key.toUpperCase(), val));
+
         this.authorities = new HashSet<>(Authorities.NO_AUTHORITIES);
     }
 
@@ -33,11 +38,7 @@ public class ApiKeyAuthenticationToken implements Authentication {
     }
 
     public Optional<String> getApiKey() {
-        if(Objects.isNull(this.getDetails())) {
-            throw new IllegalArgumentException("Missing headers in request");
-        }
-
-        return Optional.of(this.getDetails().get(API_KEY_HEADER));
+        return Optional.ofNullable(Objects.requireNonNull(this.getDetails()).get(API_KEY_HEADER));
     }
 
     @Override

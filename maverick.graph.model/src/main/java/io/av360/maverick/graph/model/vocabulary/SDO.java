@@ -11,7 +11,7 @@ public class SDO {
     private static final ValueFactory vf = SimpleValueFactory.getInstance();
 
 
-    public static final String NAMESPACE = "http://schema.org/";
+    public static final String NAMESPACE = "https://schema.org/";
     public static final String PREFIX = "sdo";
     public static final Namespace NS = new SimpleNamespace(PREFIX, NAMESPACE);
 

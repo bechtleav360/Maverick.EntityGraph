@@ -49,11 +49,11 @@ public class ApplicationRepositoryBuilder implements RepositoryBuilder {
     private String schemaPath;
     @Value("${application.storage.default.path: #{null}}")
     private String applicationsPath;
-    private final Cache<String, Repository> cache;
+    private final Cache<String, Repository> repositoryCache;
 
 
     public ApplicationRepositoryBuilder() {
-        cache = Caffeine.newBuilder().expireAfterAccess(60, TimeUnit.MINUTES).build();
+        repositoryCache = Caffeine.newBuilder().expireAfterAccess(60, TimeUnit.MINUTES).build();
     }
 
 
@@ -73,7 +73,7 @@ public class ApplicationRepositoryBuilder implements RepositoryBuilder {
 
 
         if (authentication instanceof TestingAuthenticationToken) {
-            return this.cache.get(repositoryType.name(), s -> new LabeledRepository("test:" + repositoryType.name(), new SailRepository(new MemoryStore())));
+            return this.repositoryCache.get(repositoryType.name(), s -> new LabeledRepository("test:" + repositoryType.name(), new SailRepository(new MemoryStore())));
         }
 
         if (authentication instanceof ApplicationAuthenticationToken && Authorities.satisfies(Authorities.READER, authentication.getAuthorities())) {
@@ -164,18 +164,18 @@ public class ApplicationRepositoryBuilder implements RepositoryBuilder {
 
     private Repository getApplicationRepository() {
         String key = "applications: default";
-        return this.cache.get(key, s -> new LabeledRepository(key, this.buildDefaultRepository(this.applicationsPath, "applications")));
+        return this.repositoryCache.get(key, s -> new LabeledRepository(key, this.buildDefaultRepository(this.applicationsPath, "applications")));
     }
 
 
     private Repository getSchemaRepository(@Nullable Application application) {
         if (application == null) {
             String key = "schema: default";
-            return this.cache.get(key, s -> new LabeledRepository(key, this.buildDefaultRepository(this.schemaPath, "schema")));
+            return this.repositoryCache.get(key, s -> new LabeledRepository(key, this.buildDefaultRepository(this.schemaPath, "schema")));
         } else {
             log.warn("Application-scoped schema repositories are not supported yet");
             String key = "schema: default";
-            return this.cache.get(key, s -> new LabeledRepository(key, this.buildDefaultRepository(this.schemaPath, "schema")));
+            return this.repositoryCache.get(key, s -> new LabeledRepository(key, this.buildDefaultRepository(this.schemaPath, "schema")));
         }
 
         // TODO: check if application has individual schema repo, otherwise we return default
@@ -186,10 +186,10 @@ public class ApplicationRepositoryBuilder implements RepositoryBuilder {
     private Repository getEntityRepository(@Nullable Application application) {
         if (application == null) {
             String key = "entities: default";
-            return this.cache.get(key, s -> new LabeledRepository(key, this.buildDefaultRepository(this.applicationsPath, "entities")));
+            return this.repositoryCache.get(key, s -> new LabeledRepository(key, this.buildDefaultRepository(this.applicationsPath, "entities")));
         } else {
             String key = "entities: " + application.key();
-            return this.cache.get(key, s -> new LabeledRepository(key, this.buildApplicationsRepository(application, "entities", this.entitiesPath)));
+            return this.repositoryCache.get(key, s -> new LabeledRepository(key, this.buildApplicationsRepository(application, "entities", this.entitiesPath)));
         }
 
     }
@@ -197,10 +197,10 @@ public class ApplicationRepositoryBuilder implements RepositoryBuilder {
     private Repository getTransactionsRepository(@Nullable Application application) {
         if (application == null) {
             String key = "transactions: default";
-            return this.cache.get(key, s -> new LabeledRepository(key, this.buildDefaultRepository(this.transactionsPath, "entities")));
+            return this.repositoryCache.get(key, s -> new LabeledRepository(key, this.buildDefaultRepository(this.transactionsPath, "entities")));
         } else {
             String key = "transactions: " + application.key();
-            return this.cache.get(key, s -> new LabeledRepository(key, this.buildApplicationsRepository(application, "transactions", this.transactionsPath)));
+            return this.repositoryCache.get(key, s -> new LabeledRepository(key, this.buildApplicationsRepository(application, "transactions", this.transactionsPath)));
         }
     }
 

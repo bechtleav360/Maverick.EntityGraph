@@ -15,6 +15,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.eclipse.rdf4j.model.*;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
+import org.eclipse.rdf4j.query.algebra.Str;
 import org.eclipse.rdf4j.rio.LanguageHandler;
 import org.eclipse.rdf4j.rio.LanguageHandlerRegistry;
 import org.springframework.context.ApplicationEventPublisher;
@@ -24,6 +25,7 @@ import reactor.core.publisher.Mono;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 @Slf4j(topic = "graph.service.values")
 @Service
@@ -44,20 +46,30 @@ public class ValueServicesImpl implements ValueServices {
     }
 
     @Override
-    public Mono<Transaction> insertValue(String id, String predicatePrefix, String predicateKey, String value, Authentication authentication) {
+    public Mono<Transaction> insertValue(String id, String predicatePrefix, String predicateKey, String value, String languageTag, Authentication authentication) {
         Literal literal = null;
-        if (value.matches(".*@\\w\\w-?[\\w\\d-]*$")) {
-            String tag = value.substring(value.lastIndexOf('@') + 1);
-            value = value.substring(0, value.lastIndexOf('@'));
+        LanguageHandler languageHandler = LanguageHandlerRegistry.getInstance().get(LanguageHandler.BCP47).orElseThrow();
 
-            LanguageHandler languageHandler = LanguageHandlerRegistry.getInstance().get(LanguageHandler.BCP47).orElseThrow();
-            if (languageHandler.isRecognizedLanguage(tag)) {
-                literal = languageHandler.normalizeLanguage(value, tag, SimpleValueFactory.getInstance());
+        // explicit language tag as request property
+        if(StringUtils.isNotBlank(languageTag) && languageHandler.isRecognizedLanguage(languageTag)) {
+            literal = languageHandler.normalizeLanguage(value, languageTag, SimpleValueFactory.getInstance());
+        }
+
+        // language tag within value
+        else if (value.matches(".*@\\w\\w-?[\\w\\d-]*$")) {
+            // we ignore the inline language tag if the request param is explicitly set
+            languageTag = value.substring(value.lastIndexOf('@') + 1);
+
+            if(languageHandler.isRecognizedLanguage(languageTag)) {
+                value = value.substring(0, value.lastIndexOf('@'));
+                literal = languageHandler.normalizeLanguage(value, languageTag, SimpleValueFactory.getInstance());
             } else {
                 log.warn("Failed to identify language tag in literal. We treat it as string.");
                 literal = SimpleValueFactory.getInstance().createLiteral(value);
             }
-        } else {
+        }
+
+        else {
             literal = SimpleValueFactory.getInstance().createLiteral(value);
         }
 

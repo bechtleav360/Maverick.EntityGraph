@@ -41,7 +41,25 @@ public class Values extends AbstractController {
 
         String[] property = splitPrefixedIdentifier(prefixedKey);
         return super.getAuthentication()
-                .flatMap(authentication -> values.insertValue(id, property[0], property[1], value, authentication))
+                .flatMap(authentication -> values.insertValue(id, property[0], property[1], value, null, authentication))
+                .flatMapIterable(TripleModel::asStatements)
+                .doOnSubscribe(s -> {
+                    if (log.isDebugEnabled())
+                        log.debug("Request to set property '{}' of entity '{}' to value '{}'", prefixedKey, id, value.length() > 64 ? value.substring(0, 64) : value);
+                });
+
+    }
+
+    @PostMapping(value = "/{id:[\\w|\\d|-|_]+}/{prefixedKey:[\\w|\\d]+\\.[\\w|\\d]+}/{lang:[\\w\\{2\\}]}",
+            consumes = MediaType.TEXT_PLAIN_VALUE,
+            produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE})
+    @ResponseStatus(HttpStatus.OK)
+    Flux<NamespaceAwareStatement> createWithLanguage(@PathVariable String id, @PathVariable String prefixedKey, @PathVariable String languageTag, @RequestBody String value) {
+        Assert.isTrue(!value.matches("(?s).*[\\n\\r].*"), "Newlines in request body are not supported");
+
+        String[] property = splitPrefixedIdentifier(prefixedKey);
+        return super.getAuthentication()
+                .flatMap(authentication -> values.insertValue(id, property[0], property[1], value, languageTag, authentication))
                 .flatMapIterable(TripleModel::asStatements)
                 .doOnSubscribe(s -> {
                     if (log.isDebugEnabled())

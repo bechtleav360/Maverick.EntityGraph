@@ -27,8 +27,8 @@ public class Queries extends AbstractController {
     @io.swagger.v3.oas.annotations.parameters.RequestBody(
             description = "Sparql Query",
             content = @Content(examples = {
-                    @ExampleObject(name = "Select types", value = "SELECT ?entity  ?type WHERE { ?entity a ?type }"),
-                    @ExampleObject(name = "Query everything", value = "SELECT ?a ?b ?c  ?type WHERE { ?a ?b ?c }")
+                    @ExampleObject(name = "Select types", value = "SELECT ?entity  ?type WHERE { ?entity a ?type } LIMIT 100"),
+                    @ExampleObject(name = "Query everything", value = "SELECT ?a ?b ?c  ?type WHERE { ?a ?b ?c } LIMIT 100")
             })
     )
     @ResponseStatus(HttpStatus.ACCEPTED)

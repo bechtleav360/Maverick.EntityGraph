@@ -65,7 +65,7 @@ public class StatementsDecoder implements Decoder<TripleBag> {
                     RDFParser parser = RdfUtils.getParserFactory(mimeType).orElseThrow().getParser();
                     TriplesCollector handler = RdfUtils.getTriplesCollector();
 
-                    try (InputStream is = dataBuffer.asInputStream(false)) {
+                    try (InputStream is = dataBuffer.asInputStream(true)) {
                         parser.setRDFHandler(handler);
                         parser.parse(is);
                         log.trace("Parsing of payload with mimetype '{}' completed", mimeType);

@@ -28,7 +28,7 @@ public class CreateValuesTest extends TestsBase {
     @Test
     public void setDescription() {
         RdfConsumer rdfConsumer = super.upload("requests/create-valid.ttl");
-        Statement video = rdfConsumer.findStatement(null, RDF.TYPE, vf.createIRI("http://schema.org/", "video"));
+        Statement video = rdfConsumer.findStatement(null, RDF.TYPE, vf.createIRI("https://schema.org/", "video"));
 
         String description = "This is a description";
 
@@ -53,7 +53,7 @@ public class CreateValuesTest extends TestsBase {
     @Test
     public void setValueWithUnknownPrefix() {
         RdfConsumer rdfConsumer = super.upload("requests/create-valid.ttl");
-        Statement video = rdfConsumer.findStatement(null, RDF.TYPE, vf.createIRI("http://schema.org/", "video"));
+        Statement video = rdfConsumer.findStatement(null, RDF.TYPE, vf.createIRI("https://schema.org/", "video"));
 
         String description = "This is a description";
 
@@ -74,7 +74,7 @@ public class CreateValuesTest extends TestsBase {
     @Test
     public void replaceTitle() {
         RdfConsumer rdfConsumer = super.upload("requests/create-valid.ttl");
-        Statement video = rdfConsumer.findStatement(null, RDF.TYPE, vf.createIRI("http://schema.org/", "video"));
+        Statement video = rdfConsumer.findStatement(null, RDF.TYPE, vf.createIRI("https://schema.org/", "video"));
 
         String title = "A new title";
 
@@ -94,7 +94,7 @@ public class CreateValuesTest extends TestsBase {
     @Test
     public void addTitleWithMissingTag() {
         RdfConsumer rdfConsumer = super.upload("requests/create-valid_with_tags.ttl");
-        Statement video = rdfConsumer.findStatement(null, RDF.TYPE, vf.createIRI("http://schema.org/", "video"));
+        Statement video = rdfConsumer.findStatement(null, RDF.TYPE, vf.createIRI("https://schema.org/", "video"));
 
         String title = "A new title";
 
@@ -111,10 +111,33 @@ public class CreateValuesTest extends TestsBase {
                 .expectStatus().isBadRequest();
     }
 
+
+    public void addTitleWithExplicitLanguageTag() {
+        RdfConsumer rdfConsumer = super.upload("requests/create-valid_with_tags.ttl");
+        Statement video = rdfConsumer.findStatement(null, RDF.TYPE, vf.createIRI("https://schema.org/", "video"));
+
+        String title = "A new title@en";
+
+        webClient.post()
+                .uri(uriBuilder -> uriBuilder.path("/api/entities/{id}/sdo.title/de")
+                        .build(
+                                vf.createIRI(video.getSubject().stringValue()).getLocalName()
+                        )
+
+                )
+                .contentType(MediaType.parseMediaType("text/plain"))
+                .body(BodyInserters.fromValue(title))
+                .exchange()
+                .expectStatus().isOk();
+
+        RdfConsumer resultConsumer = super.loadEntity((IRI) video.getSubject());
+        Assert.equals(3, resultConsumer.countValues(video.getSubject(), vf.createIRI("https://schema.org/", "title")));
+    }
+
     @Test
     public void addTitleWithLanguageTag() {
         RdfConsumer rdfConsumer = super.upload("requests/create-valid_with_tags.ttl");
-        Statement video = rdfConsumer.findStatement(null, RDF.TYPE, vf.createIRI("http://schema.org/", "video"));
+        Statement video = rdfConsumer.findStatement(null, RDF.TYPE, vf.createIRI("https://schema.org/", "video"));
 
         String title = "A new title@en";
 
@@ -131,13 +154,13 @@ public class CreateValuesTest extends TestsBase {
                 .expectStatus().isOk();
 
         RdfConsumer resultConsumer = super.loadEntity((IRI) video.getSubject());
-        Assert.equals(3, resultConsumer.countValues(video.getSubject(), vf.createIRI("http://schema.org/", "title")));
+        Assert.equals(3, resultConsumer.countValues(video.getSubject(), vf.createIRI("https://schema.org/", "title")));
     }
 
     @Test
     public void addTitleWithUnknownLanguageTag() {
         RdfConsumer rdfConsumer = super.upload("requests/create-valid_with_tags.ttl");
-        Statement video = rdfConsumer.findStatement(null, RDF.TYPE, vf.createIRI("http://schema.org/", "video"));
+        Statement video = rdfConsumer.findStatement(null, RDF.TYPE, vf.createIRI("https://schema.org/", "video"));
 
         String title = "A new title@this-is-.invalid";
 
