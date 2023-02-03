@@ -2,6 +2,7 @@ package io.av360.maverick.graph.model.security;
 
 import org.springframework.security.core.Authentication;
 
+import java.io.IOException;
 import java.util.*;
 
 /**
@@ -18,7 +19,7 @@ public class ApiKeyAuthenticationToken implements Authentication {
 
 
     public ApiKeyAuthenticationToken(Map<String, String> headers) {
-        this.headers = headers;
+        this.headers = new HashMap<>(headers);
         this.authorities = new HashSet<>(Authorities.NO_AUTHORITIES);
     }
 
@@ -32,6 +33,10 @@ public class ApiKeyAuthenticationToken implements Authentication {
     }
 
     public Optional<String> getApiKey() {
+        if(Objects.isNull(this.getDetails())) {
+            throw new IllegalArgumentException("Missing headers in request");
+        }
+
         return Optional.of(this.getDetails().get(API_KEY_HEADER));
     }
 
