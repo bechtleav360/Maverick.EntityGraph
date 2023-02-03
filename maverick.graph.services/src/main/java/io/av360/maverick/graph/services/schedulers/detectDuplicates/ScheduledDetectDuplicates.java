@@ -15,6 +15,7 @@ import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.vocabulary.DCTERMS;
 import org.eclipse.rdf4j.model.vocabulary.RDFS;
+import org.eclipse.rdf4j.model.vocabulary.SKOS;
 import org.eclipse.rdf4j.sparqlbuilder.constraint.Expressions;
 import org.eclipse.rdf4j.sparqlbuilder.core.SparqlBuilder;
 import org.eclipse.rdf4j.sparqlbuilder.core.Variable;
@@ -69,6 +70,17 @@ import java.util.TreeSet;
 @ConditionalOnProperty(name = "application.features.schedulers.detectDuplicates", havingValue = "true")
 public class ScheduledDetectDuplicates {
 
+    private record DuplicateCandidate(IRI sharedProperty, String type, String sharedValue) {    }
+
+
+    private record MislinkedStatement(Resource subject, IRI predicate, IRI object) {     }
+
+    private record Duplicate(IRI id) implements Comparable<Duplicate> {
+        @Override
+        public int compareTo(Duplicate o) {
+            return o.id().stringValue().compareTo(this.id().stringValue());
+        }
+    }
 
     private final EntityServices entityServices;
     private final QueryServices queryServices;
@@ -87,7 +99,7 @@ public class ScheduledDetectDuplicates {
     // https://github.com/spring-projects/spring-framework/issues/23533
     private boolean labelCheckRunning = false;
 
-    @Scheduled(fixedRate = 20000)
+    @Scheduled(fixedRate = 1000)
     public void checkForDuplicatesScheduled() {
         if (labelCheckRunning) return;
 
@@ -100,6 +112,7 @@ public class ScheduledDetectDuplicates {
 
         this.checkForDuplicates(RDFS.LABEL, adminAuthentication)
                 .then(this.checkForDuplicates(SDO.IDENTIFIER, adminAuthentication))
+                .then(this.checkForDuplicates(SKOS.PREF_LABEL, adminAuthentication))
                 .then(this.checkForDuplicates(DCTERMS.IDENTIFIER, adminAuthentication))
                 .publishOn(Schedulers.single()).subscribe();
     }
@@ -112,7 +125,7 @@ public class ScheduledDetectDuplicates {
                 })
                 .flatMap(candidate ->
                         this.findDuplicates(candidate, authentication)
-                                .doOnNext(duplicate -> log.trace("Identified entity '{}' as potential duplicate.", duplicate.id()))
+                                .doOnNext(duplicate -> log.trace("Entity '{}' identified as duplicate. Another item exists with property {} and value {} .", duplicate.id(), candidate.sharedProperty(), candidate.sharedValue()))
                                 .collectList()
                                 .flatMap(duplicates -> this.mergeDuplicates(duplicates, authentication)))
                 .doOnSubscribe(sub -> {
@@ -267,19 +280,7 @@ public class ScheduledDetectDuplicates {
     }
 
 
-    private record DuplicateCandidate(IRI sharedProperty, String type, String sharedValue) {
-    }
 
-
-    private record MislinkedStatement(Resource subject, IRI predicate, IRI object) {
-    }
-
-    private record Duplicate(IRI id) implements Comparable<Duplicate> {
-        @Override
-        public int compareTo(Duplicate o) {
-            return o.id().stringValue().compareTo(this.id().stringValue());
-        }
-    }
 }
 
 
