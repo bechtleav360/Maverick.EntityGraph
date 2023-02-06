@@ -15,7 +15,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.eclipse.rdf4j.model.*;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
-import org.eclipse.rdf4j.query.algebra.Str;
 import org.eclipse.rdf4j.rio.LanguageHandler;
 import org.eclipse.rdf4j.rio.LanguageHandlerRegistry;
 import org.springframework.context.ApplicationEventPublisher;
@@ -25,7 +24,6 @@ import reactor.core.publisher.Mono;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 
 @Slf4j(topic = "graph.service.values")
 @Service
@@ -46,7 +44,7 @@ public class ValueServicesImpl implements ValueServices {
     }
 
     @Override
-    public Mono<Transaction> insertValue(String id, String predicatePrefix, String predicateKey, String value, String languageTag, Authentication authentication) {
+    public Mono<Transaction> insertValue(String id, String propertyPrefix, String property, String value, String languageTag, Authentication authentication) {
         Literal literal = null;
         LanguageHandler languageHandler = LanguageHandlerRegistry.getInstance().get(LanguageHandler.BCP47).orElseThrow();
 
@@ -75,7 +73,7 @@ public class ValueServicesImpl implements ValueServices {
 
 
         return this.insertValue(LocalIRI.withDefaultNamespace(id),
-                LocalIRI.withDefinedNamespace(schemaStore.getNamespaceFor(predicatePrefix), predicateKey),
+                LocalIRI.withDefinedNamespace(schemaStore.getNamespaceFor(propertyPrefix), property),
                 literal,
                 authentication);
     }

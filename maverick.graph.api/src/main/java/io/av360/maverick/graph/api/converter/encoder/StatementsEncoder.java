@@ -30,6 +30,7 @@ import java.util.Map;
 public class StatementsEncoder implements Encoder<NamespaceAwareStatement> {
     private static final List<MimeType> mimeTypes;
 
+
     static {
         mimeTypes = List.of(
                 MimeType.valueOf(RDFFormat.RDFJSON.getDefaultMIMEType()),
@@ -52,11 +53,12 @@ public class StatementsEncoder implements Encoder<NamespaceAwareStatement> {
         return Flux
                 .from(inputStream)
                 .doOnSubscribe(c -> log.debug("Trying to write statements stream response with mimetype '{}'", mimeType != null ? mimeType.toString() : "unset"))
-                .collectList()
-                .flatMapMany(statement -> {
+                .map(namespaceAwareStatement -> (Statement) namespaceAwareStatement)
+                .buffer(5)
+                .flatMap(statements -> {
                     try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
                         RDFWriter writer = RdfUtils.getWriterFactory(mimeType).orElseThrow().getWriter(baos);
-                        Rio.write((Statement) statement, writer);
+                        Rio.write(statements, writer);
                         return Flux.just(bufferFactory.wrap(baos.toByteArray()));
                     } catch (IOException e) {
                         log.error("Failed to write response of mimetype '{}'", mimeType.toString(), e);
