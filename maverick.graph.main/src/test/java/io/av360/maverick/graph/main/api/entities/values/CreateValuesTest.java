@@ -33,7 +33,7 @@ public class CreateValuesTest extends TestsBase {
         String description = "This is a description";
 
         webClient.post()
-                .uri(uriBuilder -> uriBuilder.path("/api/entities/{id}/dc.description")
+                .uri(uriBuilder -> uriBuilder.path("/api/entities/{id}/values/dc.description")
                         .build(
                                 vf.createIRI(video.getSubject().stringValue()).getLocalName()
                         )
@@ -58,7 +58,7 @@ public class CreateValuesTest extends TestsBase {
         String description = "This is a description";
 
         webClient.post()
-                .uri(uriBuilder -> uriBuilder.path("/api/entities/{id}/xxx.myPred")
+                .uri(uriBuilder -> uriBuilder.path("/api/entities/{id}/values/xxx.myPred")
                         .build(
                                 vf.createIRI(video.getSubject().stringValue()).getLocalName()
                         )
@@ -79,7 +79,7 @@ public class CreateValuesTest extends TestsBase {
         String title = "A new title";
 
         webClient.post()
-                .uri(uriBuilder -> uriBuilder.path("/api/entities/{id}/sdo.title")
+                .uri(uriBuilder -> uriBuilder.path("/api/entities/{id}/values/sdo.title")
                         .build(
                                 vf.createIRI(video.getSubject().stringValue()).getLocalName()
                         )
@@ -99,7 +99,7 @@ public class CreateValuesTest extends TestsBase {
         String title = "A new title";
 
         webClient.post()
-                .uri(uriBuilder -> uriBuilder.path("/api/entities/{id}/sdo.title")
+                .uri(uriBuilder -> uriBuilder.path("/api/entities/{id}/values/sdo.title")
                         .build(
                                 vf.createIRI(video.getSubject().stringValue()).getLocalName()
                         )
@@ -119,7 +119,7 @@ public class CreateValuesTest extends TestsBase {
         String title = "A new title@en";
 
         webClient.post()
-                .uri(uriBuilder -> uriBuilder.path("/api/entities/{id}/sdo.title/de")
+                .uri(uriBuilder -> uriBuilder.path("/api/entities/{id}/values/sdo.title/de")
                         .build(
                                 vf.createIRI(video.getSubject().stringValue()).getLocalName()
                         )
@@ -142,7 +142,7 @@ public class CreateValuesTest extends TestsBase {
         String title = "A new title@en";
 
         webClient.post()
-                .uri(uriBuilder -> uriBuilder.path("/api/entities/{id}/sdo.title")
+                .uri(uriBuilder -> uriBuilder.path("/api/entities/{id}/values/sdo.title")
                         .build(
                                 vf.createIRI(video.getSubject().stringValue()).getLocalName()
                         )
@@ -165,7 +165,7 @@ public class CreateValuesTest extends TestsBase {
         String title = "A new title@this-is-.invalid";
 
         webClient.post()
-                .uri(uriBuilder -> uriBuilder.path("/api/entities/{id}/sdo.title")
+                .uri(uriBuilder -> uriBuilder.path("/api/entities/{id}/values/sdo.title")
                         .build(
                                 vf.createIRI(video.getSubject().stringValue()).getLocalName()
                         )

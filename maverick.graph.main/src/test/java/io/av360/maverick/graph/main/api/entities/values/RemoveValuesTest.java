@@ -28,7 +28,7 @@ public class RemoveValuesTest extends TestsBase {
         Statement video = rdfConsumer.findStatement(null, RDF.TYPE, vf.createIRI("https://schema.org/", "video"));
 
         webClient.delete()
-                .uri(uriBuilder -> uriBuilder.path("/api/entities/{id}/sdo.title")
+                .uri(uriBuilder -> uriBuilder.path("/api/entities/{id}/values/sdo.title")
                         .build(
                                 vf.createIRI(video.getSubject().stringValue()).getLocalName()
                         )
@@ -49,7 +49,7 @@ public class RemoveValuesTest extends TestsBase {
         Statement video = rdfConsumer.findStatement(null, RDF.TYPE, vf.createIRI("https://schema.org/", "video"));
 
         webClient.delete()
-                .uri(uriBuilder -> uriBuilder.path("/api/entities/{id}/sdo.title")
+                .uri(uriBuilder -> uriBuilder.path("/api/entities/{id}/values/sdo.title")
                         .queryParam("lang", "de")
                         .build(
                                 vf.createIRI(video.getSubject().stringValue()).getLocalName()
@@ -71,7 +71,7 @@ public class RemoveValuesTest extends TestsBase {
         Statement video = rdfConsumer.findStatement(null, RDF.TYPE, vf.createIRI("https://schema.org/", "video"));
 
         webClient.delete()
-                .uri(uriBuilder -> uriBuilder.path("/api/entities/{id}/sdo.title")
+                .uri(uriBuilder -> uriBuilder.path("/api/entities/{id}/values/sdo.title")
                         .build(
                                 vf.createIRI(video.getSubject().stringValue()).getLocalName()
                         )
@@ -88,7 +88,7 @@ public class RemoveValuesTest extends TestsBase {
         Statement entity = rdfConsumer.findStatement(null, RDF.TYPE, vf.createIRI("http://data.europa.eu/esco/model#", "Skill"));
 
         webClient.delete()
-                .uri(uriBuilder -> uriBuilder.path("/api/entities/{id}/skos.broader")
+                .uri(uriBuilder -> uriBuilder.path("/api/entities/{id}/values/skos.broader")
                         .build(
                                 vf.createIRI(entity.getSubject().stringValue()).getLocalName()
                         )
