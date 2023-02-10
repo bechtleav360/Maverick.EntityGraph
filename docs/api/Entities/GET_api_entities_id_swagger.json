@@ -1,0 +1,241 @@
+{
+    "openapi": "3.0.1",
+    "paths": {
+        "/api/entities/{id}": {
+            "get": {
+                "tags": [
+                    "entities"
+                ],
+                "operationId": "read",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/ld+json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/definitions/schemas/NamespaceAwareStatement"
+                                    }
+                                }
+                            },
+                            "text/turtle": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/definitions/schemas/NamespaceAwareStatement"
+                                    }
+                                }
+                            },
+                            "text/n3": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/definitions/schemas/NamespaceAwareStatement"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "api_key": []
+                    }
+                ]
+            }
+        }
+    },
+    "definitions": {
+        "schemas": {
+            "IRI": {
+                "type": "object",
+                "properties": {
+                    "namespace": {
+                        "type": "string"
+                    },
+                    "localName": {
+                        "type": "string"
+                    },
+                    "iri": {
+                        "type": "boolean"
+                    },
+                    "resource": {
+                        "type": "boolean"
+                    },
+                    "triple": {
+                        "type": "boolean"
+                    },
+                    "literal": {
+                        "type": "boolean"
+                    },
+                    "bnode": {
+                        "type": "boolean"
+                    }
+                }
+            },
+            "Namespace": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string"
+                    },
+                    "prefix": {
+                        "type": "string"
+                    }
+                }
+            },
+            "NamespaceAwareStatement": {
+                "type": "object",
+                "properties": {
+                    "namespaces": {
+                        "uniqueItems": true,
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/definitions/schemas/Namespace"
+                        }
+                    },
+                    "context": {
+                        "$ref": "#/definitions/schemas/Resource"
+                    },
+                    "object": {
+                        "$ref": "#/definitions/schemas/Value"
+                    },
+                    "subject": {
+                        "$ref": "#/definitions/schemas/Resource"
+                    },
+                    "predicate": {
+                        "$ref": "#/definitions/schemas/IRI"
+                    }
+                }
+            },
+            "Resource": {
+                "type": "object",
+                "properties": {
+                    "resource": {
+                        "type": "boolean"
+                    },
+                    "triple": {
+                        "type": "boolean"
+                    },
+                    "literal": {
+                        "type": "boolean"
+                    },
+                    "bnode": {
+                        "type": "boolean"
+                    },
+                    "iri": {
+                        "type": "boolean"
+                    }
+                }
+            },
+            "Value": {
+                "type": "object",
+                "properties": {
+                    "resource": {
+                        "type": "boolean"
+                    },
+                    "triple": {
+                        "type": "boolean"
+                    },
+                    "literal": {
+                        "type": "boolean"
+                    },
+                    "bnode": {
+                        "type": "boolean"
+                    },
+                    "iri": {
+                        "type": "boolean"
+                    }
+                }
+            },
+            "Incoming": {
+                "type": "object",
+                "properties": {
+                    "subjects": {
+                        "uniqueItems": true,
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/definitions/schemas/Resource"
+                        }
+                    },
+                    "model": {
+                        "uniqueItems": true,
+                        "type": "array",
+                        "properties": {
+                            "namespace": {
+                                "$ref": "#/definitions/schemas/Namespace"
+                            },
+                            "empty": {
+                                "type": "boolean"
+                            },
+                            "namespaces": {
+                                "uniqueItems": true,
+                                "type": "array",
+                                "items": {
+                                    "$ref": "#/definitions/schemas/Namespace"
+                                }
+                            }
+                        },
+                        "items": {
+                            "$ref": "#/definitions/schemas/Statement"
+                        }
+                    },
+                    "builder": {
+                        "$ref": "#/definitions/schemas/NamespacedModelBuilder"
+                    },
+                    "namespaces": {
+                        "uniqueItems": true,
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/definitions/schemas/Namespace"
+                        }
+                    }
+                }
+            },
+            "ModelBuilder": {
+                "type": "object",
+                "properties": {
+                    "namespace": {
+                        "$ref": "#/definitions/schemas/ModelBuilder"
+                    }
+                }
+            },
+            "NamespacedModelBuilder": {
+                "type": "object",
+                "properties": {
+                    "namespace": {
+                        "$ref": "#/definitions/schemas/ModelBuilder"
+                    }
+                }
+            },
+            "Statement": {
+                "type": "object",
+                "properties": {
+                    "context": {
+                        "$ref": "#/definitions/schemas/Resource"
+                    },
+                    "object": {
+                        "$ref": "#/definitions/schemas/Value"
+                    },
+                    "subject": {
+                        "$ref": "#/definitions/schemas/Resource"
+                    },
+                    "predicate": {
+                        "$ref": "#/definitions/schemas/IRI"
+                    }
+                }
+            }
+        }
+    }
+}
