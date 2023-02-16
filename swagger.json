@@ -1,0 +1,593 @@
+{
+    "openapi": "3.0.1",
+    "info": {
+        "title": "Entity Graph API",
+        "description": "API to access and update the entity graph.",
+        "version": "0.2.0"
+    },
+    "servers": [
+        {
+            "url": "http://localhost:8080",
+            "description": "Generated server url"
+        }
+    ],
+    "paths": {
+        "/api/entities/{id}/{prefixedKey}": {
+            "post": {
+                "tags": [
+                    "values"
+                ],
+                "operationId": "create_1",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "prefixedKey",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "text/plain": {
+                            "schema": {
+                                "type": "string"
+                            }
+                        },
+                        "application/ld+json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Incoming"
+                            }
+                        },
+                        "text/turtle": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Incoming"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "text/turtle": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/NamespaceAwareStatement"
+                                    }
+                                }
+                            },
+                            "application/ld+json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/NamespaceAwareStatement"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "201": {
+                        "description": "Created",
+                        "content": {
+                            "text/turtle": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/NamespaceAwareStatement"
+                                    }
+                                }
+                            },
+                            "application/ld+json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/NamespaceAwareStatement"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "api_key": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "values"
+                ],
+                "operationId": "delete",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "prefixedKey",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "lang",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "text/turtle": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/NamespaceAwareStatement"
+                                    }
+                                }
+                            },
+                            "application/ld+json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/NamespaceAwareStatement"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "api_key": []
+                    }
+                ]
+            }
+        },
+        "/api/entities": {
+            "get": {
+                "tags": [
+                    "entities"
+                ],
+                "operationId": "list",
+                "parameters": [
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "format": "int32",
+                            "default": 5000
+                        }
+                    },
+                    {
+                        "name": "offset",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "format": "int32",
+                            "default": 0
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/ld+json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/NamespaceAwareStatement"
+                                    }
+                                }
+                            },
+                            "text/turtle": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/NamespaceAwareStatement"
+                                    }
+                                }
+                            },
+                            "text/n3": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/NamespaceAwareStatement"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "api_key": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "entities"
+                ],
+                "operationId": "create",
+                "requestBody": {
+                    "content": {
+                        "application/ld+json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Incoming"
+                            }
+                        },
+                        "text/turtle": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Incoming"
+                            }
+                        },
+                        "text/n3": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Incoming"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "202": {
+                        "description": "Accepted",
+                        "content": {
+                            "application/ld+json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/NamespaceAwareStatement"
+                                    }
+                                }
+                            },
+                            "text/turtle": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/NamespaceAwareStatement"
+                                    }
+                                }
+                            },
+                            "text/n3": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/NamespaceAwareStatement"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "api_key": []
+                    }
+                ]
+            }
+        },
+        "/api/entities/{id}": {
+            "get": {
+                "tags": [
+                    "entities"
+                ],
+                "operationId": "read",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/ld+json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/NamespaceAwareStatement"
+                                    }
+                                }
+                            },
+                            "text/turtle": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/NamespaceAwareStatement"
+                                    }
+                                }
+                            },
+                            "text/n3": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/NamespaceAwareStatement"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "api_key": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "entities"
+                ],
+                "operationId": "delete_1",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/ld+json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/NamespaceAwareStatement"
+                                    }
+                                }
+                            },
+                            "text/turtle": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/NamespaceAwareStatement"
+                                    }
+                                }
+                            },
+                            "text/n3": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/NamespaceAwareStatement"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "api_key": []
+                    }
+                ]
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "IRI": {
+                "type": "object",
+                "properties": {
+                    "namespace": {
+                        "type": "string"
+                    },
+                    "localName": {
+                        "type": "string"
+                    },
+                    "iri": {
+                        "type": "boolean"
+                    },
+                    "resource": {
+                        "type": "boolean"
+                    },
+                    "triple": {
+                        "type": "boolean"
+                    },
+                    "literal": {
+                        "type": "boolean"
+                    },
+                    "bnode": {
+                        "type": "boolean"
+                    }
+                }
+            },
+            "Namespace": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string"
+                    },
+                    "prefix": {
+                        "type": "string"
+                    }
+                }
+            },
+            "NamespaceAwareStatement": {
+                "type": "object",
+                "properties": {
+                    "namespaces": {
+                        "uniqueItems": true,
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Namespace"
+                        }
+                    },
+                    "context": {
+                        "$ref": "#/components/schemas/Resource"
+                    },
+                    "object": {
+                        "$ref": "#/components/schemas/Value"
+                    },
+                    "subject": {
+                        "$ref": "#/components/schemas/Resource"
+                    },
+                    "predicate": {
+                        "$ref": "#/components/schemas/IRI"
+                    }
+                }
+            },
+            "Resource": {
+                "type": "object",
+                "properties": {
+                    "resource": {
+                        "type": "boolean"
+                    },
+                    "triple": {
+                        "type": "boolean"
+                    },
+                    "literal": {
+                        "type": "boolean"
+                    },
+                    "bnode": {
+                        "type": "boolean"
+                    },
+                    "iri": {
+                        "type": "boolean"
+                    }
+                }
+            },
+            "Value": {
+                "type": "object",
+                "properties": {
+                    "resource": {
+                        "type": "boolean"
+                    },
+                    "triple": {
+                        "type": "boolean"
+                    },
+                    "literal": {
+                        "type": "boolean"
+                    },
+                    "bnode": {
+                        "type": "boolean"
+                    },
+                    "iri": {
+                        "type": "boolean"
+                    }
+                }
+            },
+            "Incoming": {
+                "type": "object",
+                "properties": {
+                    "subjects": {
+                        "uniqueItems": true,
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Resource"
+                        }
+                    },
+                    "model": {
+                        "uniqueItems": true,
+                        "type": "array",
+                        "properties": {
+                            "namespace": {
+                                "$ref": "#/components/schemas/Namespace"
+                            },
+                            "empty": {
+                                "type": "boolean"
+                            },
+                            "namespaces": {
+                                "uniqueItems": true,
+                                "type": "array",
+                                "items": {
+                                    "$ref": "#/components/schemas/Namespace"
+                                }
+                            }
+                        },
+                        "items": {
+                            "$ref": "#/components/schemas/Statement"
+                        }
+                    },
+                    "builder": {
+                        "$ref": "#/components/schemas/NamespacedModelBuilder"
+                    },
+                    "namespaces": {
+                        "uniqueItems": true,
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Namespace"
+                        }
+                    }
+                }
+            },
+            "ModelBuilder": {
+                "type": "object",
+                "properties": {
+                    "namespace": {
+                        "$ref": "#/components/schemas/ModelBuilder"
+                    }
+                }
+            },
+            "NamespacedModelBuilder": {
+                "type": "object",
+                "properties": {
+                    "namespace": {
+                        "$ref": "#/components/schemas/ModelBuilder"
+                    }
+                }
+            },
+            "Statement": {
+                "type": "object",
+                "properties": {
+                    "context": {
+                        "$ref": "#/components/schemas/Resource"
+                    },
+                    "object": {
+                        "$ref": "#/components/schemas/Value"
+                    },
+                    "subject": {
+                        "$ref": "#/components/schemas/Resource"
+                    },
+                    "predicate": {
+                        "$ref": "#/components/schemas/IRI"
+                    }
+                }
+            }
+        },
+        "securitySchemes": {
+            "api_key": {
+                "type": "apiKey",
+                "name": "X-API-KEY"
+            }
+        }
+    }
+}

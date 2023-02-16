@@ -1,0 +1,507 @@
+
+<!DOCTYPE html>
+
+<html class="no-js" lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width,initial-scale=1" name="viewport"/>
+<link href="https://example.com/architecture/graph/versioning/" rel="canonical"/>
+<link href="../sharding/" rel="prev"/>
+<link href="../../schema/events/" rel="next"/>
+<link href="../../../assets/images/favicon.png" rel="icon"/>
+<meta content="mkdocs-1.4.2, mkdocs-material-9.0.6" name="generator"/>
+<title>versioning - Entity Graph</title>
+<link href="../../../assets/stylesheets/main.558e4712.min.css" rel="stylesheet"/>
+<link href="../../../assets/stylesheets/palette.2505c338.min.css" rel="stylesheet"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&amp;display=fallback" rel="stylesheet"/>
+<style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+<script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+</head>
+<body data-md-color-accent="" data-md-color-primary="" data-md-color-scheme="default" dir="ltr">
+<input autocomplete="off" class="md-toggle" data-md-toggle="drawer" id="__drawer" type="checkbox"/>
+<input autocomplete="off" class="md-toggle" data-md-toggle="search" id="__search" type="checkbox"/>
+<label class="md-overlay" for="__drawer"></label>
+<div data-md-component="skip">
+<a class="md-skip" href="#requirements-for-versioning">
+          Skip to content
+        </a>
+</div>
+<div data-md-component="announce">
+</div>
+<header class="md-header" data-md-component="header">
+<nav aria-label="Header" class="md-header__inner md-grid">
+<a aria-label="Entity Graph" class="md-header__button md-logo" data-md-component="logo" href="../../.." title="Entity Graph">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"></path></svg>
+</a>
+<label class="md-header__button md-icon" for="__drawer">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"></path></svg>
+</label>
+<div class="md-header__title" data-md-component="header-title">
+<div class="md-header__ellipsis">
+<div class="md-header__topic">
+<span class="md-ellipsis">
+            Entity Graph
+          </span>
+</div>
+<div class="md-header__topic" data-md-component="header-topic">
+<span class="md-ellipsis">
+            
+              versioning
+            
+          </span>
+</div>
+</div>
+</div>
+</nav>
+</header>
+<div class="md-container" data-md-component="container">
+<main class="md-main" data-md-component="main">
+<div class="md-main__inner md-grid">
+<div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation">
+<div class="md-sidebar__scrollwrap">
+<div class="md-sidebar__inner">
+<nav aria-label="Navigation" class="md-nav md-nav--primary" data-md-level="0">
+<label class="md-nav__title" for="__drawer">
+<a aria-label="Entity Graph" class="md-nav__button md-logo" data-md-component="logo" href="../../.." title="Entity Graph">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"></path></svg>
+</a>
+    Entity Graph
+  </label>
+<ul class="md-nav__list" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../..">
+        Home
+      </a>
+</li>
+<li class="md-nav__item md-nav__item--nested">
+<input class="md-nav__toggle md-toggle" data-md-toggle="__nav_2" id="__nav_2" type="checkbox"/>
+<label aria-expanded="false" class="md-nav__link" for="__nav_2" tabindex="0">
+          api
+          <span class="md-nav__icon md-icon"></span>
+</label>
+<nav aria-label="api" class="md-nav" data-md-level="1">
+<label class="md-nav__title" for="__nav_2">
+<span class="md-nav__icon md-icon"></span>
+          api
+        </label>
+<ul class="md-nav__list" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../../api/Draft/">
+        Draft
+      </a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../../api/Entities/Entities/">
+        Entities
+      </a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../../api/Queries/">
+        Queries
+      </a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../../api/Schema/">
+        Schema
+      </a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../../api/SimpleRestful/">
+        SimpleRestful
+      </a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../../api/Templates/">
+        Templates
+      </a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item md-nav__item--active md-nav__item--nested">
+<input checked="" class="md-nav__toggle md-toggle" data-md-toggle="__nav_3" id="__nav_3" type="checkbox"/>
+<label aria-expanded="true" class="md-nav__link" for="__nav_3" tabindex="0">
+          architecture
+          <span class="md-nav__icon md-icon"></span>
+</label>
+<nav aria-label="architecture" class="md-nav" data-md-level="1">
+<label class="md-nav__title" for="__nav_3">
+<span class="md-nav__icon md-icon"></span>
+          architecture
+        </label>
+<ul class="md-nav__list" data-md-scrollfix="">
+<li class="md-nav__item md-nav__item--nested">
+<input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3_1" id="__nav_3_1" type="checkbox"/>
+<label aria-expanded="false" class="md-nav__link" for="__nav_3_1" tabindex="0">
+          concepts
+          <span class="md-nav__icon md-icon"></span>
+</label>
+<nav aria-label="concepts" class="md-nav" data-md-level="2">
+<label class="md-nav__title" for="__nav_3_1">
+<span class="md-nav__icon md-icon"></span>
+          concepts
+        </label>
+<ul class="md-nav__list" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../concepts/entity/">
+        entity
+      </a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item md-nav__item--active md-nav__item--nested">
+<input checked="" class="md-nav__toggle md-toggle" data-md-toggle="__nav_3_2" id="__nav_3_2" type="checkbox"/>
+<label aria-expanded="true" class="md-nav__link" for="__nav_3_2" tabindex="0">
+          graph
+          <span class="md-nav__icon md-icon"></span>
+</label>
+<nav aria-label="graph" class="md-nav" data-md-level="2">
+<label class="md-nav__title" for="__nav_3_2">
+<span class="md-nav__icon md-icon"></span>
+          graph
+        </label>
+<ul class="md-nav__list" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="../aspects/">
+        aspects
+      </a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../edge-attributes/">
+        edge-attributes
+      </a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../layers/">
+        layers
+      </a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../sharding/">
+        sharding
+      </a>
+</li>
+<li class="md-nav__item md-nav__item--active">
+<input class="md-nav__toggle md-toggle" data-md-toggle="toc" id="__toc" type="checkbox"/>
+<a class="md-nav__link md-nav__link--active" href="./">
+        versioning
+      </a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item md-nav__item--nested">
+<input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3_3" id="__nav_3_3" type="checkbox"/>
+<label aria-expanded="false" class="md-nav__link" for="__nav_3_3" tabindex="0">
+          Schema
+          <span class="md-nav__icon md-icon"></span>
+</label>
+<nav aria-label="Schema" class="md-nav" data-md-level="2">
+<label class="md-nav__title" for="__nav_3_3">
+<span class="md-nav__icon md-icon"></span>
+          Schema
+        </label>
+<ul class="md-nav__list" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../schema/events/">
+        events
+      </a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../schema/validation/">
+        validation
+      </a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../Backend/">
+        Backend
+      </a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../BigPicture/">
+        BigPicture
+      </a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../concepts.md">
+        concepts
+      </a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../Multitenancy.md">
+        Multitenancy
+      </a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../OPA/">
+        OPA
+      </a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../../deploy/deploy.md">
+        deploy
+      </a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../../features/multitenancy/">
+        features
+      </a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../../roadmap/">
+        roadmap
+      </a>
+</li>
+</ul>
+</nav>
+</div>
+</div>
+</div>
+<div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc">
+<div class="md-sidebar__scrollwrap">
+<div class="md-sidebar__inner">
+<nav aria-label="Table of contents" class="md-nav md-nav--secondary">
+</nav>
+</div>
+</div>
+</div>
+<div class="md-content" data-md-component="content">
+<article class="md-content__inner md-typeset">
+<h1 id="requirements-for-versioning">Requirements for Versioning</h1>
+<ul>
+<li>Implement the memento pattern: don't use explicit versioning, but show the entity state at the given time</li>
+<li>Don't have explicit version (or revision) links as part of the entity (since 99% of the time client's are not
+  interested in the history).</li>
+</ul>
+<h1 id="versioning-through-transactions">Versioning through transactions</h1>
+<p>We can and should represent an entity as graph</p>
+<pre><code class="language-json">{
+  "@context": {
+    "@base": "http://www.example.com/data/",
+    "ical": "http://www.w3.org/2002/12/cal/ical#",
+    "xsd": "http://www.w3.org/2001/XMLSchema#",
+    "foaf": "http://xmlns.com/foaf/0.1/",
+    "ical:dtstart": {
+      "@type": "xsd:dateTime"
+    }
+  },
+  "@graph": [
+    {
+      "@type": "ical:Vevent",
+      "ical:attendee": {
+        "@id": "mm123"
+      },
+      "ical:dtstart": "2022-04-09T10:00:00Z",
+      "ical:location": "Main Office, Room 11",
+      "ical:summary": "Project Kickoff"
+    },
+    {
+      "@id": "mm123",
+      "@type": "foaf:Person",
+      "foaf:knows": {
+        "@id": "mmm421"
+      },
+      "foaf:name": "Bob"
+    }
+  ]
+}
+</code></pre>
+<p>The graph is a collection of statements (a linked data fragment) which together draw a complete picture of an entity.</p>
+<h2 id="forming-the-entity">Forming the entity</h2>
+<p>We consider everything having the same id with in the entities namespace to be one particular entity. In this case, the
+entity in question
+is a Meeting invitation for Bob. The graph representation includes the meeting, but also the FOAF representation as Bob
+as attendee.</p>
+<h2 id="adding-provenance">Adding Provenance</h2>
+<p>Definition according to W3C:</p>
+<blockquote>
+<p>Provenance of a resource is a record that describes entities and processes involved in producing and delivering or
+otherwise influencing that resource.</p>
+<p>In PROV, physical, digital, conceptual, or other kinds of thing are called entities. Examples of such entities are a
+web page, a chart, and a spellchecker. Provenance records can describe the provenance of entities, and an entity’s
+provenance may refer to many other entities. For example, a document D is an entity whose provenance refers to other
+entities such as a chart inserted into D, and the dataset that was used to create that chart. Entities may be described
+as having different attributes and be described from different perspectives. For example, document D as stored in my
+file system, the second version of document D, and D as an evolving document, are three distinct entities for which we
+may describe provenance.</p>
+</blockquote>
+<p>In the following example, we have two versions. In the first version of the meeting, Sarah was supposed to attend.</p>
+<pre><code class="language-json">
+{
+  "@context": {
+    "@base": "http://www.example.com/data/",
+    "staff": "http://www.example.com/user/",
+    "ical": "http://www.w3.org/2002/12/cal/ical#",
+    "xsd": "http://www.w3.org/2001/XMLSchema#",
+    "foaf": "http://xmlns.com/foaf/0.1/",
+    "ical:dtstart": {
+      "@type": "xsd:dateTime"
+    }
+  },
+
+  "@type": "prov:Entity",
+  "@id": "_:12314213312213-1",
+  "@graph": [
+    {
+      "@type": "ical:Vevent",
+      "@id": "_:12314213312213",
+      "ical:attendee": {
+        "@id": "staff:mm421"
+      },
+      "ical:dtstart": "2022-04-09T10:00:00Z",
+      "ical:location": "Main Office, Room 11",
+      "ical:summary": "Project Kickoff"
+    },
+    {
+      "@id": "staff:mm421",
+      "@type": "foaf:Person",
+      "foaf:name": "Bob Bobson"
+    }
+  ]
+}
+
+</code></pre>
+<p>He declined and forwarded the invitation to Sarah.</p>
+<pre><code class="language-json">
+{
+  "@context": {
+    "@base": "http://www.example.com/data/",
+    "staff": "http://www.example.com/user/",
+    "ical": "http://www.w3.org/2002/12/cal/ical#",
+    "xsd": "http://www.w3.org/2001/XMLSchema#",
+    "foaf": "http://xmlns.com/foaf/0.1/",
+    "ical:dtstart": {
+      "@type": "xsd:dateTime"
+    }
+  },
+
+  "@type": "prov:Entity",
+  "@id": "_:12314213312213-2",
+  "prov:wasRevisionOf": "_:eventId1",
+  "prov:used": [
+    { "@id": "_:12314213312213"}, 
+    { "@id": "staff:mm123"}
+  ],
+  "@graph": [
+    {
+      "@type": "ical:Vevent",
+      "@id": "_:12314213312213",
+      "ical:attendee": {
+        "@id": "staff:mm123"
+      },
+      "ical:dtstart": "2022-04-09T10:00:00Z",
+      "ical:location": "Main Office, Room 11",
+      "ical:summary": "Project Kickoff"
+    },
+    {
+      "@id": "staff:mm123",
+      "@type": "foaf:Person",
+      "foaf:knows": {
+        "@id": "mmm421"
+      },
+      "foaf:name": "Sarah Smith"
+    }
+  ]
+}
+
+</code></pre>
+<p>This example illustrates how we can express versions through the provenance ontology.</p>
+<p>An interesting variation here would be: What if Sarah has since then married Bob and taken his name, she is now known
+as "Sarah Bobson"?</p>
+<h2 id="technical-implementation">Technical implementation</h2>
+</article>
+</div>
+</div>
+</main>
+<footer class="md-footer">
+<div class="md-footer-meta md-typeset">
+<div class="md-footer-meta__inner md-grid">
+<div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" rel="noopener" target="_blank">
+      Material for MkDocs
+    </a>
+</div>
+</div>
+</div>
+</footer>
+</div>
+<div class="md-dialog" data-md-component="dialog">
+<div class="md-dialog__inner md-typeset"></div>
+</div>
+<script id="__config" type="application/json">{"base": "../../..", "features": [], "search": "../../../assets/javascripts/workers/search.e5c33ebb.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+<script src="../../../assets/javascripts/bundle.51d95adb.min.js"></script>
+<script>document$.subscribe(() => {
+            window.update_swagger_ui_iframe_height = function (id) {
+                var iFrameID = document.getElementById(id);
+                if (iFrameID) {
+                    full_height = (iFrameID.contentWindow.document.body.scrollHeight + 80) + "px";
+                    iFrameID.height = full_height;
+                    iFrameID.style.height = full_height;
+                }
+            }
+        
+            let iframe_id_list = []
+            var iframes = document.getElementsByClassName("swagger-ui-iframe");
+            for (var i = 0; i < iframes.length; i++) { 
+                iframe_id_list.push(iframes[i].getAttribute("id"))
+            }
+        
+            let ticking = true;
+            
+            document.addEventListener('scroll', function(e) {
+                if (!ticking) {
+                    window.requestAnimationFrame(()=> {
+                        let half_vh = window.innerHeight/2;
+                        for(var i = 0; i < iframe_id_list.length; i++) {
+                            let element = document.getElementById(iframe_id_list[i])
+                            if(element==null){
+                                return
+                            }
+                            let diff = element.getBoundingClientRect().top
+                            if(element.contentWindow.update_top_val){
+                                element.contentWindow.update_top_val(half_vh - diff)
+                            }
+                        }
+                        ticking = false;
+                    });
+                    ticking = true;
+                }
+            });
+        
+            window.scheme = document.body.getAttribute("data-md-color-scheme")
+            const options = {
+                attributeFilter: ['data-md-color-scheme'],
+            };
+            function color_scheme_callback(mutations) {
+                for (let mutation of mutations) {
+                    if (mutation.attributeName === "data-md-color-scheme") {
+                        scheme = document.body.getAttribute("data-md-color-scheme")
+                        var iframe_list = document.getElementsByClassName("swagger-ui-iframe")
+                        for(var i = 0; i < iframe_list.length; i++) {
+                            var ele = iframe_list.item(i);
+                            if (ele) {
+                                if (scheme === "slate") {
+                                    ele.contentWindow.enable_dark_mode();
+                                } else {
+                                    ele.contentWindow.disable_dark_mode();
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            observer = new MutationObserver(color_scheme_callback);
+            observer.observe(document.body, options);
+            })</script></body>
+</html>
