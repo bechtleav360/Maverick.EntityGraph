@@ -8,6 +8,7 @@ import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 
 public class SDO {
 
+
     private static final ValueFactory vf = SimpleValueFactory.getInstance();
 
 
@@ -21,6 +22,7 @@ public class SDO {
     public static final IRI HAS_DEFINED_TERM = vf.createIRI(NAMESPACE, "hasDefinedTerm");
     public static final IRI IDENTIFIER = vf.createIRI(NAMESPACE, "identifier");
 
+    public static final IRI TITLE = vf.createIRI(NAMESPACE, "title");
     public SDO() {
     }
 }

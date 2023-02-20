@@ -100,4 +100,8 @@ public class RdfConsumer implements Consumer<EntityExchangeResult<byte[]>> {
     public int countValues(Resource s, IRI p) {
         return Long.valueOf(StreamSupport.stream(this.asModel().getStatements(s, p, null).spliterator(), false).count()).intValue();
     }
+
+    public void print() {
+        System.out.println(this.dump(RDFFormat.TURTLE));
+    }
 }

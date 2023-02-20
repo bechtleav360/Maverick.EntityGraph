@@ -22,6 +22,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
+import javax.annotation.Nullable;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -43,39 +45,60 @@ public class ValueServicesImpl implements ValueServices {
         this.eventPublisher = eventPublisher;
     }
 
+    /**
+     * Extracts the language tag.
+     * Rules:
+     * - tag in request parameter > tag in value
+     * - default lang tag is "en"
+     * - if one is invalid, we take the other (and write a warning into the logs)
+     *
+     * @param id
+     * @param value    the literal value as string
+     * @param paramTag the request parameter for the language tag, can be null
+     * @return the identified language tag
+     */
+    private Mono<String> extractLanguageTag(String id, String value, @Nullable String paramTag) {
+        return Mono.create(sink -> {
+            LanguageHandler languageHandler = LanguageHandlerRegistry.getInstance().get(LanguageHandler.BCP47).orElseThrow();
+
+            String valueTag = value.matches(".*@\\w\\w-?[\\w\\d-]*$") ? value.substring(value.lastIndexOf('@') + 1) : "";
+
+            if(StringUtils.isNotBlank(paramTag)) {
+                if(languageHandler.isRecognizedLanguage(paramTag)  && languageHandler.verifyLanguage(value, paramTag)) {
+                    sink.success(paramTag);
+                } else {
+                    sink.error(new IOException("Invalid language tag in parameter: "+paramTag));
+                }
+            }
+
+            else if (StringUtils.isNotBlank(valueTag)) {
+                if(languageHandler.isRecognizedLanguage(valueTag) && languageHandler.verifyLanguage(value, valueTag)) {
+                    sink.success(valueTag);
+                } else {
+                    sink.error(new IOException("Invalid language tag in value: "+valueTag));
+                }
+            } else {
+                sink.success("en");
+            }
+
+        });
+
+
+
+
+    }
+
     @Override
     public Mono<Transaction> insertValue(String id, String propertyPrefix, String property, String value, String languageTag, Authentication authentication) {
-        Literal literal = null;
-        LanguageHandler languageHandler = LanguageHandlerRegistry.getInstance().get(LanguageHandler.BCP47).orElseThrow();
-
-        // explicit language tag as request property
-        if(StringUtils.isNotBlank(languageTag) && languageHandler.isRecognizedLanguage(languageTag)) {
-            literal = languageHandler.normalizeLanguage(value, languageTag, SimpleValueFactory.getInstance());
-        }
-
-        // language tag within value
-        else if (value.matches(".*@\\w\\w-?[\\w\\d-]*$")) {
-            // we ignore the inline language tag if the request param is explicitly set
-            languageTag = value.substring(value.lastIndexOf('@') + 1);
-
-            if(languageHandler.isRecognizedLanguage(languageTag)) {
-                value = value.substring(0, value.lastIndexOf('@'));
-                literal = languageHandler.normalizeLanguage(value, languageTag, SimpleValueFactory.getInstance());
-            } else {
-                log.warn("Failed to identify language tag in literal. We treat it as string.");
-                literal = SimpleValueFactory.getInstance().createLiteral(value);
-            }
-        }
-
-        else {
-            literal = SimpleValueFactory.getInstance().createLiteral(value);
-        }
-
-
-        return this.insertValue(LocalIRI.withDefaultNamespace(id),
-                LocalIRI.withDefinedNamespace(schemaStore.getNamespaceFor(propertyPrefix), property),
-                literal,
-                authentication);
+        return this.extractLanguageTag(id, value, languageTag)
+                .map(tag -> {
+                    LanguageHandler languageHandler = LanguageHandlerRegistry.getInstance().get(LanguageHandler.BCP47).orElseThrow();
+                    return languageHandler.normalizeLanguage(value, tag, SimpleValueFactory.getInstance());
+                })
+                .flatMap(literal -> this.insertValue(LocalIRI.withDefaultNamespace(id),
+                        LocalIRI.withDefinedNamespace(schemaStore.getNamespaceFor(propertyPrefix), property),
+                        literal,
+                        authentication));
     }
 
     @Override

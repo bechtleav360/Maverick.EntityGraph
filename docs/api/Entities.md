@@ -42,7 +42,6 @@ Values are identified by `source entity - prefix.key - language`
 * Create value
 * Requires a language tag (default "en" is appended)
 * Status: implemented in v1
-* Missing: Add default language tag (only if new, exception otherwise)
 * Missing: Overwrite existing value
 * Missing: add language tag as query parameter
 
@@ -57,6 +56,9 @@ Values are identified by `source entity - prefix.key - language`
 ``PUT /api/entities/{id}/values/{prefix.key} text/plain`` 
 * Update value
 * is equivalent to POST request, but should ideally throw exception if value does not exist
+
+``DELETE /api/entities/{id}/values/{prefix.key}``
+* Removes the unique property value
 
 ## Entity Links
 Relations are identified by `source entity - prefix.key - target entity`

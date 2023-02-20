@@ -19,7 +19,7 @@ import org.springframework.web.reactive.function.BodyInserters;
 @ContextConfiguration(classes = TestConfigurations.class)
 @RecordApplicationEvents
 @ActiveProfiles("test")
-class SubscriptionsTest extends TestsBase implements Subscriptions {
+class ApplicationsTest extends TestsBase implements Subscriptions {
 
     @Override
     @Test

@@ -3,7 +3,7 @@ package io.av360.maverick.graph.model.enums;
 import org.eclipse.rdf4j.rio.RDFFormat;
 import org.springframework.http.MediaType;
 
-public class RdfMimeTypes extends MediaType {
+public class RdfMimeTypes  {
 
     public static final MediaType RDFJSON;
     public static final MediaType NTRIPLES;
@@ -25,23 +25,24 @@ public class RdfMimeTypes extends MediaType {
     public static final String N3_VALUE = "text/n3";
 
     static {
-        RDFJSON = new RdfMimeTypes(RDFFormat.RDFJSON);
-        RDFXML = new RdfMimeTypes(RDFFormat.RDFXML);
-        NTRIPLES = new RdfMimeTypes(RDFFormat.NTRIPLES);
-        TURTLE = new RdfMimeTypes(RDFFormat.TURTLE);
-        TURTLESTAR = new RdfMimeTypes(RDFFormat.TURTLESTAR);
-        JSONLD = new RdfMimeTypes(RDFFormat.JSONLD);
-        BINARY = new RdfMimeTypes(RDFFormat.BINARY);
-
-        NQUADS = new RdfMimeTypes(RDFFormat.NQUADS);
-
-        N3 = new RdfMimeTypes(RDFFormat.N3);
-
+        RDFJSON = from(RDFFormat.RDFJSON);
+        RDFXML = from(RDFFormat.RDFXML);
+        NTRIPLES = from(RDFFormat.NTRIPLES);
+        TURTLE = from(RDFFormat.TURTLE);
+        TURTLESTAR = from(RDFFormat.TURTLESTAR);
+        JSONLD = from(RDFFormat.JSONLD);
+        BINARY = from(RDFFormat.BINARY);
+        NQUADS = from(RDFFormat.NQUADS);
+        N3 = from(RDFFormat.N3);
     }
 
-    public RdfMimeTypes(RDFFormat type) {
-        super(type.getDefaultMIMEType());
+    private static MediaType from(RDFFormat rdfFormat) {
+        String[] split = rdfFormat.getDefaultMIMEType().split("/");
+        if (split.length == 1) return new MediaType(split[0]);
+        else return new MediaType(split[0], split[1]);
     }
+
+
 }
 
 

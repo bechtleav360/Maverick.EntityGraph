@@ -6,11 +6,14 @@ import io.av360.maverick.graph.model.rdf.NamespaceAwareStatement;
 import io.av360.maverick.graph.services.EntityServices;
 import io.av360.maverick.graph.services.ValueServices;
 import io.av360.maverick.graph.store.rdf.models.TripleModel;
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.NotImplementedException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.util.Assert;
+import org.springframework.util.MimeType;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 
@@ -32,6 +35,15 @@ public class Values extends AbstractController {
         this.values = values;
         this.entities = entities;
     }
+    @Operation(summary = "Returns a list of value property of the selected entity.  ")
+    @GetMapping(value = "/{id:[\\w|\\d|-|_]+}/values",
+            produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE, MediaType.APPLICATION_JSON_VALUE})
+    @ResponseStatus(HttpStatus.OK)
+    Flux<NamespaceAwareStatement> listEntityValues(@PathVariable String id) {
+      return Flux.error(new NotImplementedException("Listing the values has not been implemented yet."));
+    }
+
+
 
     //  @ApiOperation(value = "Sets a value for an entity. Replaces an existing value. ")
     @PostMapping(value = "/{id:[\\w|\\d|-|_]+}/values/{prefixedKey:[\\w|\\d]+\\.[\\w|\\d]+}",
@@ -49,11 +61,18 @@ public class Values extends AbstractController {
                     if (log.isDebugEnabled())
                         log.debug("Request to set property '{}' of entity '{}' to value '{}'", prefixedKey, id, value.length() > 64 ? value.substring(0, 64) : value);
                 });
-
     }
 
 
-    //@ApiOperation(value = "Removes value")
+    @Operation(summary = "Create or update multiple value properties for the selected entity.")
+    @PostMapping(value = "/{id:[\\w|\\d|-|_]+}/values",
+            produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE, MediaType.APPLICATION_JSON_VALUE})
+    @ResponseStatus(HttpStatus.OK)
+    Flux<NamespaceAwareStatement> listEntityValues(@PathVariable String id, @RequestBody String value) {
+        return Flux.error(new NotImplementedException("Updating multiple values has not been implemented yet."));
+    }
+
+    @Operation(summary = "Removes a property value.")
     @DeleteMapping(value = "/{id:[\\w|\\d|-|_]+}/values/{prefixedKey:[\\w|\\d]+\\.[\\w|\\d]+}",
             produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE})
     @ResponseStatus(HttpStatus.OK)
