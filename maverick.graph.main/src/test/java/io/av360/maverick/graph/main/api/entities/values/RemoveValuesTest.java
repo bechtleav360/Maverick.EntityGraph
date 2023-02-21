@@ -1,6 +1,7 @@
 package io.av360.maverick.graph.main.api.entities.values;
 
 import io.av360.maverick.graph.main.config.TestConfigurations;
+import io.av360.maverick.graph.model.vocabulary.SDO;
 import io.av360.maverick.graph.tests.util.RdfConsumer;
 import io.av360.maverick.graph.tests.util.TestsBase;
 import org.eclipse.rdf4j.model.IRI;
@@ -25,7 +26,7 @@ public class RemoveValuesTest extends TestsBase {
     @Test
     public void removeTitle() {
         RdfConsumer rdfConsumer = super.upload("requests/create-valid.ttl");
-        Statement video = rdfConsumer.findStatement(null, RDF.TYPE, vf.createIRI("https://schema.org/", "video"));
+        Statement video = rdfConsumer.findStatement(null, RDF.TYPE, SDO.VIDEO_OBJECT);
 
         webClient.delete()
                 .uri(uriBuilder -> uriBuilder.path("/api/entities/{id}/values/sdo.title")
@@ -40,13 +41,13 @@ public class RemoveValuesTest extends TestsBase {
                 .consumeWith(rdfConsumer);
 
         RdfConsumer resultConsumer = super.loadEntity((IRI) video.getSubject());
-        Assert.equals(0, resultConsumer.countValues(video.getSubject(), vf.createIRI("https://schema.org/", "title")));
+        Assert.equals(0, resultConsumer.countValues(video.getSubject(), SDO.TITLE));
     }
 
     @Test
     public void removeTitleWithLanguage() {
         RdfConsumer rdfConsumer = super.upload("requests/create-valid_with_tags.ttl");
-        Statement video = rdfConsumer.findStatement(null, RDF.TYPE, vf.createIRI("https://schema.org/", "video"));
+        Statement video = rdfConsumer.findStatement(null, RDF.TYPE, SDO.VIDEO_OBJECT);
 
         webClient.delete()
                 .uri(uriBuilder -> uriBuilder.path("/api/entities/{id}/values/sdo.title")
@@ -62,13 +63,13 @@ public class RemoveValuesTest extends TestsBase {
                 .consumeWith(rdfConsumer);
 
         RdfConsumer resultConsumer = super.loadEntity((IRI) video.getSubject());
-        Assert.equals(1, resultConsumer.countValues(video.getSubject(), vf.createIRI("https://schema.org/", "title")));
+        Assert.equals(1, resultConsumer.countValues(video.getSubject(), SDO.TITLE));
     }
 
     @Test
     public void failToRemoveTitleWithLanguage() {
         RdfConsumer rdfConsumer = super.upload("requests/create-valid_with_tags.ttl");
-        Statement video = rdfConsumer.findStatement(null, RDF.TYPE, vf.createIRI("https://schema.org/", "video"));
+        Statement video = rdfConsumer.findStatement(null, RDF.TYPE, SDO.VIDEO_OBJECT);
 
         webClient.delete()
                 .uri(uriBuilder -> uriBuilder.path("/api/entities/{id}/values/sdo.title")
