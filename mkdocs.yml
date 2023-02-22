@@ -1,11 +1,18 @@
 site_name: Maverick.EntityGraph Documentation
+repo_url: https://github.com/bechtleav360/Maverick.EntityGraph
 
 theme:
   name: material
 
+plugins:
+  - search
+
+
+
 
 markdown_extensions:
   - admonition
+  - footnotes
   - pymdownx.details
   - pymdownx.superfences
   - pymdownx.critic

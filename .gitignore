@@ -14,3 +14,4 @@ buildNumber.properties
 *.gz
 .flattened-pom.xml
 logs.*
+.venv
