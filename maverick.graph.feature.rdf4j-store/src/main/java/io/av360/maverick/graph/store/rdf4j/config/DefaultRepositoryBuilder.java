@@ -2,6 +2,7 @@ package io.av360.maverick.graph.store.rdf4j.config;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
+import io.av360.maverick.graph.model.security.ApiKeyAuthenticationToken;
 import io.av360.maverick.graph.model.security.Authorities;
 import io.av360.maverick.graph.store.RepositoryBuilder;
 import io.av360.maverick.graph.store.RepositoryType;
@@ -16,9 +17,11 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
+import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
 import java.io.IOException;
@@ -66,25 +69,30 @@ public class DefaultRepositoryBuilder implements RepositoryBuilder {
      */
     @Override
     public Repository buildRepository(RepositoryType repositoryType, Authentication authentication) throws IOException {
+        Assert.notNull(authentication, "Failed to resolve repository due to missing authentication");
+        Assert.isTrue(authentication.isAuthenticated(), "Authentication is set to 'false' within a " + authentication.getClass().getSimpleName());
 
-        if (authentication == null) {
-            log.error("No authentication set.");
-            throw new IOException("Failed to resolve repository due to missing authentication");
-        }
 
         if (authentication instanceof TestingAuthenticationToken) {
             return this.cache.get(repositoryType.name(), s -> new LabeledRepository("Test:" + repositoryType.name(), new SailRepository(new MemoryStore())));
         }
-        if (Authorities.satisfies(Authorities.SYSTEM, authentication.getAuthorities())) {
-            log.trace("Resolving repository with admin authentication.");
-            return this.resolveRepositoryForAdminAuthentication(repositoryType, authentication);
+
+        if (authentication instanceof ApiKeyAuthenticationToken && Authorities.satisfies(Authorities.READER, authentication.getAuthorities())) {
+            log.trace("Resolving default repository with admin authentication and access level: {}.", authentication.getAuthorities());
+            return this.resolveRepositoryForDefaultAuthentication(repositoryType, authentication);
+        }
+
+        if (authentication instanceof AnonymousAuthenticationToken && Authorities.satisfies(Authorities.READER, authentication.getAuthorities())) {
+            log.trace("Resolving default repository with anonymous authentication and access level: {}.", authentication.getAuthorities());
+            return this.resolveRepositoryForDefaultAuthentication(repositoryType, authentication);
         }
 
         throw new IOException(String.format("Cannot resolve repository of type '%s' for authentication of type '%s'", repositoryType, authentication.getClass()));
     }
 
 
-    protected Repository resolveRepositoryForAdminAuthentication(RepositoryType repositoryType, Authentication authentication) {
+    protected Repository resolveRepositoryForDefaultAuthentication(RepositoryType repositoryType, Authentication authentication) {
+
         return switch (repositoryType) {
             case ENTITIES -> this.buildEntityRepository("default");
             case TRANSACTIONS -> this.buildTransactionsRepository("default");

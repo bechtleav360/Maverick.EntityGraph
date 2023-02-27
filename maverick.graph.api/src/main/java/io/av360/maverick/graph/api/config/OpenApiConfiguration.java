@@ -62,4 +62,11 @@ public class OpenApiConfiguration {
     }
 
 
+
+    private static class CommonDefinitions {
+
+        // public static Content errorDefinition = Content(mediaType = "application/json", schema = @Schema(implementation = ErrorAttributes.class))
+
+    }
+
 }

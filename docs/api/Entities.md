@@ -2,25 +2,133 @@
 
 Managing the entity resources
 
-## Summary by format
-
-### Turtle / JSON-LD
-
-* ``POST /api/rs`` (Create entity) /v1
-* ``POST /api/rs/{id}/{prefix.key}`` (Create value or relation) /v1
-* ``PUT /api/rs/{id}/{prefix.key}`` (Create annotations on edge) /v1
-* ``POST /api/rs/{id}/{prefix.key}/{id}`` (Create edge to existing entity) /v1
 
 
-* ``DELETE /api/rs/{id}/{prefix.key}`` (Delete value or relation) /v2
-* ``GET /api/rs/{id}/{prefix.key}`` (Reads value or embedded object) /v2
-* ``DELETE /api/rs/{id}`` (Delete entity) /v2
-* ``GET /api/rs/{prefix.type}`` (List entities)  /v2
-* ``GET /api/rs/{id}`` (Read entity) /v2
+## Working with entities
 
-* ``GET /api/rs/{prefix.type}/{id}`` (Read entity with type coercion) /v3
-* ``PUT /api/rs/{id}`` (Patch entity) /v3
-* ``PUT /api/rs/{id}/{prefix.key}`` (Update value) /v3
+``GET /api/entities?limit=0&offset=0``
+* List entities
+* Status: implemented in v1
+
+
+``POST /api/entities`` 
+* Create entity
+* Status: implemented in v1
+
+``GET /api/entities/{id}`` \
+``GET /api/entities/{id}?property=rdfs.label`` 
+* Reads entity
+* The property param can be used to specify, that the id is not the unique entity id, but the value of the property
+* Status: implemented in v1
+
+``DELETE /api/entities/{id}``
+* Deletes the entity and all its direct relations (values and links)
+* Deletes all links where the entity is object (incoming links) <- Test required 
+
+``PUT /api/entities/{id}``
+* Not supported, Graph is idempotent
+
+
+## Entity Values
+Values are identified by `source entity - prefix.key - language`
+
+``GET /api/entities/{id}/values``
+* Returns only the entity values 
+* Supported mimetypes: RDF Formats, application/json
+
+``POST /api/entities/{id}/values/{prefix.key} ``\
+``PUT /api/entities/{id}/values/{prefix.key} ``\
+* Consumes ``text/plain``
+* Create value
+* Requires a language tag (default "en" is appended)
+* Status: implemented in v1
+* Missing: Overwrite existing value
+* Missing: add language tag as query parameter
+
+``POST /api/entities/{id}/values``
+* Consumes: ``text/turtle``
+* The payload must contain the referenced entity, all connected statements are stored
+* Create nested/embedded object
+* The embedded object is still an entity value (and will be deleted if the entity is deleted)
+* Status: TODO
+* Missing: Scheduler: if a second entity points to embedded object, it has to be converted to an entity
+
+``PUT /api/entities/{id}/values/{prefix.key} text/plain`` 
+* Update value
+* is equivalent to POST request, but should ideally throw exception if value does not exist
+
+``DELETE /api/entities/{id}/values/{prefix.key}``
+* Removes the unique property value
+
+## Entity Links
+Relations are identified by `source entity - prefix.key - target entity`
+
+``PUT /api/entities/{id}/links/{prefix.key}/{targetId}`` 
+* Create edge to existing entity identified by target id
+* Fails if target does not exist
+* Status: TODO v2
+* Multiple values are allowed to exist
+
+``DELETE /api/entities/{id}/links/{prefix.key}/{targetId}`` 
+* Deletes the relation (but nothing else)
+* Status: TODO v2
+
+``GET /api/entities/{id}/links/{prefix.key}`` 
+* Returns all links of the given type
+* Status: TODO v2
+
+``PUT /api/entities/{id}/links/{prefix.key}``
+* Creates one (or more) links 
+* Status: TODO v4
+
+``GET /api/entities/{id}/links``
+* Returns all links
+* Status: TODO v2
+
+
+## Property Details (Annotations)
+
+``POST /api/entities/{id}/values/{prefix.key}/details/{prefix.key}?append=true`` \
+``POST /api/entities/{id}/links/{prefix.key}/{targetId}/details/{prefix.key}``
+* Consumes: ``text/plain``,
+* Creates a statement about a statement use the post body as value
+* Creates also the value if it doesn't exist yet
+* For keep in line with the other endpoints, this call will overwrite an existing prefix.key combination. Add the query param "?append" to support multiple values. 
+
+``POST /api/entities/{id}/values/{prefix.key}/details`` \
+``POST /api/entities/{id}/links/{prefix.key}/{targetId}/details`` 
+* Consumes: ``application/x-turtlestar``, 
+* Creates a statement about a statement using the rdf* syntax
+* Creates also the value if it doesn't exist yet
+* The payload requires the original statement, e.g. ``<<:a sdo:teaches :b>> :suggestedBy :x``
+
+
+``GET /api/entities/{id}/values/{prefix.key}/details?hash=true`` \
+``GET /api/entities/{id}/links/{prefix.key}/{targetId}/details``
+* Returns all details for a value or link
+* If the hash property is true, a hash for each detail will be computed. This can be used to delete it later
+
+``DELETE /api/entities/{id}/values/{prefix.key}/details`` \
+``DELETE /api/entities/{id}/links/{prefix.key}/{targetId}/details``
+* Purges all property details
+
+``DELETE /api/entities/{id}/values/{prefix.key}/details/{prefix.key}?multiple=true&hash=21312`` \
+``DELETE /api/entities/{id}/links/{prefix.key}/{targetId}/details/{prefix.key}?multiple=true&hash=true``
+* Removes a specific detail. 
+* If multiple exist: add the ``multiple`` parameter to delete all or use the hash parameter to identify the correct one
+
+````
+<<:a sdo:teaches :b>>
+<<:hasComment "long text">>
+:hash "1394801298329"
+<<:hasComment "even longer text">>
+:hash "ß09ß1392ß32ß0"
+````
+## Further Endpoints for the future
+
+* ``GET /api/entities/{prefix.type}/{id}`` (Read entity with type coercion) /v3
+
+* ``PUT /api/entities/{id}`` (Patch entity) /v3
 
 * ``POST /api/rs/{id}`` (Read entity by example) /v5
 
@@ -39,7 +147,7 @@ Managing the entity resources
 ---
 
 ## Get entity by Id
-
+ 
 Returns an individual item
 
 ``GET /api/entities/{id}``

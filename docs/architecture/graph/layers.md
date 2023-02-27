@@ -3,14 +3,20 @@
 Conceptually, we distinguish between certain perspectives on the graph:
 
 * the *schema* layer, which stores our domain model
-* the *entity* layer (or data, or documents, or whatever): the baseline, storing the facts. The facts are either stored
+* the immutable *entities* layer (or data, or documents, or whatever): the baseline, storing the facts. The facts are either stored
   only in the graph, or are shadow copies from a remote third-party application through connectors. Standard reasoning
   and business rules is used to alter the state of this layer.
-* the *trust* layer, which manages the results of the integrity checks and proofs of authenticity.
-* the *annotations* layer, which stores assertions about edges and values. The assertions are either coming from user
+* The mutable *assertions* layer with proposed modifications for the entities. These can either be
+  *  relations which link entities using the feedback from the users. 
+  *  new properties (also overwriting existing properties on the entities layer)
+* the *recommendation* layer, which stores assertions about edges and values. The assertions are either coming from user
   feedback or from ML models.
-* the *versions* layer, which manages access to historic versions of the entities (only for updates on the entity layer)
+
+
+### To be discussed
 * the *archive* layer, which serves as sink for entities not in use anymore
+* the *trust* layer, which manages the results of the integrity checks and proofs of authenticity.
+* the *versions* layer, which manages access to historic versions of the entities (only for updates on the entity layer)
 
 The layers are implemented as independent graphs to support separations of concern and individual instances (for
 scaling). Pointers accross the graphs are handled through the IDs

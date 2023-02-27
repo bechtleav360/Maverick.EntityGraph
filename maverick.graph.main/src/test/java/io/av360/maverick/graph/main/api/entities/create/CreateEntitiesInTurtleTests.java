@@ -9,6 +9,7 @@ import io.av360.maverick.graph.tests.util.TestsBase;
 import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
+import org.eclipse.rdf4j.rio.RDFFormat;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Disabled;
@@ -104,8 +105,8 @@ public class CreateEntitiesInTurtleTests extends TestsBase {
     public void createMultipleEntities() {
         RdfConsumer rdfConsumer = super.upload("requests/create-valid_multiple.ttl");
 
-        Collection<Statement> statements = rdfConsumer.getStatements();
 
+        System.out.println(rdfConsumer.dump(RDFFormat.N3));
         Assertions.assertFalse(rdfConsumer.hasStatement(null, Transactions.STATUS, Transactions.RUNNING));
         Assertions.assertTrue(rdfConsumer.hasStatement(null, SDO.IDENTIFIER, SimpleValueFactory.getInstance().createLiteral("_a")));
         Assertions.assertTrue(rdfConsumer.hasStatement(null, RDF.TYPE, SDO.VIDEO_OBJECT));

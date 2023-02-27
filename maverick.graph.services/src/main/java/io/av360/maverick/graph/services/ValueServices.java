@@ -7,6 +7,8 @@ import org.eclipse.rdf4j.model.Value;
 import org.springframework.security.core.Authentication;
 import reactor.core.publisher.Mono;
 
+import javax.annotation.Nullable;
+
 public interface ValueServices {
     /**
      * Sets the new value. Replaces an existing value with the same predicate, except a different @-tag has been set
@@ -15,10 +17,11 @@ public interface ValueServices {
      * @param predicatePrefix  Prefix of the predicate
      * @param predicateKey     Key of the predicate
      * @param value            The new value
+     * @param languageTag
      * @param authentication   The current authentication
      * @return The transaction information.
      */
-    Mono<Transaction> insertValue(String entityIdentifier, String predicatePrefix, String predicateKey, String value, Authentication authentication);
+    Mono<Transaction> insertValue(String entityIdentifier, String predicatePrefix, String predicateKey, String value, @Nullable String languageTag, Authentication authentication);
 
     /**
      * @param entityIdentifier The unique local identifier of the entity

@@ -2,6 +2,7 @@ package io.av360.maverick.graph.model.rdf;
 
 import io.av360.maverick.graph.model.vocabulary.ICAL;
 import io.av360.maverick.graph.model.vocabulary.Local;
+import io.av360.maverick.graph.model.vocabulary.SDO;
 import org.eclipse.rdf4j.model.*;
 import org.eclipse.rdf4j.model.util.ModelBuilder;
 import org.eclipse.rdf4j.model.util.Namespaces;
@@ -24,7 +25,7 @@ public class NamespacedModelBuilder extends ModelBuilder {
         namespaceMap.put(Local.Entities.NAMESPACE, Local.Entities.NS);
         namespaceMap.put(Local.Transactions.NAMESPACE, Local.Transactions.NS);
         namespaceMap.put(Local.Versions.NAMESPACE, Local.Versions.NS);
-
+        namespaceMap.put(SDO.NAMESPACE, SDO.NS);
         namespaceMap.put(ICAL.NAMESPACE, ICAL.NS);
     }
 

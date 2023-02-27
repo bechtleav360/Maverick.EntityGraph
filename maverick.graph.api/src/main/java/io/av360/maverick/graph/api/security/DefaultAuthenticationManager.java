@@ -1,5 +1,6 @@
 package io.av360.maverick.graph.api.security;
 
+import com.google.common.io.Files;
 import io.av360.maverick.graph.model.security.ApiKeyAuthenticationToken;
 import io.av360.maverick.graph.model.security.Authorities;
 import jakarta.annotation.PostConstruct;
@@ -12,15 +13,17 @@ import org.springframework.security.authentication.ReactiveAuthenticationManager
 import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 import reactor.core.publisher.Mono;
 
+import java.util.List;
 import java.util.Set;
 
 @Component
-@Slf4j(topic = "graph.config.security")
+@Slf4j(topic = "graph.config.security.default")
 @Primary
 public class DefaultAuthenticationManager implements ReactiveAuthenticationManager {
 
@@ -53,17 +56,19 @@ public class DefaultAuthenticationManager implements ReactiveAuthenticationManag
             authentication.setAuthenticated(true);
         }
 
-        else if (authentication instanceof AnonymousAuthenticationToken) {
-            log.info("Anonymous authentication token detected, setting to unauthorized.");
-            authentication.setAuthenticated(false);
+        if (authentication instanceof AnonymousAuthenticationToken) {
+            return handleAnonymousAuthentication(authentication)
+                    .map(auth -> (Authentication) auth);
+            //
+            //authentication.setAuthenticated(false);
         }
 
-        else if (authentication instanceof UsernamePasswordAuthenticationToken) {
+        if (authentication instanceof UsernamePasswordAuthenticationToken) {
             return handleBasicAuthentication((UsernamePasswordAuthenticationToken) authentication)
                     .map(auth -> (Authentication) auth);
         }
 
-        else if (authentication instanceof ApiKeyAuthenticationToken) {
+        if (authentication instanceof ApiKeyAuthenticationToken) {
             return handleApiKeyAuthentication((ApiKeyAuthenticationToken) authentication)
                     .map(auth -> (Authentication) auth);
 
@@ -71,6 +76,14 @@ public class DefaultAuthenticationManager implements ReactiveAuthenticationManag
 
 
         return Mono.just(authentication);
+    }
+
+    private Mono<? extends Authentication> handleAnonymousAuthentication(Authentication authentication) {
+        log.info("Handling request with missing authentication, granting read-only access.");
+
+        AnonymousAuthenticationToken auth = new AnonymousAuthenticationToken(authentication.getName(), authentication.getPrincipal(), List.of(Authorities.READER));
+        auth.setAuthenticated(true);
+        return Mono.just(auth);
     }
 
     private Mono<? extends Authentication> handleApiKeyAuthentication(ApiKeyAuthenticationToken authentication) {

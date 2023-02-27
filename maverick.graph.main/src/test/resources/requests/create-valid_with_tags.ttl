@@ -1,10 +1,10 @@
 @prefix : <http://example.org/videos#> .
-@prefix ns1: <http://schema.org/> .
+@prefix ns1: <https://schema.org/> .
 @prefix ns2: <http://av360.io/schema/maverick/> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
-[] a ns1:video ;
+[] a ns1:VideoObject ;
     ns1:identifier "_a1234" ;
     ns1:title "Deutscher Titel"@de ;
     ns1:title "Title Espagnol"@es .

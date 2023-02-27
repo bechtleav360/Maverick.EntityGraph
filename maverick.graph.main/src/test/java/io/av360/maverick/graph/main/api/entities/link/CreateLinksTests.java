@@ -1,6 +1,7 @@
 package io.av360.maverick.graph.main.api.entities.link;
 
 import io.av360.maverick.graph.main.config.TestConfigurations;
+import io.av360.maverick.graph.model.vocabulary.SDO;
 import io.av360.maverick.graph.model.vocabulary.Transactions;
 import io.av360.maverick.graph.tests.util.RdfConsumer;
 import io.av360.maverick.graph.tests.util.TestsBase;
@@ -34,7 +35,7 @@ public class CreateLinksTests extends TestsBase {
         RdfConsumer rdfConsumer = super.upload("requests/create-valid.ttl");
         Assertions.assertTrue(rdfConsumer.hasStatement(null, Transactions.STATUS, Transactions.SUCCESS));
 
-        Statement video = rdfConsumer.findStatement(null, RDF.TYPE, vf.createIRI("http://schema.org/", "video"));
+        Statement video = rdfConsumer.findStatement(null, RDF.TYPE, SDO.VIDEO_OBJECT);
 
 
         Resource embedded = new ClassPathResource("requests/create-valid_embedded.ttl");
@@ -54,7 +55,7 @@ public class CreateLinksTests extends TestsBase {
                 .consumeWith(rdfConsumer);
 
         Assertions.assertTrue(rdfConsumer.hasStatement(video.getSubject(), video.getPredicate(), video.getObject()));
-        Assertions.assertTrue(rdfConsumer.hasStatement(video.getSubject(), vf.createIRI("http://schema.org/hasDefinedTerm"), null));
+        Assertions.assertTrue(rdfConsumer.hasStatement(video.getSubject(), vf.createIRI("https://schema.org/hasDefinedTerm"), null));
     }
 
     @Test

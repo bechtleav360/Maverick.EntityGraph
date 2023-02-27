@@ -5,12 +5,15 @@
 application:
   security:
     enabled: true
-    apiKey: "xxx"
+    apiKey: "123"
     basic:
       enabled: false
   features:
+    modules:
+      applications: false
+      admin: true
     schedulers:
-      detectDuplicates: false
+      detectDuplicates: true
       replaceGlobalIdentifiers: true
     transformers:
       replaceGlobalIdentifiers: true
@@ -21,13 +24,13 @@ application:
   storage:
     default:
       persistent: true
-      path: "/var/data/application"
+      path: "D:/Graphen/entities"
     entities:
       persistent: true
-      path: "/var/data/entities"
+      path: "D:/Graphen/entities"
     transactions:
       persistent: true
-      path: "/var/data/transactions"
+      path: "D:/Graphen/transactions"
 
 spring:
   security:

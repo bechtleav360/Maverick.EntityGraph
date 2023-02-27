@@ -3,6 +3,7 @@ package io.av360.maverick.graph.services.schedulers.detectDuplicates;
 
 import io.av360.maverick.graph.model.security.ApiKeyAuthenticationToken;
 import io.av360.maverick.graph.model.security.Authorities;
+import io.av360.maverick.graph.model.vocabulary.SDO;
 import io.av360.maverick.graph.services.EntityServices;
 import io.av360.maverick.graph.services.QueryServices;
 import io.av360.maverick.graph.services.ValueServices;
@@ -12,7 +13,9 @@ import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
+import org.eclipse.rdf4j.model.vocabulary.DCTERMS;
 import org.eclipse.rdf4j.model.vocabulary.RDFS;
+import org.eclipse.rdf4j.model.vocabulary.SKOS;
 import org.eclipse.rdf4j.sparqlbuilder.constraint.Expressions;
 import org.eclipse.rdf4j.sparqlbuilder.core.SparqlBuilder;
 import org.eclipse.rdf4j.sparqlbuilder.core.Variable;
@@ -67,6 +70,17 @@ import java.util.TreeSet;
 @ConditionalOnProperty(name = "application.features.schedulers.detectDuplicates", havingValue = "true")
 public class ScheduledDetectDuplicates {
 
+    private record DuplicateCandidate(IRI sharedProperty, String type, String sharedValue) {    }
+
+
+    private record MislinkedStatement(Resource subject, IRI predicate, IRI object) {     }
+
+    private record Duplicate(IRI id) implements Comparable<Duplicate> {
+        @Override
+        public int compareTo(Duplicate o) {
+            return o.id().stringValue().compareTo(this.id().stringValue());
+        }
+    }
 
     private final EntityServices entityServices;
     private final QueryServices queryServices;
@@ -85,7 +99,7 @@ public class ScheduledDetectDuplicates {
     // https://github.com/spring-projects/spring-framework/issues/23533
     private boolean labelCheckRunning = false;
 
-    @Scheduled(fixedRate = 10000)
+    @Scheduled(fixedRate = 1000)
     public void checkForDuplicatesScheduled() {
         if (labelCheckRunning) return;
 
@@ -95,18 +109,23 @@ public class ScheduledDetectDuplicates {
 
         // FIXME: do this with all applicatations (run-as semantics)
 
-        this.checkForDuplicates(adminAuthentication).publishOn(Schedulers.single()).subscribe();
+
+        this.checkForDuplicates(RDFS.LABEL, adminAuthentication)
+                .then(this.checkForDuplicates(SDO.IDENTIFIER, adminAuthentication))
+                .then(this.checkForDuplicates(SKOS.PREF_LABEL, adminAuthentication))
+                .then(this.checkForDuplicates(DCTERMS.IDENTIFIER, adminAuthentication))
+                .publishOn(Schedulers.single()).subscribe();
     }
 
-    public Mono<Void> checkForDuplicates(Authentication authentication) {
-        return this.findCandidates(RDFS.LABEL, authentication)
+    public Mono<Void> checkForDuplicates(IRI characteristicProperty, Authentication authentication) {
+        return this.findCandidates(characteristicProperty, authentication)
                 .map(candidate -> {
                     log.trace("There are multiple entities with shared type '{}' and label '{}'", candidate.type(), candidate.sharedValue());
                     return candidate;
                 })
                 .flatMap(candidate ->
                         this.findDuplicates(candidate, authentication)
-                                .doOnNext(duplicate -> log.trace("Identified entity '{}' as potential duplicate.", duplicate.id()))
+                                .doOnNext(duplicate -> log.trace("Entity '{}' identified as duplicate. Another item exists with property {} and value {} .", duplicate.id(), candidate.sharedProperty(), candidate.sharedValue()))
                                 .collectList()
                                 .flatMap(duplicates -> this.mergeDuplicates(duplicates, authentication)))
                 .doOnSubscribe(sub -> {
@@ -246,8 +265,10 @@ public class ScheduledDetectDuplicates {
                 .where(
                         thing.isA(type),
                         thing.has(sharedProperty, sharedValue)
-                ).groupBy(sharedValue, type).having(Expressions.gt(Expressions.count(thing), 1));
+                ).groupBy(sharedValue, type).having(Expressions.gt(Expressions.count(thing), 1)).limit(100);
 
+
+        String q = findDuplicates.getQueryString();
 
         return queryServices.queryValues(findDuplicates, authentication)
                 .map(binding -> {
@@ -259,19 +280,7 @@ public class ScheduledDetectDuplicates {
     }
 
 
-    private record DuplicateCandidate(IRI sharedProperty, String type, String sharedValue) {
-    }
 
-
-    private record MislinkedStatement(Resource subject, IRI predicate, IRI object) {
-    }
-
-    private record Duplicate(IRI id) implements Comparable<Duplicate> {
-        @Override
-        public int compareTo(Duplicate o) {
-            return o.id().stringValue().compareTo(this.id().stringValue());
-        }
-    }
 }
 
 
