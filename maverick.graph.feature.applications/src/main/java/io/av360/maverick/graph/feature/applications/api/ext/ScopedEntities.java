@@ -1,17 +1,20 @@
 package io.av360.maverick.graph.feature.applications.api.ext;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.av360.maverick.graph.api.controller.AbstractController;
+import io.av360.maverick.graph.api.controller.entities.Entities;
+import io.av360.maverick.graph.feature.applications.domain.ApplicationsService;
 import io.av360.maverick.graph.model.enums.RdfMimeTypes;
 import io.av360.maverick.graph.model.rdf.GeneratedIdentifier;
 import io.av360.maverick.graph.model.rdf.NamespaceAwareStatement;
 import io.av360.maverick.graph.services.EntityServices;
-import io.av360.maverick.graph.services.impl.QueryServicesImpl;
+import io.av360.maverick.graph.services.QueryServices;
 import io.av360.maverick.graph.store.rdf.models.TripleBag;
 import io.av360.maverick.graph.store.rdf.models.TripleModel;
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
 import org.springframework.util.Assert;
 import org.springframework.web.bind.annotation.*;
@@ -26,42 +29,43 @@ import java.util.Map;
  *   The application parameter in the url is ignored, it is injected into the authentication object by the auth manager
  */
 @RestController
-@RequestMapping(path = "/api/{application}/entities")
+@Qualifier("EntityApi")
+@Order(2)
+@RequestMapping(path = "/api")
 @Slf4j(topic = "graph.api.entities")
 @OpenAPIDefinition(
 
 )
 @SecurityRequirement(name = "api_key")
-public class ScopedEntities extends AbstractApplicationController {
-
-    protected final ObjectMapper objectMapper;
-    protected final EntityServices entityServices;
-    protected final QueryServicesImpl queryServices;
-
-    public ScopedEntities(ObjectMapper objectMapper, EntityServices graphService, QueryServicesImpl queryServices) {
-        this.objectMapper = objectMapper;
-        this.entityServices = graphService;
-        this.queryServices = queryServices;
+public class ScopedEntities extends Entities {
+    private final ApplicationsService applicationsService;
+    public ScopedEntities(ObjectMapper objectMapper, EntityServices graphService, QueryServices queryServices, ApplicationsService applicationsService) {
+        super(objectMapper, graphService, queryServices);
+        this.applicationsService = applicationsService;
     }
 
-    @GetMapping(value = "/{id:[\\w|\\d|-|_]+}",
+    @GetMapping(value = "/app/{application}/entities/{id:[\\w|\\d|-|_]+}",
             produces = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.N3_VALUE})
     @ResponseStatus(HttpStatus.OK)
-    Flux<NamespaceAwareStatement> read(@PathVariable String application, @PathVariable String id) {
+    Flux<NamespaceAwareStatement> readScoped(@PathVariable String applicationLabel, @PathVariable String id) {
         Assert.isTrue(id.length() == GeneratedIdentifier.LENGTH, "Incorrect length for identifier.");
 
+        /*
         return super.getAuthentication()
+                .flatMap(authentication -> this.applicationsService.getApplicationByLabel(applicationLabel, authentication))
                 .flatMap(authentication -> entityServices.readEntity(id, authentication))
                 .flatMapIterable(TripleModel::asStatements)
                 .doOnSubscribe(s -> {
                     if (log.isDebugEnabled()) log.debug("Request to read entity with id: {}", id);
                 });
+         */
+        return Flux.empty();
     }
 
 
-    @GetMapping(value = "", produces = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.N3_VALUE})
+    @GetMapping(value = "/app/{application}/entities", produces = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.N3_VALUE})
     @ResponseStatus(HttpStatus.OK)
-    Flux<NamespaceAwareStatement> list(
+    Flux<NamespaceAwareStatement> listScoped(
             @PathVariable String application,
             @RequestParam(value = "limit", defaultValue = "5000") Integer limit,
             @RequestParam(value = "offset", defaultValue = "0") Integer offset) {
@@ -74,11 +78,11 @@ public class ScopedEntities extends AbstractApplicationController {
                 });
     }
 
-    @PostMapping(value = "",
+    @PostMapping(value = "/app/{application}/entities",
             consumes = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.N3_VALUE},
             produces = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.N3_VALUE})
     @ResponseStatus(HttpStatus.ACCEPTED)
-    Flux<NamespaceAwareStatement> create(@PathVariable String application, @RequestBody TripleBag request) {
+    Flux<NamespaceAwareStatement> createScoped(@PathVariable String application, @RequestBody TripleBag request) {
         Assert.isTrue(request.getModel().size() > 0, "No statements in request detected.");
 
         return super.getAuthentication()
@@ -90,11 +94,11 @@ public class ScopedEntities extends AbstractApplicationController {
                 });
     }
 
-    @PostMapping(value = "/{id:[\\w|\\d|-|_]+}/{prefixedKey:[\\w|\\d]+\\.[\\w|\\d]+}",
+    @PostMapping(value = "/app/{application}/entities/{id:[\\w|\\d|-|_]+}/{prefixedKey:[\\w|\\d]+\\.[\\w|\\d]+}",
             consumes = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE},
             produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE})
     @ResponseStatus(HttpStatus.CREATED)
-    Flux<NamespaceAwareStatement> embed(@PathVariable String application, @PathVariable String id, @PathVariable String prefixedKey, @RequestBody TripleBag value) {
+    Flux<NamespaceAwareStatement> embedScoped(@PathVariable String application, @PathVariable String id, @PathVariable String prefixedKey, @RequestBody TripleBag value) {
 
         String[] property = splitPrefixedIdentifier(prefixedKey);
         return super.getAuthentication()
@@ -107,10 +111,10 @@ public class ScopedEntities extends AbstractApplicationController {
     }
 
 
-    @DeleteMapping(value = "/{id:[\\w|\\d|-|_]+}",
+    @DeleteMapping(value = "/app/{application}/entities/{id:[\\w|\\d|-|_]+}",
             produces = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.N3_VALUE})
     @ResponseStatus(HttpStatus.OK)
-    Flux<NamespaceAwareStatement> delete(@PathVariable String application, @PathVariable String id) {
+    Flux<NamespaceAwareStatement> deleteScoped(@PathVariable String application, @PathVariable String id) {
         Assert.isTrue(id.length() == GeneratedIdentifier.LENGTH, "Incorrect length for identifier.");
 
         return super.getAuthentication()
@@ -122,79 +126,4 @@ public class ScopedEntities extends AbstractApplicationController {
                 });
     }
 
-
-
-
-    /* //
-    @ApiOperation(value = "Update entity", tags = {"v3", "entity"})
-    @PutMapping(value = "",
-                consumes = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.N3_VALUE},
-                produces = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.N3_VALUE})
-        @ResponseStatus(HttpStatus.ACCEPTED)
-        Flux<NamespaceAwareStatement> updateValue(@RequestBody Incoming request) {
-            Assert.isTrue(request.getModel().size() > 0, "No statements in request detected.");
-
-            return super.getAuthentication()
-                    .flatMap(authentication ->  entityServices.createEntity(request, Map.of(), authentication))
-                    .flatMapIterable(AbstractModel::asStatements)
-                    .doOnSubscribe(s -> {
-                        if (log.isDebugEnabled()) log.debug("Create a new Entity");
-                        if (log.isTraceEnabled()) log.trace("Payload: \n {}", request.toString());
-                    });
-        }
-    */
-
-    /*
-    @ApiOperation(value = "Read entity with type coercion", tags = {"v4", "entity"})
-    @GetMapping("/{prefixedType:[\\w|\\d]+\\.[\\w|\\d]+}/{id:[\\w|\\d|-]+}")
-    @ResponseStatus(HttpStatus.OK)
-    Mono<ServerResponse> readWithType(@PathVariable String prefixedType, @PathVariable String id);
-
-    @ApiOperation(value = "Read entity by example", tags = {"v1", "entity"})
-    @PostMapping("/{id}")
-    @ResponseStatus(HttpStatus.OK)
-    Mono<ServerResponse> readByExample(@RequestBody ObjectNode frame);
-
-    @ApiOperation(value = "List entities by type", tags = {"v2", "entity"})
-    @GetMapping("/{prefixedType:[\\w|\\d]+\\.[\\w|\\d]+}")
-    @ResponseStatus(HttpStatus.OK)
-    Mono<ServerResponse> listEntities(@RequestParam String page, @RequestParam int count);
-
-    @ApiOperation(value = "Create entity with type", tags = {"v3", "entity"})
-    @PostMapping("/{prefixedType}")
-    @ResponseStatus(HttpStatus.CREATED)
-    Mono<ServerResponse> createEntityWithType(@RequestBody String frame);
-
-    @ApiOperation(value = "Delete entity", tags = {"v2", "entity"})
-    @DeleteMapping("/{id}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    Mono<ServerResponse> deleteEntity(@PathVariable String id);
-
-    @ApiOperation(value = "Update entity", tags = {"v3", "entity"})
-    @PutMapping("/{id}")
-    @ResponseStatus(HttpStatus.OK)
-    Mono<ServerResponse> patchEntity(@PathVariable String id);
-
-    @ApiOperation(value = "Update value", tags = {"v3", "entity"})
-    @PutMapping("/{id}/{prefixedKey}")
-    @ResponseStatus(HttpStatus.OK)
-    Mono<ServerResponse> updateValue(@PathVariable String id, @PathVariable String prefixedKey);
-
-    @ApiOperation(value = "Read value or embedded object", tags = {"v2", "entity"})
-    @GetMapping("/{id}/{prefixedKey}")
-    @ResponseStatus(HttpStatus.OK)
-    Mono<ServerResponse> readValue(@PathVariable String id, @PathVariable String prefixedKey);
-
-
-    @ApiOperation(value = "Annotate value or relation", tags = {"v2", "entity"})
-    @PutMapping("/{id}/{prefixedKey}")
-    @ResponseStatus(HttpStatus.CREATED)
-    Mono<ServerResponse> addAnnotations(@PathVariable String id, @PathVariable String prefixedKey);
-
-    @ApiOperation(value = "Delete value or relation", tags = {"v2", "entity"})
-    @DeleteMapping("/{id}/{prefixedKey}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    Mono<ServerResponse> deleteValue(@PathVariable String id, @PathVariable String prefixedKey);
-
-     */
 }

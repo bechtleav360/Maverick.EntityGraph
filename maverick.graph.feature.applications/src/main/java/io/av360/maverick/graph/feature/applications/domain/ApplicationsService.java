@@ -5,6 +5,7 @@ import io.av360.maverick.graph.api.security.errors.UnknownApiKey;
 import io.av360.maverick.graph.feature.applications.domain.events.ApplicationCreatedEvent;
 import io.av360.maverick.graph.feature.applications.domain.events.TokenCreatedEvent;
 import io.av360.maverick.graph.feature.applications.domain.model.Application;
+import io.av360.maverick.graph.feature.applications.domain.model.ApplicationFlags;
 import io.av360.maverick.graph.feature.applications.domain.model.ApplicationToken;
 import io.av360.maverick.graph.feature.applications.store.ApplicationsStore;
 import io.av360.maverick.graph.model.errors.DuplicateRecordsException;
@@ -13,6 +14,7 @@ import io.av360.maverick.graph.model.security.Authorities;
 import io.av360.maverick.graph.model.vocabulary.Local;
 import io.av360.maverick.graph.store.rdf.helpers.BindingsAccessor;
 import lombok.extern.slf4j.Slf4j;
+import org.checkerframework.checker.units.qual.A;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.util.ModelBuilder;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
@@ -53,11 +55,11 @@ public class ApplicationsService {
      * Creates a new application.
      *
      * @param label          Label for the application
-     * @param persistent     True if data should be stored on disk
+     * @param flags            Flags for this application
      * @param authentication Current authentication information
      * @return New application as mono
      */
-    public Mono<Application> createApplication(String label, boolean persistent, Authentication authentication) {
+    public Mono<Application> createApplication(String label, ApplicationFlags flags, Authentication authentication) {
 
         // generate application identifier
         String applicationIdentifier = GeneratedIdentifier.generateRandomKey(16);
@@ -67,7 +69,7 @@ public class ApplicationsService {
                 subject,
                 label,
                 applicationIdentifier,
-                persistent
+                flags
         );
 
         // store application
@@ -77,7 +79,8 @@ public class ApplicationsService {
         modelBuilder.add(RDF.TYPE, Application.TYPE);
         modelBuilder.add(Application.HAS_KEY, application.key());
         modelBuilder.add(Application.HAS_LABEL, application.label());
-        modelBuilder.add(Application.IS_PERSISTENT, application.persistent());
+        modelBuilder.add(Application.IS_PERSISTENT, flags.isPersistent());
+        modelBuilder.add(Application.IS_PUBLIC, flags.isPublic());
 
 
         return this.applicationsStore.insert(modelBuilder.build(), authentication, Authorities.SYSTEM)
@@ -85,7 +88,7 @@ public class ApplicationsService {
                 .doOnSuccess(app -> {
                     this.eventPublisher.publishEvent(new ApplicationCreatedEvent(app));
                 })
-                .doOnSubscribe(subs -> log.debug("Creating a new application with label '{}' and persistence set to '{}' ", label, persistent));
+                .doOnSubscribe(subs -> log.debug("Creating a new application with label '{}' and persistence set to '{}' ", label, flags.isPersistent()));
     }
 
 
@@ -98,8 +101,10 @@ public class ApplicationsService {
         Variable keyActive = SparqlBuilder.var("d");
         Variable keyName = SparqlBuilder.var("e");
         Variable subscriptionIdentifier = SparqlBuilder.var("b");
-        Variable subActive = SparqlBuilder.var("f");
-        Variable sublabel = SparqlBuilder.var("g");
+
+        Variable subLabel = SparqlBuilder.var("f");
+        Variable subPersistent = SparqlBuilder.var("g");
+        Variable subPublic = SparqlBuilder.var("h");
 
         SelectQuery q = Queries.SELECT()
                 .where(nodeKey.has(ApplicationToken.HAS_KEY, keyIdentifier)
@@ -108,8 +113,9 @@ public class ApplicationsService {
                         .andHas(ApplicationToken.IS_ACTIVE, keyActive)
                         .andHas(ApplicationToken.OF_SUBSCRIPTION, nodeSubscription)
                         .and(nodeSubscription.has(Application.HAS_KEY, subscriptionIdentifier)
-                                .andHas(Application.IS_PERSISTENT, subActive)
-                                .andHas(Application.HAS_LABEL, sublabel)
+                                .andHas(Application.IS_PERSISTENT, subPersistent)
+                                .andHas(Application.IS_PUBLIC, subPublic)
+                                .andHas(Application.HAS_LABEL, subLabel)
                         )
                 );
         return this.applicationsStore.query(q, authentication, Authorities.APPLICATION)
@@ -121,6 +127,7 @@ public class ApplicationsService {
                 })
                 .map(BindingsAccessor::new)
                 .map(ba ->
+
                         new ApplicationToken(
                                 ba.asIRI(nodeKey),
                                 ba.asString(keyName),
@@ -129,9 +136,12 @@ public class ApplicationsService {
                                 ba.asString(keyDate),
                                 new Application(
                                         ba.asIRI(nodeSubscription),
-                                        ba.asString(sublabel),
+                                        ba.asString(subLabel),
                                         ba.asString(subscriptionIdentifier),
-                                        ba.asBoolean(subActive)
+                                        new ApplicationFlags(
+                                                ba.asBoolean(subPersistent),
+                                                ba.asBoolean(subPublic)
+                                        )
                                 )
                         )
                 )
@@ -157,8 +167,11 @@ public class ApplicationsService {
         Variable keyDate = SparqlBuilder.var("c");
         Variable keyActive = SparqlBuilder.var("d");
         Variable keyName = SparqlBuilder.var("e");
-        Variable subPersistent = SparqlBuilder.var("f");
-        Variable sublabel = SparqlBuilder.var("g");
+        Variable subLabel = SparqlBuilder.var("f");
+        Variable subPersistent = SparqlBuilder.var("g");
+        Variable subPublic = SparqlBuilder.var("h");
+
+
 
         SelectQuery q = Queries.SELECT()
                 .where(nodeKey.has(ApplicationToken.HAS_KEY, keyIdentifier)
@@ -168,7 +181,8 @@ public class ApplicationsService {
                         .andHas(ApplicationToken.OF_SUBSCRIPTION, nodeSubscription)
                         .and(nodeSubscription.has(Application.HAS_KEY, applicationIdentifier)
                                 .andHas(Application.IS_PERSISTENT, subPersistent)
-                                .andHas(Application.HAS_LABEL, sublabel)
+                                .andHas(Application.IS_PUBLIC, subPublic)
+                                .andHas(Application.HAS_LABEL, subLabel)
                         )
 
                 );
@@ -185,9 +199,13 @@ public class ApplicationsService {
                                 ba.asString(keyDate),
                                 new Application(
                                         ba.asIRI(nodeSubscription),
-                                        ba.asString(sublabel),
+                                        ba.asString(subLabel),
                                         applicationIdentifier,
-                                        ba.asBoolean(subPersistent)
+                                        new ApplicationFlags(
+                                                ba.asBoolean(subPersistent),
+                                                ba.asBoolean(subPublic)
+                                        )
+
 
                                 )
                         )
@@ -202,14 +220,15 @@ public class ApplicationsService {
         Variable node = SparqlBuilder.var("n");
         Variable key = SparqlBuilder.var("a");
         Variable label = SparqlBuilder.var("b");
-        Variable persistent = SparqlBuilder.var("c");
-
+        Variable isPersistent = SparqlBuilder.var("c");
+        Variable isPublic = SparqlBuilder.var("d");
 
         SelectQuery q = Queries.SELECT()
                 .where(node.isA(Application.TYPE)
                         .andHas(Application.HAS_KEY, key)
                         .andHas(Application.HAS_LABEL, label)
-                        .andHas(Application.IS_PERSISTENT, persistent)
+                        .andHas(Application.IS_PERSISTENT, isPersistent)
+                        .andHas(Application.IS_PUBLIC, isPublic)
                 )
                 .limit(100);
 
@@ -220,7 +239,11 @@ public class ApplicationsService {
                                 ba.asIRI(node),
                                 ba.asString(label),
                                 ba.asString(key),
-                                ba.asBoolean(persistent)
+                                new ApplicationFlags(
+                                        ba.asBoolean(isPersistent),
+                                        ba.asBoolean(isPublic)
+                                )
+
                         )
                 )
                 .doOnSubscribe(sub -> log.debug("Requesting all applications"));
@@ -238,13 +261,14 @@ public class ApplicationsService {
 
         Variable node = SparqlBuilder.var("node");
         Variable subPersistent = SparqlBuilder.var("f");
-        Variable sublabel = SparqlBuilder.var("g");
-
+        Variable subLabel = SparqlBuilder.var("g");
+        Variable subPublic = SparqlBuilder.var("p");
         SelectQuery q = Queries.SELECT()
                 .where(node.isA(Application.TYPE)
                         .andHas(Application.HAS_KEY, applicationIdentifier)
-                        .andHas(Application.HAS_LABEL, sublabel)
+                        .andHas(Application.HAS_LABEL, subLabel)
                         .andHas(Application.IS_PERSISTENT, subPersistent)
+                        .andHas(Application.IS_PUBLIC, subPublic)
                 )
 
                 .limit(2);
@@ -257,9 +281,12 @@ public class ApplicationsService {
                 .map(ba ->
                         new Application(
                                 ba.asIRI(node),
-                                ba.asString(sublabel),
+                                ba.asString(subLabel),
                                 applicationIdentifier,
-                                ba.asBoolean(subPersistent)
+                                new ApplicationFlags(
+                                        ba.asBoolean(subPersistent),
+                                        ba.asBoolean(subPublic)
+                                )
                         )
                 )
                 .map(subscription ->
@@ -304,4 +331,39 @@ public class ApplicationsService {
     }
 
 
+    public Mono<Application> getApplicationByLabel(String applicationLabel, Authentication authentication) {
+        Variable node = SparqlBuilder.var("node");
+        Variable keyIdentifier = SparqlBuilder.var("b");
+        Variable subLabel = SparqlBuilder.var("f");
+        Variable subPersistent = SparqlBuilder.var("g");
+        Variable subPublic = SparqlBuilder.var("h");
+
+
+        SelectQuery q = Queries.SELECT()
+                .where(node.isA(Application.TYPE)
+                        .andHas(Application.HAS_KEY, keyIdentifier)
+                        .andHas(Application.HAS_LABEL, applicationLabel)
+                        .andHas(Application.IS_PERSISTENT, subPersistent)
+                        .andHas(Application.IS_PUBLIC, subPublic)
+                )
+
+                .limit(2);
+
+
+        return this.applicationsStore.query(q, authentication, Authorities.APPLICATION)
+                .collectList()
+                .flatMap(this::getUniqueBindingSet)
+                .map(BindingsAccessor::new)
+                .map(ba ->
+                        new Application(
+                                ba.asIRI(node),
+                                ba.asString(subLabel),
+                                ba.asString(keyIdentifier),
+                                new ApplicationFlags(
+                                        ba.asBoolean(subPersistent),
+                                        ba.asBoolean(subPublic)
+                                )
+                        )
+                );
+    }
 }

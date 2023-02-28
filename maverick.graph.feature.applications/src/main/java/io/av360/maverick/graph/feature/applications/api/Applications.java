@@ -39,12 +39,12 @@ public class Applications extends AbstractController {
         Assert.notNull(request.label(), "Label must be set in request");
 
         return super.getAuthentication()
-                .flatMap(authentication -> this.applicationsService.createApplication(request.label(), request.persistent(), authentication))
+                .flatMap(authentication -> this.applicationsService.createApplication(request.label(), request.flags(), authentication))
                 .map(subscription ->
                         new Responses.ApplicationResponse(
                                 subscription.key(),
                                 subscription.label(),
-                                subscription.persistent()
+                                subscription.flags()
                         )
                 ).doOnSubscribe(subscription -> log.info("Creating a new application"));
     }
@@ -59,7 +59,7 @@ public class Applications extends AbstractController {
                         new Responses.ApplicationResponse(
                                 subscription.key(),
                                 subscription.label(),
-                                subscription.persistent()
+                                subscription.flags()
                         )
                 ).doOnSubscribe(subscription -> log.info("Fetching all applications"));
     }
@@ -82,7 +82,7 @@ public class Applications extends AbstractController {
                                 new Responses.ApplicationResponse(
                                         apiKey.application().key(),
                                         apiKey.application().label(),
-                                        apiKey.application().persistent()
+                                        apiKey.application().flags()
                                 )
                         )
                 ).doOnSubscribe(subscription -> log.info("Generating a new api key for an application"));
@@ -104,7 +104,7 @@ public class Applications extends AbstractController {
 
                     Application subscription = keys.get(0).application();
                     List<Responses.ApiKeyResponse> apiKeys = keys.stream().map(apiKey -> new Responses.ApiKeyResponse(apiKey.key(), apiKey.issueDate(), apiKey.active())).toList();
-                    return Mono.just(new Responses.ApplicationWithApiKeys(subscription.key(), subscription.label(), subscription.persistent(), apiKeys));
+                    return Mono.just(new Responses.ApplicationWithApiKeys(subscription.key(), subscription.label(), subscription.flags(), apiKeys));
                 }).doOnSubscribe(s -> log.info("Fetching all api keys for an application"));
 
 

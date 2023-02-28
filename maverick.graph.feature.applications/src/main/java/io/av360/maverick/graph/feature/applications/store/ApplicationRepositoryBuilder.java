@@ -216,7 +216,7 @@ public class ApplicationRepositoryBuilder implements RepositoryBuilder {
 
 
     private Repository buildApplicationsRepository(Application subscription, String label, String basePath) {
-        if (!subscription.persistent() || !StringUtils.hasLength(basePath)) {
+        if (!subscription.flags().isPersistent() || !StringUtils.hasLength(basePath)) {
             log.debug("(Store) Initializing volatile {} repository for application '{}' [{}]", label, subscription.label(), subscription.key());
             return new SailRepository(new MemoryStore());
         } else {

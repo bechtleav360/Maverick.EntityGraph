@@ -1,7 +1,9 @@
 package io.av360.maverick.graph.model.security;
 
+import org.springframework.http.server.RequestPath;
 import org.springframework.security.core.Authentication;
 
+import javax.annotation.Nullable;
 import java.io.IOException;
 import java.util.*;
 
@@ -15,21 +17,27 @@ public class ApiKeyAuthenticationToken implements Authentication {
     private final Set<Authorities.WeightedAuthority> authorities;
 
     private final Map<String, String> headers;
+    private final RequestPath path;
     private boolean isAuthenticated;
 
 
     public ApiKeyAuthenticationToken(Map<String, String> headers) {
+        this(headers, null);
 
 
+    }
+
+    public ApiKeyAuthenticationToken() {
+        this(new HashMap<>(), null);
+    }
+
+    public ApiKeyAuthenticationToken(Map<String, String> headers, @Nullable RequestPath path) {
         this.headers = new HashMap<>();
         // headers are case insensitive according to RFC 2616
         headers.forEach((key, val) -> this.headers.put(key.toUpperCase(), val));
 
+        this.path = path;
         this.authorities = new HashSet<>(Authorities.NO_AUTHORITIES);
-    }
-
-    public ApiKeyAuthenticationToken() {
-        this(new HashMap<>());
     }
 
     @Override

@@ -6,6 +6,7 @@ import io.av360.maverick.graph.model.enums.RdfMimeTypes;
 import io.av360.maverick.graph.model.rdf.GeneratedIdentifier;
 import io.av360.maverick.graph.model.rdf.NamespaceAwareStatement;
 import io.av360.maverick.graph.services.EntityServices;
+import io.av360.maverick.graph.services.QueryServices;
 import io.av360.maverick.graph.services.impl.QueryServicesImpl;
 import io.av360.maverick.graph.store.rdf.models.TripleBag;
 import io.av360.maverick.graph.store.rdf.models.TripleModel;
@@ -18,7 +19,10 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.web.reactive.error.ErrorAttributes;
+import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
 import org.springframework.util.Assert;
 import org.springframework.web.bind.annotation.*;
@@ -28,19 +32,24 @@ import javax.annotation.Nullable;
 import java.util.Map;
 
 @RestController
-@RequestMapping(path = "/api/entities")
+@Qualifier("EntityApi")
+@Order(1)
+@RequestMapping(path = "/api")
 @Slf4j(topic = "graph.api.entities")
 @OpenAPIDefinition(
 
+)
+@ConditionalOnProperty(
+        name = "! application.features.modules.applications"
 )
 @SecurityRequirement(name = "api_key")
 public class Entities extends AbstractController {
 
     protected final ObjectMapper objectMapper;
     protected final EntityServices entityServices;
-    protected final QueryServicesImpl queryServices;
+    protected final QueryServices queryServices;
 
-    public Entities(ObjectMapper objectMapper, EntityServices graphService, QueryServicesImpl queryServices) {
+    public Entities(ObjectMapper objectMapper, EntityServices graphService, QueryServices queryServices) {
         this.objectMapper = objectMapper;
         this.entityServices = graphService;
         this.queryServices = queryServices;
@@ -50,7 +59,7 @@ public class Entities extends AbstractController {
     @ApiResponses(value = {
             @ApiResponse(responseCode = "404", description = "Entity with the given identifier does not exist", content = { @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorAttributes.class))})
     })
-    @GetMapping(value = "/{id}",
+    @GetMapping(value = "/entities/{id}",
             produces = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.N3_VALUE})
     @ResponseStatus(HttpStatus.OK)
     Flux<NamespaceAwareStatement> read(@PathVariable String id, @RequestParam(required = false) @Nullable String property) {
@@ -77,7 +86,7 @@ public class Entities extends AbstractController {
 
     }
 
-    @GetMapping(value = "", produces = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.N3_VALUE})
+    @GetMapping(value = "/entities", produces = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.N3_VALUE})
     @ResponseStatus(HttpStatus.OK)
     Flux<NamespaceAwareStatement> list(
             @RequestParam(value = "limit", defaultValue = "5000") Integer limit,
@@ -94,7 +103,7 @@ public class Entities extends AbstractController {
 
 
 
-    @PostMapping(value = "",
+    @PostMapping(value = "/entities",
             consumes = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.N3_VALUE},
             produces = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.N3_VALUE})
     @ResponseStatus(HttpStatus.ACCEPTED)
@@ -110,7 +119,7 @@ public class Entities extends AbstractController {
                 });
     }
 
-    @PostMapping(value = "/{id:[\\w|\\d|-|_]+}/{prefixedKey:[\\w|\\d]+\\.[\\w|\\d]+}",
+    @PostMapping(value = "/entities/{id:[\\w|\\d|-|_]+}/{prefixedKey:[\\w|\\d]+\\.[\\w|\\d]+}",
             consumes = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE},
             produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE})
     @ResponseStatus(HttpStatus.CREATED)
@@ -127,7 +136,7 @@ public class Entities extends AbstractController {
     }
 
 
-    @DeleteMapping(value = "/{id:[\\w|\\d|-|_]+}",
+    @DeleteMapping(value = "/entities/{id:[\\w|\\d|-|_]+}",
             produces = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.N3_VALUE})
     @ResponseStatus(HttpStatus.OK)
     Flux<NamespaceAwareStatement> delete(@PathVariable String id) {

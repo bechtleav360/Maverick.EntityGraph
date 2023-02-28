@@ -7,9 +7,9 @@ import org.eclipse.rdf4j.model.Namespace;
 import org.eclipse.rdf4j.model.vocabulary.DC;
 import org.eclipse.rdf4j.model.vocabulary.RDFS;
 
-public record Application(IRI iri, String label, String key, boolean persistent, boolean open) {
+public record Application(IRI iri, String label, String key, ApplicationFlags flags) {
 
-    public static final String NAMESPACE = "http://av360.io/schema#";
+    public static final String NAMESPACE = "http://av360.org/schema#";
     public static final String PREFIX = "sub";
 
     public static final Namespace NS = EntityNamespace.of(PREFIX, NAMESPACE);
@@ -22,6 +22,6 @@ public record Application(IRI iri, String label, String key, boolean persistent,
     public static final IRI HAS_LABEL = RDFS.LABEL;
     public static final IRI IS_PERSISTENT = LocalIRI.from(NAMESPACE, "isPersistent");
 
-
+    public static final IRI IS_PUBLIC = LocalIRI.from(NAMESPACE, "isPublic");
 }
 

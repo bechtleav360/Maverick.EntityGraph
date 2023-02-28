@@ -2,6 +2,7 @@ package io.av360.maverick.graph.feature.applications;
 
 import io.av360.maverick.graph.feature.applications.api.dto.Requests;
 import io.av360.maverick.graph.feature.applications.api.dto.Responses;
+import io.av360.maverick.graph.feature.applications.domain.model.ApplicationFlags;
 import io.av360.maverick.graph.tests.api.v2.Subscriptions;
 import io.av360.maverick.graph.tests.util.TestsBase;
 import org.junit.jupiter.api.AfterEach;
@@ -28,7 +29,9 @@ class ApplicationsTest extends TestsBase implements Subscriptions {
     }
 
     private WebTestClient.BodyContentSpec postSubscription(String label, boolean persistent) {
-        Requests.RegisterApplicationRequest req = new Requests.RegisterApplicationRequest(label, persistent);
+
+
+        Requests.RegisterApplicationRequest req = new Requests.RegisterApplicationRequest(label, new ApplicationFlags(persistent, false));
 
         return webClient.post()
                 .uri("/api/applications")
@@ -70,7 +73,7 @@ class ApplicationsTest extends TestsBase implements Subscriptions {
     @Test
     public void generateKey() {
 
-        Requests.RegisterApplicationRequest req = new Requests.RegisterApplicationRequest("test", false);
+        Requests.RegisterApplicationRequest req = new Requests.RegisterApplicationRequest("test", new ApplicationFlags(false, false));
 
         Responses.ApplicationResponse re = webClient.post()
                 .uri("/api/applications")

@@ -1,5 +1,7 @@
 package io.av360.maverick.graph.feature.applications.api.dto;
 
+import io.av360.maverick.graph.feature.applications.domain.model.ApplicationFlags;
+
 import java.util.List;
 
 /**
@@ -7,7 +9,7 @@ import java.util.List;
  */
 public class Responses {
 
-    public record ApplicationResponse(String key, String label, boolean persistent) {
+    public record ApplicationResponse(String key, String label, ApplicationFlags flags) {
 
     }
 
@@ -20,7 +22,7 @@ public class Responses {
 
     }
 
-    public record ApplicationWithApiKeys(String key, String label, boolean persistent, List<ApiKeyResponse> keys) {
+    public record ApplicationWithApiKeys(String key, String label, ApplicationFlags flags, List<ApiKeyResponse> keys) {
 
     }
 }
