@@ -32,7 +32,7 @@ public class DefaultAuthenticationManager implements ReactiveAuthenticationManag
 
 
     public DefaultAuthenticationManager() {
-        log.trace("Activated Admin Authentication Manager (checking configured admin api key)");
+        log.trace("Activated default authentication manager (checking configured admin api key)");
     }
 
     @PostConstruct
@@ -49,7 +49,7 @@ public class DefaultAuthenticationManager implements ReactiveAuthenticationManag
     @Override
     public Mono<Authentication> authenticate(Authentication authentication) {
         Assert.notNull(authentication, "Authentication is null in Authentication Manager");
-        log.trace("Handling authentication of type {} in system authentication manager (default)", authentication.getClass().getSimpleName());
+        log.trace("Handling authentication of type {} in default authentication manager (default)", authentication.getClass().getSimpleName());
 
         if (authentication instanceof TestingAuthenticationToken) {
             log.warn("Test authentication token detected, disabling security.");
@@ -79,7 +79,7 @@ public class DefaultAuthenticationManager implements ReactiveAuthenticationManag
     }
 
     private Mono<? extends Authentication> handleAnonymousAuthentication(Authentication authentication) {
-        log.info("Handling request with missing authentication, granting read-only access.");
+        log.info("Handling request with missing authentication, granting read-only access in default authentication manager.");
 
         AnonymousAuthenticationToken auth = new AnonymousAuthenticationToken(authentication.getName(), authentication.getPrincipal(), List.of(Authorities.READER));
         auth.setAuthenticated(true);
@@ -87,7 +87,7 @@ public class DefaultAuthenticationManager implements ReactiveAuthenticationManag
     }
 
     private Mono<? extends Authentication> handleApiKeyAuthentication(ApiKeyAuthenticationToken authentication) {
-        log.trace("Handling request with API Key authentication");
+        log.trace("Handling request with API Key authentication in default authentication manager");
         // check if this is the admin user
         if (StringUtils.hasLength(this.key) && authentication.getApiKey().isPresent() && authentication.getApiKey().get().equalsIgnoreCase(this.key)) {
             log.debug("Valid System API Key for system authentication provided.");
@@ -112,15 +112,18 @@ public class DefaultAuthenticationManager implements ReactiveAuthenticationManag
      * @return Authentication with relevant authorities
      */
     private Mono<? extends Authentication> handleBasicAuthentication(UsernamePasswordAuthenticationToken authentication) {
-        log.trace("Handling request with basic authentication");
+        log.trace("Handling request with basic authentication in default authentication manager.");
 
         if (StringUtils.hasLength(this.key) && StringUtils.hasLength(authentication.getCredentials().toString()) && authentication.getCredentials().toString().equalsIgnoreCase(this.key)) {
-            log.debug("Valid password for system authentication provided.");
+            log.debug("Valid password in basic authentication checked by default authentication manager.");
 
 
             UsernamePasswordAuthenticationToken authenticated = UsernamePasswordAuthenticationToken.authenticated(authentication.getPrincipal(), authentication.getPrincipal(), Set.of(Authorities.SYSTEM));
             return Mono.just(authenticated);
+        } else {
+            log.warn("Given password for user '{}' is invalid, should be the configured admin token.", authentication.getPrincipal());
         }
+
 
         return Mono.just(authentication);
     }

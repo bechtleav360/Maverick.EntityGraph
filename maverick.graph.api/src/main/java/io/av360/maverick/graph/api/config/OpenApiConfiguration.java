@@ -35,7 +35,7 @@ public class OpenApiConfiguration {
                 .addOpenApiCustomizer(openApi -> {
                     openApi.info(new Info().title("Entity Graph API").description("API to access and update the entity graph.").version(version));
                 })
-                .pathsToMatch("/api/entities/**")
+                .pathsToMatch("/**/entities/**")
                 .build();
     }
 
