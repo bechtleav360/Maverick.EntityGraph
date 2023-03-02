@@ -9,10 +9,12 @@ import java.util.List;
 
 public class Authorities {
 
-    public static WeightedAuthority SYSTEM = new WeightedAuthority(800, "SYSTEM");
-    public static WeightedAuthority APPLICATION = new WeightedAuthority(600, "APPLICATION");
-    public static WeightedAuthority CONTRIBUTOR = new WeightedAuthority(400, "CONTRIBUTOR");
-    public static WeightedAuthority READER = new WeightedAuthority(200, "READER");
+    public static final WeightedAuthority GUEST =  new WeightedAuthority(100, "GUEST");
+
+    public static final WeightedAuthority SYSTEM = new WeightedAuthority(800, "SYSTEM");
+    public static final WeightedAuthority APPLICATION = new WeightedAuthority(600, "APPLICATION");
+    public static final WeightedAuthority CONTRIBUTOR = new WeightedAuthority(400, "CONTRIBUTOR");
+    public static final WeightedAuthority READER = new WeightedAuthority(200, "READER");
 
     public static List<WeightedAuthority> NO_AUTHORITIES = Collections.emptyList();
 

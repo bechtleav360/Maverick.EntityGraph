@@ -3,7 +3,7 @@ package io.av360.maverick.graph.feature.applications.store;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import io.av360.maverick.graph.feature.applications.domain.model.Application;
-import io.av360.maverick.graph.feature.applications.security.ApplicationAuthenticationToken;
+import io.av360.maverick.graph.feature.applications.security.SubscriptionToken;
 import io.av360.maverick.graph.model.security.ApiKeyAuthenticationToken;
 import io.av360.maverick.graph.model.security.Authorities;
 import io.av360.maverick.graph.store.RepositoryBuilder;
@@ -76,8 +76,8 @@ public class ApplicationRepositoryBuilder implements RepositoryBuilder {
             return this.repositoryCache.get(repositoryType.name(), s -> new LabeledRepository("test:" + repositoryType.name(), new SailRepository(new MemoryStore())));
         }
 
-        if (authentication instanceof ApplicationAuthenticationToken && Authorities.satisfies(Authorities.READER, authentication.getAuthorities())) {
-            return this.resolveRepositoryForApplicationAuthentication(repositoryType, (ApplicationAuthenticationToken) authentication);
+        if (authentication instanceof SubscriptionToken && Authorities.satisfies(Authorities.READER, authentication.getAuthorities())) {
+            return this.resolveRepositoryForApplicationAuthentication(repositoryType, (SubscriptionToken) authentication);
         }
 
         if (authentication instanceof ApiKeyAuthenticationToken && Authorities.satisfies(Authorities.SYSTEM, authentication.getAuthorities())) {
@@ -93,14 +93,14 @@ public class ApplicationRepositoryBuilder implements RepositoryBuilder {
     }
 
 
-    private Repository resolveRepositoryForApplicationAuthentication(RepositoryType repositoryType, ApplicationAuthenticationToken authentication) throws IOException {
+    private Repository resolveRepositoryForApplicationAuthentication(RepositoryType repositoryType, SubscriptionToken authentication) throws IOException {
         Assert.isTrue(Authorities.satisfies(Authorities.READER, authentication.getAuthorities()), "Missing authorization: " + Authorities.READER.getAuthority());
 
         log.trace("Resolving repository with application authentication.");
         return switch (repositoryType) {
-            case ENTITIES -> this.getEntityRepository(authentication.getSubscription());
-            case TRANSACTIONS -> this.getTransactionsRepository(authentication.getSubscription());
-            case SCHEMA -> this.getSchemaRepository(authentication.getSubscription());
+            case ENTITIES -> this.getEntityRepository(authentication.getApplication());
+            case TRANSACTIONS -> this.getTransactionsRepository(authentication.getApplication());
+            case SCHEMA -> this.getSchemaRepository(authentication.getApplication());
             // application is left out.. we cannot access the applications details with a user authorization only
             default ->
                     throw new IOException(String.format("Invalid Repository Type '%s' for application context", repositoryType));
@@ -108,9 +108,9 @@ public class ApplicationRepositoryBuilder implements RepositoryBuilder {
     }
 
     private Repository resolveRepositoryForDefaultAuthentication(RepositoryType repositoryType, Authentication authentication) {
-        if (Authorities.satisfies(Authorities.SYSTEM, authentication.getAuthorities()) && authentication instanceof ApplicationAuthenticationToken) {
+        if (Authorities.satisfies(Authorities.SYSTEM, authentication.getAuthorities()) && authentication instanceof SubscriptionToken) {
                 log.trace("Resolving repository with admin authentication and additional subscription key.");
-                Application subscription = ((ApplicationAuthenticationToken) authentication).getSubscription();
+                Application subscription = ((SubscriptionToken) authentication).getApplication();
                 return switch (repositoryType) {
                     case ENTITIES -> this.getEntityRepository(subscription);
                     case TRANSACTIONS -> this.getTransactionsRepository(subscription);
@@ -140,9 +140,9 @@ public class ApplicationRepositoryBuilder implements RepositoryBuilder {
     private Repository resolveRepositoryForSystemAuthentication(RepositoryType repositoryType, ApiKeyAuthenticationToken authentication) throws IOException {
         Assert.isTrue(Authorities.satisfies(Authorities.SYSTEM, authentication.getAuthorities()), "Missing authorization: " + Authorities.SYSTEM.getAuthority());
 
-        if (authentication instanceof ApplicationAuthenticationToken) {
+        if (authentication instanceof SubscriptionToken) {
             log.trace("Resolving repository with admin authentication and additional subscription key.");
-            Application subscription = ((ApplicationAuthenticationToken) authentication).getSubscription();
+            Application subscription = ((SubscriptionToken) authentication).getApplication();
             return switch (repositoryType) {
                 case ENTITIES -> this.getEntityRepository(subscription);
                 case TRANSACTIONS -> this.getTransactionsRepository(subscription);

@@ -6,7 +6,9 @@ import io.av360.maverick.graph.feature.applications.domain.events.ApplicationCre
 import io.av360.maverick.graph.feature.applications.domain.events.TokenCreatedEvent;
 import io.av360.maverick.graph.feature.applications.domain.model.Application;
 import io.av360.maverick.graph.feature.applications.domain.model.ApplicationFlags;
-import io.av360.maverick.graph.feature.applications.domain.model.ApplicationToken;
+import io.av360.maverick.graph.feature.applications.domain.model.Subscription;
+import io.av360.maverick.graph.feature.applications.domain.vocab.ApplicationTerms;
+import io.av360.maverick.graph.feature.applications.domain.vocab.SubscriptionTerms;
 import io.av360.maverick.graph.feature.applications.store.ApplicationsStore;
 import io.av360.maverick.graph.model.errors.DuplicateRecordsException;
 import io.av360.maverick.graph.model.rdf.GeneratedIdentifier;
@@ -14,7 +16,6 @@ import io.av360.maverick.graph.model.security.Authorities;
 import io.av360.maverick.graph.model.vocabulary.Local;
 import io.av360.maverick.graph.store.rdf.helpers.BindingsAccessor;
 import lombok.extern.slf4j.Slf4j;
-import org.checkerframework.checker.units.qual.A;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.util.ModelBuilder;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
@@ -46,8 +47,8 @@ public class ApplicationsService {
     private final ApplicationEventPublisher eventPublisher;
 
 
-    public ApplicationsService(ApplicationsStore store, ApplicationEventPublisher eventPublisher) {
-        this.applicationsStore = store;
+    public ApplicationsService(ApplicationsStore applicationsStore, ApplicationEventPublisher eventPublisher) {
+        this.applicationsStore = applicationsStore;
         this.eventPublisher = eventPublisher;
     }
 
@@ -76,11 +77,11 @@ public class ApplicationsService {
         ModelBuilder modelBuilder = new ModelBuilder();
 
         modelBuilder.subject(application.iri());
-        modelBuilder.add(RDF.TYPE, Application.TYPE);
-        modelBuilder.add(Application.HAS_KEY, application.key());
-        modelBuilder.add(Application.HAS_LABEL, application.label());
-        modelBuilder.add(Application.IS_PERSISTENT, flags.isPersistent());
-        modelBuilder.add(Application.IS_PUBLIC, flags.isPublic());
+        modelBuilder.add(RDF.TYPE, ApplicationTerms.TYPE);
+        modelBuilder.add(ApplicationTerms.HAS_KEY, application.key());
+        modelBuilder.add(ApplicationTerms.HAS_LABEL, application.label());
+        modelBuilder.add(ApplicationTerms.IS_PERSISTENT, flags.isPersistent());
+        modelBuilder.add(ApplicationTerms.IS_PUBLIC, flags.isPublic());
 
 
         return this.applicationsStore.insert(modelBuilder.build(), authentication, Authorities.SYSTEM)
@@ -92,7 +93,7 @@ public class ApplicationsService {
     }
 
 
-    public Mono<ApplicationToken> getKey(String keyIdentifier, Authentication authentication) {
+    public Mono<Subscription> getSubscription(String keyIdentifier, Authentication authentication) {
 
         Variable nodeKey = SparqlBuilder.var("n1");
         Variable nodeSubscription = SparqlBuilder.var("n2");
@@ -107,15 +108,15 @@ public class ApplicationsService {
         Variable subPublic = SparqlBuilder.var("h");
 
         SelectQuery q = Queries.SELECT()
-                .where(nodeKey.has(ApplicationToken.HAS_KEY, keyIdentifier)
-                        .andHas(ApplicationToken.HAS_LABEL, keyName)
-                        .andHas(ApplicationToken.HAS_ISSUE_DATE, keyDate)
-                        .andHas(ApplicationToken.IS_ACTIVE, keyActive)
-                        .andHas(ApplicationToken.OF_SUBSCRIPTION, nodeSubscription)
-                        .and(nodeSubscription.has(Application.HAS_KEY, subscriptionIdentifier)
-                                .andHas(Application.IS_PERSISTENT, subPersistent)
-                                .andHas(Application.IS_PUBLIC, subPublic)
-                                .andHas(Application.HAS_LABEL, subLabel)
+                .where(nodeKey.has(SubscriptionTerms.HAS_KEY, keyIdentifier)
+                        .andHas(SubscriptionTerms.HAS_LABEL, keyName)
+                        .andHas(SubscriptionTerms.HAS_ISSUE_DATE, keyDate)
+                        .andHas(SubscriptionTerms.IS_ACTIVE, keyActive)
+                        .andHas(SubscriptionTerms.OF_SUBSCRIPTION, nodeSubscription)
+                        .and(nodeSubscription.has(ApplicationTerms.HAS_KEY, subscriptionIdentifier)
+                                .andHas(ApplicationTerms.IS_PERSISTENT, subPersistent)
+                                .andHas(ApplicationTerms.IS_PUBLIC, subPublic)
+                                .andHas(ApplicationTerms.HAS_LABEL, subLabel)
                         )
                 );
         return this.applicationsStore.query(q, authentication, Authorities.APPLICATION)
@@ -128,7 +129,7 @@ public class ApplicationsService {
                 .map(BindingsAccessor::new)
                 .map(ba ->
 
-                        new ApplicationToken(
+                        new Subscription(
                                 ba.asIRI(nodeKey),
                                 ba.asString(keyName),
                                 keyIdentifier,
@@ -146,7 +147,7 @@ public class ApplicationsService {
                         )
                 )
                 .switchIfEmpty(Mono.error(new UnknownApiKey(keyIdentifier)))
-                .filter(ApplicationToken::active)
+                .filter(Subscription::active)
                 .switchIfEmpty(Mono.error(new RevokedApiKeyUsed(keyIdentifier)))
                 .doOnSubscribe(subs -> log.debug("Requesting application details for application key '{}'", keyIdentifier));
 
@@ -157,8 +158,7 @@ public class ApplicationsService {
         return (IRI) bindings.getValue(var.getVarName());
     }
 
-    public Flux<ApplicationToken> getKeysForApplication(String applicationIdentifier, Authentication authentication) {
-
+    public Flux<Subscription> getSubscriptionsForApplication(String applicationIdentifier, Authentication authentication) {
 
         Variable nodeKey = SparqlBuilder.var("n1");
         Variable nodeSubscription = SparqlBuilder.var("n2");
@@ -174,15 +174,15 @@ public class ApplicationsService {
 
 
         SelectQuery q = Queries.SELECT()
-                .where(nodeKey.has(ApplicationToken.HAS_KEY, keyIdentifier)
-                        .andHas(ApplicationToken.HAS_LABEL, keyName)
-                        .andHas(ApplicationToken.HAS_ISSUE_DATE, keyDate)
-                        .andHas(ApplicationToken.IS_ACTIVE, keyActive)
-                        .andHas(ApplicationToken.OF_SUBSCRIPTION, nodeSubscription)
-                        .and(nodeSubscription.has(Application.HAS_KEY, applicationIdentifier)
-                                .andHas(Application.IS_PERSISTENT, subPersistent)
-                                .andHas(Application.IS_PUBLIC, subPublic)
-                                .andHas(Application.HAS_LABEL, subLabel)
+                .where(nodeKey.has(SubscriptionTerms.HAS_KEY, keyIdentifier)
+                        .andHas(SubscriptionTerms.HAS_LABEL, keyName)
+                        .andHas(SubscriptionTerms.HAS_ISSUE_DATE, keyDate)
+                        .andHas(SubscriptionTerms.IS_ACTIVE, keyActive)
+                        .andHas(SubscriptionTerms.OF_SUBSCRIPTION, nodeSubscription)
+                        .and(nodeSubscription.has(ApplicationTerms.HAS_KEY, applicationIdentifier)
+                                .andHas(ApplicationTerms.IS_PERSISTENT, subPersistent)
+                                .andHas(ApplicationTerms.IS_PUBLIC, subPublic)
+                                .andHas(ApplicationTerms.HAS_LABEL, subLabel)
                         )
 
                 );
@@ -191,7 +191,7 @@ public class ApplicationsService {
         return this.applicationsStore.query(q, authentication, Authorities.APPLICATION)
                 .map(BindingsAccessor::new)
                 .map(ba ->
-                        new ApplicationToken(
+                        new Subscription(
                                 ba.asIRI(nodeKey),
                                 ba.asString(keyName),
                                 ba.asString(keyIdentifier),
@@ -205,8 +205,6 @@ public class ApplicationsService {
                                                 ba.asBoolean(subPersistent),
                                                 ba.asBoolean(subPublic)
                                         )
-
-
                                 )
                         )
                 )
@@ -214,7 +212,7 @@ public class ApplicationsService {
     }
 
 
-    public Flux<Application> getApplications(Authentication authentication) {
+    public Flux<Application> listApplications(Authentication authentication) {
 
 
         Variable node = SparqlBuilder.var("n");
@@ -224,11 +222,11 @@ public class ApplicationsService {
         Variable isPublic = SparqlBuilder.var("d");
 
         SelectQuery q = Queries.SELECT()
-                .where(node.isA(Application.TYPE)
-                        .andHas(Application.HAS_KEY, key)
-                        .andHas(Application.HAS_LABEL, label)
-                        .andHas(Application.IS_PERSISTENT, isPersistent)
-                        .andHas(Application.IS_PUBLIC, isPublic)
+                .where(node.isA(ApplicationTerms.TYPE)
+                        .andHas(ApplicationTerms.HAS_KEY, key)
+                        .andHas(ApplicationTerms.HAS_LABEL, label)
+                        .andHas(ApplicationTerms.IS_PERSISTENT, isPersistent)
+                        .andHas(ApplicationTerms.IS_PUBLIC, isPublic)
                 )
                 .limit(100);
 
@@ -256,7 +254,7 @@ public class ApplicationsService {
         return Mono.error(new UnsupportedOperationException());
     }
 
-    public Mono<ApplicationToken> generateToken(String applicationIdentifier, String name, Authentication authentication) {
+    public Mono<Subscription> createSubscription(String applicationIdentifier, String name, Authentication authentication) {
 
 
         Variable node = SparqlBuilder.var("node");
@@ -264,11 +262,11 @@ public class ApplicationsService {
         Variable subLabel = SparqlBuilder.var("g");
         Variable subPublic = SparqlBuilder.var("p");
         SelectQuery q = Queries.SELECT()
-                .where(node.isA(Application.TYPE)
-                        .andHas(Application.HAS_KEY, applicationIdentifier)
-                        .andHas(Application.HAS_LABEL, subLabel)
-                        .andHas(Application.IS_PERSISTENT, subPersistent)
-                        .andHas(Application.IS_PUBLIC, subPublic)
+                .where(node.isA(ApplicationTerms.TYPE)
+                        .andHas(ApplicationTerms.HAS_KEY, applicationIdentifier)
+                        .andHas(ApplicationTerms.HAS_LABEL, subLabel)
+                        .andHas(ApplicationTerms.IS_PERSISTENT, subPersistent)
+                        .andHas(ApplicationTerms.IS_PUBLIC, subPublic)
                 )
 
                 .limit(2);
@@ -289,26 +287,26 @@ public class ApplicationsService {
                                 )
                         )
                 )
-                .map(subscription ->
-                        new ApplicationToken(
+                .map(application ->
+                        new Subscription(
                                 new GeneratedIdentifier(Local.Subscriptions.NAMESPACE),
                                 name,
                                 GeneratedIdentifier.generateRandomKey(16),
                                 true,
                                 ZonedDateTime.now().toString(),
-                                subscription
+                                application
                         )
                 )
                 .flatMap(apiKey -> {
                     ModelBuilder modelBuilder = new ModelBuilder();
                     modelBuilder.subject(apiKey.iri());
-                    modelBuilder.add(RDF.TYPE, ApplicationToken.TYPE);
-                    modelBuilder.add(ApplicationToken.HAS_KEY, apiKey.key());
-                    modelBuilder.add(ApplicationToken.HAS_LABEL, apiKey.label());
-                    modelBuilder.add(ApplicationToken.HAS_ISSUE_DATE, apiKey.issueDate());
-                    modelBuilder.add(ApplicationToken.IS_ACTIVE, apiKey.active());
-                    modelBuilder.add(ApplicationToken.OF_SUBSCRIPTION, apiKey.application().key());
-                    modelBuilder.add(apiKey.application().iri(), Application.HAS_API_KEY, apiKey.iri());
+                    modelBuilder.add(RDF.TYPE, SubscriptionTerms.TYPE);
+                    modelBuilder.add(SubscriptionTerms.HAS_KEY, apiKey.key());
+                    modelBuilder.add(SubscriptionTerms.HAS_LABEL, apiKey.label());
+                    modelBuilder.add(SubscriptionTerms.HAS_ISSUE_DATE, apiKey.issueDate());
+                    modelBuilder.add(SubscriptionTerms.IS_ACTIVE, apiKey.active());
+                    modelBuilder.add(SubscriptionTerms.OF_SUBSCRIPTION, apiKey.application().key());
+                    modelBuilder.add(apiKey.application().iri(), ApplicationTerms.HAS_API_KEY, apiKey.iri());
 
                     return this.applicationsStore.insert(modelBuilder.build(), authentication, Authorities.APPLICATION).then(Mono.just(apiKey));
                 })
@@ -340,17 +338,17 @@ public class ApplicationsService {
 
 
         SelectQuery q = Queries.SELECT()
-                .where(node.isA(Application.TYPE)
-                        .andHas(Application.HAS_KEY, keyIdentifier)
-                        .andHas(Application.HAS_LABEL, applicationLabel)
-                        .andHas(Application.IS_PERSISTENT, subPersistent)
-                        .andHas(Application.IS_PUBLIC, subPublic)
+                .where(node.isA(ApplicationTerms.TYPE)
+                        .andHas(ApplicationTerms.HAS_KEY, keyIdentifier)
+                        .andHas(ApplicationTerms.HAS_LABEL, applicationLabel)
+                        .andHas(ApplicationTerms.IS_PERSISTENT, subPersistent)
+                        .andHas(ApplicationTerms.IS_PUBLIC, subPublic)
                 )
 
                 .limit(2);
 
 
-        return this.applicationsStore.query(q, authentication, Authorities.APPLICATION)
+        return this.applicationsStore.query(q, authentication, Authorities.READER)
                 .collectList()
                 .flatMap(this::getUniqueBindingSet)
                 .map(BindingsAccessor::new)

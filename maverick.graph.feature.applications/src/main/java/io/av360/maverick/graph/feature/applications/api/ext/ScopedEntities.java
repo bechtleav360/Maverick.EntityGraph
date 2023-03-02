@@ -10,96 +10,82 @@ import io.av360.maverick.graph.model.rdf.NamespaceAwareStatement;
 import io.av360.maverick.graph.services.EntityServices;
 import io.av360.maverick.graph.services.QueryServices;
 import io.av360.maverick.graph.store.rdf.models.TripleBag;
-import io.av360.maverick.graph.store.rdf.models.TripleModel;
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
+import io.swagger.v3.oas.annotations.info.Info;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
 import org.springframework.util.Assert;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 
-import java.util.Map;
+import javax.annotation.Nullable;
 
 /**
- *   Extension to the entities api with the application id in the url (instead of the header). Required for unique urls
+ *   Decorator for the default entities controller with the application label in the url (instead of the header). Required for unique urls
  *   (and navigation)
  *
- *   The application parameter in the url is ignored, it is injected into the authentication object by the auth manager
+ *   The application parameter in the url is ignored, it is injected into the authentication object by the auth manager.
+ *
+ *   @see io.av360.maverick.graph.feature.applications.security.ApplicationAuthenticationManager
  */
 @RestController
-@Qualifier("EntityApi")
-@Order(2)
 @RequestMapping(path = "/api")
 @Slf4j(topic = "graph.api.entities")
 @OpenAPIDefinition(
+    info =  @Info(title = "Access to entities", description = "Methods to read or manipulate entities"),
+
+        tags = @Tag(name = "Scoped with application label")
 
 )
 @SecurityRequirement(name = "api_key")
 public class ScopedEntities extends AbstractController {
-    private final ApplicationsService applicationsService;
-    public ScopedEntities(ObjectMapper objectMapper, EntityServices graphService, QueryServices queryServices, ApplicationsService applicationsService) {
-        this.applicationsService = applicationsService;
+    private final Entities defaultCtrl;
+
+    public ScopedEntities(Entities defaultCtrl) {
+        this.defaultCtrl = defaultCtrl;
     }
 
-    @GetMapping(value = "/app/{scope}/entities/{id:[\\w|\\d|-|_]+}",
+    @GetMapping(value = "/sc/{scope}/entities/{id:[\\w|\\d|-|_]+}",
             produces = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.N3_VALUE})
     @ResponseStatus(HttpStatus.OK)
-    Flux<NamespaceAwareStatement> readScoped(@PathVariable String scope, @PathVariable String id) {
-        Assert.isTrue(id.length() == GeneratedIdentifier.LENGTH, "Incorrect length for identifier.");
-
-        /*
-        return super.getAuthentication()
-                .flatMap(authentication -> this.applicationsService.getApplicationByLabel(applicationLabel, authentication))
-                .flatMap(authentication -> entityServices.readEntity(id, authentication))
-                .flatMapIterable(TripleModel::asStatements)
-                .doOnSubscribe(s -> {
-                    if (log.isDebugEnabled()) log.debug("Request to read entity with id: {}", id);
-                });
-         */
-        return Flux.empty();
+    Flux<NamespaceAwareStatement> read(@PathVariable String scope, @PathVariable String id, @RequestParam(required = false) @Nullable String property) {
+        return defaultCtrl.read(id, property);
     }
 
 
-    @GetMapping(value = "/app/{scope}/entities", produces = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.N3_VALUE})
+    @GetMapping(value = "/sc/{scope}/entities", produces = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.N3_VALUE})
     @ResponseStatus(HttpStatus.OK)
-    Flux<NamespaceAwareStatement> listScoped(
+    Flux<NamespaceAwareStatement> list(
             @PathVariable String scope,
             @RequestParam(value = "limit", defaultValue = "5000") Integer limit,
             @RequestParam(value = "offset", defaultValue = "0") Integer offset) {
-
-        return Flux.empty();
+        return defaultCtrl.list(limit, offset);
     }
 
-    @PostMapping(value = "/app/{application}/entities",
+    @PostMapping(value = "/sc/{scope}/entities",
             consumes = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.N3_VALUE},
             produces = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.N3_VALUE})
     @ResponseStatus(HttpStatus.ACCEPTED)
-    Flux<NamespaceAwareStatement> createScoped(@PathVariable String scope, @RequestBody TripleBag request) {
-        Assert.isTrue(request.getModel().size() > 0, "No statements in request detected.");
-
-        return Flux.empty();
+    Flux<NamespaceAwareStatement> create(@PathVariable String scope, @RequestBody TripleBag request) {
+        return defaultCtrl.create(request);
     }
 
-    @PostMapping(value = "/app/{application}/entities/{id:[\\w|\\d|-|_]+}/{prefixedKey:[\\w|\\d]+\\.[\\w|\\d]+}",
+    @PostMapping(value = "/sc/{scope}/entities/{id:[\\w|\\d|-|_]+}/{prefixedKey:[\\w|\\d]+\\.[\\w|\\d]+}",
             consumes = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE},
             produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE})
     @ResponseStatus(HttpStatus.CREATED)
-    Flux<NamespaceAwareStatement> embedScoped(@PathVariable String application, @PathVariable String id, @PathVariable String prefixedKey, @RequestBody TripleBag value) {
-
-        return Flux.empty();
+    Flux<NamespaceAwareStatement> embed(@PathVariable String application, @PathVariable String id, @PathVariable String prefixedKey, @RequestBody TripleBag value) {
+        return defaultCtrl.embed(id, prefixedKey, value);
     }
 
 
-    @DeleteMapping(value = "/app/{application}/entities/{id:[\\w|\\d|-|_]+}",
+    @DeleteMapping(value = "/sc/{scope}/entities/{id:[\\w|\\d|-|_]+}",
             produces = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.N3_VALUE})
     @ResponseStatus(HttpStatus.OK)
-    Flux<NamespaceAwareStatement> deleteScoped(@PathVariable String application, @PathVariable String id) {
-        Assert.isTrue(id.length() == GeneratedIdentifier.LENGTH, "Incorrect length for identifier.");
-
-        return Flux.empty();
+    Flux<NamespaceAwareStatement> delete(@PathVariable String application, @PathVariable String id) {
+        return defaultCtrl.delete(id);
     }
 
 }

@@ -1,10 +1,7 @@
 package io.av360.maverick.graph.model.security;
 
-import org.springframework.http.server.RequestPath;
 import org.springframework.security.core.Authentication;
 
-import javax.annotation.Nullable;
-import java.io.IOException;
 import java.util.*;
 
 /**
@@ -16,37 +13,33 @@ public class ApiKeyAuthenticationToken implements Authentication {
     public static final String API_KEY_HEADER = "X-API-KEY";
     private final Set<Authorities.WeightedAuthority> authorities;
 
-    private final Map<String, String> headers;
-    private final RequestPath path;
+
+
+    private RequestDetails details;
     private boolean isAuthenticated;
 
 
-    public ApiKeyAuthenticationToken(Map<String, String> headers) {
-        this(headers, null);
-
-
-    }
 
     public ApiKeyAuthenticationToken() {
-        this(new HashMap<>(), null);
+        this(new RequestDetails(null, Map.of(), Map.of()));
     }
 
-    public ApiKeyAuthenticationToken(Map<String, String> headers, @Nullable RequestPath path) {
-        this.headers = new HashMap<>();
-        // headers are case insensitive according to RFC 2616
-        headers.forEach((key, val) -> this.headers.put(key.toUpperCase(), val));
-
-        this.path = path;
+    public ApiKeyAuthenticationToken(RequestDetails details) {
+        this.details = details;
         this.authorities = new HashSet<>(Authorities.NO_AUTHORITIES);
     }
 
+
+    public void setDetails(RequestDetails details) {
+        this.details = details;
+    }
     @Override
-    public Map<String, String> getDetails() {
-        return this.headers;
+    public RequestDetails getDetails() {
+        return this.details;
     }
 
     public Optional<String> getApiKey() {
-        return Optional.ofNullable(Objects.requireNonNull(this.getDetails()).get(API_KEY_HEADER));
+        return Optional.ofNullable(Objects.requireNonNull(this.getDetails()).headers().get(API_KEY_HEADER));
     }
 
     @Override
@@ -66,6 +59,10 @@ public class ApiKeyAuthenticationToken implements Authentication {
         // if(authority == Authorities.ADMIN && this.getAuthorities().contains(Authorities.USER)) throw new SecurityException("Granting admin authority while user authority has been set already");
 
         this.getAuthorities().add(authority);
+    }
+
+    public void purgeAuthorities() {
+        this.getAuthorities().clear();
     }
 
     @Override

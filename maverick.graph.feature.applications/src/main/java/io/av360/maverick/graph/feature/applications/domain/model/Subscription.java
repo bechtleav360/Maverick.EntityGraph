@@ -7,8 +7,17 @@ import org.eclipse.rdf4j.model.Namespace;
 import org.eclipse.rdf4j.model.vocabulary.DC;
 import org.eclipse.rdf4j.model.vocabulary.RDFS;
 
-public record Application(IRI iri, String label, String key, ApplicationFlags flags) {
+/**
+ * A subscription is valid for a specific application
+ * @param iri
+ * @param label
+ * @param key
+ * @param active
+ * @param issueDate
+ * @param application
+ */
+public record Subscription(IRI iri, String label, String key, boolean active, String issueDate, Application application) {
+
 
 
 }
-

@@ -54,7 +54,7 @@ public class Applications extends AbstractController {
     @ResponseStatus(HttpStatus.OK)
     Flux<Responses.ApplicationResponse> listApplications() {
         return super.getAuthentication()
-                .flatMapMany(this.applicationsService::getApplications)
+                .flatMapMany(this.applicationsService::listApplications)
                 .map(subscription ->
                         new Responses.ApplicationResponse(
                                 subscription.key(),
@@ -73,7 +73,7 @@ public class Applications extends AbstractController {
         Assert.isTrue(StringUtils.hasLength(request.label()), "Name is a required parameter");
 
         return super.getAuthentication()
-                .flatMap(authentication -> this.applicationsService.generateToken(applicationId, request.label(), authentication))
+                .flatMap(authentication -> this.applicationsService.createSubscription(applicationId, request.label(), authentication))
                 .map(apiKey ->
                         new Responses.ApiKeyWithApplicationResponse(
                                 apiKey.key(),
@@ -96,7 +96,7 @@ public class Applications extends AbstractController {
         Assert.isTrue(StringUtils.hasLength(applicationId), "Application ID is a required parameter");
 
         return super.getAuthentication()
-                .flatMapMany(authentication -> this.applicationsService.getKeysForApplication(applicationId, authentication))
+                .flatMapMany(authentication -> this.applicationsService.getSubscriptionsForApplication(applicationId, authentication))
                 .switchIfEmpty(Mono.error(new InvalidApplication(applicationId)))
                 .collectList()
                 .flatMap(keys -> {

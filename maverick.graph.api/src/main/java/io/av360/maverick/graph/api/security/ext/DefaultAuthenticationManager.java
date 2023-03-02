@@ -1,8 +1,9 @@
-package io.av360.maverick.graph.api.security;
+package io.av360.maverick.graph.api.security.ext;
 
 import com.google.common.io.Files;
 import io.av360.maverick.graph.model.security.ApiKeyAuthenticationToken;
 import io.av360.maverick.graph.model.security.Authorities;
+import io.av360.maverick.graph.model.security.SystemAuthentication;
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.text.RandomStringGenerator;
@@ -17,6 +18,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
+import org.springframework.web.client.HttpClientErrorException;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
@@ -49,40 +51,37 @@ public class DefaultAuthenticationManager implements ReactiveAuthenticationManag
     @Override
     public Mono<Authentication> authenticate(Authentication authentication) {
         Assert.notNull(authentication, "Authentication is null in Authentication Manager");
-        log.trace("Handling authentication of type {} in default authentication manager (default)", authentication.getClass().getSimpleName());
+        log.trace("Handling authentication of type '{}' and authentication status '{}' in default authentication manager ", authentication.getClass().getSimpleName(), authentication.isAuthenticated());
 
-        if (authentication instanceof TestingAuthenticationToken) {
-            log.warn("Test authentication token detected, disabling security.");
-            authentication.setAuthenticated(true);
-        }
 
-        if (authentication instanceof AnonymousAuthenticationToken) {
-            return handleAnonymousAuthentication(authentication)
+        if (authentication instanceof AnonymousAuthenticationToken token) {
+            return handleAnonymousAuthentication(token)
                     .map(auth -> (Authentication) auth);
-            //
-            //authentication.setAuthenticated(false);
-        }
+        } else
 
-        if (authentication instanceof UsernamePasswordAuthenticationToken) {
-            return handleBasicAuthentication((UsernamePasswordAuthenticationToken) authentication)
+        if (authentication instanceof UsernamePasswordAuthenticationToken token) {
+            return handleBasicAuthentication(token)
                     .map(auth -> (Authentication) auth);
-        }
+        } else
 
-        if (authentication instanceof ApiKeyAuthenticationToken) {
-            return handleApiKeyAuthentication((ApiKeyAuthenticationToken) authentication)
+        if (authentication instanceof ApiKeyAuthenticationToken token) {
+            return handleApiKeyAuthentication(token)
                     .map(auth -> (Authentication) auth);
 
+        } else {
+            log.info("The authentication of type {} is not handled by default authentication manager", authentication.getClass());
+            return Mono.just(authentication);
         }
 
 
-        return Mono.just(authentication);
     }
 
-    private Mono<? extends Authentication> handleAnonymousAuthentication(Authentication authentication) {
-        log.info("Handling request with missing authentication, granting read-only access in default authentication manager.");
+    private Mono<? extends Authentication> handleAnonymousAuthentication(AnonymousAuthenticationToken authentication) {
+        log.info("Handling request with no authentication, granting read-only access in default authentication manager.");
 
         AnonymousAuthenticationToken auth = new AnonymousAuthenticationToken(authentication.getName(), authentication.getPrincipal(), List.of(Authorities.READER));
         auth.setAuthenticated(true);
+        auth.setDetails(authentication.getDetails());
         return Mono.just(auth);
     }
 
@@ -90,16 +89,16 @@ public class DefaultAuthenticationManager implements ReactiveAuthenticationManag
         log.trace("Handling request with API Key authentication in default authentication manager");
         // check if this is the admin user
         if (StringUtils.hasLength(this.key) && authentication.getApiKey().isPresent() && authentication.getApiKey().get().equalsIgnoreCase(this.key)) {
-            log.debug("Valid System API Key for system authentication provided.");
+            log.info("Valid admin key provided, granting system access in default authentication manager.");
 
-            authentication.grantAuthority(Authorities.SYSTEM);
-            authentication.setAuthenticated(true);
-            return Mono.just(authentication);
+            return Mono.just(new SystemAuthentication(authentication.getDetails()));
         } else {
-            log.trace("Invalid System API Key in request, denying access.");
+            log.trace("Key in header is not the admin key, granting read-only access in default authentication manager.");
+            authentication.grantAuthority(Authorities.READER);
+            return Mono.just(authentication);
         }
 
-        return Mono.just(authentication);
+
 
     }
 

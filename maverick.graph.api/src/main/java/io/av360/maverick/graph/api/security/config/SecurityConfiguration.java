@@ -1,7 +1,9 @@
-package io.av360.maverick.graph.api.security;
+package io.av360.maverick.graph.api.security.config;
 
+import io.av360.maverick.graph.api.security.ext.ChainingAuthenticationManager;
 import io.av360.maverick.graph.model.security.ApiKeyAuthenticationToken;
 import io.av360.maverick.graph.model.security.Authorities;
+import io.av360.maverick.graph.model.security.RequestDetails;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.actuate.autoconfigure.security.reactive.EndpointRequest;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -10,12 +12,11 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
-import org.springframework.security.authentication.DelegatingReactiveAuthenticationManager;
 import org.springframework.security.authentication.ReactiveAuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
 import org.springframework.security.config.web.server.SecurityWebFiltersOrder;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.security.web.server.SecurityWebFilterChain;
 import org.springframework.security.web.server.authentication.AuthenticationWebFilter;
@@ -39,7 +40,7 @@ public class SecurityConfiguration {
     public SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity http,
                                                          List<ReactiveAuthenticationManager> authenticationManager,
                                                          ServerAuthenticationConverter authenticationConverter) {
-        final ReactiveAuthenticationManager authenticationManagers = new DelegatingReactiveAuthenticationManager(authenticationManager);
+        final ReactiveAuthenticationManager authenticationManagers = new ChainingAuthenticationManager(authenticationManager);
         final AuthenticationWebFilter authenticationWebFilter = new AuthenticationWebFilter(authenticationManagers);
 
         authenticationWebFilter.setServerAuthenticationConverter(authenticationConverter);
@@ -76,23 +77,31 @@ public class SecurityConfiguration {
     @ConditionalOnProperty(name = "application.security.enabled", havingValue = "true")
     ServerAuthenticationConverter buildAuthenticationConverter() {
         return exchange -> {
+
+            RequestDetails details = RequestDetails.withRequest(exchange.getRequest());
+
             List<String> apiKeys = exchange.getRequest().getHeaders().get(API_KEY_HEADER);
             if (apiKeys == null || apiKeys.size() == 0) {
 
                 if(exchange.getRequest().getPath().value().startsWith("/api")) {
                     log.warn("API Request to path '{}' without an API Key Header", exchange.getRequest().getPath().value());
-                    Authentication anonymous = new AnonymousAuthenticationToken("key", "anonymous",
-                            AuthorityUtils.createAuthorityList("ROLE_ANONYMOUS"));
+                    AnonymousAuthenticationToken anonymous = new AnonymousAuthenticationToken("key", "anonymous",
+                            List.of(Authorities.GUEST));
+                    anonymous.setDetails(details);
+
                     return Mono.just(anonymous);
                 } else {
                     // lets fallback to the standard authentication (basic) (for actuators and others)
                     ServerHttpBasicAuthenticationConverter basicAuthenticationConverter = new ServerHttpBasicAuthenticationConverter();
-                    return basicAuthenticationConverter.convert(exchange);
+                    return basicAuthenticationConverter.convert(exchange).map(authentication -> {
+                        ((UsernamePasswordAuthenticationToken) authentication).setDetails(details);
+                        return authentication;
+                    });
                 }
             }
 
             log.trace("Found a valid api key in request, delegating authentication.");
-            ApiKeyAuthenticationToken apiKeyToken = new ApiKeyAuthenticationToken(exchange.getRequest().getHeaders().toSingleValueMap(), exchange.getRequest().getPath());
+            ApiKeyAuthenticationToken apiKeyToken = new ApiKeyAuthenticationToken(details);
             return Mono.just(apiKeyToken);
         };
     }

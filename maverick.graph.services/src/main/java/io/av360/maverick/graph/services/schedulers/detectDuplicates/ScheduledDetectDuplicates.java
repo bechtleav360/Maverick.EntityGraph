@@ -23,7 +23,9 @@ import org.eclipse.rdf4j.sparqlbuilder.core.query.Queries;
 import org.eclipse.rdf4j.sparqlbuilder.core.query.SelectQuery;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -103,9 +105,7 @@ public class ScheduledDetectDuplicates {
     public void checkForDuplicatesScheduled() {
         if (labelCheckRunning) return;
 
-        ApiKeyAuthenticationToken adminAuthentication = new ApiKeyAuthenticationToken(new HashMap<>());
-        adminAuthentication.setAuthenticated(true);
-        adminAuthentication.grantAuthority(Authorities.SYSTEM);
+        AnonymousAuthenticationToken adminAuthentication = new AnonymousAuthenticationToken(this.getClass().getName(), "system", List.of(Authorities.SYSTEM));
 
         // FIXME: do this with all applicatations (run-as semantics)
 

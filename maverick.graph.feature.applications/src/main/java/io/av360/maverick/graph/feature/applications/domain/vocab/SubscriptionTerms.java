@@ -1,4 +1,4 @@
-package io.av360.maverick.graph.feature.applications.domain.model;
+package io.av360.maverick.graph.feature.applications.domain.vocab;
 
 import io.av360.maverick.graph.model.rdf.EntityNamespace;
 import io.av360.maverick.graph.model.rdf.LocalIRI;
@@ -7,14 +7,13 @@ import org.eclipse.rdf4j.model.Namespace;
 import org.eclipse.rdf4j.model.vocabulary.DC;
 import org.eclipse.rdf4j.model.vocabulary.RDFS;
 
-public record ApplicationToken(IRI iri, String label, String key, boolean active, String issueDate,
-                               Application application) {
+public class SubscriptionTerms {
 
-    public static final String NAMESPACE = Application.NAMESPACE;
-    public static final String PREFIX = Application.PREFIX;
+    public static final String NAMESPACE = ApplicationTerms.NAMESPACE;
+    public static final String PREFIX = ApplicationTerms.PREFIX;
     public static final Namespace NS = EntityNamespace.of(PREFIX, NAMESPACE);
 
-    public static final IRI TYPE = LocalIRI.from(NAMESPACE, "ApiKey");
+    public static final IRI TYPE = LocalIRI.from(NAMESPACE, "SubscriptionToken");
 
     public static final IRI HAS_ISSUE_DATE = LocalIRI.from(NAMESPACE, "issued");
     public static final IRI HAS_REVOCATION_DATE = LocalIRI.from(NAMESPACE, "revoked");
@@ -22,5 +21,4 @@ public record ApplicationToken(IRI iri, String label, String key, boolean active
     public static final IRI HAS_KEY = DC.IDENTIFIER;
     public static final IRI OF_SUBSCRIPTION = LocalIRI.from(NAMESPACE, "ofSubscription");
     public static final IRI HAS_LABEL = RDFS.LABEL;
-
 }
