@@ -1,6 +1,7 @@
 package io.av360.maverick.graph.feature.applications;
 
 import io.av360.maverick.graph.model.security.Authorities;
+import io.av360.maverick.graph.model.security.RequestDetails;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
@@ -28,7 +29,7 @@ import java.util.List;
 @TestConfiguration
 @EnableWebFluxSecurity
 @Profile("test")
-@Slf4j(topic = "graph.tests")
+@Slf4j(topic = "egr.feat.app.cfg.tests")
 public class TestConfigurations {
 
 
@@ -61,7 +62,14 @@ public class TestConfigurations {
     @Bean
     @ConditionalOnProperty(name = "application.security.enabled", havingValue = "false")
     ServerAuthenticationConverter buildTestingAuthenticationConverter() {
-        return exchange -> Mono.just(new TestingAuthenticationToken("test", "test", List.of(Authorities.SYSTEM)));
+        return exchange -> {
+            RequestDetails details = RequestDetails.withRequest(exchange.getRequest());
+            TestingAuthenticationToken testingAuthenticationToken = new TestingAuthenticationToken("test", "test", List.of(Authorities.SYSTEM));
+            testingAuthenticationToken.setDetails(details);
+            return Mono.just(testingAuthenticationToken);
+        };
+
+
     }
     /*
     @Bean

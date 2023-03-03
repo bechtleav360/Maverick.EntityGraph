@@ -19,11 +19,11 @@ import org.springframework.context.annotation.FilterType;
 @ComponentScan(
         basePackages = "io.av360.maverick.graph.feature.applications"
 )
-@Slf4j(topic = "graph.feature.apps")
+@Slf4j(topic = "egr.feat.apps")
 public class ApplicationsConfig {
 
     @PostConstruct
     public void logActivation() {
-        log.info("Activated Feature: Multi-tenancy through Subscriptions");
+        log.info("Activated Feature: Multi-tenancy through Applications and Subscriptions");
     }
 }

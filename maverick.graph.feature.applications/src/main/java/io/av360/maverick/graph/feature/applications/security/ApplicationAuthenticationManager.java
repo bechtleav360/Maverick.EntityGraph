@@ -9,6 +9,7 @@ import io.av360.maverick.graph.model.security.SystemAuthentication;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.authentication.ReactiveAuthenticationManager;
+import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
@@ -28,7 +29,7 @@ import java.util.Optional;
  * This class must not give Admin Authority.
  */
 @Component
-@Slf4j(topic = "graph.feature.apps.security")
+@Slf4j(topic = "egr.ft.apps.sec.mgr")
 public class ApplicationAuthenticationManager implements ReactiveAuthenticationManager {
 
 
@@ -115,7 +116,7 @@ public class ApplicationAuthenticationManager implements ReactiveAuthenticationM
 
 
         } catch (Exception e) {
-            log.error("Failed to handle application authentication with error {}", e.getMessage());
+            log.error("Failed to handle application authentication with error: '{}'", e.getMessage());
             return Mono.error(e);
         }
 

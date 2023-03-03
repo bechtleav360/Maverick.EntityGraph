@@ -28,7 +28,6 @@ public class ChainingAuthenticationManager implements ReactiveAuthenticationMana
     @Override
     public Mono<Authentication> authenticate(Authentication authentication) {
 
-        AtomicReference<Authentication> current = new AtomicReference<>(authentication);
         // @formatter:off
         return Flux.fromIterable(this.delegates)
                 // see example here: https://stackoverflow.com/questions/73141978/how-to-asynchronosuly-reduce-a-flux-to-mono-with-reactor
