@@ -13,7 +13,6 @@ import org.apache.commons.lang3.NotImplementedException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.util.Assert;
-import org.springframework.util.MimeType;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 
@@ -39,7 +38,7 @@ public class Values extends AbstractController {
     @GetMapping(value = "/{id:[\\w|\\d|-|_]+}/values",
             produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE, MediaType.APPLICATION_JSON_VALUE})
     @ResponseStatus(HttpStatus.OK)
-    Flux<NamespaceAwareStatement> listEntityValues(@PathVariable String id) {
+    public Flux<NamespaceAwareStatement> listEntityValues(@PathVariable String id) {
       return Flux.error(new NotImplementedException("Listing the values has not been implemented yet."));
     }
 
@@ -50,7 +49,7 @@ public class Values extends AbstractController {
             consumes = MediaType.TEXT_PLAIN_VALUE,
             produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE})
     @ResponseStatus(HttpStatus.OK)
-    Flux<NamespaceAwareStatement> create(@PathVariable String id, @PathVariable String prefixedKey, @RequestBody String value, @Nullable @RequestParam(required = false) String lang) {
+    public Flux<NamespaceAwareStatement> create(@PathVariable String id, @PathVariable String prefixedKey, @RequestBody String value, @Nullable @RequestParam(required = false) String lang) {
         Assert.isTrue(!value.matches("(?s).*[\\n\\r].*"), "Newlines in request body are not supported");
 
         String[] property = splitPrefixedIdentifier(prefixedKey);
@@ -68,7 +67,7 @@ public class Values extends AbstractController {
     @PostMapping(value = "/{id:[\\w|\\d|-|_]+}/values",
             produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE, MediaType.APPLICATION_JSON_VALUE})
     @ResponseStatus(HttpStatus.OK)
-    Flux<NamespaceAwareStatement> listEntityValues(@PathVariable String id, @RequestBody String value) {
+    public Flux<NamespaceAwareStatement> listEntityValues(@PathVariable String id, @RequestBody String value) {
         return Flux.error(new NotImplementedException("Updating multiple values has not been implemented yet."));
     }
 
@@ -76,7 +75,7 @@ public class Values extends AbstractController {
     @DeleteMapping(value = "/{id:[\\w|\\d|-|_]+}/values/{prefixedKey:[\\w|\\d]+\\.[\\w|\\d]+}",
             produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE})
     @ResponseStatus(HttpStatus.OK)
-    Flux<NamespaceAwareStatement> delete(@PathVariable String id, @PathVariable String prefixedKey, @RequestParam(required = false) String lang) {
+    public Flux<NamespaceAwareStatement> delete(@PathVariable String id, @PathVariable String prefixedKey, @RequestParam(required = false) String lang) {
 
         String[] property = splitPrefixedIdentifier(prefixedKey);
 

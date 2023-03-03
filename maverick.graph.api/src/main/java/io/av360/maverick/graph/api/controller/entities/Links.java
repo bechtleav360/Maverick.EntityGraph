@@ -5,14 +5,12 @@ import io.av360.maverick.graph.model.enums.RdfMimeTypes;
 import io.av360.maverick.graph.model.rdf.NamespaceAwareStatement;
 import io.av360.maverick.graph.services.EntityServices;
 import io.av360.maverick.graph.services.ValueServices;
-import io.av360.maverick.graph.store.rdf.models.TripleModel;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.NotImplementedException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.util.Assert;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 
@@ -37,14 +35,14 @@ public class Links extends AbstractController {
     @GetMapping(value = "/{id:[\\w|\\d|-|_]+}/links",
             produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE})
     @ResponseStatus(HttpStatus.OK)
-    Flux<NamespaceAwareStatement> getLinks(@PathVariable String id) {
+    public Flux<NamespaceAwareStatement> getLinks(@PathVariable String id) {
         return Flux.error(new NotImplementedException("Method has not been implemented yet."));
     }
     @Operation(summary = "Returns all links of the given type.")
     @GetMapping(value = "/{id:[\\w|\\d|-|_]+}/links/{prefixedKey:[\\w|\\d]+\\.[\\w|\\d]+}",
             produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE})
     @ResponseStatus(HttpStatus.OK)
-    Flux<NamespaceAwareStatement> getLinksByType(@PathVariable String id, @PathVariable String prefixedKey) {
+    public Flux<NamespaceAwareStatement> getLinksByType(@PathVariable String id, @PathVariable String prefixedKey) {
         return Flux.error(new NotImplementedException("Method has not been implemented yet."));
     }
 
@@ -52,7 +50,7 @@ public class Links extends AbstractController {
     @PutMapping(value = "/{id:[\\w|\\d|-|_]+}/links/{prefixedKey:[\\w|\\d]+\\.[\\w|\\d]+}/{target:[\\w|\\d|-|_]+}",
             produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE, MediaType.APPLICATION_JSON_VALUE})
     @ResponseStatus(HttpStatus.OK)
-    Flux<NamespaceAwareStatement> createLink(@PathVariable String id, @PathVariable String prefixedKey, @PathVariable String target) {
+    public Flux<NamespaceAwareStatement> createLink(@PathVariable String id, @PathVariable String prefixedKey, @PathVariable String target) {
         return Flux.error(new NotImplementedException("Method has not been implemented yet."));
     }
 
@@ -61,7 +59,7 @@ public class Links extends AbstractController {
     @DeleteMapping(value = "/{id:[\\w|\\d|-|_]+}/links/{prefixedKey:[\\w|\\d]+\\.[\\w|\\d]+}/{target:[\\w|\\d|-|_]+}",
             produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE, MediaType.APPLICATION_JSON_VALUE})
     @ResponseStatus(HttpStatus.OK)
-    Flux<NamespaceAwareStatement> deleteLink(@PathVariable String id, @PathVariable String prefixedKey, @PathVariable String target) {
+    public Flux<NamespaceAwareStatement> deleteLink(@PathVariable String id, @PathVariable String prefixedKey, @PathVariable String target) {
         return Flux.error(new NotImplementedException("Method has not been implemented yet."));
     }
 
@@ -70,7 +68,7 @@ public class Links extends AbstractController {
     @PutMapping(value = "/{id:[\\w|\\d|-|_]+}/links/{prefixedKey:[\\w|\\d]+\\.[\\w|\\d]+}",
             produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE, MediaType.APPLICATION_JSON_VALUE})
     @ResponseStatus(HttpStatus.OK)
-    Flux<NamespaceAwareStatement> batchCreateLinks(@PathVariable String id, @PathVariable String prefixedKey) {
+    public Flux<NamespaceAwareStatement> batchCreateLinks(@PathVariable String id, @PathVariable String prefixedKey) {
         return Flux.error(new NotImplementedException("Method has not been implemented yet."));
     }
 }

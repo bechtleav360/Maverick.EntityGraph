@@ -4,8 +4,8 @@ import org.eclipse.rdf4j.model.Resource;
 import org.springframework.util.StringUtils;
 
 public class InvalidEntityUpdate extends Exception {
-    private Resource identifier;
-    private String reason;
+    private final Resource identifier;
+    private final String reason;
 
     public InvalidEntityUpdate(Resource entityIdentifier, String reason) {
         this.identifier = entityIdentifier;

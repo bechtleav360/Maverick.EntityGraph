@@ -28,10 +28,7 @@ import javax.annotation.Nullable;
 @RequestMapping(path = "/api")
 @Slf4j(topic = "graph.feat.app.ctrl.api.entities.scoped")
 @OpenAPIDefinition(
-    info =  @Info(title = "Access to entities", description = "Methods to read or manipulate entities"),
-
-        tags = @Tag(name = "Scoped with application label")
-
+    info =  @Info(title = "Access to entities", description = "Methods to read or manipulate entities"), tags = @Tag(name = "Scoped with application label")
 )
 @SecurityRequirement(name = "api_key")
 public class ScopedEntities extends AbstractController {

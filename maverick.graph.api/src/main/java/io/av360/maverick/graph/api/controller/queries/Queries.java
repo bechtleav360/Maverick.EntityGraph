@@ -32,7 +32,7 @@ public class Queries extends AbstractController {
             })
     )
     @ResponseStatus(HttpStatus.ACCEPTED)
-    Flux<BindingSet> queryBindings(@RequestBody String query) {
+    public Flux<BindingSet> queryBindings(@RequestBody String query) {
 
         return getAuthentication()
                 .flatMapMany(authentication -> queryServices.queryValues(query, authentication))
@@ -44,7 +44,7 @@ public class Queries extends AbstractController {
 
     @PostMapping(value = "/construct", consumes = "text/plain", produces = {"text/turtle", "application/ld+json"})
     @ResponseStatus(HttpStatus.ACCEPTED)
-    Flux<NamespaceAwareStatement> queryStatements(@RequestBody String query) {
+    public Flux<NamespaceAwareStatement> queryStatements(@RequestBody String query) {
 
         return getAuthentication()
                 .flatMapMany(authentication -> queryServices.queryGraph(query, authentication))
