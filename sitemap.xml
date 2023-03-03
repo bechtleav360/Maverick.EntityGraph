@@ -1,113 +1,113 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
-         <loc>https://example.com/</loc>
-         <lastmod>2023-02-16</lastmod>
+         <loc>https://bechtleav360.github.io/Maverick.EntityGraph/</loc>
+         <lastmod>2023-03-03</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://example.com/roadmap/</loc>
-         <lastmod>2023-02-16</lastmod>
+         <loc>https://bechtleav360.github.io/Maverick.EntityGraph/roadmap/</loc>
+         <lastmod>2023-03-03</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://example.com/api/Draft/</loc>
-         <lastmod>2023-02-16</lastmod>
+         <loc>https://bechtleav360.github.io/Maverick.EntityGraph/api/Draft/</loc>
+         <lastmod>2023-03-03</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://example.com/api/Queries/</loc>
-         <lastmod>2023-02-16</lastmod>
+         <loc>https://bechtleav360.github.io/Maverick.EntityGraph/api/Queries/</loc>
+         <lastmod>2023-03-03</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://example.com/api/Schema/</loc>
-         <lastmod>2023-02-16</lastmod>
+         <loc>https://bechtleav360.github.io/Maverick.EntityGraph/api/Schema/</loc>
+         <lastmod>2023-03-03</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://example.com/api/SimpleRestful/</loc>
-         <lastmod>2023-02-16</lastmod>
+         <loc>https://bechtleav360.github.io/Maverick.EntityGraph/api/SimpleRestful/</loc>
+         <lastmod>2023-03-03</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://example.com/api/Templates/</loc>
-         <lastmod>2023-02-16</lastmod>
+         <loc>https://bechtleav360.github.io/Maverick.EntityGraph/api/Templates/</loc>
+         <lastmod>2023-03-03</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://example.com/api/Entities/Entities/</loc>
-         <lastmod>2023-02-16</lastmod>
+         <loc>https://bechtleav360.github.io/Maverick.EntityGraph/api/Entities/Entities/</loc>
+         <lastmod>2023-03-03</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://example.com/architecture/Backend/</loc>
-         <lastmod>2023-02-16</lastmod>
+         <loc>https://bechtleav360.github.io/Maverick.EntityGraph/architecture/Backend/</loc>
+         <lastmod>2023-03-03</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://example.com/architecture/BigPicture/</loc>
-         <lastmod>2023-02-16</lastmod>
+         <loc>https://bechtleav360.github.io/Maverick.EntityGraph/architecture/BigPicture/</loc>
+         <lastmod>2023-03-03</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://example.com/architecture/OPA/</loc>
-         <lastmod>2023-02-16</lastmod>
+         <loc>https://bechtleav360.github.io/Maverick.EntityGraph/architecture/OPA/</loc>
+         <lastmod>2023-03-03</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://example.com/architecture/concepts/Multitenancy/</loc>
-         <lastmod>2023-02-16</lastmod>
+         <loc>https://bechtleav360.github.io/Maverick.EntityGraph/architecture/concepts/Multitenancy/</loc>
+         <lastmod>2023-03-03</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://example.com/architecture/concepts/concepts/</loc>
-         <lastmod>2023-02-16</lastmod>
+         <loc>https://bechtleav360.github.io/Maverick.EntityGraph/architecture/concepts/concepts/</loc>
+         <lastmod>2023-03-03</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://example.com/architecture/concepts/entity/</loc>
-         <lastmod>2023-02-16</lastmod>
+         <loc>https://bechtleav360.github.io/Maverick.EntityGraph/architecture/concepts/entity/</loc>
+         <lastmod>2023-03-03</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://example.com/architecture/graph/aspects/</loc>
-         <lastmod>2023-02-16</lastmod>
+         <loc>https://bechtleav360.github.io/Maverick.EntityGraph/architecture/graph/aspects/</loc>
+         <lastmod>2023-03-03</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://example.com/architecture/graph/edge-attributes/</loc>
-         <lastmod>2023-02-16</lastmod>
+         <loc>https://bechtleav360.github.io/Maverick.EntityGraph/architecture/graph/edge-attributes/</loc>
+         <lastmod>2023-03-03</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://example.com/architecture/graph/layers/</loc>
-         <lastmod>2023-02-16</lastmod>
+         <loc>https://bechtleav360.github.io/Maverick.EntityGraph/architecture/graph/layers/</loc>
+         <lastmod>2023-03-03</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://example.com/architecture/graph/sharding/</loc>
-         <lastmod>2023-02-16</lastmod>
+         <loc>https://bechtleav360.github.io/Maverick.EntityGraph/architecture/graph/sharding/</loc>
+         <lastmod>2023-03-03</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://example.com/architecture/graph/versioning/</loc>
-         <lastmod>2023-02-16</lastmod>
+         <loc>https://bechtleav360.github.io/Maverick.EntityGraph/architecture/graph/versioning/</loc>
+         <lastmod>2023-03-03</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://example.com/architecture/schema/events/</loc>
-         <lastmod>2023-02-16</lastmod>
+         <loc>https://bechtleav360.github.io/Maverick.EntityGraph/architecture/schema/events/</loc>
+         <lastmod>2023-03-03</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://example.com/architecture/schema/validation/</loc>
-         <lastmod>2023-02-16</lastmod>
+         <loc>https://bechtleav360.github.io/Maverick.EntityGraph/architecture/schema/validation/</loc>
+         <lastmod>2023-03-03</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://example.com/features/multitenancy/</loc>
-         <lastmod>2023-02-16</lastmod>
+         <loc>https://bechtleav360.github.io/Maverick.EntityGraph/features/multitenancy/</loc>
+         <lastmod>2023-03-03</lastmod>
          <changefreq>daily</changefreq>
     </url>
 </urlset>
