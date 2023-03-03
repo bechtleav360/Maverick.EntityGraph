@@ -1,7 +1,12 @@
-site_name: Entity Graph
-site_url: https://example.com/
+site_name: Entity Graph 
+site_url: https://bechtleav360.github.io/Maverick.EntityGraph/
 theme:
   name: material
+  custom_dir: 'custom_theme/'
+
+repo_name: bechtleav360/Maverick.EntityGraph 
+repo_url: https://github.com/bechtleav360/Maverick.EntityGraph 
+
 plugins:
  - swagger-ui-tag
  - drawio-exporter:
@@ -27,6 +32,8 @@ plugins:
         embed_format: '{img_open}{img_src}{img_close}'
         # Glob pattern for matching source files
         sources: '*.drawio'
+markdown_extensions:
+  - footnotes
 nav:
     - Home: index.md
     - api:
