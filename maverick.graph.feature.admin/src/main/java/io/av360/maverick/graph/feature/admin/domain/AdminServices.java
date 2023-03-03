@@ -12,7 +12,7 @@ import reactor.core.publisher.Mono;
 
 
 @Service
-@Slf4j(topic = "graph.feature.admin.domain")
+@Slf4j(topic = "graph.feat.admin.svc")
 public class AdminServices {
 
     private final EntityStore graph;

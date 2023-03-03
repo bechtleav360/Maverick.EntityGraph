@@ -19,6 +19,6 @@ public class SubscriptionTerms {
     public static final IRI HAS_REVOCATION_DATE = LocalIRI.from(NAMESPACE, "revoked");
     public static final IRI IS_ACTIVE = LocalIRI.from(NAMESPACE, "active");
     public static final IRI HAS_KEY = DC.IDENTIFIER;
-    public static final IRI OF_SUBSCRIPTION = LocalIRI.from(NAMESPACE, "ofSubscription");
+    public static final IRI FOR_APPLICATION = LocalIRI.from(NAMESPACE, "forApplication");
     public static final IRI HAS_LABEL = RDFS.LABEL;
 }

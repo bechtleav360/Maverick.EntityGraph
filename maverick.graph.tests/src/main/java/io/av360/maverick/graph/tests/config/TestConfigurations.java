@@ -1,4 +1,4 @@
-package io.av360.maverick.graph.feature.applications;
+package io.av360.maverick.graph.tests.config;
 
 import io.av360.maverick.graph.model.security.Authorities;
 import io.av360.maverick.graph.model.security.RequestDetails;
@@ -29,7 +29,7 @@ import java.util.List;
 @TestConfiguration
 @EnableWebFluxSecurity
 @Profile("test")
-@Slf4j(topic = "egr.feat.app.cfg.tests")
+@Slf4j(topic = "graph.test.cfg")
 public class TestConfigurations {
 
 

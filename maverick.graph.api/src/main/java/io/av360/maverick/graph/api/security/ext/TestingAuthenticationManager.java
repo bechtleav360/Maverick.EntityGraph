@@ -10,7 +10,7 @@ import reactor.core.publisher.Mono;
 
 @Profile("test | dev")
 @Component
-@Slf4j(topic = "egr.cfg.sec.tests")
+@Slf4j(topic = "graph.test.cfg.sec.mgr")
 public class TestingAuthenticationManager implements ReactiveAuthenticationManager {
     @Override
     public Mono<Authentication> authenticate(Authentication authentication) {

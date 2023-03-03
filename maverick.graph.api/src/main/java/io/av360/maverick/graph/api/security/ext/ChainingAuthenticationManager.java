@@ -11,7 +11,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
-@Slf4j(topic = "graph.config.security.default")
+@Slf4j(topic = "graph.ctrl.cfg.sec.mgr.chain")
 public class ChainingAuthenticationManager implements ReactiveAuthenticationManager {
 
     private final List<ReactiveAuthenticationManager> delegates;

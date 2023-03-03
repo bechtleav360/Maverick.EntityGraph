@@ -12,7 +12,7 @@ import reactor.core.publisher.Mono;
 
 import java.util.Map;
 
-@Slf4j(topic = "graph.validator.type")
+@Slf4j(topic = "graph.srvc.validator.type")
 @Component
 @ConditionalOnProperty(name = "application.features.validators.checkRequiredType", havingValue = "true")
 public class CheckRequiredType implements Validator {

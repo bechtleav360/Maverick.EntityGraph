@@ -14,7 +14,7 @@ import reactor.core.publisher.Flux;
 
 @RestController
 @RequestMapping(path = "/api/query")
-@Slf4j(topic = "graph.api.queries")
+@Slf4j(topic = "graph.ctrl.queries")
 @SecurityRequirement(name = "api_key")
 public class Queries extends AbstractController {
     protected final QueryServices queryServices;

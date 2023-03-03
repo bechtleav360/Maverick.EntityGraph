@@ -3958,7 +3958,7 @@ See also the <a href="/docs/hotels.html">dedicated document on the use of schema
     rdfs:label "accountId" ;
     :domainIncludes :Invoice ;
     :rangeIncludes :Text ;
-    rdfs:comment "The identifier for the account the payment will be applied to." ;
+    rdfs:comment "The iri for the account the payment will be applied to." ;
     rdfs:subPropertyOf :identifier .
 
 :accountablePerson a rdf:Property ;
@@ -4736,7 +4736,7 @@ See also the <a href="/docs/hotels.html">dedicated document on the use of schema
     rdfs:label "busNumber" ;
     :domainIncludes :BusTrip ;
     :rangeIncludes :Text ;
-    rdfs:comment "The unique identifier for the bus." .
+    rdfs:comment "The unique iri for the bus." .
 
 :businessFunction a rdf:Property ;
     rdfs:label "businessFunction" ;
@@ -5145,7 +5145,7 @@ In the case of products, the country of origin of the product. The exact interpr
     rdfs:label "courseCode" ;
     :domainIncludes :Course ;
     :rangeIncludes :Text ;
-    rdfs:comment "The identifier for the [[Course]] used by the course [[provider]] (e.g. CS101 or 6.001)." .
+    rdfs:comment "The iri for the [[Course]] used by the course [[provider]] (e.g. CS101 or 6.001)." .
 
 :courseMode a rdf:Property ;
     rdfs:label "courseMode" ;
@@ -5929,7 +5929,7 @@ This property should not be used where the nature of the alignment can be descri
     rdfs:label "flightNumber" ;
     :domainIncludes :Flight ;
     :rangeIncludes :Text ;
-    rdfs:comment "The unique identifier for a flight including the airline IATA code. For example, if describing United flight 110, where the IATA code for United is 'UA', the flightNumber is 'UA110'." ;
+    rdfs:comment "The unique iri for a flight including the airline IATA code. For example, if describing United flight 110, where the IATA code for United is 'UA', the flightNumber is 'UA110'." ;
     rdfs:subPropertyOf :identifier .
 
 :floorSize a rdf:Property ;
@@ -6322,13 +6322,13 @@ Typical unit code(s): MTK for square meter, FTK for square foot, or YDK for squa
     :domainIncludes :Airline,
         :Airport ;
     :rangeIncludes :Text ;
-    rdfs:comment "IATA identifier for an airline or airport." .
+    rdfs:comment "IATA iri for an airline or airport." .
 
 :icaoCode a rdf:Property ;
     rdfs:label "icaoCode" ;
     :domainIncludes :Airport ;
     :rangeIncludes :Text ;
-    rdfs:comment "ICAO identifier for an airport." .
+    rdfs:comment "ICAO iri for an airport." .
 
 :illustrator a rdf:Property ;
     rdfs:label "illustrator" ;
@@ -6721,7 +6721,7 @@ Typical unit code(s): MTK for square meter, FTK for square foot, or YDK for squa
     :rangeIncludes :Text ;
     :source <http://www.w3.org/wiki/WebSchemas/SchemaDotOrgSources#FIBO>,
         <http://www.w3.org/wiki/WebSchemas/SchemaDotOrgSources#GLEIF> ;
-    rdfs:comment "An organization identifier that uniquely identifies a legal entity as defined in ISO 17442." ;
+    rdfs:comment "An organization iri that uniquely identifies a legal entity as defined in ISO 17442." ;
     rdfs:subPropertyOf :identifier .
 
 :lender a rdf:Property ;
@@ -6918,7 +6918,7 @@ Typical unit code(s): MTK for square meter, FTK for square foot, or YDK for squa
     rdfs:label "membershipNumber" ;
     :domainIncludes :ProgramMembership ;
     :rangeIncludes :Text ;
-    rdfs:comment "A unique identifier for the membership." .
+    rdfs:comment "A unique iri for the membership." .
 
 :memoryRequirements a rdf:Property ;
     rdfs:label "memoryRequirements" ;
@@ -6998,7 +6998,7 @@ Typical unit code(s): MTK for square meter, FTK for square foot, or YDK for squa
     :domainIncludes :Product ;
     :rangeIncludes :ProductModel,
         :Text ;
-    rdfs:comment "The model of the product. Use with the URL of a ProductModel or a textual representation of the model identifier. The URL of the ProductModel can be from an external source. It is recommended to additionally provide strong product identifiers via the gtin8/gtin13/gtin14 and mpn properties." .
+    rdfs:comment "The model of the product. Use with the URL of a ProductModel or a textual representation of the model iri. The URL of the ProductModel can be from an external source. It is recommended to additionally provide strong product identifiers via the gtin8/gtin13/gtin14 and mpn properties." .
 
 :modifiedTime a rdf:Property ;
     rdfs:label "modifiedTime" ;
@@ -7347,7 +7347,7 @@ Note: for historical reasons, any textual label and formal code provided as a li
     rdfs:label "orderItemNumber" ;
     :domainIncludes :OrderItem ;
     :rangeIncludes :Text ;
-    rdfs:comment "The identifier of the order item." .
+    rdfs:comment "The iri of the order item." .
 
 :orderItemStatus a rdf:Property ;
     rdfs:label "orderItemStatus" ;
@@ -7359,7 +7359,7 @@ Note: for historical reasons, any textual label and formal code provided as a li
     rdfs:label "orderNumber" ;
     :domainIncludes :Order ;
     :rangeIncludes :Text ;
-    rdfs:comment "The identifier of the transaction." ;
+    rdfs:comment "The iri of the transaction." ;
     rdfs:subPropertyOf :identifier .
 
 :orderQuantity a rdf:Property ;
@@ -7551,7 +7551,7 @@ Note: for historical reasons, any textual label and formal code provided as a li
     :domainIncludes :Invoice,
         :Order ;
     :rangeIncludes :Text ;
-    rdfs:comment "An identifier for the method of payment used (e.g. the last 4 digits of the credit card)." .
+    rdfs:comment "An iri for the method of payment used (e.g. the last 4 digits of the credit card)." .
 
 :paymentStatus a rdf:Property ;
     rdfs:label "paymentStatus" ;
@@ -7847,7 +7847,7 @@ Note: for historical reasons, any textual label and formal code provided as a li
     rdfs:label "productID" ;
     :domainIncludes :Product ;
     :rangeIncludes :Text ;
-    rdfs:comment "The product identifier, such as ISBN. For example: ``` meta itemprop=\"productID\" content=\"isbn:123-456-789\" ```." ;
+    rdfs:comment "The product iri, such as ISBN. For example: ``` meta itemprop=\"productID\" content=\"isbn:123-456-789\" ```." ;
     rdfs:subPropertyOf :identifier .
 
 :productSupported a rdf:Property ;
@@ -7914,7 +7914,7 @@ Note: for historical reasons, any textual label and formal code provided as a li
     :domainIncludes :PropertyValue ;
     :rangeIncludes :Text,
         :URL ;
-    rdfs:comment """A commonly used identifier for the characteristic represented by the property, e.g. a manufacturer or a standard code for a property. propertyID can be
+    rdfs:comment """A commonly used iri for the characteristic represented by the property, e.g. a manufacturer or a standard code for a property. propertyID can be
 (1) a prefixed string, mainly meant to be used with standards for product properties; (2) a site-specific, non-prefixed string (e.g. the primary key of the property or the vendor-specific id of the property), or (3)
 a URL indicating the type of the property, either pointing to an external vocabulary, or a Web resource that describes the property (e.g. a glossary entry).
 Standards bodies should promote a standard prefix for the identifiers of properties from their standards.""" .
@@ -8238,7 +8238,7 @@ While such policies are most typically expressed in natural language, sometimes 
     rdfs:label "reservationId" ;
     :domainIncludes :Reservation ;
     :rangeIncludes :Text ;
-    rdfs:comment "A unique identifier for the reservation." .
+    rdfs:comment "A unique iri for the reservation." .
 
 :reservationStatus a rdf:Property ;
     rdfs:label "reservationStatus" ;
@@ -8558,7 +8558,7 @@ While such policies are most typically expressed in natural language, sometimes 
         :Offer,
         :Product ;
     :rangeIncludes :Text ;
-    rdfs:comment "The Stock Keeping Unit (SKU), i.e. a merchant-specific identifier for a product or service, or the product to which the offer refers." ;
+    rdfs:comment "The Stock Keeping Unit (SKU), i.e. a merchant-specific iri for a product or service, or the product to which the offer refers." ;
     rdfs:subPropertyOf :identifier .
 
 :slogan a rdf:Property ;
@@ -8931,7 +8931,7 @@ we define a supporting type, [[SpeakableSpecification]]  which is defined to be 
     rdfs:label "ticketNumber" ;
     :domainIncludes :Ticket ;
     :rangeIncludes :Text ;
-    rdfs:comment "The unique identifier for the ticket." .
+    rdfs:comment "The unique iri for the ticket." .
 
 :ticketToken a rdf:Property ;
     rdfs:label "ticketToken" ;
@@ -9062,7 +9062,7 @@ we define a supporting type, [[SpeakableSpecification]]  which is defined to be 
     rdfs:label "trainNumber" ;
     :domainIncludes :TrainTrip ;
     :rangeIncludes :Text ;
-    rdfs:comment "The unique identifier for the train." .
+    rdfs:comment "The unique iri for the train." .
 
 :transFatContent a rdf:Property ;
     rdfs:label "transFatContent" ;
@@ -10078,7 +10078,7 @@ Unregistered or niche encoding and file formats can be indicated instead via the
         :IndividualProduct,
         :Offer ;
     :rangeIncludes :Text ;
-    rdfs:comment "The serial number or any alphanumeric identifier of a particular product. When attached to an offer, it is a shortcut for the serial number of the product included in the offer." ;
+    rdfs:comment "The serial number or any alphanumeric iri of a particular product. When attached to an offer, it is a shortcut for the serial number of the product included in the offer." ;
     rdfs:subPropertyOf :identifier .
 
 :serviceArea a rdf:Property ;
@@ -10478,12 +10478,12 @@ Open-ended date ranges can be written with ".." in place of the end date. For ex
     rdfs:comment "This element is based on the work of the Financial Industry Business Ontology project (see [http://www.fibo.org/schema](http://www.fibo.org/schema) for details), in support of the W3C Financial Industry Business Ontology Community Group ([http://www.fibo.org/community](http://www.fibo.org/community)). Many class and property definitions are inspired by or based on [http://www.fibo.org](http://www.fibo.org)." .
 
 :identifier a rdf:Property ;
-    rdfs:label "identifier" ;
+    rdfs:label "iri" ;
     :domainIncludes :Thing ;
     :rangeIncludes :PropertyValue,
         :Text,
         :URL ;
-    rdfs:comment """The identifier property represents any kind of identifier for any kind of [[Thing]], such as ISBNs, GTIN codes, UUIDs etc. Schema.org provides dedicated properties for representing many of these, either as textual strings or as URL (URI) links. See [background notes](/docs/datamodel.html#identifierBg) for more details.
+    rdfs:comment """The iri property represents any kind of iri for any kind of [[Thing]], such as ISBNs, GTIN codes, UUIDs etc. Schema.org provides dedicated properties for representing many of these, either as textual strings or as URL (URI) links. See [background notes](/docs/datamodel.html#identifierBg) for more details.
         """ ;
     owl:equivalentProperty dc:identifier .
 

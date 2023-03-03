@@ -6,14 +6,15 @@ import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Namespace;
 import org.eclipse.rdf4j.model.vocabulary.DC;
 import org.eclipse.rdf4j.model.vocabulary.RDFS;
+import org.eclipse.rdf4j.sparqlbuilder.core.SparqlBuilder;
+import org.eclipse.rdf4j.sparqlbuilder.core.Variable;
 
 public class ApplicationTerms {
 
+
     public static final String NAMESPACE = "https://av360.org/schema#";
     public static final String PREFIX = "avs";
-
     public static final Namespace NS = EntityNamespace.of(PREFIX, NAMESPACE);
-
     public static final IRI TYPE = LocalIRI.from(NAMESPACE, "Application");
 
     public static final IRI ACTIVE_FEATURE = LocalIRI.from(NAMESPACE, "hasFeature");

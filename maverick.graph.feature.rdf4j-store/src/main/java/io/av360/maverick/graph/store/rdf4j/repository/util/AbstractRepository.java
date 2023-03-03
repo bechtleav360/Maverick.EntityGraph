@@ -44,7 +44,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-@Slf4j(topic = "graph.repository.base")
+@Slf4j(topic = "graph.repo.base")
 public class AbstractRepository implements RepositoryBehaviour, Statements, ModelUpdates, Resettable {
 
     private final RepositoryType repositoryType;

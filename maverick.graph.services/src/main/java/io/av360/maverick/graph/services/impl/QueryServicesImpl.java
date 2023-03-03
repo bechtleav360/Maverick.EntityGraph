@@ -27,7 +27,7 @@ import reactor.core.publisher.Mono;
 
 
 @Service
-@Slf4j(topic = "graph.service.query")
+@Slf4j(topic = "graph.srvc.query")
 public class QueryServicesImpl implements QueryServices {
 
     private final EntityStore entityStore;

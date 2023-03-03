@@ -32,7 +32,7 @@ import java.util.stream.Collectors;
  * the new identifier is a hash of the old identifier to have reproducible results. If the identifier is reused (e.g. example.org/identifier), all
  * new statements are aggregated to one big entity. We could add a random see into it, but that means we cannot reproduce it anymore
  */
-@Slf4j(topic = "graph.transformer.identifiers")
+@Slf4j(topic = "graph.srvc.transformer.identifiers")
 @Component
 @ConditionalOnProperty(name = "application.features.transformers.replaceGlobalIdentifiers", havingValue = "true")
 public class ReplaceGlobalIdentifiers implements Transformer {

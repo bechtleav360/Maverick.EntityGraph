@@ -31,8 +31,7 @@ import static io.av360.maverick.graph.model.security.ApiKeyAuthenticationToken.A
 @Configuration
 @EnableWebFluxSecurity
 @Profile("! test")
-@Slf4j(topic = "egr.cfg.sec" +
-        "")
+@Slf4j(topic = "graph.ctrl.cfg.sec")
 public class SecurityConfiguration {
 
 

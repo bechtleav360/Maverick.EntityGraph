@@ -7,7 +7,6 @@ import io.av360.maverick.graph.model.rdf.GeneratedIdentifier;
 import io.av360.maverick.graph.model.rdf.NamespaceAwareStatement;
 import io.av360.maverick.graph.services.EntityServices;
 import io.av360.maverick.graph.services.QueryServices;
-import io.av360.maverick.graph.services.impl.QueryServicesImpl;
 import io.av360.maverick.graph.store.rdf.models.TripleBag;
 import io.av360.maverick.graph.store.rdf.models.TripleModel;
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
@@ -20,7 +19,6 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.web.reactive.error.ErrorAttributes;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
@@ -35,7 +33,7 @@ import java.util.Map;
 @Qualifier("EntityApi")
 @Order(1)
 @RequestMapping(path = "/api")
-@Slf4j(topic = "graph.api.entities")
+@Slf4j(topic = "graph.ctrl.api.entities")
 @OpenAPIDefinition(
 
 )
@@ -112,7 +110,7 @@ public class Entities extends AbstractController {
                 .flatMapIterable(TripleModel::asStatements)
                 .doOnSubscribe(s -> {
                     if (log.isDebugEnabled()) log.debug("Request to create a new Entity");
-                    if (log.isTraceEnabled()) log.trace("Payload: \n {}", request.toString());
+                    if (log.isTraceEnabled()) log.trace("Payload: \n {}", request);
                 });
     }
 

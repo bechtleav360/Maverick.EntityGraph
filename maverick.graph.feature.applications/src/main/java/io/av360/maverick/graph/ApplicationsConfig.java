@@ -1,15 +1,10 @@
 package io.av360.maverick.graph;
 
-//
-// import javax.annotation.PostConstruct;
-
-import io.av360.maverick.graph.api.controller.entities.Entities;
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.FilterType;
 
 
 @Configuration
@@ -19,7 +14,7 @@ import org.springframework.context.annotation.FilterType;
 @ComponentScan(
         basePackages = "io.av360.maverick.graph.feature.applications"
 )
-@Slf4j(topic = "egr.feat.apps")
+@Slf4j(topic = "graph.feat.apps")
 public class ApplicationsConfig {
 
     @PostConstruct

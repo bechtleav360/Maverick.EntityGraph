@@ -1,107 +1,123 @@
 package io.av360.maverick.graph.feature.applications;
 
-import io.av360.maverick.graph.feature.applications.api.dto.Requests;
 import io.av360.maverick.graph.feature.applications.api.dto.Responses;
+import io.av360.maverick.graph.feature.applications.client.ApplicationsTestClient;
 import io.av360.maverick.graph.feature.applications.domain.model.ApplicationFlags;
-import io.av360.maverick.graph.tests.api.v2.Subscriptions;
+import io.av360.maverick.graph.tests.config.TestConfigurations;
 import io.av360.maverick.graph.tests.util.TestsBase;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.event.RecordApplicationEvents;
-import org.springframework.test.web.reactive.server.WebTestClient;
-import org.springframework.util.StringUtils;
-import org.springframework.web.reactive.function.BodyInserters;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ContextConfiguration(classes = TestConfigurations.class)
 @RecordApplicationEvents
 @ActiveProfiles("test")
-class ApplicationsTest extends TestsBase implements Subscriptions {
+class ApplicationsTest extends TestsBase  {
 
-    @Override
-    @Test
-    public void createSubscription() {
-        this.postSubscription("test", false).jsonPath("$.key").isNotEmpty();
+    private ApplicationsTestClient client;
+
+    @BeforeEach
+    public void setup() {
+        client = new ApplicationsTestClient(super.webClient);
     }
 
-    private WebTestClient.BodyContentSpec postSubscription(String label, boolean persistent) {
-
-
-        Requests.RegisterApplicationRequest req = new Requests.RegisterApplicationRequest(label, new ApplicationFlags(persistent, false));
-
-        return webClient.post()
-                .uri("/api/applications")
-                .body(BodyInserters.fromValue(req))
-                .exchange()
+    @Test
+    public void createPublicApplication() {
+        this.client.createApplication("test-public", new ApplicationFlags(false, true))
                 .expectStatus().isCreated()
-                //.expectBody(Responses.CreateSubscriptionResponse.class)
-                .expectBody();
-        // .jsonPath("$.key").isNotEmpty();
+                .expectBody()
+                .jsonPath("$.key").isNotEmpty();
     }
 
-    @Override
+
+
     @Test
-    public void listSubscription() {
+    public void listApplications() {
 
         super.dump();
 
-        this.postSubscription("a", false).jsonPath("$.key").isNotEmpty();
-        this.postSubscription("b", false).jsonPath("$.key").isNotEmpty();
-        this.postSubscription("c", false).jsonPath("$.key").isNotEmpty();
+        this.client.createApplication("a", new ApplicationFlags(false, true))
+                .expectStatus().isCreated().expectBody().jsonPath("$.key").isNotEmpty();
+        this.client.createApplication("b", new ApplicationFlags(true, true))
+                .expectStatus().isCreated().expectBody().jsonPath("$.key").isNotEmpty();
+        this.client.createApplication("c", new ApplicationFlags(false, false))
+                .expectStatus().isCreated().expectBody().jsonPath("$.key").isNotEmpty();
 
-        webClient.get()
-                .uri("/api/applications")
-                .exchange()
-                .expectStatus().isOk()
-                //.expectBody(Responses.CreateSubscriptionResponse.class)
-                .expectBody()
-                .consumeWith(entityExchangeResult -> {
-                    String s = new String(entityExchangeResult.getResponseBody());
-                    Assertions.assertTrue(StringUtils.hasLength(s));
-                })
-                //.jsonPath("$.identifier").isNotEmpty()
-
+        this.client.listApplications()
+                        .expectStatus().isOk()
+                        .expectBody()
                 .jsonPath("$").isArray()
                 .jsonPath("$.size()").isEqualTo(3);
+
+
     }
 
-    @Override
+
     @Test
-    public void generateKey() {
+    public void getApplication() {
 
-        Requests.RegisterApplicationRequest req = new Requests.RegisterApplicationRequest("test", new ApplicationFlags(false, false));
 
-        Responses.ApplicationResponse re = webClient.post()
-                .uri("/api/applications")
-                .bodyValue(req)
-                .exchange()
+        Responses.ApplicationResponse app = this.client.createApplication("test", new ApplicationFlags(false, true))
                 .expectStatus().isCreated()
-                //.expectBody(Responses.CreateSubscriptionResponse.class)
                 .expectBody(Responses.ApplicationResponse.class)
                 .returnResult()
                 .getResponseBody();
-        Assertions.assertNotNull(re.key());
 
-        Requests.CreateApiKeyRequest request = new Requests.CreateApiKeyRequest("test");
+        this.client.getApplication(app.key())
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.key").isEqualTo(app.key());
 
-        webClient.post()
-                .uri(uriBuilder -> uriBuilder
-                        .path("/api/applications/{id}/keys")
-                        .build(re.key())
-                )
-                .bodyValue(request)
-                .exchange()
-                .expectStatus().isCreated()
-                .expectBody(Responses.ApiKeyResponse.class);
     }
 
-    @Override
     @Test
-    public void revokeToken() {
+    public void createSubscription() {
+        Responses.ApplicationResponse re = this.client.createApplication("test-public", new ApplicationFlags(false, false))
+                .expectStatus().isCreated()
+                .expectBody(Responses.ApplicationResponse.class)
+                .returnResult()
+                .getResponseBody();
+
+        Assertions.assertNotNull(re);
+        Assertions.assertNotNull(re.key());
+
+
+        this.client.createSubscription("test-subscription", re.key())
+                .expectStatus().isCreated()
+                .expectBody(Responses.SubscriptionResponse.class);
+
+    }
+
+    @Test
+    public void listSubscriptions() {
+        Responses.ApplicationResponse re = this.client.createApplication("test-public", new ApplicationFlags(false, false))
+                .expectStatus().isCreated()
+                .expectBody(Responses.ApplicationResponse.class)
+                .returnResult()
+                .getResponseBody();
+
+        this.client.createSubscription("test-sub-1", re.key())
+                .expectStatus().isCreated()
+                .expectBody(Responses.SubscriptionResponse.class);
+
+        this.client.createSubscription("test-sub-2", re.key())
+                .expectStatus().isCreated()
+                .expectBody(Responses.SubscriptionResponse.class);
+
+        this.client.createSubscription("test-sub-3", re.key())
+                .expectStatus().isCreated()
+                .expectBody(Responses.SubscriptionResponse.class);
+
+        this.client.listSubscriptions(re.key())
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$").isArray()
+                .jsonPath("$.size()").isEqualTo(3);
+
+
     }
 
     @AfterEach

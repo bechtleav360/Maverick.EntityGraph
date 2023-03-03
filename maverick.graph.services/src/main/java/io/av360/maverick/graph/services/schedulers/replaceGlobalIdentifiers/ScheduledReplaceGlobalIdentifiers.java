@@ -39,7 +39,7 @@ import java.util.List;
  * }
  * LIMIT 100
  */
-@Slf4j(topic = "graph.schedulers.identifiers")
+@Slf4j(topic = "graph.jobs.identifiers")
 @Component
 @ConditionalOnProperty(name = "application.features.schedulers.replaceGlobalIdentifiers", havingValue = "true")
 public class ScheduledReplaceGlobalIdentifiers {

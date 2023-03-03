@@ -1,7 +1,6 @@
 package io.av360.maverick.graph.services.schedulers.detectDuplicates;
 
 
-import io.av360.maverick.graph.model.security.ApiKeyAuthenticationToken;
 import io.av360.maverick.graph.model.security.Authorities;
 import io.av360.maverick.graph.model.vocabulary.SDO;
 import io.av360.maverick.graph.services.EntityServices;
@@ -25,13 +24,11 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -68,7 +65,7 @@ import java.util.TreeSet;
  *      For now we keep the duplicate but reroute all links to the original.
  */
 @Component
-@Slf4j(topic = "graph.schedulers.duplicates")
+@Slf4j(topic = "graph.jobs.duplicates")
 @ConditionalOnProperty(name = "application.features.schedulers.detectDuplicates", havingValue = "true")
 public class ScheduledDetectDuplicates {
 

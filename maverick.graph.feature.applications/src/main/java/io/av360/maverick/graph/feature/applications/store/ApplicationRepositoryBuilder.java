@@ -36,7 +36,7 @@ import java.util.concurrent.TimeUnit;
  * Replaces the @see DefaultRepositoryBuilder
  */
 @Component
-@Slf4j(topic = "graph.repository.config")
+@Slf4j(topic = "graph.feat.app.repo.cfg.builder")
 @Primary
 public class ApplicationRepositoryBuilder implements RepositoryBuilder {
 

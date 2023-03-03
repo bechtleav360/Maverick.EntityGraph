@@ -20,7 +20,7 @@ import java.util.List;
 @RestController
 @RequestMapping(path = "/api/applications")
 //@Api(tags = "Manage applications")
-@Slf4j(topic = "graph.feature.apps.api")
+@Slf4j(topic = "graph.feat.apps.ctrl.api")
 @SecurityRequirement(name = "api_key")
 public class Applications extends AbstractController {
 
@@ -64,9 +64,23 @@ public class Applications extends AbstractController {
                 ).doOnSubscribe(subscription -> log.info("Fetching all applications"));
     }
 
+    @GetMapping(value = "/{applicationId}")
+    @ResponseStatus(HttpStatus.OK)
+    Mono<Responses.ApplicationResponse> getApplication(@PathVariable String applicationId) {
+        return super.getAuthentication()
+                .flatMap(auth -> this.applicationsService.getApplication(applicationId, auth))
+                .map(application ->
+                        new Responses.ApplicationResponse(
+                                application.key(),
+                                application.label(),
+                                application.flags()
+                        )
+                ).doOnSubscribe(subscription -> log.info("Fetching all applications"));
+    }
+
 
     //@ApiOperation(value = "Generate API Key")
-    @PostMapping(value = "/{applicationId}/keys")
+    @PostMapping(value = "/{applicationId}/subscriptions")
     @ResponseStatus(HttpStatus.CREATED)
     Mono<Responses.ApiKeyWithApplicationResponse> generateKey(@PathVariable String applicationId, @RequestBody Requests.CreateApiKeyRequest request) {
         Assert.isTrue(StringUtils.hasLength(applicationId), "Application ID  is a required parameter");
@@ -90,29 +104,23 @@ public class Applications extends AbstractController {
     }
 
     //@ApiOperation(value = "List registered API keys for application")
-    @GetMapping(value = "/{applicationId}/keys")
-    @ResponseStatus(HttpStatus.CREATED)
-    Mono<Responses.ApplicationWithApiKeys> listKeys(@PathVariable String applicationId) {
+    @GetMapping(value = "/{applicationId}/subscriptions")
+    @ResponseStatus(HttpStatus.OK)
+    Flux<Responses.SubscriptionResponse> listSubscriptions(@PathVariable String applicationId) {
         Assert.isTrue(StringUtils.hasLength(applicationId), "Application ID is a required parameter");
 
         return super.getAuthentication()
-                .flatMapMany(authentication -> this.applicationsService.getSubscriptionsForApplication(applicationId, authentication))
+                .flatMapMany(authentication -> this.applicationsService.listSubscriptionsForApplication(applicationId, authentication))
                 .switchIfEmpty(Mono.error(new InvalidApplication(applicationId)))
-                .collectList()
-                .flatMap(keys -> {
-                    if (keys.isEmpty()) return Mono.empty();
-
-                    Application subscription = keys.get(0).application();
-                    List<Responses.ApiKeyResponse> apiKeys = keys.stream().map(apiKey -> new Responses.ApiKeyResponse(apiKey.key(), apiKey.issueDate(), apiKey.active())).toList();
-                    return Mono.just(new Responses.ApplicationWithApiKeys(subscription.key(), subscription.label(), subscription.flags(), apiKeys));
-                }).doOnSubscribe(s -> log.info("Fetching all api keys for an application"));
+                .map(subscription -> new Responses.SubscriptionResponse(subscription.key(), subscription.issueDate(), subscription.active()))
+                .doOnSubscribe(s -> log.info("Fetching all api keys for an application"));
 
 
     }
 
 
     // @ApiOperation(value = "Revoke API Key")
-    @DeleteMapping(value = "/{applicationId}/keys/{label}")
+    @DeleteMapping(value = "/{applicationId}/subscriptions/{label}")
     @ResponseStatus(HttpStatus.NOT_FOUND)
     Mono<Void> revokeToken(@PathVariable String applicationId, @PathVariable String label) {
 

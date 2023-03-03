@@ -27,7 +27,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-@Slf4j(topic = "graph.service.values")
+@Slf4j(topic = "graph.srvc.values")
 @Service
 public class ValueServicesImpl implements ValueServices {
 

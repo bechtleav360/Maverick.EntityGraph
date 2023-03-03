@@ -1,14 +1,9 @@
 package io.av360.maverick.graph.feature.applications.api.ext;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.av360.maverick.graph.api.controller.AbstractController;
 import io.av360.maverick.graph.api.controller.entities.Entities;
-import io.av360.maverick.graph.feature.applications.domain.ApplicationsService;
 import io.av360.maverick.graph.model.enums.RdfMimeTypes;
-import io.av360.maverick.graph.model.rdf.GeneratedIdentifier;
 import io.av360.maverick.graph.model.rdf.NamespaceAwareStatement;
-import io.av360.maverick.graph.services.EntityServices;
-import io.av360.maverick.graph.services.QueryServices;
 import io.av360.maverick.graph.store.rdf.models.TripleBag;
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.info.Info;
@@ -16,7 +11,6 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
-import org.springframework.util.Assert;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 
@@ -32,7 +26,7 @@ import javax.annotation.Nullable;
  */
 @RestController
 @RequestMapping(path = "/api")
-@Slf4j(topic = "graph.api.entities")
+@Slf4j(topic = "graph.feat.app.ctrl.api.entities.scoped")
 @OpenAPIDefinition(
     info =  @Info(title = "Access to entities", description = "Methods to read or manipulate entities"),
 

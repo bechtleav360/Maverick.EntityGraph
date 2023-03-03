@@ -20,7 +20,7 @@ import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
 
-@Slf4j(topic = "graph.api.decoder")
+@Slf4j(topic = "graph.ctrl.io.decoder")
 public class StatementsDecoder implements Decoder<TripleBag> {
     private static final List<MimeType> mimeTypes;
 

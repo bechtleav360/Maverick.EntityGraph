@@ -36,7 +36,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-@Slf4j(topic = "graph.service.entity")
+@Slf4j(topic = "graph.srvc.entity")
 @Service
 public class EntityServicesImpl implements EntityServices {
 

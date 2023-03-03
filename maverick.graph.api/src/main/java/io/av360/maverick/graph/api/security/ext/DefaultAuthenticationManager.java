@@ -25,7 +25,7 @@ import java.util.List;
 import java.util.Set;
 
 @Component
-@Slf4j(topic = "graph.config.security.default")
+@Slf4j(topic = "graph.ctrl.cfg.sec.default.mgr")
 @Primary
 public class DefaultAuthenticationManager implements ReactiveAuthenticationManager {
 

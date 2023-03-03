@@ -29,7 +29,7 @@ import java.util.Optional;
  * This class must not give Admin Authority.
  */
 @Component
-@Slf4j(topic = "egr.ft.apps.sec.mgr")
+@Slf4j(topic = "graph.feat.apps.sec.mgr")
 public class ApplicationAuthenticationManager implements ReactiveAuthenticationManager {
 
 

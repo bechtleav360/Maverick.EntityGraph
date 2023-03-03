@@ -16,7 +16,7 @@ import java.util.Map;
  * @see <a href="https://github.com/Opalo/spring-webflux-and-domain-exceptions/blob/master/error-attributes/src/test/java/org/opal/DomainExceptionWrapper.java">Description</a>
  */
 @Configuration
-@Slf4j(topic = "graph.config.errors")
+@Slf4j(topic = "graph.ctrl.cfg.errors")
 public class GlobalExceptionHandler extends DefaultErrorAttributes {
 
     @Override

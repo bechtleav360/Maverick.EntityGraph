@@ -19,7 +19,7 @@ import reactor.core.publisher.Flux;
 @RestController
 @RequestMapping(path = "/api/entities")
 //@Api(tags = "Values")
-@Slf4j(topic = "graph.api.entities")
+@Slf4j(topic = "graph.api.ctrl.details")
 @SecurityRequirement(name = "api_key")
 public class Details extends AbstractController {
 

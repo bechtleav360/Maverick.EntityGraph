@@ -22,7 +22,7 @@ import javax.annotation.Nullable;
 @RestController
 @RequestMapping(path = "/api/entities")
 //@Api(tags = "Values")
-@Slf4j(topic = "graph.api.entities")
+@Slf4j(topic = "graph.ctrl.api.values")
 @SecurityRequirement(name = "api_key")
 public class Values extends AbstractController {
 

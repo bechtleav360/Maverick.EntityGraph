@@ -28,7 +28,7 @@ import java.util.List;
 @TestConfiguration
 @EnableWebFluxSecurity
 @Profile("test")
-@Slf4j
+@Slf4j(topic = "graph.test.cfg")
 public class TestConfigurations {
 
 

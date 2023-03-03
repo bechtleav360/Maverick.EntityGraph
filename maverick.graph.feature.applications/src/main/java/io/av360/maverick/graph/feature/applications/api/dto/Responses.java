@@ -5,7 +5,7 @@ import io.av360.maverick.graph.feature.applications.domain.model.ApplicationFlag
 import java.util.List;
 
 /**
- * See https://dev.to/brunooliveira/practical-java-16-using-jackson-to-serialize-records-4og4
+ * @see "https://dev.to/brunooliveira/practical-java-16-using-jackson-to-serialize-records-4og4"
  */
 public class Responses {
 
@@ -18,11 +18,11 @@ public class Responses {
 
     }
 
-    public record ApiKeyResponse(String key, String issueDate, boolean active) {
+    public record SubscriptionResponse(String key, String issueDate, boolean active) {
 
     }
 
-    public record ApplicationWithApiKeys(String key, String label, ApplicationFlags flags, List<ApiKeyResponse> keys) {
+    public record ApplicationWithApiKeys(String key, String label, ApplicationFlags flags, List<SubscriptionResponse> keys) {
 
     }
 }

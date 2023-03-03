@@ -32,7 +32,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 @Component
-@Slf4j(topic = "graph.repository.config")
+@Slf4j(topic = "graph.repo.cfg.builder")
 @ConfigurationProperties(prefix = "application")
 public class DefaultRepositoryBuilder implements RepositoryBuilder {
 
