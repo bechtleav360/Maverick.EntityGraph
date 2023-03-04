@@ -25,7 +25,6 @@ import reactor.core.publisher.Mono;
 
 import java.util.List;
 
-
 @TestConfiguration
 @EnableWebFluxSecurity
 @Profile("test")
@@ -68,8 +67,6 @@ public class TestConfigurations {
             testingAuthenticationToken.setDetails(details);
             return Mono.just(testingAuthenticationToken);
         };
-
-
     }
     /*
     @Bean

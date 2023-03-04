@@ -4,6 +4,7 @@ import io.av360.maverick.graph.api.controller.AbstractController;
 import io.av360.maverick.graph.model.enums.RdfMimeTypes;
 import io.av360.maverick.graph.model.rdf.NamespaceAwareStatement;
 import io.av360.maverick.graph.services.EntityServices;
+import io.av360.maverick.graph.services.SchemaServices;
 import io.av360.maverick.graph.services.ValueServices;
 import io.av360.maverick.graph.store.rdf.models.TripleModel;
 import io.swagger.v3.oas.annotations.Operation;
@@ -30,9 +31,12 @@ public class Values extends AbstractController {
 
     protected final EntityServices entities;
 
-    public Values(ValueServices values, EntityServices entities) {
+    protected final SchemaServices schemaServices;
+
+    public Values(ValueServices values, EntityServices entities, SchemaServices schemaServices) {
         this.values = values;
         this.entities = entities;
+        this.schemaServices = schemaServices;
     }
     @Operation(summary = "Returns a list of value property of the selected entity.  ")
     @GetMapping(value = "/{id:[\\w|\\d|-|_]+}/values",
@@ -52,9 +56,9 @@ public class Values extends AbstractController {
     public Flux<NamespaceAwareStatement> create(@PathVariable String id, @PathVariable String prefixedKey, @RequestBody String value, @Nullable @RequestParam(required = false) String lang) {
         Assert.isTrue(!value.matches("(?s).*[\\n\\r].*"), "Newlines in request body are not supported");
 
-        String[] property = splitPrefixedIdentifier(prefixedKey);
+
         return super.getAuthentication()
-                .flatMap(authentication -> values.insertValue(id, property[0], property[1], value, lang, authentication))
+                .flatMap(authentication -> values.insert(id, prefixedKey, value, lang, authentication))
                 .flatMapIterable(TripleModel::asStatements)
                 .doOnSubscribe(s -> {
                     if (log.isDebugEnabled())
@@ -77,10 +81,9 @@ public class Values extends AbstractController {
     @ResponseStatus(HttpStatus.OK)
     public Flux<NamespaceAwareStatement> delete(@PathVariable String id, @PathVariable String prefixedKey, @RequestParam(required = false) String lang) {
 
-        String[] property = splitPrefixedIdentifier(prefixedKey);
 
         return super.getAuthentication()
-                .flatMap(authentication -> values.removeValue(id, property[0], property[1], lang, authentication))
+                .flatMap(authentication -> values.remove(id, prefixedKey, lang, authentication))
                 .flatMapIterable(TripleModel::asStatements)
                 .doOnSubscribe(s -> {
                     if (log.isDebugEnabled()) log.debug("Deleted property '{}' of entity '{}'", prefixedKey, id);

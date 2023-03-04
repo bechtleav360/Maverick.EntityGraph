@@ -6,16 +6,16 @@ import io.av360.maverick.graph.model.rdf.LocalIRI;
 import io.av360.maverick.graph.model.vocabulary.Local;
 import io.av360.maverick.graph.services.EntityServices;
 import io.av360.maverick.graph.services.QueryServices;
+import io.av360.maverick.graph.services.SchemaServices;
 import io.av360.maverick.graph.services.events.EntityCreatedEvent;
 import io.av360.maverick.graph.services.events.EntityDeletedEvent;
 import io.av360.maverick.graph.services.transformers.DelegatingTransformer;
 import io.av360.maverick.graph.services.validators.DelegatingValidator;
 import io.av360.maverick.graph.store.EntityStore;
-import io.av360.maverick.graph.store.SchemaStore;
 import io.av360.maverick.graph.store.TransactionsStore;
 import io.av360.maverick.graph.store.rdf.models.Entity;
-import io.av360.maverick.graph.store.rdf.models.TripleBag;
 import io.av360.maverick.graph.store.rdf.models.Transaction;
+import io.av360.maverick.graph.store.rdf.models.TripleBag;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
@@ -43,7 +43,8 @@ public class EntityServicesImpl implements EntityServices {
 
     private final EntityStore entityStore;
     private final TransactionsStore trxStore;
-    private final SchemaStore schema;
+
+    private final SchemaServices schemaServices;
 
     private final ApplicationEventPublisher eventPublisher;
 
@@ -53,26 +54,37 @@ public class EntityServicesImpl implements EntityServices {
 
     private QueryServices queryServices;
 
+
+
     public EntityServicesImpl(EntityStore graph,
                               TransactionsStore trxStore,
-                              SchemaStore schema,
-                              ApplicationEventPublisher eventPublisher) {
+                              SchemaServices schemaServices, ApplicationEventPublisher eventPublisher) {
         this.entityStore = graph;
         this.trxStore = trxStore;
-        this.schema = schema;
+        this.schemaServices = schemaServices;
         this.eventPublisher = eventPublisher;
     }
 
 
     @Override
-    public Mono<Entity> readEntity(String identifier, Authentication authentication) {
-        return entityStore.getEntity(LocalIRI.withDefaultNamespace(identifier), authentication)
-                .switchIfEmpty(Mono.error(new EntityNotFound(identifier)));
+    public Mono<Entity> get(String entityKey, Authentication authentication) {
+        return schemaServices.resolveLocalName(entityKey)
+                .flatMap(entityIdentifier -> this.get(entityIdentifier, authentication));
+    }
+
+    @Override
+    public Mono<Entity> get(IRI entityIri, Authentication authentication) {
+        return entityStore.getEntity(entityIri, authentication)
+                .switchIfEmpty(Mono.error(new EntityNotFound(entityIri)));
+    }
+
+    @Override
+    public Mono<Boolean> contains(IRI entityIri, Authentication authentication) {
+        return entityStore.exists(entityIri, authentication);
     }
 
 
-
-    public Flux<Entity> listEntities(Authentication authentication) {
+    public Flux<Entity> list(Authentication authentication) {
         Variable idVariable = SparqlBuilder.var("id");
 
         SelectQuery query = Queries.SELECT(idVariable).where(
@@ -84,9 +96,24 @@ public class EntityServicesImpl implements EntityServices {
     }
 
 
+    public Mono<IRI> resolveAndVerify(String key, Authentication authentication) {
+        LocalIRI targetIri = LocalIRI.withDefaultNamespace(key);
+        return this.contains(targetIri, authentication)
+                .flatMap(exists -> {
+                    if(! exists) return Mono.error(new EntityNotFound(key));
+                    else return Mono.just(targetIri);
+                });
+    }
+
     @Override
-    public Mono<Transaction> deleteEntity(IRI identifier, Authentication authentication) {
-        return this.entityStore.listStatements(identifier, null, null, authentication)
+    public EntityStore getStore() {
+        return this.entityStore;
+    }
+
+
+    @Override
+    public Mono<Transaction> remove(IRI entityIri, Authentication authentication) {
+        return this.entityStore.listStatements(entityIri, null, null, authentication)
                 .flatMap(statements -> this.entityStore.removeStatements(statements, new Transaction()))
                 .flatMap(trx -> this.entityStore.commit(trx, authentication))
                 .doOnSuccess(transaction -> {
@@ -96,12 +123,12 @@ public class EntityServicesImpl implements EntityServices {
 
 
     @Override
-    public Mono<Transaction> deleteEntity(String id, Authentication authentication) {
-        return this.deleteEntity(LocalIRI.withDefaultNamespace(id), authentication);
+    public Mono<Transaction> remove(String entityKey, Authentication authentication) {
+        return this.remove(LocalIRI.withDefaultNamespace(entityKey), authentication);
     }
 
     @Override
-    public Mono<Transaction> createEntity(TripleBag triples, Map<String, String> parameters, Authentication authentication) {
+    public Mono<Transaction> create(TripleBag triples, Map<String, String> parameters, Authentication authentication) {
         return this.prepareEntity(triples, parameters, new Transaction(), authentication)
                 .flatMap(transaction -> entityStore.commit(transaction, authentication))
                 .doOnSuccess(transaction -> {
@@ -118,16 +145,14 @@ public class EntityServicesImpl implements EntityServices {
      * If the relation is bidirectional, we should also create the inverse edge
      *
      * @param id              entity id
-     * @param predicatePrefix prefix of the predicate's namespace
-     * @param predicateKey    key of the predicate
+     * @param predicate       the qualified predicate
      * @param linkedEntities  value
      * @return transaction model
      */
     @Override
-    public Mono<Transaction> linkEntityTo(String id, String predicatePrefix, String predicateKey, TripleBag linkedEntities, Authentication authentication) {
+    public Mono<Transaction> linkEntityTo(String id, IRI predicate, TripleBag linkedEntities, Authentication authentication) {
 
         LocalIRI entityIdentifier = LocalIRI.withDefaultNamespace(id);
-        IRI predicate = LocalIRI.withDefinedNamespace(schema.getNamespaceFor(predicatePrefix), predicateKey);
 
         /*
             Constraints to check:
@@ -143,7 +168,6 @@ public class EntityServicesImpl implements EntityServices {
 
                 /* store the links */
                 .map(transaction -> {
-
                     transaction.listModifiedResources(Activity.INSERTED, Activity.UPDATED)
                             .forEach(value -> {
                                 transaction.insert(entityIdentifier, predicate, value, Activity.UPDATED);
@@ -157,6 +181,8 @@ public class EntityServicesImpl implements EntityServices {
 
         // FIXME: we should separate by entities (and have them as individual transactions)
     }
+
+
 
 
     /**
@@ -219,10 +245,9 @@ public class EntityServicesImpl implements EntityServices {
     public Mono<Boolean> valueIsSet(String id, String predicatePrefix, String predicateKey, Authentication authentication) {
         LocalIRI entityIdentifier = LocalIRI.withDefaultNamespace(id);
 
-        return this.valueIsSet(entityIdentifier,
-                LocalIRI.withDefinedNamespace(schema.getNamespaceFor(predicatePrefix), predicateKey),
-                authentication
-        );
+        return schemaServices.getNamespaceFor(predicatePrefix)
+                .map(ns -> LocalIRI.withDefinedNamespace(ns, predicateKey))
+                .flatMap(predicate -> this.valueIsSet(entityIdentifier, predicate, authentication));
     }
 
     /* for testing only */

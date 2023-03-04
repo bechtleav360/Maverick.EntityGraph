@@ -8,7 +8,6 @@ import io.av360.maverick.graph.store.rdf.models.Transaction;
 import io.av360.maverick.graph.store.rdf4j.repository.util.AbstractRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.rdf4j.model.*;
-import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.RepositoryResult;
 import org.springframework.security.core.Authentication;
@@ -17,10 +16,9 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 import reactor.core.publisher.Mono;
 
-import java.io.IOException;
 import java.util.Collection;
 
-@Slf4j
+@Slf4j(topic = "graph.repo.entities")
 @Component
 public class EntityRepository extends AbstractRepository implements EntityStore {
 
@@ -32,7 +30,7 @@ public class EntityRepository extends AbstractRepository implements EntityStore 
 
     public Mono<Entity> getEntity(Resource id, Authentication authentication, GrantedAuthority requiredAuthority) {
         try (RepositoryConnection connection = getConnection(authentication, requiredAuthority)) {
-            log.trace("(Store) Loading entity with id '{}' from repository {}", id, connection.getRepository().toString());
+            log.trace("Loading entity with id '{}' from repository {}", id, connection.getRepository().toString());
 
             RepositoryResult<Statement> statements = connection.getStatements(id, null, null);
             if (!statements.hasNext()) {
@@ -52,14 +50,16 @@ public class EntityRepository extends AbstractRepository implements EntityStore 
 
 
             if (log.isDebugEnabled())
-                log.debug("(Store) Loaded {} statements for entity with IRI: <{}>.", entity.getModel().size(), id);
+                log.debug("Loaded {} statements for entity with IRI: <{}>.", entity.getModel().size(), id);
             return Mono.just(entity);
 
         } catch (Exception e) {
-            log.error("Unknown error while running query", e);
+            log.error("Unknown error while collection statements for entity '{}' ", id,  e);
             return Mono.error(e);
         }
     }
+
+
 
 
     @Override
@@ -85,31 +85,5 @@ public class EntityRepository extends AbstractRepository implements EntityStore 
     }
 
 
-    /**
-     * Returns the type of the entity identified by the given id;
-     *
-     * @param identifier the id of the entity
-     * @return its type (or empty)
-     */
-    public Mono<Value> type(Resource identifier, Authentication authentication, GrantedAuthority requiredAuthority) {
-        try (RepositoryConnection connection = getConnection(authentication, requiredAuthority)) {
-            RepositoryResult<Statement> statements = connection.getStatements(identifier, RDF.TYPE, null, false);
-
-            Value result = null;
-            for (Statement st : statements) {
-                // FIXME: not sure if this is a domain exception (which mean it should not be handled here)
-                if (result != null) {
-                    return Mono.error(new IOException("Duplicate type definitions for resource with identifier " + identifier.stringValue()));
-                } else result = st.getObject();
-            }
-            if (result == null) return Mono.empty();
-            else return Mono.just(result);
-
-
-        } catch (Exception e) {
-            return Mono.error(e);
-        }
-
-    }
 
 }

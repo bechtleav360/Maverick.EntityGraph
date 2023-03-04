@@ -7,6 +7,7 @@ import io.av360.maverick.graph.model.rdf.GeneratedIdentifier;
 import io.av360.maverick.graph.model.rdf.NamespaceAwareStatement;
 import io.av360.maverick.graph.services.EntityServices;
 import io.av360.maverick.graph.services.QueryServices;
+import io.av360.maverick.graph.services.SchemaServices;
 import io.av360.maverick.graph.store.rdf.models.TripleBag;
 import io.av360.maverick.graph.store.rdf.models.TripleModel;
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
@@ -44,10 +45,13 @@ public class Entities extends AbstractController {
     protected final EntityServices entityServices;
     protected final QueryServices queryServices;
 
-    public Entities(ObjectMapper objectMapper, EntityServices graphService, QueryServices queryServices) {
+    protected final SchemaServices schemaServices;
+
+    public Entities(ObjectMapper objectMapper, EntityServices graphService, QueryServices queryServices, SchemaServices schemaServices) {
         this.objectMapper = objectMapper;
         this.entityServices = graphService;
         this.queryServices = queryServices;
+        this.schemaServices = schemaServices;
     }
 
     @Operation(summary = "Returns an entity with the given unique identifier. ")
@@ -62,16 +66,18 @@ public class Entities extends AbstractController {
             Assert.isTrue(id.length() == GeneratedIdentifier.LENGTH, "Incorrect length for identifier.");
 
             return super.getAuthentication()
-                    .flatMap(authentication -> entityServices.readEntity(id, authentication))
+                    .flatMap(authentication -> entityServices.get(id, authentication))
                     .flatMapIterable(TripleModel::asStatements)
                     .doOnSubscribe(s -> {
                         if (log.isDebugEnabled()) log.debug("Request to read entity with id: {}", id);
                     });
         } else {
-            String[] split = splitPrefixedIdentifier(property);
 
             return super.getAuthentication()
-                    .flatMap(authentication -> queryServices.findEntityByProperty(id, split[0], split[1], authentication))
+                    .flatMap(authentication ->
+                            schemaServices.resolvePrefixedName(property)
+                                    .flatMap(propertyIri -> queryServices.findEntityByProperty(id, propertyIri, authentication))
+                    )
                     .flatMapIterable(TripleModel::asStatements)
                     .doOnSubscribe(s -> {
                         if (log.isDebugEnabled()) log.debug("Request to read entity with id: {}", id);
@@ -106,7 +112,7 @@ public class Entities extends AbstractController {
         Assert.isTrue(request.getModel().size() > 0, "No statements in request detected.");
 
         return super.getAuthentication()
-                .flatMap(authentication -> entityServices.createEntity(request, Map.of(), authentication))
+                .flatMap(authentication -> entityServices.create(request, Map.of(), authentication))
                 .flatMapIterable(TripleModel::asStatements)
                 .doOnSubscribe(s -> {
                     if (log.isDebugEnabled()) log.debug("Request to create a new Entity");
@@ -120,9 +126,11 @@ public class Entities extends AbstractController {
     @ResponseStatus(HttpStatus.CREATED)
     public Flux<NamespaceAwareStatement> embed(@PathVariable String id, @PathVariable String prefixedKey, @RequestBody TripleBag value) {
 
-        String[] property = splitPrefixedIdentifier(prefixedKey);
         return super.getAuthentication()
-                .flatMap(authentication -> entityServices.linkEntityTo(id, property[0], property[1], value, authentication))
+                .flatMap(authentication ->
+                    schemaServices.resolvePrefixedName(prefixedKey)
+                            .flatMap(predicate ->  entityServices.linkEntityTo(id, predicate, value, authentication))
+                )
                 .flatMapIterable(TripleModel::asStatements)
                 .doOnSubscribe(s -> {
                     if (log.isDebugEnabled())
@@ -138,7 +146,7 @@ public class Entities extends AbstractController {
         Assert.isTrue(id.length() == GeneratedIdentifier.LENGTH, "Incorrect length for identifier.");
 
         return super.getAuthentication()
-                .flatMap(authentication -> entityServices.deleteEntity(id, authentication))
+                .flatMap(authentication -> entityServices.remove(id, authentication))
                 .flatMapIterable(TripleModel::asStatements)
                 .doOnSubscribe(s -> {
                     if (log.isDebugEnabled()) log.debug("Delete an Entity");

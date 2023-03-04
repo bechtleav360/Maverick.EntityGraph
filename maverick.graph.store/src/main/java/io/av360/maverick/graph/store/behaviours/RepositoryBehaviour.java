@@ -5,6 +5,7 @@ import io.av360.maverick.graph.model.security.Authorities;
 import io.av360.maverick.graph.store.RepositoryBuilder;
 import io.av360.maverick.graph.store.RepositoryType;
 import io.av360.maverick.graph.store.rdf.models.Transaction;
+import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
@@ -38,12 +39,14 @@ public interface RepositoryBehaviour {
      * @param subj the id of the entity
      * @return true if exists
      */
-    default Mono<Boolean> exists(Resource subj, Authentication authentication) throws IOException {
+    default Mono<Boolean> exists(Resource subj, Authentication authentication) {
         return this.exists(subj, authentication, Authorities.READER);
     }
 
-    Mono<Boolean> exists(Resource subj, Authentication authentication, GrantedAuthority requiredAuthority) throws IOException;
+    Mono<Boolean> exists(Resource subj, Authentication authentication, GrantedAuthority requiredAuthority);
 
+
+    Flux<IRI> types(Resource subj, Authentication authentication, GrantedAuthority requiredAuthority);
 
     Flux<Transaction> commit(Collection<Transaction> transactions, Authentication authentication, GrantedAuthority requiredAuthority);
 

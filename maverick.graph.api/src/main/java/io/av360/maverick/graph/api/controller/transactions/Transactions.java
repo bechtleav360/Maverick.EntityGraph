@@ -40,7 +40,7 @@ public class Transactions extends AbstractController {
 
         // FIXME: marker to use transactions repository
         return super.getAuthentication()
-                .flatMap(authentication -> graphService.readEntity(id, authentication))
+                .flatMap(authentication -> graphService.get(id, authentication))
                 .flatMapIterable(TripleModel::asStatements)
                 .doOnSubscribe(s -> {
                     if (log.isTraceEnabled()) log.trace("Reading transaction with id: {}", id);

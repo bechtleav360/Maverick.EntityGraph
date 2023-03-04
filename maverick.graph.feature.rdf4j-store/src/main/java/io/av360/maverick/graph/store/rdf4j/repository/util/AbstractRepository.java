@@ -37,12 +37,14 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.io.IOException;
-import java.io.InputStream;
+import java.io.PipedInputStream;
+import java.io.PipedOutputStream;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Slf4j(topic = "graph.repo.base")
 public class AbstractRepository implements RepositoryBehaviour, Statements, ModelUpdates, Resettable {
@@ -160,6 +162,30 @@ public class AbstractRepository implements RepositoryBehaviour, Statements, Mode
 
         RDFParser parser = parserFactory.orElseThrow().getParser();
 
+        try {
+            // example: https://www.baeldung.com/spring-reactive-read-flux-into-inputstream
+            PipedOutputStream outputStream = new PipedOutputStream();
+            PipedInputStream inputStream = new PipedInputStream(1024*10);
+            inputStream.connect(outputStream);
+            RepositoryConnection connection = getConnection(authentication, requiredAuthority);
+            RDFInserter rdfInserter = new RDFInserter(connection);
+            parser.setRDFHandler(rdfInserter);
+            parser.parse(inputStream);
+
+
+            return DataBufferUtils.write(bytesPublisher, outputStream)
+                    .then()
+                    .doOnSubscribe(subscription -> log.debug("Writing data buffer into stream."));
+
+        } catch (IOException exception) {
+            log.error("Failed to import statements with mimetype {} with reason: ", mimetype, exception);
+            return Mono.error(exception);
+        }
+
+
+
+
+                /*
         return DataBufferUtils.join(bytesPublisher)
                 .flatMap(dataBuffer -> {
                     try (RepositoryConnection connection = getConnection(authentication, requiredAuthority)) {
@@ -182,12 +208,28 @@ public class AbstractRepository implements RepositoryBehaviour, Statements, Mode
                 })
                 .then()
                 ;
+                */
 
     }
 
-    public Mono<Boolean> exists(Resource subj, Authentication authentication, GrantedAuthority requiredAuthority) throws IOException {
+    public Flux<IRI> types(Resource subj, Authentication authentication, GrantedAuthority requiredAuthority) {
+        try (RepositoryConnection connection = getConnection(authentication, requiredAuthority)) {
+
+            Stream<Statement> stream = connection.getStatements(subj, RDF.TYPE, null, false).stream();
+            return Flux.fromStream(stream)
+                    .map(Statement::getObject)
+                    .filter(Value::isIRI)
+                    .map(value -> (IRI) value);
+        } catch (IOException e) {
+            return Flux.error(e);
+        }
+    }
+
+    public Mono<Boolean> exists(Resource subj, Authentication authentication, GrantedAuthority requiredAuthority)  {
         try (RepositoryConnection connection = getConnection(authentication, requiredAuthority)) {
             return Mono.just(connection.hasStatement(subj, RDF.TYPE, null, false));
+        } catch (IOException e) {
+            return Mono.error(e);
         }
     }
 

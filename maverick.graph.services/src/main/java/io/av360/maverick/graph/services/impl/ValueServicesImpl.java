@@ -2,18 +2,21 @@ package io.av360.maverick.graph.services.impl;
 
 import io.av360.maverick.graph.model.errors.EntityNotFound;
 import io.av360.maverick.graph.model.errors.InvalidEntityUpdate;
-import io.av360.maverick.graph.model.rdf.LocalIRI;
+import io.av360.maverick.graph.services.EntityServices;
+import io.av360.maverick.graph.services.SchemaServices;
 import io.av360.maverick.graph.services.ValueServices;
 import io.av360.maverick.graph.services.events.ValueInsertedEvent;
 import io.av360.maverick.graph.services.events.ValueRemovedEvent;
 import io.av360.maverick.graph.services.events.ValueReplacedEvent;
-import io.av360.maverick.graph.store.EntityStore;
 import io.av360.maverick.graph.store.SchemaStore;
 import io.av360.maverick.graph.store.rdf.models.Transaction;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
-import org.eclipse.rdf4j.model.*;
+import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Literal;
+import org.eclipse.rdf4j.model.Statement;
+import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.rio.LanguageHandler;
 import org.eclipse.rdf4j.rio.LanguageHandlerRegistry;
@@ -32,87 +35,134 @@ import java.util.List;
 public class ValueServicesImpl implements ValueServices {
 
 
-    private final EntityStore entityStore;
-    private final SchemaStore schemaStore;
-
     private final ApplicationEventPublisher eventPublisher;
 
-    public ValueServicesImpl(EntityStore entityStore,
-                             SchemaStore schemaStore,
-                             ApplicationEventPublisher eventPublisher) {
-        this.entityStore = entityStore;
-        this.schemaStore = schemaStore;
+    private final SchemaServices schemaServices;
+
+    private final EntityServices entityServices;
+
+
+    public ValueServicesImpl(SchemaStore schemaStore,
+                             ApplicationEventPublisher eventPublisher, SchemaServices schemaServices, EntityServices entityServices) {
         this.eventPublisher = eventPublisher;
+        this.schemaServices = schemaServices;
+        this.entityServices = entityServices;
     }
 
-    /**
-     * Extracts the language tag.
-     * Rules:
-     * - tag in request parameter > tag in value
-     * - default lang tag is "en"
-     * - if one is invalid, we take the other (and write a warning into the logs)
-     *
-     * @param id
-     * @param value    the literal value as string
-     * @param paramTag the request parameter for the language tag, can be null
-     * @return the identified language tag
-     */
-    private Mono<String> extractLanguageTag(String id, String value, @Nullable String paramTag) {
-        return Mono.create(sink -> {
-            LanguageHandler languageHandler = LanguageHandlerRegistry.getInstance().get(LanguageHandler.BCP47).orElseThrow();
 
-            String valueTag = value.matches(".*@\\w\\w-?[\\w\\d-]*$") ? value.substring(value.lastIndexOf('@') + 1) : "";
+    @Override
+    public Mono<Transaction> insert(String entityKey, String prefixedPoperty, String value, String languageTag, Authentication authentication) {
 
-            if(StringUtils.isNotBlank(paramTag)) {
-                if(languageHandler.isRecognizedLanguage(paramTag)  && languageHandler.verifyLanguage(value, paramTag)) {
-                    sink.success(paramTag);
-                } else {
-                    sink.error(new IOException("Invalid language tag in parameter: "+paramTag));
-                }
-            }
-
-            else if (StringUtils.isNotBlank(valueTag)) {
-                if(languageHandler.isRecognizedLanguage(valueTag) && languageHandler.verifyLanguage(value, valueTag)) {
-                    sink.success(valueTag);
-                } else {
-                    sink.error(new IOException("Invalid language tag in value: "+valueTag));
-                }
-            } else {
-                sink.success("en");
-            }
-
-        });
-
-
-
-
+        return Mono.zip(
+                this.entityServices.resolveAndVerify(entityKey, authentication),
+                this.schemaServices.resolvePrefixedName(prefixedPoperty),
+                this.normalizeLanguage(value, languageTag)
+        ).switchIfEmpty(Mono.error(new InvalidEntityUpdate(entityKey, "Failed to insert value")))
+                .flatMap(triple ->
+                this.insert(triple.getT1(), triple.getT2(), triple.getT3(), authentication)
+        );
     }
 
     @Override
-    public Mono<Transaction> insertValue(String id, String propertyPrefix, String property, String value, String languageTag, Authentication authentication) {
-        return this.extractLanguageTag(id, value, languageTag)
-                .map(tag -> {
-                    LanguageHandler languageHandler = LanguageHandlerRegistry.getInstance().get(LanguageHandler.BCP47).orElseThrow();
-                    return languageHandler.normalizeLanguage(value, tag, SimpleValueFactory.getInstance());
-                })
-                .flatMap(literal -> this.insertValue(LocalIRI.withDefaultNamespace(id),
-                        LocalIRI.withDefinedNamespace(schemaStore.getNamespaceFor(propertyPrefix), property),
-                        literal,
-                        authentication));
-    }
-
-    @Override
-    public Mono<Transaction> insertValue(Resource entityIdentifier, IRI predicate, Value value, Authentication authentication) {
-        return this.insertValue(entityIdentifier, predicate, value, new Transaction(), authentication)
+    public Mono<Transaction> insert(IRI entityIdentifier, IRI predicate, Value value, Authentication authentication) {
+        return this.insert(entityIdentifier, predicate, value, new Transaction(), authentication)
                 .doOnSuccess(trx -> {
                     eventPublisher.publishEvent(new ValueInsertedEvent(trx));
                 });
 
     }
 
-    Mono<Transaction> insertValue(Resource entityIdentifier, IRI predicate, Value value, Transaction transaction, Authentication authentication) {
 
-        return this.entityStore.getEntity(entityIdentifier, authentication)
+    /**
+     * Deletes a value with a new transaction.  Fails if no entity exists with the given subject
+     */
+    @Override
+    public Mono<Transaction> remove(String entityKey, String predicate, String lang, Authentication authentication) {
+        return Mono.zip(
+                this.entityServices.resolveAndVerify(entityKey, authentication),
+                this.schemaServices.resolvePrefixedName(predicate)
+        ).flatMap(tuple ->
+                this.remove(tuple.getT1(), tuple.getT2(), lang, authentication)
+        );
+
+    }
+
+
+    /**
+     * Deletes a value with a new transaction. Fails if no entity exists with the given subject
+     */
+    @Override
+    public Mono<Transaction> remove(IRI entityIdentifier, IRI predicate, String lang, Authentication authentication) {
+        return this.remove(entityIdentifier, predicate, lang, new Transaction(), authentication)
+                .doOnSuccess(trx -> {
+                    eventPublisher.publishEvent(new ValueRemovedEvent(trx));
+                });
+    }
+
+
+
+    /**
+     * Internal method to remove a value within an existing transaction.
+     */
+    Mono<Transaction> remove(IRI entityIdentifier, IRI predicate, String lang, Transaction transaction, Authentication authentication) {
+
+        return this.entityServices.getStore().listStatements(entityIdentifier, predicate, null, authentication)
+                .flatMap(statements -> {
+                    if (statements.size() > 1) {
+                        List<Statement> statementsToRemove = new ArrayList<>();
+                        if (StringUtils.isEmpty(lang)) {
+                            return Mono.error(new InvalidEntityUpdate(entityIdentifier, "Multiple values for given predicate detected, but no language tag in request."));
+                        }
+                        for (Statement st : statements) {
+                            Value object = st.getObject();
+                            if (object.isBNode()) {
+                                log.warn("Found a link to an anonymous node. Purge it from repository.");
+                                statementsToRemove.add(st);
+                            } else if (object.isIRI()) {
+                                return Mono.error(new InvalidEntityUpdate(entityIdentifier, "Invalid to remove links via the values api."));
+                            } else if (object.isLiteral()) {
+                                Literal currentLiteral = (Literal) object;
+                                if (StringUtils.equals(currentLiteral.getLanguage().orElse("invalid"), lang)) {
+                                    statementsToRemove.add(st);
+                                }
+                            }
+                        }
+
+
+                        return this.entityServices.getStore().removeStatements(statementsToRemove, transaction);
+                    } else {
+                        if (statements.size() == 1 && statements.get(0).getObject().isIRI()) {
+                            return Mono.error(new InvalidEntityUpdate(entityIdentifier, "Invalid to remove links via the values api."));
+                        }
+                        return this.entityServices.getStore().removeStatements(statements, transaction);
+                    }
+
+                })
+                .flatMap(trx -> this.entityServices.getStore().commit(trx, authentication));
+    }
+
+    /**
+     * Reroutes a statement of an entity, e.g. <entity> <hasProperty> <falseEntity> to <entity> <hasProperty> <rightEntity>.
+     * <p>
+     * Has to be part of one transaction (one commit call)
+     */
+    @Override
+    public Mono<Transaction> replace(IRI entityIdentifier, IRI predicate, Value oldValue, Value newValue, Authentication authentication) {
+        return this.entityServices.getStore().removeStatement(entityIdentifier, predicate, oldValue, new Transaction())
+                .flatMap(trx -> this.entityServices.getStore().addStatement(entityIdentifier, predicate, newValue, trx))
+                .flatMap(trx -> this.entityServices.getStore().commit(trx, authentication))
+                .doOnSuccess(trx -> {
+                    eventPublisher.publishEvent(new ValueReplacedEvent(trx));
+                });
+    }
+
+    private Mono<Literal> normalizeLanguage(String value, String languageTag) {
+        return this.extractLanguageTag(value, languageTag);
+    }
+
+    private Mono<Transaction> insert(IRI entityIdentifier, IRI predicate, Value value, Transaction transaction, Authentication authentication) {
+
+        return this.entityServices.get(entityIdentifier, authentication)
                 .switchIfEmpty(Mono.error(new EntityNotFound(entityIdentifier.stringValue())))
                 .map(entity -> Pair.of(entity, transaction.affected(entity)))
                 .flatMap(pair -> {
@@ -144,14 +194,14 @@ public class ValueServicesImpl implements ValueServices {
                                 if (updateValue.getLanguage().isPresent() && currentValue.getLanguage().isPresent()) {
                                     // entity already has a value for this predicate. It has a language tag. If another value with the same language tag exists, we remove it.
                                     if (StringUtils.equals(currentValue.getLanguage().get(), updateValue.getLanguage().get())) {
-                                        this.entityStore.removeStatement(statement, pair.getRight());
+                                        this.entityServices.getStore().removeStatement(statement, pair.getRight());
                                     }
                                 } else {
                                     // entity already has a value for this predicate. It has no language tag. If an existing value has a language tag, we throw an error. If not, we remove it.
                                     if (currentValue.getLanguage().isPresent())
                                         throw new InvalidEntityUpdate(entityIdentifier, "This value already exists with a language tag within this entity. Please add the tag.");
 
-                                    this.entityStore.removeStatement(statement, pair.getRight());
+                                    this.entityServices.getStore().removeStatement(statement, pair.getRight());
                                 }
 
                             }
@@ -164,88 +214,49 @@ public class ValueServicesImpl implements ValueServices {
                     } else return Mono.just(pair);
 
                 })
-                .flatMap(pair -> this.entityStore.addStatement(entityIdentifier, predicate, value, transaction))
-                .flatMap(trx -> this.entityStore.commit(trx, authentication))
+                .flatMap(pair -> this.entityServices.getStore().addStatement(entityIdentifier, predicate, value, transaction))
+                .flatMap(trx -> this.entityServices.getStore().commit(trx, authentication))
                 .switchIfEmpty(Mono.just(transaction));
 
     }
 
-    /**
-     * Deletes a value with a new transaction.  Fails if no entity exists with the given subject
-     */
-    @Override
-    public Mono<Transaction> removeValue(String id, String predicatePrefix, String predicateKey, String lang, Authentication authentication) {
-        return this.removeValue(LocalIRI.withDefaultNamespace(id),
-                LocalIRI.withDefinedNamespace(schemaStore.getNamespaceFor(predicatePrefix), predicateKey),
-                lang,
-                authentication);
-    }
-
 
     /**
-     * Deletes a value with a new transaction. Fails if no entity exists with the given subject
+     * Extracts the language tag.
+     * Rules:
+     * - tag in request parameter > tag in value
+     * - default lang tag is "en"
+     * - if one is invalid, we take the other (and write a warning into the logs)
+     *
+     * @param value    the literal value as string
+     * @param paramTag the request parameter for the language tag, can be null
+     * @return the identified language tag
      */
-    @Override
-    public Mono<Transaction> removeValue(Resource entityIdentifier, IRI predicate, String lang, Authentication authentication) {
-        return this.removeValue(entityIdentifier, predicate, lang, new Transaction(), authentication)
-                .doOnSuccess(trx -> {
-                    eventPublisher.publishEvent(new ValueRemovedEvent(trx));
-                });
+    private Mono<Literal> extractLanguageTag(String value, @Nullable String paramTag) {
+        return Mono.create(sink -> {
+            LanguageHandler languageHandler = LanguageHandlerRegistry.getInstance().get(LanguageHandler.BCP47).orElseThrow();
+            SimpleValueFactory svf = SimpleValueFactory.getInstance();
+
+            String valueTag = value.matches(".*@\\w\\w-?[\\w\\d-]*$") ? value.substring(value.lastIndexOf('@') + 1) : "";
+            String strippedValue = StringUtils.isNotBlank(valueTag) ?  value.substring(0, value.lastIndexOf('@')) : value;
+
+            if (StringUtils.isNotBlank(paramTag)) {
+                if (languageHandler.isRecognizedLanguage(paramTag) && languageHandler.verifyLanguage(value, paramTag)) {
+                    sink.success(languageHandler.normalizeLanguage(strippedValue, paramTag, svf));
+                } else {
+                    sink.error(new IOException("Invalid language tag in parameter: " + paramTag));
+                }
+            } else if (StringUtils.isNotBlank(valueTag)) {
+                if (languageHandler.isRecognizedLanguage(valueTag) && languageHandler.verifyLanguage(value, valueTag)) {
+                    sink.success(languageHandler.normalizeLanguage(strippedValue, valueTag, svf));
+                } else {
+                    sink.error(new IOException("Invalid language tag in value: " + valueTag));
+                }
+            } else {
+                sink.success(languageHandler.normalizeLanguage(strippedValue, "en", svf));
+            }
+
+        });
     }
-
-    /**
-     * Internal method to remove a value within an existing transaction.
-     */
-    Mono<Transaction> removeValue(Resource entityIdentifier, IRI predicate, String lang, Transaction transaction, Authentication authentication) {
-
-        return this.entityStore.listStatements(entityIdentifier, predicate, null, authentication)
-                .flatMap(statements -> {
-                    if (statements.size() > 1) {
-                        List<Statement> statementsToRemove = new ArrayList<>();
-                        if (StringUtils.isEmpty(lang)) {
-                            return Mono.error(new InvalidEntityUpdate(entityIdentifier, "Multiple values for given predicate detected, but no language tag in request."));
-                        }
-                        for (Statement st : statements) {
-                            Value object = st.getObject();
-                            if (object.isBNode()) {
-                                log.warn("Found a link to an anonymous node. Purge it from repository.");
-                                statementsToRemove.add(st);
-                            } else if (object.isIRI()) {
-                                return Mono.error(new InvalidEntityUpdate(entityIdentifier, "Invalid to remove links via the values api."));
-                            } else if (object.isLiteral()) {
-                                Literal currentLiteral = (Literal) object;
-                                if (StringUtils.equals(currentLiteral.getLanguage().orElse("invalid"), lang)) {
-                                    statementsToRemove.add(st);
-                                }
-                            }
-                        }
-
-
-                        return this.entityStore.removeStatements(statementsToRemove, transaction);
-                    } else {
-                        if (statements.size() == 1 && statements.get(0).getObject().isIRI()) {
-                            return Mono.error(new InvalidEntityUpdate(entityIdentifier, "Invalid to remove links via the values api."));
-                        }
-                        return this.entityStore.removeStatements(statements, transaction);
-                    }
-
-                })
-                .flatMap(trx -> this.entityStore.commit(trx, authentication));
-    }
-
-    /**
-     * Reroutes a statement of an entity, e.g. <entity> <hasProperty> <falseEntity> to <entity> <hasProperty> <rightEntity>.
-     * <p>
-     * Has to be part of one transaction (one commit call)
-     */
-    public Mono<Transaction> replaceValue(Resource entityIdentifier, IRI predicate, Value oldObject, Value newObject, Authentication authentication) {
-        return this.entityStore.removeStatement(entityIdentifier, predicate, oldObject, new Transaction())
-                .flatMap(trx -> this.entityStore.addStatement(entityIdentifier, predicate, newObject, trx))
-                .flatMap(trx -> this.entityStore.commit(trx, authentication))
-                .doOnSuccess(trx -> {
-                    eventPublisher.publishEvent(new ValueReplacedEvent(trx));
-                });
-    }
-
 
 }

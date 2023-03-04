@@ -1,13 +1,12 @@
 package io.av360.maverick.graph.services.impl;
 
 import io.av360.maverick.graph.model.errors.EntityNotFound;
-import io.av360.maverick.graph.model.rdf.LocalIRI;
 import io.av360.maverick.graph.model.rdf.NamespaceAwareStatement;
 import io.av360.maverick.graph.model.vocabulary.Local;
 import io.av360.maverick.graph.services.QueryServices;
+import io.av360.maverick.graph.services.SchemaServices;
 import io.av360.maverick.graph.services.transformers.DelegatingTransformer;
 import io.av360.maverick.graph.store.EntityStore;
-import io.av360.maverick.graph.store.SchemaStore;
 import io.av360.maverick.graph.store.rdf.models.Entity;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.rdf4j.model.IRI;
@@ -32,11 +31,11 @@ public class QueryServicesImpl implements QueryServices {
 
     private final EntityStore entityStore;
 
-    private final SchemaStore schemaStore;
+    private final SchemaServices schemaServices;
 
-    public QueryServicesImpl(EntityStore graph, SchemaStore schemaStore) {
+    public QueryServicesImpl(EntityStore graph, SchemaServices schemaServices) {
         this.entityStore = graph;
-        this.schemaStore = schemaStore;
+        this.schemaServices = schemaServices;
     }
 
 
@@ -65,13 +64,14 @@ public class QueryServicesImpl implements QueryServices {
         throw new UnsupportedOperationException("Not implemented yet.");
     }
 
+
+
     @Override
-    public Mono<Entity> findEntityByProperty(String identifier, String propertyPrefix, String property, Authentication authentication) {
-        LocalIRI predicate = LocalIRI.withDefinedNamespace(schemaStore.getNamespaceFor(propertyPrefix), property);
+    public Mono<Entity> findEntityByProperty(String identifier, IRI predicate, Authentication authentication) {
         Literal identifierLit = entityStore.getValueFactory().createLiteral(identifier);
 
         Variable idVariable = SparqlBuilder.var("id");
-        
+
         SelectQuery query = Queries.SELECT(idVariable).where(
                 idVariable.has(predicate, identifierLit));
 
@@ -80,7 +80,6 @@ public class QueryServicesImpl implements QueryServices {
                 .map(bindings -> bindings.getValue(idVariable.getVarName()))
                 .flatMap(id -> this.entityStore.getEntity((Resource) id, authentication))
                 .switchIfEmpty(Mono.error(new EntityNotFound(identifier)));
-
     }
 
 

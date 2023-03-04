@@ -1,8 +1,9 @@
 package io.av360.maverick.graph.services;
 
+import io.av360.maverick.graph.store.EntityStore;
 import io.av360.maverick.graph.store.rdf.models.Entity;
-import io.av360.maverick.graph.store.rdf.models.TripleBag;
 import io.av360.maverick.graph.store.rdf.models.Transaction;
+import io.av360.maverick.graph.store.rdf.models.TripleBag;
 import org.eclipse.rdf4j.model.IRI;
 import org.springframework.security.core.Authentication;
 import reactor.core.publisher.Flux;
@@ -15,11 +16,20 @@ public interface EntityServices {
     /**
      * Retrieves a complete entity representation (identifier, values and relations) from store.
      *
-     * @param entityIdentifier The unique entity identifier
+     * @param entityKey The unique entity key
      * @param authentication   The current authentication
      * @return Entity as Mono
      */
-    Mono<Entity> readEntity(String entityIdentifier, Authentication authentication);
+    Mono<Entity> get(String entityKey, Authentication authentication);
+
+    /**
+     * Retrieves a complete entity representation (identifier, values and relations) from store.
+     *
+     * @param entityIri The unique entity URI
+     * @param authentication   The current authentication
+     * @return Entity as Mono
+     */
+    Mono<Entity> get(IRI entityIri, Authentication authentication);
 
     /**
      * Lists all entities
@@ -27,25 +37,25 @@ public interface EntityServices {
      * @param authentication
      * @return
      */
-     Flux<Entity> listEntities(Authentication authentication);
+     Flux<Entity> list(Authentication authentication);
 
     /**
      * Deletes an entity with all its values from the store.
      *
-     * @param entityIdentifier The unique entity identifier as IRI
+     * @param entityIri The unique entity identifier as IRI
      * @param authentication   The current authentication
      * @return Transaction with affected statements
      */
-    Mono<Transaction> deleteEntity(IRI entityIdentifier, Authentication authentication);
+    Mono<Transaction> remove(IRI entityIri, Authentication authentication);
 
     /**
      * Deletes an entity with all its values from the store.
      *
-     * @param entityIdentifier The unique entity identifier as String
+     * @param entityKey The unique entity identifier as String
      * @param authentication   The current authentication
      * @return Transaction with affected statements
      */
-    Mono<Transaction> deleteEntity(String entityIdentifier, Authentication authentication);
+    Mono<Transaction> remove(String entityKey, Authentication authentication);
 
     /**
      * Creates entities from the incoming set of triples
@@ -55,7 +65,13 @@ public interface EntityServices {
      * @param authentication The current authentication
      * @return Transaction with affected statements
      */
-    Mono<Transaction> createEntity(TripleBag triples, Map<String, String> parameters, Authentication authentication);
+    Mono<Transaction> create(TripleBag triples, Map<String, String> parameters, Authentication authentication);
 
-    Mono<Transaction> linkEntityTo(String entityIdentifier, String predicatePrefix, String predicateKey, TripleBag linkedEntities, Authentication authentication);
+    Mono<Transaction> linkEntityTo(String entityIdentifier, IRI predicate, TripleBag linkedEntities, Authentication authentication);
+
+    Mono<Boolean> contains(IRI entityIri, Authentication authentication);
+
+    Mono<IRI> resolveAndVerify(String key, Authentication authentication);
+
+    EntityStore getStore();
 }
