@@ -1,10 +1,10 @@
 package org.av360.maverick.graph.api.entities.links;
 
 import io.av360.maverick.graph.model.vocabulary.SDO;
-import io.av360.maverick.graph.tests.config.TestConfigurations;
+import io.av360.maverick.graph.tests.config.TestSecurityConfig;
 import io.av360.maverick.graph.tests.generator.EntitiesGenerator;
+import io.av360.maverick.graph.tests.util.ApiTestsBase;
 import io.av360.maverick.graph.tests.util.RdfConsumer;
-import io.av360.maverick.graph.tests.util.TestsBase;
 import org.av360.maverick.graph.api.clients.TestClient;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
@@ -20,10 +20,10 @@ import org.springframework.test.context.event.RecordApplicationEvents;
 import org.springframework.test.web.reactive.server.WebTestClient;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@ContextConfiguration(classes = TestConfigurations.class)
+@ContextConfiguration(classes = TestSecurityConfig.class)
 @RecordApplicationEvents
-@ActiveProfiles("test")
-public class CreateLinksTests extends TestsBase {
+@ActiveProfiles({"test", "api"})
+public class CreateLinksTests extends ApiTestsBase {
 
     @Autowired
     private WebTestClient webClient;

@@ -45,6 +45,7 @@ public class EntityServicesImpl implements EntityServices {
     private final TransactionsStore trxStore;
 
     private final SchemaServices schemaServices;
+    private final QueryServices queryServices;
 
     private final ApplicationEventPublisher eventPublisher;
 
@@ -52,16 +53,16 @@ public class EntityServicesImpl implements EntityServices {
     private DelegatingTransformer transformers;
 
 
-    private QueryServices queryServices;
 
 
 
     public EntityServicesImpl(EntityStore graph,
                               TransactionsStore trxStore,
-                              SchemaServices schemaServices, ApplicationEventPublisher eventPublisher) {
+                              SchemaServices schemaServices, QueryServices queryServices, ApplicationEventPublisher eventPublisher) {
         this.entityStore = graph;
         this.trxStore = trxStore;
         this.schemaServices = schemaServices;
+        this.queryServices = queryServices;
         this.eventPublisher = eventPublisher;
     }
 
@@ -150,6 +151,7 @@ public class EntityServicesImpl implements EntityServices {
      * @return transaction model
      */
     @Override
+    @Deprecated
     public Mono<Transaction> linkEntityTo(String id, IRI predicate, TripleBag linkedEntities, Authentication authentication) {
 
         LocalIRI entityIdentifier = LocalIRI.withDefaultNamespace(id);
@@ -189,8 +191,8 @@ public class EntityServicesImpl implements EntityServices {
      * Make sure you store the transaction once you are finished
      */
     protected Mono<Transaction> prepareEntity(TripleBag triples, Map<String, String> parameters, Transaction transaction, Authentication authentication) {
-        if (log.isDebugEnabled())
-            log.debug("(Service) {} statements incoming for creating new entity. Parameters: {}", triples.streamStatements().count(), parameters.size() > 0 ? parameters : "none");
+        if (log.isTraceEnabled())
+            log.trace("Validating and transforming {} statements for new entity. Parameters: {}", triples.streamStatements().count(), parameters.size() > 0 ? parameters : "none");
 
         // TODO: perform validation via sha
         // https://rdf4j.org/javadoc/3.2.0/org/eclipse/rdf4j/sail/shacl/ShaclSail.html
@@ -220,7 +222,14 @@ public class EntityServicesImpl implements EntityServices {
 
                 })
 
-                .flatMap(sts -> entityStore.insert(sts.getModel(), transaction));
+                .flatMap(sts -> {
+                    if (log.isTraceEnabled())
+                        log.trace("Adding {} statements to transaction '{}' for insert.", sts.streamStatements().count(), transaction.getIdentifier());
+
+                    return entityStore.insert(sts.getModel(), transaction);
+                })
+                .doOnSubscribe(s -> log.trace("subss prepareEntity"))
+                .doOnError(s -> log.error("failed prepareEntity"));
     }
 
     @Autowired

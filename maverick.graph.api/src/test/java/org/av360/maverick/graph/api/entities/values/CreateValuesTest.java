@@ -2,9 +2,9 @@ package org.av360.maverick.graph.api.entities.values;
 
 import io.av360.maverick.graph.model.enums.RdfMimeTypes;
 import io.av360.maverick.graph.model.vocabulary.SDO;
-import io.av360.maverick.graph.tests.config.TestConfigurations;
+import io.av360.maverick.graph.tests.config.TestSecurityConfig;
+import io.av360.maverick.graph.tests.util.ApiTestsBase;
 import io.av360.maverick.graph.tests.util.RdfConsumer;
-import io.av360.maverick.graph.tests.util.TestsBase;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Statement;
@@ -24,13 +24,13 @@ import org.springframework.web.reactive.function.BodyInserters;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@ContextConfiguration(classes = TestConfigurations.class)
+@ContextConfiguration(classes = TestSecurityConfig.class)
 @RecordApplicationEvents
-@ActiveProfiles("test")
+@ActiveProfiles({"test", "api"})
 /**
  * Tests for endpoint POST /api/rs/{id}/{prefix.key}
  */
-public class CreateValuesTest extends TestsBase {
+public class CreateValuesTest extends ApiTestsBase {
 
     @Test
     public void setDescription() {

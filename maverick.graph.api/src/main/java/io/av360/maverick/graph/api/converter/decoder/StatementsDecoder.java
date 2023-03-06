@@ -2,8 +2,8 @@ package io.av360.maverick.graph.api.converter.decoder;
 
 import io.av360.maverick.graph.store.rdf.helpers.RdfUtils;
 import io.av360.maverick.graph.store.rdf.helpers.TriplesCollector;
-import io.av360.maverick.graph.store.rdf.models.TripleModel;
 import io.av360.maverick.graph.store.rdf.models.TripleBag;
+import io.av360.maverick.graph.store.rdf.models.TripleModel;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.rdf4j.rio.RDFFormat;
 import org.eclipse.rdf4j.rio.RDFParser;
@@ -75,8 +75,6 @@ public class StatementsDecoder implements Decoder<TripleBag> {
                         return Mono.error(e);
                     }
                 });
-
-
     }
 
 

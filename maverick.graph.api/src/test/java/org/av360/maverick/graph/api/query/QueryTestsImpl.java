@@ -1,8 +1,7 @@
 package org.av360.maverick.graph.api.query;
 
-import io.av360.maverick.graph.store.RepositoryType;
 import io.av360.maverick.graph.tests.api.v1.QueriesTest;
-import io.av360.maverick.graph.tests.config.TestConfigurations;
+import io.av360.maverick.graph.tests.config.TestSecurityConfig;
 import io.av360.maverick.graph.tests.util.CsvConsumer;
 import io.av360.maverick.graph.tests.util.TestsBase;
 import lombok.extern.slf4j.Slf4j;
@@ -20,7 +19,7 @@ import org.springframework.test.web.reactive.server.WebTestClient;
 import org.springframework.web.reactive.function.BodyInserters;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@ContextConfiguration(classes = TestConfigurations.class)
+@ContextConfiguration(classes = TestSecurityConfig.class)
 @RecordApplicationEvents
 @ActiveProfiles("test")
 @Slf4j
@@ -65,6 +64,6 @@ public class QueryTestsImpl extends TestsBase implements QueriesTest {
 
     @AfterEach
     public void resetRepository() {
-        super.resetRepository(RepositoryType.ENTITIES.name());
+        super.resetRepository();
     }
 }

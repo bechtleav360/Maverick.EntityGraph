@@ -1,151 +1,113 @@
 package io.av360.maverick.graph.services.schedulers;
 
-import io.av360.maverick.graph.model.security.Authorities;
+import io.av360.maverick.graph.model.vocabulary.SDO;
+import io.av360.maverick.graph.services.clients.EntityServicesClient;
 import io.av360.maverick.graph.services.schedulers.detectDuplicates.ScheduledDetectDuplicates;
-import io.av360.maverick.graph.store.RepositoryType;
-import io.av360.maverick.graph.tests.api.v2.MergeDuplicatesScheduler;
-import io.av360.maverick.graph.tests.config.TestConfigurations;
-import io.av360.maverick.graph.tests.util.CsvConsumer;
-import io.av360.maverick.graph.tests.util.RdfConsumer;
+import io.av360.maverick.graph.store.rdf.models.Transaction;
+import io.av360.maverick.graph.tests.config.TestSecurityConfig;
 import io.av360.maverick.graph.tests.util.TestsBase;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.rdf4j.model.Model;
+import org.eclipse.rdf4j.model.Resource;
+import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.model.vocabulary.RDFS;
-import org.eclipse.rdf4j.rio.RDFFormat;
-import org.eclipse.rdf4j.sparqlbuilder.core.SparqlBuilder;
-import org.eclipse.rdf4j.sparqlbuilder.core.Variable;
-import org.eclipse.rdf4j.sparqlbuilder.core.query.Queries;
-import org.eclipse.rdf4j.sparqlbuilder.core.query.SelectQuery;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.io.ClassPathResource;
-import org.springframework.core.io.Resource;
-import org.springframework.http.MediaType;
-import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.event.RecordApplicationEvents;
-import org.springframework.web.reactive.function.BodyInserters;
+import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
-import java.util.List;
-import java.util.stream.StreamSupport;
+import java.io.IOException;
+import java.util.Set;
+import java.util.TreeSet;
+import java.util.stream.Collectors;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@ContextConfiguration(classes = TestConfigurations.class)
+// @ContextConfiguration(classes = Tex.class)
 @RecordApplicationEvents
 @ActiveProfiles("test")
 @Slf4j
-public class MergeDuplicateTests extends TestsBase implements MergeDuplicatesScheduler {
+public class MergeDuplicateTests extends TestsBase  {
 
 
     @Autowired
     private ScheduledDetectDuplicates scheduledDetectDuplicates;
 
+    @Autowired
+    EntityServicesClient entityServicesClient;
+
     @AfterEach
     public void resetRepository() {
-        super.resetRepository(RepositoryType.ENTITIES.name());
+        super.resetRepository();
     }
 
 
-    /**
-     * Verify that embedded items in one request are merged
-     */
-    @Override
-    @Test
-    public void createEmbeddedEntitiesWithSharedItems() {
-        log.info("---------- Running test: Create embedded with share items ---------- ");
-
-        Resource file = new ClassPathResource("requests/create-valid_withEmbedded.ttl");
-        RdfConsumer rdfConsumer = new RdfConsumer(RDFFormat.TURTLE);
-
-        webClient.post()
-                .uri("/api/entities")
-                .contentType(MediaType.parseMediaType("text/turtle"))
-                .accept(MediaType.parseMediaType("text/turtle"))
-                .body(BodyInserters.fromResource(file))
-                .exchange()
-
-                .expectStatus().isAccepted()
-                .expectBody()
-                .consumeWith(rdfConsumer);
-
-        Model statements = rdfConsumer.asModel();
-
-        statements.forEach(System.out::println);
-
-        long videos = StreamSupport.stream(statements.getStatements(null, RDF.TYPE, TestsBase.vf.createIRI("https://schema.org/", "VideoObject")).spliterator(), false).count();
-        Assertions.assertEquals(2, videos);
-
-        //long terms = StreamSupport.stream(statements.getStatements(null, RDFS.LABEL, TestsBase.vf.createLiteral("Term 1")).spliterator(), false).count();
-        long terms = StreamSupport.stream(statements.getStatements(null, RDFS.LABEL, null).spliterator(), false).count();
-        Assertions.assertEquals(1, terms);
+    private String[] asSortedArray(Set<Resource> resources) {
+        return resources.stream()
+                .map(Value::stringValue)
+                .distinct()
+                .collect(Collectors.toCollection(TreeSet::new))
+                .toArray(new String[resources.size()]);
     }
 
-
-    @Override
     @Test
-    public void createEmbeddedEntitiesWithSharedItemsInSeparateRequests() throws InterruptedException {
+    public void createEmbeddedWithSharedItemsDirect() throws IOException {
+
+        ClassPathResource file = new ClassPathResource("requests/create-valid_withEmbedded.ttl");
+
+        Mono<Model> m = entityServicesClient.importFileMono(file)
+                .flatMap(trx -> entityServicesClient.getModel());
+
+        StepVerifier.create(m)
+                .assertNext(model -> {
+                    Set<Resource> videos = model.filter(null, RDF.TYPE, SDO.VIDEO_OBJECT).subjects();
+                    Assertions.assertEquals(2, videos.size());
+
+                    Set<Resource> terms = model.filter(null, RDF.TYPE, SDO.DEFINED_TERM).subjects();
+                    Assertions.assertEquals(1, terms.size());
+                    Resource first = terms.stream().findFirst().orElseThrow();
+
+                    Set<Resource> linkedVideos = model.filter(null, SDO.HAS_DEFINED_TERM, first).subjects();
+                    Assertions.assertEquals(2, linkedVideos.size());
+
+
+                    Assertions.assertArrayEquals(asSortedArray(videos), asSortedArray(linkedVideos));
+
+
+                }).verifyComplete();
+
+    }
+
+    @Test
+    public void createEmbeddedEntitiesWithSharedItemsInSeparateRequests() throws InterruptedException, IOException {
         log.info("---------- Running test: Create embedded with shared items in separate requests ---------- ");
+        Mono<Transaction> tx1 = entityServicesClient.importFileMono(new ClassPathResource("requests/create-valid_withEmbedded.ttl"));
+        Mono<Transaction> tx2 = entityServicesClient.importFileMono(new ClassPathResource("requests/create-valid_withEmbedded_second.ttl"));
+        Mono<Void> scheduler = this.scheduledDetectDuplicates.checkForDuplicates(RDFS.LABEL, TestSecurityConfig.createAuthenticationToken());
+        Mono<Model> getAll = entityServicesClient.getModel();
 
-        RdfConsumer rdfConsumer = new RdfConsumer(RDFFormat.TURTLE);
+        StepVerifier.create(
+                tx1.then(tx2).then(scheduler).then(getAll)
+                ).assertNext(model -> {
+                    Set<Resource> videos = model.filter(null, RDF.TYPE, SDO.VIDEO_OBJECT).subjects();
+                    Assertions.assertEquals(3, videos.size());
 
-        webClient.post()
-                .uri("/api/entities")
-                .contentType(MediaType.parseMediaType("text/turtle"))
-                .body(BodyInserters.fromResource(new ClassPathResource("requests/create-valid_withEmbedded.ttl")))
-                .exchange()
-                .expectStatus().isAccepted()
-                .expectBody();
+                    Set<Resource> terms = model.filter(null, RDF.TYPE, SDO.DEFINED_TERM).subjects();
+                    Assertions.assertEquals(1, terms.size());
+                })
+                .verifyComplete();
 
-        webClient.post()
-                .uri("/api/entities")
-                .contentType(MediaType.parseMediaType("text/turtle"))
-                .body(BodyInserters.fromResource(new ClassPathResource("requests/create-valid_withEmbedded_second.ttl")))
-                .exchange()
-                .expectStatus().isAccepted()
-                .expectBody();
+        //.flatMap(trx -> entityServicesClient.getModel());
 
-
-        StepVerifier.create(this.scheduledDetectDuplicates.checkForDuplicates(RDFS.LABEL, new TestingAuthenticationToken("", "", List.of(Authorities.SYSTEM)))).verifyComplete();
-
-        /**
-         * SELECT DISTINCT * WHERE {
-         *   ?id a <https://schema.org/VideoObject> ;
-         * 		 <https://schema.org/hasDefinedTerm> ?term .
-         *   ?term  <http://www.w3.org/2000/01/rdf-schema#label> "Term 1" .
-         * }
-         * LIMIT 10
-         *
-         * SELECT *
-         * WHERE { ?id a <https://schema.org/VideoObject> ;
-         *     <https://schema.org/hasDefinedTerm> ?term .
-         * ?term <http://www.w3.org/2000/01/rdf-schema#label> "Term 1" . }
-         */
-
-
-        CsvConsumer csvConsumer = new CsvConsumer();
-        Variable id = SparqlBuilder.var("id");
-        Variable term = SparqlBuilder.var("term");
-        // SelectQuery all = Queries.SELECT(id).where(id.isA(SDO.VIDEO_OBJECT).andHas(SDO.HAS_DEFINED_TERM, term)).where(term.has(RDFS.LABEL, "Term 1")).all();
-        SelectQuery all = Queries.SELECT(id).where(term.has(RDFS.LABEL, "Term 1")).all();
-        webClient.post()
-                .uri("/api/query/select")
-                .contentType(MediaType.parseMediaType("text/plain"))
-                .accept(MediaType.parseMediaType("text/csv"))
-                .body(BodyInserters.fromValue(all.getQueryString()))
-                .exchange()
-                .expectStatus().isAccepted()
-                .expectBody()
-                .consumeWith(csvConsumer);
-
-        Assertions.assertEquals(1, csvConsumer.getRows().size());
 
     }
+
 
 
 }

@@ -17,7 +17,7 @@ public class Local {
 
 
     public static class Entities {
-        public static String NAMESPACE = "http://entitygraph.azurewebsites.net/api/entities/";
+        public static String NAMESPACE = "https://entitygraph.azurewebsites.net/api/entities/";
         public static String PREFIX = "entity";
         public static Namespace NS = EntityNamespace.of(PREFIX, NAMESPACE);
 

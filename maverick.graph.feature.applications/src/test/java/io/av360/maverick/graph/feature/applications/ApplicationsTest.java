@@ -3,25 +3,34 @@ package io.av360.maverick.graph.feature.applications;
 import io.av360.maverick.graph.feature.applications.api.dto.Responses;
 import io.av360.maverick.graph.feature.applications.client.ApplicationsTestClient;
 import io.av360.maverick.graph.feature.applications.domain.model.ApplicationFlags;
-import io.av360.maverick.graph.tests.config.TestConfigurations;
-import io.av360.maverick.graph.tests.util.TestsBase;
-import org.junit.jupiter.api.*;
+import io.av360.maverick.graph.tests.config.TestSecurityConfig;
+import io.av360.maverick.graph.tests.util.ApiTestsBase;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.event.RecordApplicationEvents;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@ContextConfiguration(classes = TestConfigurations.class)
+@ContextConfiguration(classes = TestSecurityConfig.class)
 @RecordApplicationEvents
-@ActiveProfiles("test")
-class ApplicationsTest extends TestsBase  {
+@ActiveProfiles({"test", "api"})
+class ApplicationsTest extends ApiTestsBase  {
 
     private ApplicationsTestClient client;
 
     @BeforeEach
     public void setup() {
         client = new ApplicationsTestClient(super.webClient);
+    }
+
+
+    @AfterEach
+    public void resetRepository() {
+        super.resetRepository();
     }
 
     @Test
@@ -120,8 +129,5 @@ class ApplicationsTest extends TestsBase  {
 
     }
 
-    @AfterEach
-    public void reset() {
-        super.resetRepository("application");
-    }
+
 }

@@ -35,8 +35,10 @@ import org.springframework.util.MimeType;
 import org.springframework.web.client.HttpClientErrorException;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
 import java.util.Collection;
@@ -154,33 +156,53 @@ public class AbstractRepository implements RepositoryBehaviour, Statements, Mode
         });
     }
 
+
+    InputStream getInputStreamFromFluxDataBuffer(Publisher<DataBuffer> data) throws IOException {
+        PipedOutputStream osPipe = new PipedOutputStream();
+        PipedInputStream isPipe = new PipedInputStream(osPipe);
+
+        DataBufferUtils.write(data, osPipe)
+                .subscribeOn(Schedulers.boundedElastic())
+                .doOnComplete(() -> {
+                    try {
+                        log.trace("Finished reading data buffers from publisher during import of data.");
+                        osPipe.close();
+                    } catch (IOException ignored) {
+                    }
+                })
+                .doOnSubscribe(subscription -> log.trace("Starting reading data buffers from publisher during import of data."))
+                .subscribe(DataBufferUtils.releaseConsumer());
+        return isPipe;
+    }
+
     @Override
     public Mono<Void> importStatements(Publisher<DataBuffer> bytesPublisher, String mimetype, Authentication authentication, GrantedAuthority requiredAuthority) {
+        return Mono.create(snk -> {
+            Optional<RDFParserFactory> parserFactory = RdfUtils.getParserFactory(MimeType.valueOf(mimetype));
+            Assert.isTrue(parserFactory.isPresent(), "Unsupported mimetype for parsing the file.");
 
-        Optional<RDFParserFactory> parserFactory = RdfUtils.getParserFactory(MimeType.valueOf(mimetype));
-        Assert.isTrue(parserFactory.isPresent(), "Unsupported mimetype for parsing the file.");
+            RDFParser parser = parserFactory.orElseThrow().getParser();
 
-        RDFParser parser = parserFactory.orElseThrow().getParser();
+            try (RepositoryConnection connection = getConnection(authentication, requiredAuthority)) {
+                // example: https://www.baeldung.com/spring-reactive-read-flux-into-inputstream
+                // solution: https://manhtai.github.io/posts/flux-databuffer-to-inputstream/
+                log.trace("Starting to parse input stream with mimetype {}", mimetype);
 
-        try {
-            // example: https://www.baeldung.com/spring-reactive-read-flux-into-inputstream
-            PipedOutputStream outputStream = new PipedOutputStream();
-            PipedInputStream inputStream = new PipedInputStream(1024*10);
-            inputStream.connect(outputStream);
-            RepositoryConnection connection = getConnection(authentication, requiredAuthority);
-            RDFInserter rdfInserter = new RDFInserter(connection);
-            parser.setRDFHandler(rdfInserter);
-            parser.parse(inputStream);
+                RDFInserter rdfInserter = new RDFInserter(connection);
+                parser.setRDFHandler(rdfInserter);
 
+                InputStream stream = getInputStreamFromFluxDataBuffer(bytesPublisher);
+                parser.parse(stream);
 
-            return DataBufferUtils.write(bytesPublisher, outputStream)
-                    .then()
-                    .doOnSubscribe(subscription -> log.debug("Writing data buffer into stream."));
+                log.trace("Stored imported rdf into repository '{}'", connection.getRepository().toString());
+                snk.success();
 
-        } catch (IOException exception) {
-            log.error("Failed to import statements with mimetype {} with reason: ", mimetype, exception);
-            return Mono.error(exception);
-        }
+            } catch (Exception exception) {
+                log.error("Failed to import statements with mimetype {} with reason: ", mimetype, exception);
+                snk.error(exception);
+            }
+        });
+
 
 
 

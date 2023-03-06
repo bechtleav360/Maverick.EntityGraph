@@ -1,89 +1,81 @@
 package io.av360.maverick.graph.services.schedulers;
 
-import io.av360.maverick.graph.model.security.Authorities;
-import io.av360.maverick.graph.services.QueryServices;
+import io.av360.maverick.graph.services.clients.EntityServicesClient;
 import io.av360.maverick.graph.services.schedulers.replaceGlobalIdentifiers.ScheduledReplaceGlobalIdentifiers;
-import io.av360.maverick.graph.store.EntityStore;
-import io.av360.maverick.graph.store.RepositoryType;
-import io.av360.maverick.graph.store.TransactionsStore;
 import io.av360.maverick.graph.store.rdf.models.Transaction;
-import io.av360.maverick.graph.tests.config.TestConfigurations;
+import io.av360.maverick.graph.tests.config.TestRepositoryConfig;
+import io.av360.maverick.graph.tests.config.TestSecurityConfig;
 import io.av360.maverick.graph.tests.util.TestsBase;
 import lombok.extern.slf4j.Slf4j;
+import org.eclipse.rdf4j.model.Model;
+import org.eclipse.rdf4j.rio.RDFFormat;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.io.ClassPathResource;
-import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.event.RecordApplicationEvents;
-import org.springframework.test.web.reactive.server.WebTestClient;
-import org.springframework.util.Assert;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
+import java.io.IOException;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
-import java.util.List;
 
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@ContextConfiguration(classes = TestConfigurations.class)
+@SpringBootTest
+@ContextConfiguration(classes = TestRepositoryConfig.class)
 @RecordApplicationEvents
 @ActiveProfiles("test")
 @Slf4j
 class CheckGlobalIdentifiersTest extends TestsBase {
-    @Autowired
-    private WebTestClient webClient;
 
+    @Autowired
     private ScheduledReplaceGlobalIdentifiers scheduled;
 
-    @Autowired
-    EntityStore entityStore;
 
     @Autowired
-    QueryServices queryServices;
-
-    @Autowired
-    TransactionsStore transactionsStore;
+    EntityServicesClient entityServicesClient;
 
 
     @AfterEach
     public void resetRepository() {
-        super.resetRepository(RepositoryType.ENTITIES.name());
+        super.resetRepository();
     }
 
     @Test
-    void checkForGlobalIdentifiers() {
-        super.importEntities(new ClassPathResource("requests/create-esco.ttl"));
-        scheduled = new ScheduledReplaceGlobalIdentifiers(queryServices, entityStore, transactionsStore);
+    void checkForGlobalIdentifiers() throws IOException {
 
-        Flux<Transaction> action =
-                scheduled.checkForGlobalIdentifiers(new TestingAuthenticationToken("", "", List.of(Authorities.SYSTEM)))
-                        .doOnNext(transaction -> log.trace("Completed transaction"));
+        // Mono<Transaction> tx1 = entityServicesClient.importFileMono(new ClassPathResource("requests/create-esco.ttl"));
 
+        Mono<Void> importMono = entityServicesClient.importFileToStore(new ClassPathResource("requests/create-esco.ttl"));
+        Mono<Model> readModelMono = entityServicesClient.getModel();
 
 
-        Duration duration = StepVerifier.create(action)
+
+        Flux<Transaction> actionMono = scheduled.checkForGlobalIdentifiers(TestSecurityConfig.createAuthenticationToken());
+
+        StepVerifier.create(importMono.then(readModelMono))
+                .assertNext(md -> {
+                    Assertions.assertTrue(md.subjects().size() > 0);
+                }).verifyComplete();
+
+        StepVerifier.create(actionMono)
                 .thenAwait(Duration.of(2, ChronoUnit.SECONDS))
-                .assertNext(transaction -> {
-                    Assert.notNull(transaction, "transaction is null");
-                })
-                .assertNext(transaction -> {
-                    Assert.notNull(transaction, "transaction is null");
-                })
-                .assertNext(transaction -> {
-                    Assert.notNull(transaction, "transaction is null");
-                })
-                .assertNext(transaction -> {
-                    Assert.notNull(transaction, "transaction is null");
-                })
+                .assertNext(Assertions::assertNotNull)
+                .assertNext(Assertions::assertNotNull)
+                .assertNext(Assertions::assertNotNull)
+                .assertNext(Assertions::assertNotNull)
                 .verifyComplete();
 
-        Assert.isTrue(duration.getNano() > 0, "no transaction time");
-
+        StepVerifier.create(readModelMono)
+                .consumeNextWith(model -> {
+                    super.print(model, RDFFormat.JSONLD);
+                }).verifyComplete();
 
     }
 

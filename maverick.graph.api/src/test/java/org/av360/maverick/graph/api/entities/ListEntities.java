@@ -1,6 +1,6 @@
 package org.av360.maverick.graph.api.entities;
 
-import io.av360.maverick.graph.tests.config.TestConfigurations;
+import io.av360.maverick.graph.tests.config.TestSecurityConfig;
 import io.av360.maverick.graph.tests.util.RdfConsumer;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.rio.RDFFormat;
@@ -18,9 +18,9 @@ import org.springframework.test.web.reactive.server.WebTestClient;
 import org.springframework.web.reactive.function.BodyInserters;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@ContextConfiguration(classes = TestConfigurations.class)
+@ContextConfiguration(classes = TestSecurityConfig.class)
 @RecordApplicationEvents
-@ActiveProfiles("test")
+@ActiveProfiles({"test", "api"})
 public class ListEntities {
 
     @Autowired

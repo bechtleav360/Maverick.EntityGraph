@@ -1,10 +1,9 @@
 package org.av360.maverick.graph.api.entities.formats;
 
 import io.av360.maverick.graph.model.vocabulary.Transactions;
-import io.av360.maverick.graph.store.RepositoryType;
-import io.av360.maverick.graph.tests.config.TestConfigurations;
+import io.av360.maverick.graph.tests.config.TestSecurityConfig;
+import io.av360.maverick.graph.tests.util.ApiTestsBase;
 import io.av360.maverick.graph.tests.util.RdfConsumer;
-import io.av360.maverick.graph.tests.util.TestsBase;
 import org.av360.maverick.graph.api.clients.TestClient;
 import org.eclipse.rdf4j.model.Statement;
 import org.junit.jupiter.api.*;
@@ -20,16 +19,16 @@ import org.springframework.web.reactive.function.BodyInserters;
 import java.util.Collection;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@ContextConfiguration(classes = TestConfigurations.class)
+@ContextConfiguration(classes = TestSecurityConfig.class)
 @RecordApplicationEvents
-@ActiveProfiles("test")
-public class CreateEntitiesInJsonLDTests extends TestsBase {
+@ActiveProfiles({"test", "api"})
+public class CreateEntitiesInJsonLDTests extends ApiTestsBase {
     private TestClient client;
 
 
     @AfterEach
     public void resetRepository() {
-        super.resetRepository(RepositoryType.ENTITIES.name());
+        super.resetRepository();
     }
 
     @BeforeEach

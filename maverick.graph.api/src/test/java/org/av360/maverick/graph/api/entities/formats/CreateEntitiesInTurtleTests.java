@@ -2,10 +2,9 @@ package org.av360.maverick.graph.api.entities.formats;
 
 import io.av360.maverick.graph.model.vocabulary.SDO;
 import io.av360.maverick.graph.model.vocabulary.Transactions;
-import io.av360.maverick.graph.store.RepositoryType;
-import io.av360.maverick.graph.tests.config.TestConfigurations;
+import io.av360.maverick.graph.tests.config.TestSecurityConfig;
+import io.av360.maverick.graph.tests.util.ApiTestsBase;
 import io.av360.maverick.graph.tests.util.RdfConsumer;
-import io.av360.maverick.graph.tests.util.TestsBase;
 import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
@@ -27,16 +26,16 @@ import org.springframework.web.reactive.function.BodyInserters;
 import java.util.Collection;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@ContextConfiguration(classes = TestConfigurations.class)
+@ContextConfiguration(classes = TestSecurityConfig.class)
 @RecordApplicationEvents
-@ActiveProfiles("test")
-public class CreateEntitiesInTurtleTests extends TestsBase {
+@ActiveProfiles({"test", "api"})
+public class CreateEntitiesInTurtleTests extends ApiTestsBase {
     @Autowired
     private WebTestClient webClient;
 
     @AfterEach
     public void resetRepository() {
-        super.resetRepository(RepositoryType.ENTITIES.name());
+        super.resetRepository();
     }
 
     @Test

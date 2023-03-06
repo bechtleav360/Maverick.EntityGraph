@@ -13,6 +13,9 @@ import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.query.BindingSet;
+import org.eclipse.rdf4j.query.QueryLanguage;
+import org.eclipse.rdf4j.query.parser.QueryParser;
+import org.eclipse.rdf4j.query.parser.QueryParserUtil;
 import org.eclipse.rdf4j.sparqlbuilder.core.SparqlBuilder;
 import org.eclipse.rdf4j.sparqlbuilder.core.Variable;
 import org.eclipse.rdf4j.sparqlbuilder.core.query.ConstructQuery;
@@ -33,35 +36,49 @@ public class QueryServicesImpl implements QueryServices {
 
     private final SchemaServices schemaServices;
 
+    private final QueryParser queryParser;
     public QueryServicesImpl(EntityStore graph, SchemaServices schemaServices) {
         this.entityStore = graph;
         this.schemaServices = schemaServices;
+
+        queryParser = QueryParserUtil.createParser(QueryLanguage.SPARQL);
     }
 
 
     @Override
     public Flux<BindingSet> queryValues(String query, Authentication authentication) {
-        return this.entityStore.query(query, authentication)
+        return Mono.just(query)
+                .map(q -> queryParser.parseQuery(query, null))
+                .flatMapMany(ptq -> this.entityStore.query(query, authentication))
                 .doOnSubscribe(subscription -> {
-                    if (log.isTraceEnabled()) log.trace("Running query in entity store.");
+                    if (log.isTraceEnabled()) log.trace("Running select query in entity store: \n {}", query);
                 });
     }
 
     @Override
     public Flux<BindingSet> queryValues(SelectQuery query, Authentication authentication) {
-        return this.queryValues(query.getQueryString(), authentication);
+        return this.entityStore.query(query.getQueryString(), authentication)
+                .doOnSubscribe(subscription -> {
+                    if (log.isTraceEnabled()) log.trace("Running select query in entity store: \n {}", query);
+                });
     }
 
     @Override
-    public Flux<NamespaceAwareStatement> queryGraph(String query, Authentication authentication) {
-        return this.entityStore.construct(query, authentication)
+    public Flux<NamespaceAwareStatement> queryGraph(String queryStr, Authentication authentication) {
+        return Mono.just(queryStr)
+                .map(q -> queryParser.parseQuery(queryStr, null))
+                .flatMapMany(ptq -> this.entityStore.construct(queryStr, authentication))
                 .doOnSubscribe(subscription -> {
-                    if (log.isTraceEnabled()) log.trace("Running query in entity store.");
+                    if (log.isTraceEnabled()) log.trace("Running select query in entity store: \n {}", queryStr);
                 });
 
     }
-    public Flux<NamespaceAwareStatement> queryGraph(ConstructQuery query, String applicationId) {
-        throw new UnsupportedOperationException("Not implemented yet.");
+
+    public Flux<NamespaceAwareStatement> queryGraph(ConstructQuery query, Authentication authentication) {
+        return this.entityStore.construct(query.getQueryString(), authentication)
+                .doOnSubscribe(subscription -> {
+                    if (log.isTraceEnabled()) log.trace("Running construct query in entity store: \n {}", query.getQueryString());
+                });
     }
 
 

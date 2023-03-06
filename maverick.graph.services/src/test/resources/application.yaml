@@ -41,6 +41,8 @@ storage:
 
 logging:
   level:
+    io:
+      av360: TRACE
     graph: TRACE
     org:
       springframework:
