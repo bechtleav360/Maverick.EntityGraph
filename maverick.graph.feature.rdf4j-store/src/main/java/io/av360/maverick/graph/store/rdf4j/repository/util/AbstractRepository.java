@@ -345,16 +345,36 @@ public class AbstractRepository implements RepositoryBehaviour, Statements, Mode
     }
 
     @Override
+    public Mono<Transaction> insert(Model model, Transaction transaction) {
+        Assert.notNull(transaction, "Transaction cannot be null");
+        if (log.isTraceEnabled())
+            log.trace("Marking {} statements to transaction '{}' for insert.", model.size(), transaction.getIdentifier().getLocalName());
+
+
+        transaction = transaction
+                .insert(model, Activity.INSERTED)
+                .affected(model);
+
+        return transaction.asMono();
+    }
+
+
+    @Override
     public Mono<Transaction> removeStatements(Collection<Statement> statements, Transaction transaction) {
         Assert.notNull(transaction, "Transaction cannot be null");
+        if (log.isTraceEnabled())
+            log.trace("Marking {} statements for removal in transaction {}", statements.size(), transaction.getIdentifier().getLocalName());
 
-        statements.forEach(statement -> transaction.remove(statement, Activity.REMOVED).affected(statement));
-        return transaction.asMono();
+        return transaction
+                .remove(statements, Activity.REMOVED)
+                .asMono();
     }
 
     @Override
     public Mono<Transaction> addStatement(Resource subject, IRI predicate, Value literal, Transaction transaction) {
         Assert.notNull(transaction, "Transaction cannot be null");
+        if (log.isTraceEnabled())
+            log.trace("Marking statement for insert in transaction {}: {} - {} - {}", transaction.getIdentifier().getLocalName(), subject, predicate, literal);
 
         return transaction
                 .insert(subject, predicate, literal, Activity.UPDATED)
@@ -362,6 +382,10 @@ public class AbstractRepository implements RepositoryBehaviour, Statements, Mode
                 .asMono();
 
     }
+
+
+
+
 
 
 }

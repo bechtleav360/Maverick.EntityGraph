@@ -58,7 +58,7 @@ public class Values extends AbstractController {
 
 
         return super.getAuthentication()
-                .flatMap(authentication -> values.insert(id, prefixedKey, value, lang, authentication))
+                .flatMap(authentication -> values.insertLiteral(id, prefixedKey, value, lang, authentication))
                 .flatMapIterable(TripleModel::asStatements)
                 .doOnSubscribe(s -> {
                     if (log.isDebugEnabled())
@@ -83,7 +83,7 @@ public class Values extends AbstractController {
 
 
         return super.getAuthentication()
-                .flatMap(authentication -> values.remove(id, prefixedKey, lang, authentication))
+                .flatMap(authentication -> values.removeLiteral(id, prefixedKey, lang, authentication))
                 .flatMapIterable(TripleModel::asStatements)
                 .doOnSubscribe(s -> {
                     if (log.isDebugEnabled()) log.debug("Deleted property '{}' of entity '{}'", prefixedKey, id);

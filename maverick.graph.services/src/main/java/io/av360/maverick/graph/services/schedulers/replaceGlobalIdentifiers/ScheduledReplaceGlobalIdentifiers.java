@@ -113,7 +113,7 @@ public class ScheduledReplaceGlobalIdentifiers {
         ArrayList<Statement> statements = new ArrayList<>(statementsBag.subjectStatements());
         statements.addAll(statementsBag.objectStatements());
 
-        return entityStore.delete(statements, statementsBag.transaction());
+        return entityStore.removeStatements(statements, statementsBag.transaction());
     }
 
     private Mono<StatementsBag> storeNewStatements(StatementsBag statements) {

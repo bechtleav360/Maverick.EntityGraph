@@ -3,12 +3,12 @@ package org.av360.maverick.graph.api.entities.links;
 import io.av360.maverick.graph.model.vocabulary.SDO;
 import io.av360.maverick.graph.tests.config.TestSecurityConfig;
 import io.av360.maverick.graph.tests.generator.EntitiesGenerator;
+import io.av360.maverick.graph.tests.generator.GeneratorCommons;
 import io.av360.maverick.graph.tests.util.ApiTestsBase;
 import io.av360.maverick.graph.tests.util.RdfConsumer;
 import org.av360.maverick.graph.api.clients.TestClient;
 import org.eclipse.rdf4j.model.IRI;
-import org.eclipse.rdf4j.model.Resource;
-import org.eclipse.rdf4j.model.vocabulary.RDF;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -31,26 +31,67 @@ public class CreateLinksTests extends ApiTestsBase {
 
     @BeforeEach
     public void setup() {
-
         client = new TestClient(super.webClient);
+    }
+
+    @AfterEach
+    public void resetRepository() {
+        super.resetRepository();
     }
 
 
     @Test
     void createLink() {
         RdfConsumer rc1 = client.createEntity(EntitiesGenerator.generateCreativeWork());
-        Resource source = rc1.findStatement(null, RDF.TYPE, SDO.CREATIVE_WORK).getSubject();
-        Assertions.assertTrue(source.isIRI());
-        String sourceIdentifier = ((IRI) source).getLocalName();
+        IRI sourceIdentifier = rc1.getEntityIdentifier(SDO.CREATIVE_WORK);
 
-        RdfConsumer rc2 =  client.createEntity(EntitiesGenerator.generateDefinedTerm());
-        Resource target = rc2.findStatement(null, RDF.TYPE, SDO.DEFINED_TERM).getSubject();
-        Assertions.assertTrue(target.isIRI());
-        String targetIdentifier = ((IRI) target).getLocalName();
+        RdfConsumer rc2 = client.createEntity(EntitiesGenerator.generateDefinedTerm());
+        IRI targetIdentifier = rc2.getEntityIdentifier(SDO.DEFINED_TERM);
 
-        client.createLink(sourceIdentifier, "sdo.hasDefinedTerm", targetIdentifier)
+        client.createLink(sourceIdentifier.getLocalName(), "sdo.hasDefinedTerm", targetIdentifier.getLocalName())
                 .expectStatus().isCreated();
 
+        RdfConsumer rc3 = client.readEntity(sourceIdentifier.getLocalName());
+        rc3.print();
+
+
+        Assertions.assertTrue(rc3.hasStatement(sourceIdentifier, createIRIFrom("https://schema.org/hasDefinedTerm"), targetIdentifier));
+
     }
+
+    @Test
+    void createWithUnknownTarget() {
+        RdfConsumer rc1 = client.createEntity(EntitiesGenerator.generateCreativeWork());
+        String sourceIdentifier = rc1.getEntityKey(SDO.CREATIVE_WORK);
+
+        String targetIdentifier = GeneratorCommons.generateRandomEntityIdentifier();
+
+        client.createLink(sourceIdentifier, "sdo.hasDefinedTerm", targetIdentifier)
+                .expectStatus().isNotFound();
+    }
+
+    @Test
+    void createWithUnknownSource() {
+        String sourceIdentifier = GeneratorCommons.generateRandomEntityIdentifier();
+
+        String targetIdentifier = GeneratorCommons.generateRandomEntityIdentifier();
+
+        client.createLink(sourceIdentifier, "sdo.hasDefinedTerm", targetIdentifier)
+                .expectStatus().isNotFound();
+    }
+
+    @Test
+    void createWithUnknownPrefix() {
+        RdfConsumer rc1 = client.createEntity(EntitiesGenerator.generateCreativeWork());
+        String sourceIdentifier = rc1.getEntityKey(SDO.CREATIVE_WORK);
+
+        RdfConsumer rc2 = client.createEntity(EntitiesGenerator.generateDefinedTerm());
+        String targetIdentifier = rc2.getEntityKey(SDO.DEFINED_TERM);
+
+        client.createLink(sourceIdentifier, "xxx.hasDefinedTerm", targetIdentifier)
+                .expectStatus().isBadRequest();
+    }
+
+
 
 }

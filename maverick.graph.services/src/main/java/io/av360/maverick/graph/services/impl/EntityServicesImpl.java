@@ -222,14 +222,8 @@ public class EntityServicesImpl implements EntityServices {
 
                 })
 
-                .flatMap(sts -> {
-                    if (log.isTraceEnabled())
-                        log.trace("Adding {} statements to transaction '{}' for insert.", sts.streamStatements().count(), transaction.getIdentifier());
+                .flatMap(sts -> entityStore.insert(sts.getModel(), transaction));
 
-                    return entityStore.insert(sts.getModel(), transaction);
-                })
-                .doOnSubscribe(s -> log.trace("subss prepareEntity"))
-                .doOnError(s -> log.error("failed prepareEntity"));
     }
 
     @Autowired

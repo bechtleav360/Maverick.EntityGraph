@@ -11,6 +11,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.NotImplementedException;
+import org.reactivestreams.Subscription;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
@@ -44,6 +45,7 @@ public class Links extends AbstractController {
     public Flux<NamespaceAwareStatement> getLinks(@PathVariable String id) {
         return Flux.error(new NotImplementedException("Method has not been implemented yet."));
     }
+
     @Operation(summary = "Returns all links of the given type.")
     @GetMapping(value = "/{id:[\\w|\\d|-|_]+}/links/{prefixedKey:[\\w|\\d]+\\.[\\w|\\d]+}",
             produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE})
@@ -59,7 +61,7 @@ public class Links extends AbstractController {
                     is used to identify the specific entity to which the edge will be created. The creation of the edge fails, if no entity with the target identifier exists.      
                     Multiple edges can connect the same two nodes, representing different relationships between the entities they represent. For example, in a social network,
                     two users can be connected by multiple edges representing different types of relationships, such as friendship, family, or work-related connections.
-                    
+                                        
                     To create a link to an entity within a different application (or externally managed entity), use the values api instead. 
                     """
 
@@ -70,18 +72,9 @@ public class Links extends AbstractController {
     public Flux<NamespaceAwareStatement> createLink(@PathVariable String source_id, @PathVariable String prefixedKey, @PathVariable String target_id) {
 
         return super.getAuthentication()
-                .flatMap(authentication ->
-                    Mono.zip(
-                            entities.resolveAndVerify(source_id, authentication),
-                            entities.resolveAndVerify(target_id, authentication),
-                            this.schemaServices.resolvePrefixedName(prefixedKey)
-
-                    ).flatMap(triple ->
-                        this.values.insert(triple.getT1(), triple.getT3(), triple.getT3(), authentication)
-                    )
-                )
+                .flatMap(authentication -> this.values.insertLink(source_id, prefixedKey, target_id, authentication))
                 .flatMapIterable(TripleModel::asStatements)
-                .doOnSubscribe(s -> {
+                .doOnSubscribe((Subscription s) -> {
                     if (log.isDebugEnabled())
                         log.debug("Request to create link '{}' between entity '{}' and entity '{}'", prefixedKey, source_id, target_id);
                 });
@@ -89,14 +82,26 @@ public class Links extends AbstractController {
     }
 
 
-
-
-    @Operation(summary = "Create edge to existing entity identified by target id.")
-    @DeleteMapping(value = "/{id:[\\w|\\d|-|_]+}/links/{prefixedKey:[\\w|\\d]+\\.[\\w|\\d]+}/{target:[\\w|\\d|-|_]+}",
-            produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE, MediaType.APPLICATION_JSON_VALUE})
+    @Operation(summary = "Deletes edge to existing entity identified by target id.")
+    @DeleteMapping(value = "/{source_id:[\\w|\\d|-|_]+}/links/{prefixedKey:[\\w|\\d]+\\.[\\w|\\d]+}/{target_id:[\\w|\\d|-|_]+}")
     @ResponseStatus(HttpStatus.OK)
-    public Flux<NamespaceAwareStatement> deleteLink(@PathVariable String id, @PathVariable String prefixedKey, @PathVariable String target) {
-        return Flux.error(new NotImplementedException("Method has not been implemented yet."));
+    public Flux<NamespaceAwareStatement> deleteLink(@PathVariable String source_id, @PathVariable String prefixedKey, @PathVariable String target_id) {
+        return super.getAuthentication()
+                .flatMap(authentication -> this.values.removeLink(source_id, prefixedKey, target_id, authentication))
+                .flatMap(trx -> {
+                    return Mono.just(trx);
+                })
+                .flatMapIterable(TripleModel::asStatements)
+                .doOnSubscribe(s -> {
+                    if (log.isDebugEnabled())
+                        log.debug("Request to remove link '{}' between entity '{}' and entity '{}'", prefixedKey, source_id, target_id);
+                })
+                .doOnComplete(() -> {
+                    if (log.isDebugEnabled())
+                        log.debug("Request to remove link '{}' between entity '{}' and entity '{}' completed", prefixedKey, source_id, target_id);
+                });
+
+
     }
 
 

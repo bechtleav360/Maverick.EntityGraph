@@ -1,22 +1,20 @@
 package io.av360.maverick.graph.store.rdf4j.repository;
 
-import io.av360.maverick.graph.model.enums.Activity;
 import io.av360.maverick.graph.store.EntityStore;
 import io.av360.maverick.graph.store.RepositoryType;
 import io.av360.maverick.graph.store.rdf.models.Entity;
-import io.av360.maverick.graph.store.rdf.models.Transaction;
 import io.av360.maverick.graph.store.rdf4j.repository.util.AbstractRepository;
 import lombok.extern.slf4j.Slf4j;
-import org.eclipse.rdf4j.model.*;
+import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Resource;
+import org.eclipse.rdf4j.model.Statement;
+import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.RepositoryResult;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.stereotype.Component;
-import org.springframework.util.Assert;
 import reactor.core.publisher.Mono;
-
-import java.util.Collection;
 
 @Slf4j(topic = "graph.repo.entities")
 @Component
@@ -62,27 +60,9 @@ public class EntityRepository extends AbstractRepository implements EntityStore 
 
 
 
-    @Override
-    public Mono<Transaction> delete(Collection<Statement> statements, Transaction transaction) {
-        Assert.notNull(transaction, "Transaction cannot be null");
 
 
-        return transaction
-                .remove(statements, Activity.REMOVED)
-                .asMono();
-    }
 
-    @Override
-    public Mono<Transaction> insert(Model model, Transaction transaction) {
-        Assert.notNull(transaction, "Transaction cannot be null");
-
-        transaction = transaction
-                .insert(model, Activity.INSERTED)
-                .affected(model);
-
-
-        return transaction.asMono();
-    }
 
 
 

@@ -1,5 +1,6 @@
 package io.av360.maverick.graph.tests.generator;
 
+import io.av360.maverick.graph.model.rdf.GeneratedIdentifier;
 import org.apache.commons.text.RandomStringGenerator;
 import org.eclipse.rdf4j.model.BNode;
 import org.eclipse.rdf4j.model.Namespace;
@@ -31,16 +32,21 @@ public class GeneratorCommons {
         valueFactory = SimpleValueFactory.getInstance();
     }
 
-    static Namespace generateTestNamespace() {
+    public static Namespace generateTestNamespace() {
         return new SimpleNamespace("tst", "http://w3id.org/test");
     }
 
-    static BNode generateAnomyousSubject() {
+    public static BNode generateAnomyousSubject() {
         return valueFactory.createBNode();
     }
 
-    static String generateRandomIdentifier(int length) {
+    public static String generateRandomIdentifier(int length) {
         return identifierGenerator.generate(length);
+    }
+
+
+    public static String generateRandomEntityIdentifier() {
+        return identifierGenerator.generate(GeneratedIdentifier.LENGTH);
     }
 
     static String generateRandomWords(int length) {

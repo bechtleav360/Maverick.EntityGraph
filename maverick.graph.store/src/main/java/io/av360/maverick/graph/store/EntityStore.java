@@ -5,14 +5,16 @@ import io.av360.maverick.graph.model.security.Authorities;
 import io.av360.maverick.graph.store.behaviours.*;
 import io.av360.maverick.graph.store.rdf.models.Entity;
 import io.av360.maverick.graph.store.rdf.models.Transaction;
-import org.eclipse.rdf4j.model.*;
+import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Resource;
+import org.eclipse.rdf4j.model.Statement;
+import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.query.BindingSet;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import java.util.Collection;
 import java.util.List;
 
 
@@ -21,16 +23,7 @@ public interface EntityStore extends Searchable, Resettable, ModelUpdates, Selec
     Mono<Entity> getEntity(Resource id, Authentication authentication, GrantedAuthority requiredAuthority);
 
 
-    Mono<Transaction> delete(Collection<Statement> statements, Transaction transaction);
 
-    /**
-     * Adds the triples in the model to the transaction. Don't forget to commit the transaction.
-     *
-     * @param model       the statements to store
-     * @param transaction
-     * @return Returns the transaction statements
-     */
-    Mono<Transaction> insert(Model model, Transaction transaction);
 
 
     default Flux<BindingSet> query(String query, Authentication authentication) {

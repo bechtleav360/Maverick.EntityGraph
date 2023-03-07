@@ -14,7 +14,9 @@ import org.springframework.web.reactive.function.BodyInserters;
 import reactor.core.publisher.Mono;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.io.StringWriter;
+import java.util.Objects;
 
 public class TestClient {
 
@@ -49,7 +51,6 @@ public class TestClient {
     }
 
 
-
     private RDFFormat getFormatFromExt(@Nonnull Resource file) {
         if (StringUtils.hasLength(file.getFilename())) {
             if (file.getFilename().endsWith(RDFFormat.TURTLE.getDefaultFileExtension())) return RDFFormat.TURTLE;
@@ -58,7 +59,7 @@ public class TestClient {
             if (file.getFilename().endsWith(RDFFormat.RDFXML.getDefaultFileExtension())) return RDFFormat.RDFXML;
         }
 
-        throw new RuntimeException("Invalid file format for file: "+ file);
+        throw new RuntimeException("Invalid file format for file: " + file);
     }
 
     public RdfConsumer createEntity(Resource file) {
@@ -79,7 +80,42 @@ public class TestClient {
         return rdfConsumer;
     }
 
+    public WebTestClient.ResponseSpec checkEntity(String sourceIdentifier) {
+        return this.checkEntity(sourceIdentifier, null);
+    }
 
+    public WebTestClient.ResponseSpec checkEntity(String sourceIdentifier, @Nullable RDFFormat formatParam) {
+        RDFFormat format = Objects.isNull(formatParam) ? RDFFormat.TURTLE : formatParam;
+        return webClient.get()
+                .uri(uriBuilder -> uriBuilder
+                        .path("/api/entities/{id}")
+                        .build(sourceIdentifier)
+                )
+                .accept(RdfUtils.getMediaType(format))
+                .header("X-API-KEY", "test")
+                .exchange();
+
+    }
+
+    public RdfConsumer readEntity(String sourceIdentifier) {
+        RDFFormat format = RDFFormat.TURTLE;
+
+        RdfConsumer rdfConsumer = new RdfConsumer(format, true);
+
+        this.checkEntity(sourceIdentifier, format)
+                .expectBody()
+                .consumeWith(rdfConsumer);
+        return rdfConsumer;
+    }
+
+    public WebTestClient.ResponseSpec deleteLink(String sourceId, String prefixedKey, String targetId) {
+        return webClient.delete()
+                .uri(uriBuilder -> uriBuilder
+                        .path("/api/entities/{id}/links/{prefixedKey}/{target}")
+                        .build(sourceId, prefixedKey, targetId)
+                )
+                .exchange();
+    }
 
     public WebTestClient.ResponseSpec createLink(String sourceId, String prefixedKey, String targetId) {
 
@@ -89,15 +125,28 @@ public class TestClient {
                         .build(sourceId, prefixedKey, targetId)
                 )
                 .accept(MediaType.parseMediaType(RDFFormat.JSONLD.getDefaultMIMEType()))
-                .exchange()
-                .expectStatus().isCreated();
+                .exchange();
 
     }
 
 
-    static Mono<String> serialize(Model builder, RDFFormat format ) {
+    static Mono<String> serialize(Model builder, RDFFormat format) {
         StringWriter sw = new StringWriter();
         Rio.write(builder, sw, format);
         return Mono.just(sw.toString());
     }
+
+
+    public WebTestClient.ResponseSpec deleteEntity(String entityKey) {
+
+        return webClient.delete()
+                .uri(uriBuilder -> uriBuilder
+                        .path("/api/entities/{id}")
+                        .build(entityKey)
+                )
+                .exchange()
+                .expectStatus().isOk();
+    }
+
+
 }

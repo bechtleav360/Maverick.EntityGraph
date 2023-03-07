@@ -6,6 +6,8 @@ import io.av360.maverick.graph.store.RepositoryType;
 import io.av360.maverick.graph.store.TransactionsStore;
 import io.av360.maverick.graph.tests.config.TestSecurityConfig;
 import lombok.extern.slf4j.Slf4j;
+import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
@@ -28,6 +30,14 @@ public abstract class TestsBase {
     private TransactionsStore transactionsStore;
 
 
+
+    protected IRI createIRIFrom(String url) {
+        return vf.createIRI(url);
+    }
+
+    protected Literal createLiteralFrom(String value) {
+        return vf.createLiteral(value);
+    }
 
     @Autowired
     public void setStores(EntityStore entityStore, TransactionsStore transactionsStore) {
