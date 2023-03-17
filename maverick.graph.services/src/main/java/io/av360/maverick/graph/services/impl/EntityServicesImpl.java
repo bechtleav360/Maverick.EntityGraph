@@ -18,6 +18,7 @@ import io.av360.maverick.graph.store.rdf.models.Transaction;
 import io.av360.maverick.graph.store.rdf.models.TripleBag;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.sparqlbuilder.core.SparqlBuilder;
@@ -28,6 +29,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -67,16 +69,55 @@ public class EntityServicesImpl implements EntityServices {
     }
 
 
+
+
     @Override
-    public Mono<Entity> get(String entityKey, Authentication authentication) {
-        return schemaServices.resolveLocalName(entityKey)
-                .flatMap(entityIdentifier -> this.get(entityIdentifier, authentication));
+    public Mono<Entity> get(IRI entityIri, Authentication authentication, int includeNeighboursLevel) {
+        return entityStore.getEntity(entityIri, authentication, includeNeighboursLevel)
+                .switchIfEmpty(Mono.error(new EntityNotFound(entityIri)));
     }
 
     @Override
-    public Mono<Entity> get(IRI entityIri, Authentication authentication) {
-        return entityStore.getEntity(entityIri, authentication)
-                .switchIfEmpty(Mono.error(new EntityNotFound(entityIri)));
+    public Flux<Entity> list(Authentication authentication, int limit, int offset) {
+        Variable idVariable = SparqlBuilder.var("id");
+
+        SelectQuery query = Queries.SELECT(idVariable).where(
+                idVariable.isA(Local.Entities.TYPE)).limit(limit).offset(offset);
+
+        return this.queryServices.queryValues(query.getQueryString(), authentication)
+                .map(bindings -> (IRI) bindings.getValue(idVariable.getVarName()))
+                .flatMap(id -> this.entityStore.getEntity(id, authentication, 0));
+    }
+    @Override
+    public Mono<Entity> findByKey(String entityKey, Authentication authentication) {
+        return schemaServices.resolveLocalName(entityKey)
+                .flatMap(entityIdentifier -> this.get(entityIdentifier, authentication, 1));
+    }
+
+    @Override
+    public Mono<Entity> findByProperty(String identifier, IRI predicate, Authentication authentication) {
+        Literal identifierLit = entityStore.getValueFactory().createLiteral(identifier);
+
+        Variable idVariable = SparqlBuilder.var("id");
+
+        SelectQuery query = Queries.SELECT(idVariable).where(
+                idVariable.has(predicate, identifierLit));
+
+        return this.entityStore.query(query.getQueryString(), authentication)
+                .next()
+                .map(bindings -> bindings.getValue(idVariable.getVarName()))
+                .flatMap(id -> this.entityStore.getEntity((Resource) id, authentication, 1))
+                .switchIfEmpty(Mono.error(new EntityNotFound(identifier)));
+    }
+
+    @Override
+    public Mono<Entity> find(String identifier, String property, Authentication authentication) {
+        if(StringUtils.hasLength(property)) {
+            return schemaServices.resolvePrefixedName(property)
+                    .flatMap(propertyIri -> this.findByProperty(identifier, propertyIri, authentication));
+        } else {
+            return this.findByKey(identifier, authentication);
+        }
     }
 
     @Override
@@ -85,16 +126,8 @@ public class EntityServicesImpl implements EntityServices {
     }
 
 
-    public Flux<Entity> list(Authentication authentication) {
-        Variable idVariable = SparqlBuilder.var("id");
 
-        SelectQuery query = Queries.SELECT(idVariable).where(
-                idVariable.isA(Local.Entities.TYPE));
 
-        return this.queryServices.queryValues(query.getQueryString(), authentication)
-                .map(bindings -> (IRI) bindings.getValue(idVariable.getVarName()))
-                .flatMap(id -> this.entityStore.getEntity(id, authentication));
-    }
 
 
     public Mono<IRI> resolveAndVerify(String key, Authentication authentication) {
@@ -161,7 +194,7 @@ public class EntityServicesImpl implements EntityServices {
                 the incoming model can contain multiple entities, all will be linked to
                 the model cannot contain the link statements itself (we are creating them)
          */
-        return this.entityStore.getEntity(entityIdentifier, authentication)
+        return this.entityStore.getEntity(entityIdentifier, authentication, 0)
                 .switchIfEmpty(Mono.error(new EntityNotFound(id)))
 
                 /* store the new entities */

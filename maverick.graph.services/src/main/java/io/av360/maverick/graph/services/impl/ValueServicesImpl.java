@@ -10,6 +10,7 @@ import io.av360.maverick.graph.services.events.ValueInsertedEvent;
 import io.av360.maverick.graph.services.events.ValueRemovedEvent;
 import io.av360.maverick.graph.services.events.ValueReplacedEvent;
 import io.av360.maverick.graph.store.SchemaStore;
+import io.av360.maverick.graph.store.rdf.models.Entity;
 import io.av360.maverick.graph.store.rdf.models.Transaction;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -19,6 +20,7 @@ import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
+import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.rio.LanguageHandler;
 import org.eclipse.rdf4j.rio.LanguageHandlerRegistry;
 import org.springframework.context.ApplicationEventPublisher;
@@ -182,6 +184,25 @@ public class ValueServicesImpl implements ValueServices {
                 });
     }
 
+    @Override
+    public Mono<Entity> listLinks(String entityKey, String prefixedPoperty, Authentication authentication) {
+        return Mono.zip(
+                this.schemaServices.resolveLocalName(entityKey)
+                        .flatMap(entityIdentifier -> this.entityServices.get(entityIdentifier, authentication, 0)),
+                this.schemaServices.resolvePrefixedName(prefixedPoperty)
+        ).map(pair -> {
+            Entity entity = pair.getT1();
+            IRI property = pair.getT2();
+
+            entity.filter((st) -> {
+                boolean isTypeDefinition = st.getSubject().equals(entity.getIdentifier()) && st.getPredicate().equals(RDF.TYPE);
+                boolean isProperty = st.getPredicate().equals(property);
+                return isTypeDefinition || isProperty;
+            });
+
+            return entity;
+        });
+    }
 
 
     private Mono<Transaction> removeLinkStatement(IRI entityIdentifier, IRI predicate, IRI targetIdentifier, Transaction transaction, Authentication authentication) {

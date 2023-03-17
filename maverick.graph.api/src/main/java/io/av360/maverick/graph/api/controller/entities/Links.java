@@ -51,7 +51,14 @@ public class Links extends AbstractController {
             produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE})
     @ResponseStatus(HttpStatus.OK)
     public Flux<NamespaceAwareStatement> getLinksByType(@PathVariable String id, @PathVariable String prefixedKey) {
-        return Flux.error(new NotImplementedException("Method has not been implemented yet."));
+        return super.getAuthentication()
+                .flatMap(authentication -> this.values.listLinks(id, prefixedKey, authentication))
+                .flatMapIterable(TripleModel::asStatements)
+                .doOnSubscribe((Subscription s) -> {
+                    if (log.isDebugEnabled())
+                        log.debug("Request to get all '{}' links for entity '{}'", prefixedKey, id);
+                });
+
     }
 
     @Operation(summary = "Create edge to existing entity identified by target id (within the same application).",

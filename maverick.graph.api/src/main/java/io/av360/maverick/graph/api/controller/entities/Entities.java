@@ -56,33 +56,23 @@ public class Entities extends AbstractController {
 
     @Operation(summary = "Returns an entity with the given unique identifier. ")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "404", description = "Entity with the given identifier does not exist", content = { @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorAttributes.class))})
+            @ApiResponse(responseCode = "404", description = "Entity with the given identifier does not exist", content = {@Content(mediaType = "application/json", schema = @Schema(implementation = ErrorAttributes.class))})
     })
     @GetMapping(value = "/entities/{id}",
             produces = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.N3_VALUE})
     @ResponseStatus(HttpStatus.OK)
     public Flux<NamespaceAwareStatement> read(@PathVariable String id, @RequestParam(required = false) @Nullable String property) {
-        if(StringUtils.isBlank(property)) {
+        if (StringUtils.isBlank(property)) {
             Assert.isTrue(id.length() == GeneratedIdentifier.LENGTH, "Incorrect length for identifier.");
-
-            return super.getAuthentication()
-                    .flatMap(authentication -> entityServices.get(id, authentication))
-                    .flatMapIterable(TripleModel::asStatements)
-                    .doOnSubscribe(s -> {
-                        if (log.isDebugEnabled()) log.debug("Request to read entity with id: {}", id);
-                    });
-        } else {
-
-            return super.getAuthentication()
-                    .flatMap(authentication ->
-                            schemaServices.resolvePrefixedName(property)
-                                    .flatMap(propertyIri -> queryServices.findEntityByProperty(id, propertyIri, authentication))
-                    )
-                    .flatMapIterable(TripleModel::asStatements)
-                    .doOnSubscribe(s -> {
-                        if (log.isDebugEnabled()) log.debug("Request to read entity with id: {}", id);
-                    });
         }
+
+
+        return super.getAuthentication()
+                .flatMap(authentication -> entityServices.find(id, property, authentication))
+                .flatMapIterable(TripleModel::asStatements)
+                .doOnSubscribe(s -> {
+                    if (log.isDebugEnabled()) log.debug("Request to read entity with id: {}", id);
+                });
 
 
     }
@@ -90,18 +80,16 @@ public class Entities extends AbstractController {
     @GetMapping(value = "/entities", produces = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.N3_VALUE})
     @ResponseStatus(HttpStatus.OK)
     public Flux<NamespaceAwareStatement> list(
-            @RequestParam(value = "limit", defaultValue = "5000") Integer limit,
+            @RequestParam(value = "limit", defaultValue = "100") Integer limit,
             @RequestParam(value = "offset", defaultValue = "0") Integer offset) {
 
         return super.getAuthentication()
-                .flatMapMany(authentication -> queryServices.listEntities(authentication, limit, offset))
+                .flatMapMany(authentication -> entityServices.list(authentication, limit, offset))
                 .flatMapIterable(TripleModel::asStatements)
                 .doOnSubscribe(s -> {
                     if (log.isDebugEnabled()) log.debug("Request to list entities");
                 });
     }
-
-
 
 
     @PostMapping(value = "/entities",
@@ -128,8 +116,8 @@ public class Entities extends AbstractController {
 
         return super.getAuthentication()
                 .flatMap(authentication ->
-                    schemaServices.resolvePrefixedName(prefixedKey)
-                            .flatMap(predicate ->  entityServices.linkEntityTo(id, predicate, value, authentication))
+                        schemaServices.resolvePrefixedName(prefixedKey)
+                                .flatMap(predicate -> entityServices.linkEntityTo(id, predicate, value, authentication))
                 )
                 .flatMapIterable(TripleModel::asStatements)
                 .doOnSubscribe(s -> {

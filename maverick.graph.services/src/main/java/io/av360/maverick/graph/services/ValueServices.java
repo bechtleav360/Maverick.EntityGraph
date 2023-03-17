@@ -1,5 +1,6 @@
 package io.av360.maverick.graph.services;
 
+import io.av360.maverick.graph.store.rdf.models.Entity;
 import io.av360.maverick.graph.store.rdf.models.Transaction;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Value;
@@ -80,4 +81,5 @@ public interface ValueServices {
      */
     Mono<Transaction> replace(IRI entityIdentifier, IRI predicate, Value oldValue, Value newValue, Authentication authentication);
 
+    Mono<Entity> listLinks(String id, String prefixedKey, Authentication authentication);
 }

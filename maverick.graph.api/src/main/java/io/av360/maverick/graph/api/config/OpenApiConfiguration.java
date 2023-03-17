@@ -23,7 +23,7 @@ import static org.springframework.web.reactive.function.server.RouterFunctions.r
 public class OpenApiConfiguration {
     @Bean
     RouterFunction<ServerResponse> routerFunction() {
-        return route(GET("/"), req ->
+        return route(GET("/swagger"), req ->
                 ServerResponse.temporaryRedirect(URI.create("/swagger-ui.html")).build()
         );
     }

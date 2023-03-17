@@ -20,7 +20,7 @@ import java.util.List;
 
 public interface EntityStore extends Searchable, Resettable, ModelUpdates, Selectable, Statements {
 
-    Mono<Entity> getEntity(Resource id, Authentication authentication, GrantedAuthority requiredAuthority);
+    Mono<Entity> getEntity(Resource id, Authentication authentication, GrantedAuthority requiredAuthority, int includeNeighborsLevel);
 
 
 
@@ -34,9 +34,8 @@ public interface EntityStore extends Searchable, Resettable, ModelUpdates, Selec
         return this.commit(trx, authentication, Authorities.READER);
     }
 
-    default Mono<Entity> getEntity(Resource entityIdentifier, Authentication authentication) {
-        return this.getEntity(entityIdentifier, authentication, Authorities.READER);
-
+    default Mono<Entity> getEntity(Resource entityIdentifier, Authentication authentication, int includeNeighborsLevel) {
+        return this.getEntity(entityIdentifier, authentication, Authorities.READER, includeNeighborsLevel);
     }
 
     default Mono<List<Statement>> listStatements(IRI object, IRI predicate, Value val, Authentication authentication) {

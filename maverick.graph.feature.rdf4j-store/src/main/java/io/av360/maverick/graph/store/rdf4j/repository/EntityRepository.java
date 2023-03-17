@@ -27,24 +27,30 @@ public class EntityRepository extends AbstractRepository implements EntityStore 
 
 
     public Mono<Entity> getEntity(Resource id, Authentication authentication, GrantedAuthority requiredAuthority) {
+        return this.getEntity(id, authentication, requiredAuthority, 1);
+    }
+
+    public Mono<Entity> getEntity(Resource id, Authentication authentication, GrantedAuthority requiredAuthority, int includeNeighborsLevel) {
         try (RepositoryConnection connection = getConnection(authentication, requiredAuthority)) {
             log.trace("Loading entity with id '{}' from repository {}", id, connection.getRepository().toString());
 
             RepositoryResult<Statement> statements = connection.getStatements(id, null, null);
             if (!statements.hasNext()) {
-                if (log.isDebugEnabled()) log.debug("(Store) Found no statements for IRI: <{}>.", id);
+                if (log.isDebugEnabled()) log.debug("Found no statements for IRI: <{}>.", id);
                 return Mono.empty();
             }
 
+            Entity entity = new Entity(id).withResult(statements);
 
-            Entity entity = new Entity().withResult(statements);
-
+            if(includeNeighborsLevel >= 1) {
+                entity.getModel().objects().stream()
+                        .filter(Value::isIRI)
+                        .map(value -> connection.getStatements((IRI) value, null, null))
+                        .toList()
+                        .forEach(entity::withResult);
+            }
             // embedded level 1
-            entity.getModel().objects().stream()
-                    .filter(Value::isIRI)
-                    .map(value -> connection.getStatements((IRI) value, null, null))
-                    .toList()
-                    .forEach(entity::withResult);
+
 
 
             if (log.isDebugEnabled())

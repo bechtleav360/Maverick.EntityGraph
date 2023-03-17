@@ -114,7 +114,7 @@ public class EntityServicesClient {
     }
 
     public Mono<List<Entity>> listAllEntitiesMono() {
-        return this.entityServices.list(TestSecurityConfig.createAuthenticationToken()).collectList();
+        return this.entityServices.list(TestSecurityConfig.createAuthenticationToken(), 100, 0).collectList();
     }
 
     private Mono<TripleBag> parse(Publisher<DataBuffer> publisher, RDFFormat format) {
