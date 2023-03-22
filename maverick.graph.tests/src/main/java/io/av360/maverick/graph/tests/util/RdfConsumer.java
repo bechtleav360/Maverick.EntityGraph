@@ -54,8 +54,13 @@ public class RdfConsumer implements Consumer<EntityExchangeResult<byte[]>> {
         collector = new ContextStatementCollector(SimpleValueFactory.getInstance());
         parser.setRDFHandler(collector);
 
+        if(entityExchangeResult == null || entityExchangeResult.getResponseBody() == null)
+
         Assert.notNull(entityExchangeResult, "Null result");
-        Assert.notNull(entityExchangeResult.getResponseBody(), "Null response body");
+
+        if(entityExchangeResult.getResponseBody() == null) {
+            return;
+        }
 
 
         try (ByteArrayInputStream bais = new ByteArrayInputStream(entityExchangeResult.getResponseBody())) {
