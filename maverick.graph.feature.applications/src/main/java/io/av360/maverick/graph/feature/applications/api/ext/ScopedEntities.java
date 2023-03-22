@@ -31,6 +31,7 @@ import javax.annotation.Nullable;
     info =  @Info(title = "Access to entities", description = "Methods to read or manipulate entities"), tags = @Tag(name = "Scoped with application label")
 )
 @SecurityRequirement(name = "api_key")
+@Tag(name = "Entities (Scoped)")
 public class ScopedEntities extends AbstractController {
     private final Entities defaultCtrl;
 
@@ -38,7 +39,7 @@ public class ScopedEntities extends AbstractController {
         this.defaultCtrl = defaultCtrl;
     }
 
-    @GetMapping(value = "/sc/{scope}/entities/{id:[\\w|\\d|-|_]+}",
+    @GetMapping(value = "/app/{scope}/entities/{id:[\\w|\\d|-|_]+}",
             produces = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.N3_VALUE})
     @ResponseStatus(HttpStatus.OK)
     Flux<NamespaceAwareStatement> read(@PathVariable String scope, @PathVariable String id, @RequestParam(required = false) @Nullable String property) {
@@ -46,16 +47,16 @@ public class ScopedEntities extends AbstractController {
     }
 
 
-    @GetMapping(value = "/sc/{scope}/entities", produces = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.N3_VALUE})
+    @GetMapping(value = "/app/{scope}/entities", produces = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.N3_VALUE})
     @ResponseStatus(HttpStatus.OK)
     Flux<NamespaceAwareStatement> list(
             @PathVariable String scope,
-            @RequestParam(value = "limit", defaultValue = "5000") Integer limit,
+            @RequestParam(value = "limit", defaultValue = "100") Integer limit,
             @RequestParam(value = "offset", defaultValue = "0") Integer offset) {
-        return defaultCtrl.list(limit, offset);
+        return defaultCtrl.list(limit, offset).doOnSubscribe(sub -> log.trace("Request within scope {}", scope));
     }
 
-    @PostMapping(value = "/sc/{scope}/entities",
+    @PostMapping(value = "/app/{scope}/entities",
             consumes = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.N3_VALUE},
             produces = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.N3_VALUE})
     @ResponseStatus(HttpStatus.ACCEPTED)
@@ -63,7 +64,7 @@ public class ScopedEntities extends AbstractController {
         return defaultCtrl.create(request);
     }
 
-    @PostMapping(value = "/sc/{scope}/entities/{id:[\\w|\\d|-|_]+}/{prefixedKey:[\\w|\\d]+\\.[\\w|\\d]+}",
+    @PostMapping(value = "/app/{scope}/entities/{id:[\\w|\\d|-|_]+}/{prefixedKey:[\\w|\\d]+\\.[\\w|\\d]+}",
             consumes = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE},
             produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE})
     @ResponseStatus(HttpStatus.CREATED)
@@ -72,7 +73,7 @@ public class ScopedEntities extends AbstractController {
     }
 
 
-    @DeleteMapping(value = "/sc/{scope}/entities/{id:[\\w|\\d|-|_]+}",
+    @DeleteMapping(value = "/app/{scope}/entities/{id:[\\w|\\d|-|_]+}",
             produces = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.N3_VALUE})
     @ResponseStatus(HttpStatus.OK)
     Flux<NamespaceAwareStatement> delete(@PathVariable String application, @PathVariable String id) {

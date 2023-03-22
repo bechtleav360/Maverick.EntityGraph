@@ -2,6 +2,7 @@ package io.av360.maverick.graph.feature.applications.domain;
 
 import io.av360.maverick.graph.api.security.errors.RevokedApiKeyUsed;
 import io.av360.maverick.graph.api.security.errors.UnknownApiKey;
+import io.av360.maverick.graph.feature.applications.domain.errors.InvalidApplication;
 import io.av360.maverick.graph.feature.applications.domain.events.ApplicationCreatedEvent;
 import io.av360.maverick.graph.feature.applications.domain.events.TokenCreatedEvent;
 import io.av360.maverick.graph.feature.applications.domain.model.Application;
@@ -245,12 +246,16 @@ public class ApplicationsService {
                 );
 
 
-        return this.applicationsStore.query(q, authentication, Authorities.READER)
+        return this.applicationsStore.query(q, authentication, Authorities.APPLICATION)
+                .switchIfEmpty(Mono.error(new InvalidApplication(applicationLabel)))
+                .doOnNext(bindings -> {
+                    log.trace("Found application: {}", bindings.getValue(varAppLabel.getVarName()));
+                })
                 .collectList()
                 .flatMap(BindingsAccessor::getUniqueBindingSet)
                 .map(BindingsAccessor::new)
                 .map(this::buildApplicationFromBindings)
-                .doOnSubscribe(sub -> log.debug("Requesting application with label {}", applicationLabel));
+                .doOnSubscribe(sub -> log.debug("Requesting application with label '{}'", applicationLabel));
     }
 
     private Application buildApplicationFromBindings(BindingsAccessor ba) {

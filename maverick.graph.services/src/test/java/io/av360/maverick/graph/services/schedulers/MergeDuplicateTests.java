@@ -95,6 +95,8 @@ public class MergeDuplicateTests extends TestsBase  {
         StepVerifier.create(
                 tx1.then(tx2).then(scheduler).then(getAll)
                 ).assertNext(model -> {
+
+
                     Set<Resource> videos = model.filter(null, RDF.TYPE, SDO.VIDEO_OBJECT).subjects();
                     Assertions.assertEquals(3, videos.size());
 

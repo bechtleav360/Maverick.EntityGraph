@@ -6,6 +6,7 @@ import io.av360.maverick.graph.model.enums.RdfMimeTypes;
 import io.av360.maverick.graph.model.rdf.NamespaceAwareStatement;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -18,6 +19,7 @@ import javax.annotation.Nullable;
 @RequestMapping(path = "/api")
 @Slf4j(topic = "graph.ctrl.api.values")
 @SecurityRequirement(name = "api_key")
+@Tag(name = "Annotations (Scoped)")
 public class ScopedValues extends AbstractController {
 
 
@@ -27,14 +29,14 @@ public class ScopedValues extends AbstractController {
         this.defaultCtrl = defaultCtrl;
     }
     @Operation(summary = "Returns a list of value properties of the selected entity.  ")
-    @GetMapping(value = "/sc/{scope}/entities/{id:[\\w|\\d|-|_]+}/values",
+    @GetMapping(value = "/app/{scope}/entities/{id:[\\w|\\d|-|_]+}/values",
             produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE, MediaType.APPLICATION_JSON_VALUE})
     @ResponseStatus(HttpStatus.OK)
     Flux<NamespaceAwareStatement> listEntityValues(@PathVariable String id) {
       return this.defaultCtrl.listEntityValues(id);
     }
 
-    @PostMapping(value = "/sc/{scope}/entities/{id:[\\w|\\d|-|_]+}/values/{prefixedKey:[\\w|\\d]+\\.[\\w|\\d]+}",
+    @PostMapping(value = "/app/{scope}/entities/{id:[\\w|\\d|-|_]+}/values/{prefixedKey:[\\w|\\d]+\\.[\\w|\\d]+}",
             consumes = MediaType.TEXT_PLAIN_VALUE,
             produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE})
     @ResponseStatus(HttpStatus.OK)
@@ -44,7 +46,7 @@ public class ScopedValues extends AbstractController {
 
 
     @Operation(summary = "Create or update multiple value properties for the selected entity.")
-    @PostMapping(value = "/sc/{scope}/entities/{id:[\\w|\\d|-|_]+}/values",
+    @PostMapping(value = "/app/{scope}/entities/{id:[\\w|\\d|-|_]+}/values",
             produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE, MediaType.APPLICATION_JSON_VALUE})
     @ResponseStatus(HttpStatus.OK)
     Flux<NamespaceAwareStatement> listEntityValues(@PathVariable String id, @RequestBody String value) {
@@ -52,7 +54,7 @@ public class ScopedValues extends AbstractController {
     }
 
     @Operation(summary = "Removes a property value.")
-    @DeleteMapping(value = "/sc/{scope}/entities/{id:[\\w|\\d|-|_]+}/values/{prefixedKey:[\\w|\\d]+\\.[\\w|\\d]+}",
+    @DeleteMapping(value = "/app/{scope}/entities/{id:[\\w|\\d|-|_]+}/values/{prefixedKey:[\\w|\\d]+\\.[\\w|\\d]+}",
             produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE})
     @ResponseStatus(HttpStatus.OK)
     Flux<NamespaceAwareStatement> delete(@PathVariable String id, @PathVariable String prefixedKey, @RequestParam(required = false) String lang) {

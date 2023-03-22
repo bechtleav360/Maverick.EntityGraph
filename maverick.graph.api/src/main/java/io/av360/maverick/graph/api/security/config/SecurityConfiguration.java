@@ -17,7 +17,6 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
 import org.springframework.security.config.web.server.SecurityWebFiltersOrder;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
-import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.security.web.server.SecurityWebFilterChain;
 import org.springframework.security.web.server.authentication.AuthenticationWebFilter;
 import org.springframework.security.web.server.authentication.ServerAuthenticationConverter;
@@ -84,11 +83,9 @@ public class SecurityConfiguration {
             if (apiKeys == null || apiKeys.size() == 0) {
 
                 if(exchange.getRequest().getPath().value().startsWith("/api")) {
-                    log.warn("API Request to path '{}' without an API Key Header", exchange.getRequest().getPath().value());
-                    AnonymousAuthenticationToken anonymous = new AnonymousAuthenticationToken("key", "anonymous",
-                            List.of(Authorities.GUEST));
+                    log.trace("API Request to path '{}' without an API Key Header", exchange.getRequest().getPath().value());
+                    AnonymousAuthenticationToken anonymous = new AnonymousAuthenticationToken("key", "anonymous", List.of(Authorities.GUEST));
                     anonymous.setDetails(details);
-
                     return Mono.just(anonymous);
                 } else {
                     // lets fallback to the standard authentication (basic) (for actuators and others)

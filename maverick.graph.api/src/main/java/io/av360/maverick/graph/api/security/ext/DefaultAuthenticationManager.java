@@ -1,9 +1,8 @@
 package io.av360.maverick.graph.api.security.ext;
 
-import com.google.common.io.Files;
+import io.av360.maverick.graph.model.security.AdminToken;
 import io.av360.maverick.graph.model.security.ApiKeyAuthenticationToken;
 import io.av360.maverick.graph.model.security.Authorities;
-import io.av360.maverick.graph.model.security.SystemAuthentication;
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.text.RandomStringGenerator;
@@ -11,14 +10,11 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Primary;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.authentication.ReactiveAuthenticationManager;
-import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.GrantedAuthority;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
-import org.springframework.web.client.HttpClientErrorException;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
@@ -91,7 +87,7 @@ public class DefaultAuthenticationManager implements ReactiveAuthenticationManag
         if (StringUtils.hasLength(this.key) && authentication.getApiKey().isPresent() && authentication.getApiKey().get().equalsIgnoreCase(this.key)) {
             log.info("Valid admin key provided, granting system access in default authentication manager.");
 
-            return Mono.just(new SystemAuthentication(authentication.getDetails()));
+            return Mono.just(new AdminToken(authentication.getDetails()));
         } else {
             log.trace("Key in header is not the admin key, granting read-only access in default authentication manager.");
             authentication.grantAuthority(Authorities.READER);

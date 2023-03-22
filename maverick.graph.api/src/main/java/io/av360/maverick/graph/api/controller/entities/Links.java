@@ -9,6 +9,7 @@ import io.av360.maverick.graph.services.ValueServices;
 import io.av360.maverick.graph.store.rdf.models.TripleModel;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.NotImplementedException;
 import org.reactivestreams.Subscription;
@@ -19,10 +20,11 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @RestController
-@RequestMapping(path = "/api/entities")
+@RequestMapping(path = "/api")
 //@Api(tags = "Values")
 @Slf4j(topic = "graph.ctrl.api.links")
 @SecurityRequirement(name = "api_key")
+@Tag(name = "Annotations")
 public class Links extends AbstractController {
 
 
@@ -39,7 +41,7 @@ public class Links extends AbstractController {
     }
 
     @Operation(summary = "Returns all links of an entity.")
-    @GetMapping(value = "/{id:[\\w|\\d|-|_]+}/links",
+    @GetMapping(value = "/entities/{id:[\\w|\\d|-|_]+}/links",
             produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE})
     @ResponseStatus(HttpStatus.OK)
     public Flux<NamespaceAwareStatement> getLinks(@PathVariable String id) {
@@ -47,7 +49,7 @@ public class Links extends AbstractController {
     }
 
     @Operation(summary = "Returns all links of the given type.")
-    @GetMapping(value = "/{id:[\\w|\\d|-|_]+}/links/{prefixedKey:[\\w|\\d]+\\.[\\w|\\d]+}",
+    @GetMapping(value = "/entities/{id:[\\w|\\d|-|_]+}/links/{prefixedKey:[\\w|\\d]+\\.[\\w|\\d]+}",
             produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE})
     @ResponseStatus(HttpStatus.OK)
     public Flux<NamespaceAwareStatement> getLinksByType(@PathVariable String id, @PathVariable String prefixedKey) {
@@ -73,7 +75,7 @@ public class Links extends AbstractController {
                     """
 
     )
-    @PutMapping(value = "/{source_id:[\\w|\\d|-|_]+}/links/{prefixedKey:[\\w|\\d]+\\.[\\w|\\d]+}/{target_id:[\\w|\\d|-|_]+}",
+    @PutMapping(value = "/entities/{source_id:[\\w|\\d|-|_]+}/links/{prefixedKey:[\\w|\\d]+\\.[\\w|\\d]+}/{target_id:[\\w|\\d|-|_]+}",
             produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE, MediaType.APPLICATION_JSON_VALUE})
     @ResponseStatus(HttpStatus.CREATED)
     public Flux<NamespaceAwareStatement> createLink(@PathVariable String source_id, @PathVariable String prefixedKey, @PathVariable String target_id) {
@@ -90,7 +92,7 @@ public class Links extends AbstractController {
 
 
     @Operation(summary = "Deletes edge to existing entity identified by target id.")
-    @DeleteMapping(value = "/{source_id:[\\w|\\d|-|_]+}/links/{prefixedKey:[\\w|\\d]+\\.[\\w|\\d]+}/{target_id:[\\w|\\d|-|_]+}")
+    @DeleteMapping(value = "/entities/{source_id:[\\w|\\d|-|_]+}/links/{prefixedKey:[\\w|\\d]+\\.[\\w|\\d]+}/{target_id:[\\w|\\d|-|_]+}")
     @ResponseStatus(HttpStatus.OK)
     public Flux<NamespaceAwareStatement> deleteLink(@PathVariable String source_id, @PathVariable String prefixedKey, @PathVariable String target_id) {
         return super.getAuthentication()
@@ -113,7 +115,7 @@ public class Links extends AbstractController {
 
 
     @Operation(summary = "Returns all links of the given type.", hidden = true)
-    @PutMapping(value = "/{id:[\\w|\\d|-|_]+}/links/{prefixedKey:[\\w|\\d]+\\.[\\w|\\d]+}",
+    @PutMapping(value = "/entities/{id:[\\w|\\d|-|_]+}/links/{prefixedKey:[\\w|\\d]+\\.[\\w|\\d]+}",
             produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE, MediaType.APPLICATION_JSON_VALUE})
     @ResponseStatus(HttpStatus.OK)
     public Flux<NamespaceAwareStatement> batchCreateLinks(@PathVariable String id, @PathVariable String prefixedKey) {

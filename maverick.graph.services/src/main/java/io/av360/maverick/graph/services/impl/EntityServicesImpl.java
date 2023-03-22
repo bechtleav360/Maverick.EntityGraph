@@ -1,7 +1,7 @@
 package io.av360.maverick.graph.services.impl;
 
 import io.av360.maverick.graph.model.enums.Activity;
-import io.av360.maverick.graph.model.errors.EntityNotFound;
+import io.av360.maverick.graph.model.errors.requests.EntityNotFound;
 import io.av360.maverick.graph.model.rdf.LocalIRI;
 import io.av360.maverick.graph.model.vocabulary.Local;
 import io.av360.maverick.graph.services.EntityServices;

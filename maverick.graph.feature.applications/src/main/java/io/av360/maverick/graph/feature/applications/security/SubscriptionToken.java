@@ -2,12 +2,10 @@ package io.av360.maverick.graph.feature.applications.security;
 
 import io.av360.maverick.graph.feature.applications.domain.model.Application;
 import io.av360.maverick.graph.feature.applications.domain.model.Subscription;
+import io.av360.maverick.graph.model.security.AdminToken;
 import io.av360.maverick.graph.model.security.ApiKeyAuthenticationToken;
-import io.av360.maverick.graph.model.security.Authorities;
-import io.av360.maverick.graph.model.security.SystemAuthentication;
 
 import javax.annotation.Nullable;
-import java.util.Collection;
 
 
 /**
@@ -40,7 +38,7 @@ public class SubscriptionToken extends ApiKeyAuthenticationToken {
         return authentication;
     }
 
-    public static SubscriptionToken fromSystemAuthentication(SystemAuthentication systemAuthentication, Application application) {
+    public static SubscriptionToken fromAdminToken(AdminToken systemAuthentication, Application application) {
         SubscriptionToken authentication = new SubscriptionToken(null, application);
         authentication.setAuthenticated(systemAuthentication.isAuthenticated());
         authentication.setDetails(systemAuthentication.getDetails());

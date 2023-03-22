@@ -86,7 +86,7 @@ public class BufferedStatementsEncoder implements Encoder<Statement> {
                 // we filter out any internal statements
                 .filter(statement -> !statement.getObject().equals(Local.Entities.TYPE))
                 .collectList()
-                .flatMap(list ->  Mono.zip(Mono.just(list),ReactiveRequestContextHolder.getRequest()))
+                .flatMap(list ->  Mono.zip(Mono.just(list), ReactiveRequestContextHolder.getRequest()))
                 .flatMapMany(tuple -> {
                     List<Statement> statements = tuple.getT1();
                     ServerHttpRequest request = tuple.getT2(); // we need the request to resolve the current request url

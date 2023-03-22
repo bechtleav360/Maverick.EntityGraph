@@ -6,6 +6,7 @@ import io.av360.maverick.graph.model.enums.RdfMimeTypes;
 import io.av360.maverick.graph.model.rdf.NamespaceAwareStatement;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -17,6 +18,7 @@ import reactor.core.publisher.Flux;
 //@Api(tags = "Values")
 @Slf4j(topic = "graph.ctrl.api.links")
 @SecurityRequirement(name = "api_key")
+@Tag(name = "Annotations (Scoped)")
 public class ScopedLinks extends AbstractController {
 
     private final Links defaultCtrl;
@@ -26,14 +28,14 @@ public class ScopedLinks extends AbstractController {
     }
 
     @Operation(summary = "Returns all links of an entity.")
-    @GetMapping(value = "/sc/{scope}/entities/{id:[\\w|\\d|-|_]+}/links",
+    @GetMapping(value = "/app/{scope}/entities/{id:[\\w|\\d|-|_]+}/links",
             produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE})
     @ResponseStatus(HttpStatus.OK)
     Flux<NamespaceAwareStatement> getLinks(@PathVariable String id) {
         return this.defaultCtrl.getLinks(id);
     }
     @Operation(summary = "Returns all links of the given type.")
-    @GetMapping(value = "/sc/{scope}/entities/{id:[\\w|\\d|-|_]+}/links/{prefixedKey:[\\w|\\d]+\\.[\\w|\\d]+}",
+    @GetMapping(value = "/app/{scope}/entities/{id:[\\w|\\d|-|_]+}/links/{prefixedKey:[\\w|\\d]+\\.[\\w|\\d]+}",
             produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE})
     @ResponseStatus(HttpStatus.OK)
     Flux<NamespaceAwareStatement> getLinksByType(@PathVariable String id, @PathVariable String prefixedKey) {
@@ -41,7 +43,7 @@ public class ScopedLinks extends AbstractController {
     }
 
     @Operation(summary = "Create edge to existing entity identified by target id.")
-    @PutMapping(value = "/sc/{scope}/entities/{id:[\\w|\\d|-|_]+}/links/{prefixedKey:[\\w|\\d]+\\.[\\w|\\d]+}/{target:[\\w|\\d|-|_]+}",
+    @PutMapping(value = "/app/{scope}/entities/{id:[\\w|\\d|-|_]+}/links/{prefixedKey:[\\w|\\d]+\\.[\\w|\\d]+}/{target:[\\w|\\d|-|_]+}",
             produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE, MediaType.APPLICATION_JSON_VALUE})
     @ResponseStatus(HttpStatus.OK)
     Flux<NamespaceAwareStatement> createLink(@PathVariable String id, @PathVariable String prefixedKey, @PathVariable String target) {
@@ -50,7 +52,7 @@ public class ScopedLinks extends AbstractController {
 
 
     @Operation(summary = "Create edge to existing entity identified by target id.")
-    @DeleteMapping(value = "/sc/{scope}/entities/{id:[\\w|\\d|-|_]+}/links/{prefixedKey:[\\w|\\d]+\\.[\\w|\\d]+}/{target:[\\w|\\d|-|_]+}",
+    @DeleteMapping(value = "/app/{scope}/entities/{id:[\\w|\\d|-|_]+}/links/{prefixedKey:[\\w|\\d]+\\.[\\w|\\d]+}/{target:[\\w|\\d|-|_]+}",
             produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE, MediaType.APPLICATION_JSON_VALUE})
     @ResponseStatus(HttpStatus.OK)
     Flux<NamespaceAwareStatement> deleteLink(@PathVariable String id, @PathVariable String prefixedKey, @PathVariable String target) {
@@ -59,7 +61,7 @@ public class ScopedLinks extends AbstractController {
 
 
     @Operation(summary = "Returns all links of the given type.", hidden = true)
-    @PutMapping(value = "/sc/{scope}/entities/{id:[\\w|\\d|-|_]+}/links/{prefixedKey:[\\w|\\d]+\\.[\\w|\\d]+}",
+    @PutMapping(value = "/app/{scope}/entities/{id:[\\w|\\d|-|_]+}/links/{prefixedKey:[\\w|\\d]+\\.[\\w|\\d]+}",
             produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE, MediaType.APPLICATION_JSON_VALUE})
     @ResponseStatus(HttpStatus.OK)
     Flux<NamespaceAwareStatement> batchCreateLinks(@PathVariable String id, @PathVariable String prefixedKey) {

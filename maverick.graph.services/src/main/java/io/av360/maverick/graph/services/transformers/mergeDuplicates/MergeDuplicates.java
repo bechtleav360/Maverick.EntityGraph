@@ -1,6 +1,5 @@
 package io.av360.maverick.graph.services.transformers.mergeDuplicates;
 
-import io.av360.maverick.graph.model.errors.MissingType;
 import io.av360.maverick.graph.model.rdf.GeneratedIdentifier;
 import io.av360.maverick.graph.services.QueryServices;
 import io.av360.maverick.graph.services.transformers.Transformer;
@@ -146,7 +145,10 @@ public class MergeDuplicates implements Transformer {
         int count = 0;
         for (Resource anonymous : anonymousObjects) {
             Iterator<Statement> typeStatement = unmodifiable.getStatements(anonymous, RDF.TYPE, null).iterator();
-            if (!typeStatement.hasNext()) throw new MissingType(anonymous);
+            if (!typeStatement.hasNext()) {
+                log.error("Missing type definition for node with id: "+anonymous);
+                continue;
+            }
             Value typeValue = typeStatement.next().getObject();
 
             Iterator<Statement> labelStatement = unmodifiable.getStatements(anonymous, RDFS.LABEL, null).iterator();
@@ -210,7 +212,7 @@ public class MergeDuplicates implements Transformer {
 
                             Value type = triples.streamStatements(resource, RDF.TYPE, null)
                                     .findFirst()
-                                    .orElseThrow(() -> new MissingType(resource)).getObject();
+                                    .orElseThrow(() -> new RuntimeException("Missing type for node with id: "+resource)).getObject();
                             triples.streamStatements(resource, RDFS.LABEL, null)
                                     .findFirst()
                                     .ifPresent(statement -> c.next(new LocalEntity(type, statement.getObject(), resource)));

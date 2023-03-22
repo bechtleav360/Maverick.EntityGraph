@@ -1,15 +1,15 @@
 package io.av360.maverick.graph.feature.applications.security;
 
+import io.av360.maverick.graph.feature.applications.config.ReactiveApplicationContextHolder;
 import io.av360.maverick.graph.feature.applications.domain.ApplicationsService;
 import io.av360.maverick.graph.feature.applications.domain.model.Application;
+import io.av360.maverick.graph.model.security.AdminToken;
 import io.av360.maverick.graph.model.security.ApiKeyAuthenticationToken;
 import io.av360.maverick.graph.model.security.Authorities;
 import io.av360.maverick.graph.model.security.RequestDetails;
-import io.av360.maverick.graph.model.security.SystemAuthentication;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.authentication.ReactiveAuthenticationManager;
-import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
@@ -42,29 +42,8 @@ public class ApplicationAuthenticationManager implements ReactiveAuthenticationM
         this.subscriptionsService = subscriptionsService;
     }
 
-    //
-
-    /*
-
-        Steps:
-        1. check if specific application is requested either through header or through request path,
-            yes: grab requested application config from store
-        2. check if api key header is a valid subscription key
-
-        if 1 & 2:
-
-          no:
-            1.1 check if api key header is a valid subscription key
-             yes:
-               1.1.1 grant authority according to configuration for subscription
-             no:
-               1.1.2 do nothing, return unmodified authentication
-          yes:
-            1.2
-            1.3 check if api key header is a valid subscription key
 
 
-     */
     @Override
     public Mono<Authentication> authenticate(Authentication authentication) {
 
@@ -72,55 +51,46 @@ public class ApplicationAuthenticationManager implements ReactiveAuthenticationM
             Assert.notNull(authentication, "Authentication is null in Authentication Manager");
             Assert.notNull(authentication.getDetails(), "Authentication is missing request details.");
             Assert.isTrue(authentication.getDetails() instanceof RequestDetails, "Authentication details of wrong type " + authentication.getDetails().getClass());
-            log.trace("Handling authentication of type '{}' and authentication status '{}' in application authentication manager ", authentication.getClass().getSimpleName(), authentication.isAuthenticated());
 
 
-            // check if specific application is requested either through header or through request path,
-            RequestDetails requestDetails = (RequestDetails) authentication.getDetails();
-            Optional<String> requestedApplicationStr = getScopeFromPath(requestDetails);
+            return ReactiveApplicationContextHolder.getRequestedApplication()
+                    .flatMap(requestedApplication -> {
+                        if (authentication instanceof AdminToken token) {
+                            log.trace("Authentication has system authority and application scope '{}' requested.", requestedApplication.label());
+                            return Mono.just(SubscriptionToken.fromAdminToken(token, requestedApplication));
 
-
-            if (requestedApplicationStr.isPresent()) {
-                return this.subscriptionsService.getApplicationByLabel(requestedApplicationStr.get(), new SystemAuthentication())
-                        .flatMap(requestedApplication -> {
-                            if (authentication instanceof SystemAuthentication token) {
-                                log.trace("Authentication has system authority and application scope '{}' requested.", requestedApplication.label());
-                                return Mono.just(SubscriptionToken.fromSystemAuthentication(token, requestedApplication));
-
-                            } else if (authentication instanceof ApiKeyAuthenticationToken token) {
-                                log.trace("Key in header, checking if it is subscription token.");
-                                return checkSubscriptionKeyForRequestedApplication(token, requestedApplication)
-                                        .map(auth -> auth);
-                            } else {
-                                return Mono.just(authentication);
-                            }
-                        });
-            }
-
-            // no requested application. We ignore the system auth and try to check if the api key is a valid subscription key
-            else {
-                if (authentication instanceof SystemAuthentication token) {
-                    log.trace("Authentication has system authority, but not application scope requested.");
-                    return Mono.just(authentication);
-                } else if (authentication instanceof ApiKeyAuthenticationToken token) {
-                    log.trace("Key in header and no requested application, checking if it is subscription token.");
-                    return this.checkSubscriptionKey(token).map(auth -> auth);
-
-                } else if (authentication instanceof AnonymousAuthenticationToken token) {
-                    log.trace("Ignoring anonymous access without requested application in application authentication manager.");
-                    return Mono.just(token);
-                } else {
-                    return Mono.just(authentication);
-                }
-            }
+                        } else if (authentication instanceof ApiKeyAuthenticationToken token) {
+                            log.trace("Key in header, checking if it is subscription token.");
+                            return checkSubscriptionKeyForRequestedApplication(token, requestedApplication).map(auth -> auth);
+                        } else {
+                            return Mono.just(authentication);
+                        }
+                    })
+                    .switchIfEmpty(defaultFallback(authentication))
+                    .doOnSubscribe(sub -> log.trace("Handling authentication of type '{}' and authentication status '{}' in application authentication manager ", authentication.getClass().getSimpleName(), authentication.isAuthenticated()));
 
 
         } catch (Exception e) {
             log.error("Failed to handle application authentication with error: '{}'", e.getMessage());
             return Mono.error(e);
         }
+    }
 
+    private Mono<Authentication> defaultFallback(Authentication authentication) {
+        if (authentication instanceof AdminToken token) {
+            log.trace("Authentication has system authority, but not application scope requested.");
+            return Mono.just(authentication);
+        } else if (authentication instanceof ApiKeyAuthenticationToken token) {
+            log.trace("Key in header and no requested application, checking if it is subscription token.");
+            return this.checkSubscriptionKey(token).map(auth -> auth);
 
+        } else if (authentication instanceof AnonymousAuthenticationToken token) {
+            log.trace("Ignoring anonymous access without requested application in application authentication manager.");
+            return Mono.just(token);
+        } else {
+            log.trace("Leaving authentication of type {} untouched.", authentication.getClass().getSimpleName());
+            return Mono.just(authentication);
+        }
     }
 
     /**
@@ -130,7 +100,7 @@ public class ApplicationAuthenticationManager implements ReactiveAuthenticationM
      * @return
      */
     protected Mono<? extends ApiKeyAuthenticationToken> checkSubscriptionKey(ApiKeyAuthenticationToken token) {
-        if (token instanceof SystemAuthentication) return Mono.just(token);
+        if (token instanceof AdminToken) return Mono.just(token);
 
         return this.subscriptionsService.getSubscription(token.getApiKey().orElseThrow(), token)
                 .map(subscription -> {
@@ -144,7 +114,7 @@ public class ApplicationAuthenticationManager implements ReactiveAuthenticationM
     }
 
     protected Mono<? extends ApiKeyAuthenticationToken> checkSubscriptionKeyForRequestedApplication(ApiKeyAuthenticationToken token, Application requestedApplication) {
-        if (token instanceof SystemAuthentication) return Mono.just(token);
+        if (token instanceof AdminToken) return Mono.just(token);
 
         return this.subscriptionsService.getSubscription(token.getApiKey().orElseThrow(), token)
                 .map(subscription -> {

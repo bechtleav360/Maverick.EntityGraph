@@ -1,5 +1,6 @@
 package io.av360.maverick.graph.tests.config;
 
+import io.av360.maverick.graph.model.security.AdminToken;
 import io.av360.maverick.graph.model.security.Authorities;
 import io.av360.maverick.graph.model.security.RequestDetails;
 import lombok.extern.slf4j.Slf4j;
@@ -7,6 +8,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Profile;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.authentication.DelegatingReactiveAuthenticationManager;
 import org.springframework.security.authentication.ReactiveAuthenticationManager;
 import org.springframework.security.authentication.TestingAuthenticationToken;
@@ -58,8 +60,18 @@ public class TestSecurityConfig {
     }
 
 
+
+
     public static TestingAuthenticationToken createAuthenticationToken() {
         return new TestingAuthenticationToken("test", "test", List.of(Authorities.SYSTEM));
+    }
+
+    public static AdminToken createAdminToken() {
+        return new AdminToken();
+    }
+
+    public static AnonymousAuthenticationToken createAnonymousToken() {
+        return new AnonymousAuthenticationToken("key", "anonymous", List.of(Authorities.GUEST));
     }
     /*
     @Bean

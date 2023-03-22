@@ -1,9 +1,11 @@
-package io.av360.maverick.graph.model.errors;
+package io.av360.maverick.graph.model.errors.requests;
 
+import io.av360.maverick.graph.model.errors.InvalidRequest;
 import org.eclipse.rdf4j.model.Resource;
+import org.springframework.http.HttpStatus;
 import org.springframework.util.StringUtils;
 
-public class InvalidEntityUpdate extends Exception {
+public class InvalidEntityUpdate extends InvalidRequest {
     private final String key;
     private final String reason;
 
@@ -25,5 +27,10 @@ public class InvalidEntityUpdate extends Exception {
             sb.append(this.reason).append(".");
         }
         return sb.toString();
+    }
+
+    @Override
+    public HttpStatus getStatusCode() {
+        return HttpStatus.BAD_REQUEST;
     }
 }

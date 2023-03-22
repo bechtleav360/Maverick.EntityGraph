@@ -1,6 +1,7 @@
 package io.av360.maverick.graph.api.config;
 
-import io.av360.maverick.graph.model.errors.*;
+import io.av360.maverick.graph.model.errors.InvalidRequest;
+import io.av360.maverick.graph.model.errors.store.InvalidEntityModel;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.rdf4j.query.MalformedQueryException;
 import org.eclipse.rdf4j.rio.RDFParseException;
@@ -37,28 +38,13 @@ public class GlobalExceptionHandler extends DefaultErrorAttributes {
             errorAttributes.replace("error", HttpStatus.BAD_REQUEST.getReasonPhrase());
             errorAttributes.remove("exception");
             errorAttributes.remove("trace");
-        } else if (error instanceof EntityNotFound) {
-            errorAttributes.replace("status", HttpStatus.NOT_FOUND.value());
-            errorAttributes.replace("error", HttpStatus.BAD_REQUEST.getReasonPhrase());
-            errorAttributes.remove("exception");
-            errorAttributes.remove("trace");
-        } else if (error instanceof MissingType) {
-            errorAttributes.replace("status", HttpStatus.BAD_REQUEST.value());
-            errorAttributes.replace("error", HttpStatus.BAD_REQUEST.getReasonPhrase());
+        } else if (error instanceof InvalidRequest requestError) {
+            errorAttributes.replace("status", requestError.getStatusCode().value());
+            errorAttributes.replace("error", requestError.getReasonPhrase());
             errorAttributes.remove("exception");
             errorAttributes.remove("trace");
         } else if (error instanceof InvalidEntityModel) {
             errorAttributes.replace("status", HttpStatus.CONFLICT.value());
-            errorAttributes.replace("error", HttpStatus.BAD_REQUEST.getReasonPhrase());
-            errorAttributes.remove("exception");
-            errorAttributes.remove("trace");
-        } else if (error instanceof EntityExistsAlready) {
-            errorAttributes.replace("status", HttpStatus.CONFLICT.value());
-            errorAttributes.replace("error", HttpStatus.BAD_REQUEST.getReasonPhrase());
-            errorAttributes.remove("exception");
-            errorAttributes.remove("trace");
-        } else if (error instanceof UnknownPrefix) {
-            errorAttributes.replace("status", HttpStatus.BAD_REQUEST.value());
             errorAttributes.replace("error", HttpStatus.BAD_REQUEST.getReasonPhrase());
             errorAttributes.remove("exception");
             errorAttributes.remove("trace");
@@ -79,11 +65,6 @@ public class GlobalExceptionHandler extends DefaultErrorAttributes {
         } else if (error instanceof SecurityException) {
             errorAttributes.replace("status", HttpStatus.UNAUTHORIZED.value());
             errorAttributes.replace("error", HttpStatus.UNAUTHORIZED.getReasonPhrase());
-            errorAttributes.remove("exception");
-            errorAttributes.remove("trace");
-        } else if (error instanceof InvalidEntityUpdate) {
-            errorAttributes.replace("status", HttpStatus.BAD_REQUEST.value());
-            errorAttributes.replace("error", HttpStatus.BAD_REQUEST.getReasonPhrase());
             errorAttributes.remove("exception");
             errorAttributes.remove("trace");
         }

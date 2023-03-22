@@ -5,8 +5,8 @@ import io.av360.maverick.graph.feature.applications.api.dto.Requests;
 import io.av360.maverick.graph.feature.applications.api.dto.Responses;
 import io.av360.maverick.graph.feature.applications.domain.ApplicationsService;
 import io.av360.maverick.graph.feature.applications.domain.errors.InvalidApplication;
-import io.av360.maverick.graph.feature.applications.domain.model.Application;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.util.Assert;
@@ -15,13 +15,12 @@ import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import java.util.List;
-
 @RestController
 @RequestMapping(path = "/api/applications")
 //@Api(tags = "Manage applications")
 @Slf4j(topic = "graph.feat.apps.ctrl.api")
 @SecurityRequirement(name = "api_key")
+@Tag(name = "Manage applications")
 public class Applications extends AbstractController {
 
     private final ApplicationsService applicationsService;
@@ -46,7 +45,7 @@ public class Applications extends AbstractController {
                                 subscription.label(),
                                 subscription.flags()
                         )
-                ).doOnSubscribe(subscription -> log.info("Creating a new application"));
+                ).doOnSubscribe(subscription -> log.info("Request to create a new application with the label '{}' and flags: {}", request.label(), request.flags()));
     }
 
     //@ApiOperation(value = "List all applications")

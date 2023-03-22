@@ -4,20 +4,19 @@ package io.av360.maverick.graph.store.behaviours;
 import io.av360.maverick.graph.model.security.Authorities;
 import io.av360.maverick.graph.store.RepositoryBuilder;
 import io.av360.maverick.graph.store.RepositoryType;
+import io.av360.maverick.graph.store.rdf.LabeledConnectionWrapper;
 import io.av360.maverick.graph.store.rdf.models.Transaction;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
-import org.springframework.lang.Nullable;
 import org.springframework.security.authentication.InsufficientAuthenticationException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
 
@@ -28,10 +27,6 @@ public interface RepositoryBehaviour {
         return SimpleValueFactory.getInstance();
     }
 
-    default ValueFactory getValueFactory(@Nullable Authentication authentication) throws IOException {
-        if (authentication == null || !authentication.isAuthenticated()) return this.getValueFactory();
-        return getBuilder().buildRepository(this.getRepositoryType(), authentication).getValueFactory();
-    }
 
     /**
      * Checks whether an entity with the given identity exists, ie. we have an crdf:type statement.
@@ -55,15 +50,17 @@ public interface RepositoryBehaviour {
     }
 
 
-    default RepositoryConnection getConnection(Authentication authentication, GrantedAuthority requiredAuthority) throws IOException {
+    default Mono<RepositoryConnection> getConnection(Authentication authentication, GrantedAuthority requiredAuthority) {
         return this.getConnection(authentication, getRepositoryType(), requiredAuthority);
     }
 
-    default RepositoryConnection getConnection(Authentication authentication, RepositoryType repositoryType, GrantedAuthority requiredAuthority) throws IOException {
+    default Mono<RepositoryConnection> getConnection(Authentication authentication, RepositoryType repositoryType, GrantedAuthority requiredAuthority)  {
         if (!Authorities.satisfies(requiredAuthority, authentication.getAuthorities())) {
-            throw new InsufficientAuthenticationException(String.format("Missing authority '%s' for initializing connection to requested repository for authentication", requiredAuthority.getAuthority()));
+            String msg = String.format("Required authority '%s' for repository '%s' not met in authentication with authorities '%s'", requiredAuthority.getAuthority(), repositoryType.name(), authentication.getAuthorities());
+            return Mono.error(new InsufficientAuthenticationException(msg));
         }
-        return getBuilder().buildRepository(repositoryType, authentication).getConnection();
+        return getBuilder().buildRepository(repositoryType, authentication)
+                .map(repository -> new LabeledConnectionWrapper(repository, repository.getConnection()));
     }
 
     RepositoryType getRepositoryType();

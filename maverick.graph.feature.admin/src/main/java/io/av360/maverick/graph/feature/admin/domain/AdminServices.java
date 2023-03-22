@@ -23,7 +23,7 @@ public class AdminServices {
 
 
     public Mono<Void> reset(Authentication authentication, RepositoryType repositoryType) {
-        return this.graph.reset(authentication, repositoryType, Authorities.APPLICATION)
+        return this.graph.reset(authentication, repositoryType, Authorities.SYSTEM)
                 .doOnSubscribe(sub -> log.info("Purging repository through admin services"));
     }
 

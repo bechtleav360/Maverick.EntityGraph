@@ -1,9 +1,10 @@
-package io.av360.maverick.graph.model.errors;
+package io.av360.maverick.graph.model.errors.store;
 
+import io.av360.maverick.graph.model.errors.InconsistentModel;
 import org.eclipse.rdf4j.model.Resource;
 import org.springframework.util.StringUtils;
 
-public class InvalidEntityModel extends Exception {
+public class InvalidEntityModel extends InconsistentModel {
     private final String identifier;
     private String detail;
 

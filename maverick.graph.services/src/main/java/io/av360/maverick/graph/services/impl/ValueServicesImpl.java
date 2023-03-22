@@ -1,7 +1,7 @@
 package io.av360.maverick.graph.services.impl;
 
-import io.av360.maverick.graph.model.errors.EntityNotFound;
-import io.av360.maverick.graph.model.errors.InvalidEntityUpdate;
+import io.av360.maverick.graph.model.errors.requests.EntityNotFound;
+import io.av360.maverick.graph.model.errors.requests.InvalidEntityUpdate;
 import io.av360.maverick.graph.services.EntityServices;
 import io.av360.maverick.graph.services.SchemaServices;
 import io.av360.maverick.graph.services.ValueServices;

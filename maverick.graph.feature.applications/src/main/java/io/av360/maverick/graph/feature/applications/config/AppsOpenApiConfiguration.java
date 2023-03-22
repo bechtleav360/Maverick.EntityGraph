@@ -7,7 +7,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
-public class ApplicationOpenApiConfiguration {
+public class AppsOpenApiConfiguration {
 
     @Bean
     public GroupedOpenApi applicationsApiDefinition(@Value("${info.app.version:unknown}") String version) {
@@ -16,20 +16,11 @@ public class ApplicationOpenApiConfiguration {
                 .addOpenApiCustomizer(openApi -> {
                     openApi.info(new Info().title("Maverick.EntityGraph Applications API").description("API to register applications and generate or revoke Api Keys (part of multi-tenancy feature). Requires admin authentication.").version(version));
                 })
-                .pathsToMatch("/api/applications/**")
+                .pathsToMatch("/api/applications/**", "/api/sc/**/entities/**")
                 .build();
     }
 
-    @Bean("ScopedApiDefinition")
-    public GroupedOpenApi scopedApiDefinition(@Value("${info.app.version:unknown}") String version) {
-        return GroupedOpenApi.builder()
-                .group("Application-Scoped API")
-                .addOpenApiCustomizer(openApi -> {
-                    openApi.info(new Info().title("Application-scoped Entity Graph API").description("API to access and update the entity graph.").version(version));
-                })
-                .pathsToMatch("/api/sc/**/entities/**")
-                .build();
-    }
+
 
 
 

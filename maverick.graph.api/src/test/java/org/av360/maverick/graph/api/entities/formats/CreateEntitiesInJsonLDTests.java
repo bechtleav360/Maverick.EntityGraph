@@ -1,10 +1,10 @@
 package org.av360.maverick.graph.api.entities.formats;
 
 import io.av360.maverick.graph.model.vocabulary.Transactions;
+import io.av360.maverick.graph.tests.clients.TestEntitiesClient;
 import io.av360.maverick.graph.tests.config.TestSecurityConfig;
 import io.av360.maverick.graph.tests.util.ApiTestsBase;
 import io.av360.maverick.graph.tests.util.RdfConsumer;
-import org.av360.maverick.graph.api.clients.TestClient;
 import org.eclipse.rdf4j.model.Statement;
 import org.junit.jupiter.api.*;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -23,7 +23,7 @@ import java.util.Collection;
 @RecordApplicationEvents
 @ActiveProfiles({"test", "api"})
 public class CreateEntitiesInJsonLDTests extends ApiTestsBase {
-    private TestClient client;
+    private TestEntitiesClient client;
 
 
     @AfterEach
@@ -33,7 +33,7 @@ public class CreateEntitiesInJsonLDTests extends ApiTestsBase {
 
     @BeforeEach
     public void setup() {
-        client = new TestClient(super.webClient);
+        client = new TestEntitiesClient(super.webClient);
     }
 
     @Test

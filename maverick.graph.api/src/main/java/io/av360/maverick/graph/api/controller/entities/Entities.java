@@ -17,6 +17,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -39,6 +40,7 @@ import java.util.Map;
 
 )
 @SecurityRequirement(name = "api_key")
+@Tag(name = "Entities")
 public class Entities extends AbstractController {
 
     protected final ObjectMapper objectMapper;

@@ -16,6 +16,8 @@ import org.eclipse.rdf4j.rio.RDFWriter;
 import org.eclipse.rdf4j.rio.Rio;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.TestingAuthenticationToken;
+import reactor.core.publisher.Mono;
+import reactor.test.StepVerifier;
 
 import java.io.StringWriter;
 
@@ -62,9 +64,11 @@ public abstract class TestsBase {
 
     protected void resetRepository() {
         TestingAuthenticationToken token = TestSecurityConfig.createAuthenticationToken();
-        this.entityStore.reset(token, RepositoryType.ENTITIES, Authorities.SYSTEM);
-        this.entityStore.reset(token, RepositoryType.TRANSACTIONS, Authorities.SYSTEM);
-        this.entityStore.reset(token, RepositoryType.APPLICATION, Authorities.SYSTEM);
+        Mono<Void> r1 = this.entityStore.reset(token, RepositoryType.ENTITIES, Authorities.SYSTEM)
+                .then(this.entityStore.reset(token, RepositoryType.TRANSACTIONS, Authorities.SYSTEM))
+                .then(this.entityStore.reset(token, RepositoryType.APPLICATION, Authorities.SYSTEM));
+
+        StepVerifier.create(r1).verifyComplete();
     }
 
 

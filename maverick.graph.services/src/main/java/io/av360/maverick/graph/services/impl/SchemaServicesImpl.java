@@ -1,6 +1,6 @@
 package io.av360.maverick.graph.services.impl;
 
-import io.av360.maverick.graph.model.errors.UnknownPrefix;
+import io.av360.maverick.graph.model.errors.requests.UnknownPrefix;
 import io.av360.maverick.graph.model.rdf.LocalIRI;
 import io.av360.maverick.graph.services.SchemaServices;
 import io.av360.maverick.graph.store.SchemaStore;
@@ -36,7 +36,7 @@ public class SchemaServicesImpl implements SchemaServices {
     }
 
     @Override
-    public Mono<Namespace> getNamespaceFor(String prefix) throws UnknownPrefix {
+    public Mono<Namespace> getNamespaceFor(String prefix) {
         return this.schemaStore.listNamespaces()
                 .filter(namespace -> namespace.getPrefix().equalsIgnoreCase(prefix))
                 .switchIfEmpty(Mono.error(new UnknownPrefix(prefix)))

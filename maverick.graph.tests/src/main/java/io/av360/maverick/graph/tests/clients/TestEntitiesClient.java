@@ -1,7 +1,9 @@
-package org.av360.maverick.graph.api.clients;
+package io.av360.maverick.graph.tests.clients;
 
 import io.av360.maverick.graph.store.rdf.helpers.RdfUtils;
 import io.av360.maverick.graph.tests.util.RdfConsumer;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.rio.RDFFormat;
 import org.eclipse.rdf4j.rio.Rio;
@@ -13,27 +15,30 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.reactive.function.BodyInserters;
 import reactor.core.publisher.Mono;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 import java.io.StringWriter;
 import java.util.Objects;
 
-public class TestClient {
+public class TestEntitiesClient {
 
     private final WebTestClient webClient;
 
-    public TestClient(WebTestClient webClient) {
+    public TestEntitiesClient(WebTestClient webClient) {
         this.webClient = webClient;
     }
 
     public WebTestClient.ResponseSpec createEntity(Publisher<String> content, RDFFormat format) {
+        return this.createEntity(content, "/api/entities", format);
+    }
+
+    public WebTestClient.ResponseSpec createEntity(Publisher<String> content, String path, RDFFormat format) {
         return webClient.post()
-                .uri("/api/entities")
+                .uri(path)
                 .accept(MediaType.parseMediaType(format.getDefaultMIMEType()))
                 .contentType(MediaType.parseMediaType(format.getDefaultMIMEType()))
                 .body(BodyInserters.fromPublisher(content, String.class))
                 .exchange();
     }
+
 
     public RdfConsumer createEntity(Model content) {
         RdfConsumer consumer = new RdfConsumer(RDFFormat.JSONLD);
@@ -63,11 +68,15 @@ public class TestClient {
     }
 
     public RdfConsumer createEntity(Resource file) {
+        return this.createEntity(file, "/api/entities");
+    }
+
+    public RdfConsumer createEntity(Resource file, String path) {
         RDFFormat format = getFormatFromExt(file);
         RdfConsumer rdfConsumer = new RdfConsumer(format, true);
 
         webClient.post()
-                .uri("/api/entities")
+                .uri(path)
                 .contentType(RdfUtils.getMediaType(format))
                 .accept(RdfUtils.getMediaType(format))
                 .body(BodyInserters.fromResource(file))
@@ -94,6 +103,24 @@ public class TestClient {
                 .accept(RdfUtils.getMediaType(format))
                 .header("X-API-KEY", "test")
                 .exchange();
+
+    }
+
+    public RdfConsumer listEntities(String path) {
+        RDFFormat format = RDFFormat.TURTLE;
+
+        RdfConsumer rdfConsumer = new RdfConsumer(format, false);
+        webClient.get()
+                .uri(uriBuilder -> uriBuilder
+                        .path(path)
+                        .build()
+                )
+                .accept(RdfUtils.getMediaType(format))
+                .header("X-API-KEY", "test")
+                .exchange()
+                .expectBody()
+                .consumeWith(rdfConsumer);
+        return rdfConsumer;
 
     }
 
@@ -147,6 +174,7 @@ public class TestClient {
                 .exchange()
                 .expectStatus().isOk();
     }
+
 
 
 }

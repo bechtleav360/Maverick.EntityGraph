@@ -71,7 +71,7 @@ public class StatementsDecoder implements Decoder<TripleBag> {
                         log.trace("Parsing of payload with mimetype '{}' completed", mimeType);
                         return Mono.just(handler.getModel());
                     } catch (Exception e) {
-                        log.error("Failed to parse request of mimetype '{}'", mimeType, e);
+                        log.warn("Failed to parse request of mimetype '{}'", mimeType);
                         return Mono.error(e);
                     }
                 });

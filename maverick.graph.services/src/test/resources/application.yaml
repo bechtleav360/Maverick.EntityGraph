@@ -5,8 +5,13 @@
 application:
   security:
     enabled: false
-    apiKey: "xxx"
+    apiKey: "test"
+    basic:
+      enabled: false
   features:
+    modules:
+      applications: false
+      admin: true
     schedulers:
       detectDuplicates: true
       replaceGlobalIdentifiers: true

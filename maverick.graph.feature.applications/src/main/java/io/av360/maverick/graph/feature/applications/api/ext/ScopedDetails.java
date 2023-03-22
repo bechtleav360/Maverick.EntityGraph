@@ -8,6 +8,7 @@ import io.av360.maverick.graph.store.rdf.models.TripleBag;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -18,6 +19,7 @@ import reactor.core.publisher.Flux;
 @RequestMapping(path = "/api")
 @Slf4j(topic = "graph.api.ctrl.details")
 @SecurityRequirement(name = "api_key")
+@Tag(name = "Details (Scoped)")
 public class ScopedDetails extends AbstractController {
 
 
@@ -28,7 +30,7 @@ public class ScopedDetails extends AbstractController {
     }
 
     @Operation(summary = "Returns all details for a value or link")
-    @GetMapping(value = "/sc/{scope}/entities/{id:[\\w|\\d|-|_]+}/{type}/{prefixedValueKey:[\\w|\\d]+\\.[\\w|\\d]+}/details",
+    @GetMapping(value = "/app/{scope}/entities/{id:[\\w|\\d|-|_]+}/{type}/{prefixedValueKey:[\\w|\\d]+\\.[\\w|\\d]+}/details",
             consumes = MediaType.TEXT_PLAIN_VALUE,
             produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE})
     @ResponseStatus(HttpStatus.OK)
@@ -42,7 +44,7 @@ public class ScopedDetails extends AbstractController {
     }
 
     @Operation(summary = "Purge all details for a value")
-    @DeleteMapping(value = "/sc/{scope}/entities/{id:[\\w|\\d|-|_]+}/values/{prefixedValueKey:[\\w|\\d]+\\.[\\w|\\d]+}/details",
+    @DeleteMapping(value = "/app/{scope}/entities/{id:[\\w|\\d|-|_]+}/values/{prefixedValueKey:[\\w|\\d]+\\.[\\w|\\d]+}/details",
             consumes = MediaType.TEXT_PLAIN_VALUE,
             produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE})
     @ResponseStatus(HttpStatus.OK)
@@ -54,7 +56,7 @@ public class ScopedDetails extends AbstractController {
     }
 
     @Operation(summary = "Delete a specific detail for a value")
-    @DeleteMapping(value = "/sc/{scope}/entities/{id:[\\w|\\d|-|_]+}/values/{prefixedValueKey:[\\w|\\d]+\\.[\\w|\\d]+}/details/{prefixedDetailKey:[\\w|\\d]+\\.[\\w|\\d]+}",
+    @DeleteMapping(value = "/app/{scope}/entities/{id:[\\w|\\d|-|_]+}/values/{prefixedValueKey:[\\w|\\d]+\\.[\\w|\\d]+}/details/{prefixedDetailKey:[\\w|\\d]+\\.[\\w|\\d]+}",
             consumes = MediaType.TEXT_PLAIN_VALUE,
             produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE})
     @ResponseStatus(HttpStatus.OK)
@@ -69,7 +71,7 @@ public class ScopedDetails extends AbstractController {
     }
 
     @Operation(summary = "Creates a statement about a statement use the post body as value.")
-    @PostMapping(value = "/sc/{scope}/entities/{id:[\\w|\\d|-|_]+}/{type}/{prefixedValueKey:[\\w|\\d]+\\.[\\w|\\d]+}/details/{prefixedDetailKey:[\\w|\\d]+\\.[\\w|\\d]+}",
+    @PostMapping(value = "/app/{scope}/entities/{id:[\\w|\\d|-|_]+}/{type}/{prefixedValueKey:[\\w|\\d]+\\.[\\w|\\d]+}/details/{prefixedDetailKey:[\\w|\\d]+\\.[\\w|\\d]+}",
             consumes = MediaType.TEXT_PLAIN_VALUE,
             produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE})
     @ResponseStatus(HttpStatus.OK)
@@ -85,7 +87,7 @@ public class ScopedDetails extends AbstractController {
 
 
     @Operation(summary = "Creates a statement about a statement use the post body as value.")
-    @PostMapping(value = "/sc/{scope}/entities/{id:[\\w|\\d|-|_]+}/{type}/{prefixedValueKey:[\\w|\\d]+\\.[\\w|\\d]+}/details",
+    @PostMapping(value = "/app/{scope}/entities/{id:[\\w|\\d|-|_]+}/{type}/{prefixedValueKey:[\\w|\\d]+\\.[\\w|\\d]+}/details",
             consumes = RdfMimeTypes.TURTLESTAR_VALUE,
             produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE})
     @ResponseStatus(HttpStatus.OK)

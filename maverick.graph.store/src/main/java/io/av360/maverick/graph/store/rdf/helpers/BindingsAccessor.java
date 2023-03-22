@@ -1,6 +1,6 @@
 package io.av360.maverick.graph.store.rdf.helpers;
 
-import io.av360.maverick.graph.model.errors.DuplicateRecordsException;
+import io.av360.maverick.graph.model.errors.store.DuplicateRecordsException;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.util.Literals;
