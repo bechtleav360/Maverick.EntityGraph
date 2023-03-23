@@ -2,7 +2,6 @@ package io.av360.maverick.graph.tests.util;
 
 import io.av360.maverick.graph.model.security.Authorities;
 import io.av360.maverick.graph.store.EntityStore;
-import io.av360.maverick.graph.store.RepositoryType;
 import io.av360.maverick.graph.store.TransactionsStore;
 import io.av360.maverick.graph.tests.config.TestSecurityConfig;
 import lombok.extern.slf4j.Slf4j;
@@ -33,6 +32,8 @@ public abstract class TestsBase {
 
 
 
+
+
     protected IRI createIRIFrom(String url) {
         return vf.createIRI(url);
     }
@@ -47,6 +48,9 @@ public abstract class TestsBase {
         this.transactionsStore = transactionsStore;
     }
 
+    public void printLogSeparator(int step) {
+        System.out.println("\n----------- Step: "+step+" -------------------------------------------------------------------------------------- \n");
+    }
 
     public void print(Model md, RDFFormat rdfFormat) {
        String m = this.dumpModel(md, rdfFormat);
@@ -64,9 +68,8 @@ public abstract class TestsBase {
 
     protected void resetRepository() {
         TestingAuthenticationToken token = TestSecurityConfig.createAuthenticationToken();
-        Mono<Void> r1 = this.entityStore.reset(token, RepositoryType.ENTITIES, Authorities.SYSTEM)
-                .then(this.entityStore.reset(token, RepositoryType.TRANSACTIONS, Authorities.SYSTEM))
-                .then(this.entityStore.reset(token, RepositoryType.APPLICATION, Authorities.SYSTEM));
+        Mono<Void> r1 = this.entityStore.reset(token, Authorities.SYSTEM)
+                .then(this.transactionsStore.reset(token, Authorities.SYSTEM));
 
         StepVerifier.create(r1).verifyComplete();
     }

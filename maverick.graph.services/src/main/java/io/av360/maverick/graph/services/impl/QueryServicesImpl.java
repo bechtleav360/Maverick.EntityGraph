@@ -42,7 +42,7 @@ public class QueryServicesImpl implements QueryServices {
                 .map(q -> queryParser.parseQuery(query, null))
                 .flatMapMany(ptq -> this.entityStore.query(query, authentication))
                 .doOnSubscribe(subscription -> {
-                    if (log.isTraceEnabled()) log.trace("Running select query in entity store: \n {}", query);
+                    if (log.isTraceEnabled()) log.trace("Running select query in entity store: \n {}", query.replace('\n', ' ').trim());
                 });
     }
 

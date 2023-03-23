@@ -60,7 +60,7 @@ public class Applications extends AbstractController {
                                 subscription.label(),
                                 subscription.flags()
                         )
-                ).doOnSubscribe(subscription -> log.info("Fetching all applications"));
+                ).doOnSubscribe(subscription -> log.info("Request to list all applications"));
     }
 
     @GetMapping(value = "/{applicationId}")
@@ -74,7 +74,7 @@ public class Applications extends AbstractController {
                                 application.label(),
                                 application.flags()
                         )
-                ).doOnSubscribe(subscription -> log.info("Fetching all applications"));
+                ).doOnSubscribe(subscription -> log.info("Request to get application with id '{}'", applicationId));
     }
 
 

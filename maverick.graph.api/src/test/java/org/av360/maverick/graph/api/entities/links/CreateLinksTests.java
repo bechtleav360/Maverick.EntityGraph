@@ -42,15 +42,20 @@ public class CreateLinksTests extends ApiTestsBase {
 
     @Test
     void createLink() {
+
+        super.printLogSeparator(1);
         RdfConsumer rc1 = client.createEntity(EntitiesGenerator.generateCreativeWork());
         IRI sourceIdentifier = rc1.getEntityIdentifier(SDO.CREATIVE_WORK);
 
+        super.printLogSeparator(2);
         RdfConsumer rc2 = client.createEntity(EntitiesGenerator.generateDefinedTerm());
         IRI targetIdentifier = rc2.getEntityIdentifier(SDO.DEFINED_TERM);
 
+        super.printLogSeparator(3);
         client.createLink(sourceIdentifier.getLocalName(), "sdo.hasDefinedTerm", targetIdentifier.getLocalName())
                 .expectStatus().isCreated();
 
+        super.printLogSeparator(4);
         RdfConsumer rc3 = client.readEntity(sourceIdentifier.getLocalName());
         rc3.print();
 
@@ -61,17 +66,21 @@ public class CreateLinksTests extends ApiTestsBase {
 
     @Test
     void createWithUnknownTarget() {
+
+        super.printLogSeparator(1);
         RdfConsumer rc1 = client.createEntity(EntitiesGenerator.generateCreativeWork());
         String sourceIdentifier = rc1.getEntityKey(SDO.CREATIVE_WORK);
 
         String targetIdentifier = GeneratorCommons.generateRandomEntityIdentifier();
 
+        super.printLogSeparator(2);
         client.createLink(sourceIdentifier, "sdo.hasDefinedTerm", targetIdentifier)
                 .expectStatus().isNotFound();
     }
 
     @Test
     void createWithUnknownSource() {
+        super.printLogSeparator(1);
         String sourceIdentifier = GeneratorCommons.generateRandomEntityIdentifier();
 
         String targetIdentifier = GeneratorCommons.generateRandomEntityIdentifier();
@@ -82,12 +91,15 @@ public class CreateLinksTests extends ApiTestsBase {
 
     @Test
     void createWithUnknownPrefix() {
+        super.printLogSeparator(1);
         RdfConsumer rc1 = client.createEntity(EntitiesGenerator.generateCreativeWork());
         String sourceIdentifier = rc1.getEntityKey(SDO.CREATIVE_WORK);
 
+        super.printLogSeparator(2);
         RdfConsumer rc2 = client.createEntity(EntitiesGenerator.generateDefinedTerm());
         String targetIdentifier = rc2.getEntityKey(SDO.DEFINED_TERM);
 
+        super.printLogSeparator(3);
         client.createLink(sourceIdentifier, "xxx.hasDefinedTerm", targetIdentifier)
                 .expectStatus().isBadRequest();
     }

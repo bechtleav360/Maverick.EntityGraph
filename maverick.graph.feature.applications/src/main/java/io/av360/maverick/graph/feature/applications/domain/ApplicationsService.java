@@ -32,6 +32,8 @@ import reactor.core.publisher.Mono;
 
 import java.time.ZonedDateTime;
 
+import static io.av360.maverick.graph.model.util.StreamsLogger.debug;
+
 /**
  * Applications separate tenants. Each application has its own separate stores.
  * An application has a set of unique API Keys. The api key identifies the application.
@@ -100,7 +102,7 @@ public class ApplicationsService {
                 .doOnSuccess(app -> {
                     this.eventPublisher.publishEvent(new ApplicationCreatedEvent(app));
                 })
-                .doOnSubscribe(subs -> log.debug("Creating a new application with label '{}' and persistence set to '{}' ", label, flags.isPersistent()));
+                .doOnSubscribe(debug(log, "Creating a new application with label '{}' and persistence set to '{}' ", label, flags.isPersistent()));
     }
 
 
@@ -152,7 +154,7 @@ public class ApplicationsService {
                             .map(BindingsAccessor::new)
                             .map(ba -> this.buildSubscriptionFromBindings(ba, app));
                 })
-                .doOnSubscribe(sub -> log.debug("Requesting all API Keys for application with key '{}'", applicationIdentifier));
+                .doOnSubscribe(debug(log, "Requesting all API Keys for application with key '{}'", applicationIdentifier));
     }
 
 
@@ -171,12 +173,12 @@ public class ApplicationsService {
         return this.applicationsStore.query(q, authentication, Authorities.SYSTEM)
                 .map(BindingsAccessor::new)
                 .map(this::buildApplicationFromBindings)
-                .doOnSubscribe(sub -> log.debug("Requesting all applications"));
+                .doOnSubscribe(debug(log, "Loading all applications from repository."));
 
     }
 
     public Mono<Void> revokeToken(String subscriptionId, String name, Authentication authentication) {
-        log.debug("(Service) Revoking api key for application '{}'", subscriptionId);
+        log.debug(" Revoking api key for application '{}'", subscriptionId);
 
         return Mono.error(new UnsupportedOperationException());
     }
@@ -210,7 +212,7 @@ public class ApplicationsService {
                 .doOnSuccess(token -> {
                     this.eventPublisher.publishEvent(new TokenCreatedEvent(token));
                 })
-                .doOnSubscribe(subs -> log.debug("Generating new subscription key for application '{}'", applicationIdentifier));
+                .doOnSubscribe(debug(log, "Generating new subscription key for application '{}'", applicationIdentifier));
     }
 
 
@@ -228,7 +230,7 @@ public class ApplicationsService {
                 .singleOrEmpty()
                 .map(BindingsAccessor::new)
                 .map(this::buildApplicationFromBindings)
-                .doOnSubscribe(sub -> log.debug("Requesting application with identifier '{}'", applicationKey));
+                .doOnSubscribe(debug(log, "Requesting application with identifier '{}'", applicationKey));
     }
 
 

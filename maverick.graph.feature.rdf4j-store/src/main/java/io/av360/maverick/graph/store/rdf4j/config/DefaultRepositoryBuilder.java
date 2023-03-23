@@ -3,6 +3,7 @@ package io.av360.maverick.graph.store.rdf4j.config;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import io.av360.maverick.graph.model.security.ApiKeyAuthenticationToken;
+import io.av360.maverick.graph.model.util.StreamsLogger;
 import io.av360.maverick.graph.store.RepositoryBuilder;
 import io.av360.maverick.graph.store.RepositoryType;
 import io.av360.maverick.graph.store.rdf.LabeledRepository;
@@ -46,8 +47,6 @@ public class DefaultRepositoryBuilder implements RepositoryBuilder {
     private String defaultPath;
 
 
-
-
     private final Cache<String, Repository> cache;
     private Map<String, List<String>> storage;
     private String test;
@@ -69,8 +68,10 @@ public class DefaultRepositoryBuilder implements RepositoryBuilder {
      */
     @Override
     public Mono<Repository> buildRepository(RepositoryType repositoryType, Authentication authentication) {
-        if(Objects.isNull(authentication)) return Mono.error(new IllegalArgumentException("Failed to resolve repository due to missing authentication"));
-        if(! authentication.isAuthenticated()) return Mono.error(new UnauthorizedException("Authentication is set to 'false' within the " + authentication.getClass().getSimpleName()));
+        if (Objects.isNull(authentication))
+            return Mono.error(new IllegalArgumentException("Failed to resolve repository due to missing authentication"));
+        if (!authentication.isAuthenticated())
+            return Mono.error(new UnauthorizedException("Authentication is set to 'false' within the " + authentication.getClass().getSimpleName()));
 
         if (authentication instanceof TestingAuthenticationToken) {
             return this.getRepository(repositoryType, "test");
@@ -86,32 +87,48 @@ public class DefaultRepositoryBuilder implements RepositoryBuilder {
 
         return Mono.error(new IOException(String.format("Cannot resolve repository of type '%s' for authentication of type '%s'", repositoryType, authentication.getClass())));
     }
+    protected Mono<Repository> getRepository(RepositoryType repositoryType, String... details) {
+        return Mono.create(sink -> {
+
+            String key = buildRepositoryLabel(repositoryType, details);
+            String path = switch (repositoryType) {
+                case ENTITIES -> this.entitiesPath;
+                case TRANSACTIONS -> this.transactionsPath;
+                default -> this.defaultPath;
+            };
+            log.trace("Resolving repository of type '{}', label '{}'", repositoryType, key);
+
+            if (!StringUtils.hasLength(path)) {
+                sink.success(getCache().get(key, s -> new LabeledRepository(key, this.initializeVolatileRepository())));
+            } else {
+                Path p = Paths.get(path, repositoryType.toString(), "lmdb");
+                sink.success(getCache().get(key, s -> new LabeledRepository(key, this.initializePersistentRepository(p))));
+            }
+        });
+                // .doOnSubscribe(StreamsLogger.trace(log, "Resolving repository of type '{}', label '{}'", repositoryType, buildRepositoryLabel(repositoryType, details)));
+    }
+
+    protected Mono<Repository> getRepository3(RepositoryType repositoryType, String... details) {
 
 
-
-
-
-
-    protected Mono<Repository> getRepository(RepositoryType repositoryType, String ... details) {
         String key = buildRepositoryLabel(repositoryType, details);
-
-        log.trace("Resolving repository of type '{}', label '{}'", repositoryType, key);
         String path = switch (repositoryType) {
             case ENTITIES -> this.entitiesPath;
             case TRANSACTIONS -> this.transactionsPath;
             default -> this.defaultPath;
         };
 
+        Repository repository;
         if (!StringUtils.hasLength(path)) {
-
-            return Mono.just(getCache().get(key, s -> new LabeledRepository(key, this.initializeVolatileRepository())));
+            repository = getCache().get(key, s -> new LabeledRepository(key, this.initializeVolatileRepository()));
         } else {
-
             Path p = Paths.get(path, repositoryType.toString(), "lmdb");
-            return Mono.just(getCache().get(key, s -> new LabeledRepository(key, this.initializePersistentRepository(p))));
+            repository = getCache().get(key, s -> new LabeledRepository(key, this.initializePersistentRepository(p)));
         }
-    }
 
+        return Mono.just(repository)
+                .doOnSubscribe(StreamsLogger.trace(log, "Resolving repository of type '{}', label '{}'", repositoryType, key));
+    }
 
 
     protected Repository initializePersistentRepository(Path path) {
@@ -136,7 +153,7 @@ public class DefaultRepositoryBuilder implements RepositoryBuilder {
         return cache;
     }
 
-    protected String buildRepositoryLabel(RepositoryType rt, String ... details) {
+    protected String buildRepositoryLabel(RepositoryType rt, String... details) {
         StringBuilder label = new StringBuilder(rt.toString());
         for (String appendix : details) {
             label.append("_").append(appendix);

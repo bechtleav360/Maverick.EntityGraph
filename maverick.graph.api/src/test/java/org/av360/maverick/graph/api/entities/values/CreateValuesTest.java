@@ -11,6 +11,7 @@ import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.vocabulary.DCTERMS;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.rio.RDFFormat;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.locationtech.jts.util.Assert;
@@ -31,6 +32,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * Tests for endpoint POST /api/rs/{id}/{prefix.key}
  */
 public class CreateValuesTest extends ApiTestsBase {
+
+    @AfterEach
+    public void resetRepository() {
+        super.resetRepository();
+    }
 
     @Test
     public void setDescription() {

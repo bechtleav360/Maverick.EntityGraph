@@ -2,9 +2,9 @@ package io.av360.maverick.graph.feature.applications;
 
 import io.av360.maverick.graph.feature.applications.api.dto.Responses;
 import io.av360.maverick.graph.feature.applications.client.ApplicationsTestClient;
+import io.av360.maverick.graph.feature.applications.config.ApplicationsTestsBase;
 import io.av360.maverick.graph.feature.applications.domain.model.ApplicationFlags;
 import io.av360.maverick.graph.tests.config.TestSecurityConfig;
-import io.av360.maverick.graph.tests.util.ApiTestsBase;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -18,7 +18,7 @@ import org.springframework.test.context.event.RecordApplicationEvents;
 @ContextConfiguration(classes = TestSecurityConfig.class)
 @RecordApplicationEvents
 @ActiveProfiles({"test", "api"})
-class ApplicationsTest extends ApiTestsBase  {
+class ApplicationsTest extends ApplicationsTestsBase {
 
     private ApplicationsTestClient client;
 
@@ -35,6 +35,8 @@ class ApplicationsTest extends ApiTestsBase  {
 
     @Test
     public void createPublicApplication() {
+        super.printLogSeparator(1);
+
         this.client.createApplication("test-public", new ApplicationFlags(false, true))
                 .expectStatus().isCreated()
                 .expectBody()
@@ -46,14 +48,22 @@ class ApplicationsTest extends ApiTestsBase  {
     @Test
     public void listApplications() {
 
-        super.dump();
+        super.printLogSeparator(1);
 
         this.client.createApplication("a", new ApplicationFlags(false, true))
                 .expectStatus().isCreated().expectBody().jsonPath("$.key").isNotEmpty();
+
+        super.printLogSeparator(2);
+
         this.client.createApplication("b", new ApplicationFlags(true, true))
                 .expectStatus().isCreated().expectBody().jsonPath("$.key").isNotEmpty();
+
+        super.printLogSeparator(3);
+
         this.client.createApplication("c", new ApplicationFlags(false, false))
                 .expectStatus().isCreated().expectBody().jsonPath("$.key").isNotEmpty();
+
+        super.printLogSeparator(4);
 
         this.client.listApplications()
                         .expectStatus().isOk()

@@ -47,7 +47,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Slf4j(topic = "graph.repo.base")
-public class AbstractRepository implements RepositoryBehaviour, Statements, ModelUpdates, Resettable {
+public abstract class AbstractRepository implements RepositoryBehaviour, Statements, ModelUpdates, Resettable {
 
     private final RepositoryType repositoryType;
     private RepositoryBuilder repositoryConfiguration;
@@ -107,7 +107,7 @@ public class AbstractRepository implements RepositoryBehaviour, Statements, Mode
 
                         TupleQuery q = connection.prepareTupleQuery(QueryLanguage.SPARQL, query);
                         if (log.isTraceEnabled())
-                            log.trace("Querying repository '{}' with query: {}", connection.getRepository(), query.replace('\n', ' ').trim());
+                            log.trace("Querying repository '{}'", connection.getRepository());
                         try (TupleQueryResult result = q.evaluate()) {
                             result.stream().forEach(emitter::next);
                         } finally {

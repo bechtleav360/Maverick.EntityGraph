@@ -45,16 +45,19 @@ public class RemoveLinkTests extends ApiTestsBase {
 
     @Test
     void deleteLink() {
+        super.printLogSeparator(1);
         RdfConsumer rc1 = client.createEntity(EntitiesGenerator.generateCreativeWork());
         String sourceIdentifier = rc1.getEntityKey(SDO.CREATIVE_WORK);
 
+        super.printLogSeparator(2);
         RdfConsumer rc2 = client.createEntity(EntitiesGenerator.generateDefinedTerm());
         String targetIdentifier = rc2.getEntityKey(SDO.DEFINED_TERM);
 
+        super.printLogSeparator(3);
         client.createLink(sourceIdentifier, "sdo.hasDefinedTerm", targetIdentifier)
                 .expectStatus().isCreated();
 
-
+        super.printLogSeparator(4);
         client.deleteLink(sourceIdentifier, "sdo.hasDefinedTerm", targetIdentifier)
                 .expectStatus().isOk();
 
@@ -63,44 +66,52 @@ public class RemoveLinkTests extends ApiTestsBase {
 
     @Test
     void deleteUnknownLink() {
+        super.printLogSeparator(1);
         RdfConsumer rc1 = client.createEntity(EntitiesGenerator.generateCreativeWork());
         Resource source = rc1.findStatement(null, RDF.TYPE, SDO.CREATIVE_WORK).getSubject();
         Assertions.assertTrue(source.isIRI());
         String sourceIdentifier = ((IRI) source).getLocalName();
 
+        super.printLogSeparator(2);
         RdfConsumer rc2 = client.createEntity(EntitiesGenerator.generateDefinedTerm());
         Resource target = rc2.findStatement(null, RDF.TYPE, SDO.DEFINED_TERM).getSubject();
         Assertions.assertTrue(target.isIRI());
         String targetIdentifier = ((IRI) target).getLocalName();
 
+        super.printLogSeparator(3);
         client.createLink(sourceIdentifier, "sdo.hasDefinedTerm", targetIdentifier)
                 .expectStatus().isCreated();
 
-
+        super.printLogSeparator(4);
         client.deleteLink(sourceIdentifier, "sdo.teaches", targetIdentifier)
                 .expectStatus().isOk();
     }
 
     @Test
     void deleteForUnknownEntity() {
+        super.printLogSeparator(1);
         RdfConsumer rc1 = client.createEntity(EntitiesGenerator.generateCreativeWork());
         Resource source = rc1.findStatement(null, RDF.TYPE, SDO.CREATIVE_WORK).getSubject();
         Assertions.assertTrue(source.isIRI());
         String sourceIdentifier = ((IRI) source).getLocalName();
 
+        super.printLogSeparator(2);
         RdfConsumer rc2 = client.createEntity(EntitiesGenerator.generateDefinedTerm());
         Resource target = rc2.findStatement(null, RDF.TYPE, SDO.DEFINED_TERM).getSubject();
         Assertions.assertTrue(target.isIRI());
         String targetIdentifier = ((IRI) target).getLocalName();
 
+        super.printLogSeparator(3);
         RdfConsumer rc3 = client.createEntity(EntitiesGenerator.generateDefinedTerm());
         Resource another = rc2.findStatement(null, RDF.TYPE, SDO.DEFINED_TERM).getSubject();
         Assertions.assertTrue(target.isIRI());
         String anotherIdentifier = ((IRI) target).getLocalName();
 
+        super.printLogSeparator(4);
         client.createLink(sourceIdentifier, "sdo.hasDefinedTerm", targetIdentifier)
                 .expectStatus().isCreated();
 
+        super.printLogSeparator(5);
         client.deleteLink(anotherIdentifier, "sdo.hasDefinedTerm", targetIdentifier)
                 .expectStatus().isOk();
 

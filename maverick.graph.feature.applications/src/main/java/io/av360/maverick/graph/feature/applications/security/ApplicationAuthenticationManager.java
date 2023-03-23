@@ -19,6 +19,8 @@ import reactor.core.publisher.Mono;
 import java.io.IOException;
 import java.util.Optional;
 
+import static io.av360.maverick.graph.model.util.StreamsLogger.trace;
+
 /**
  * This authentication manager augments the default admin authentication manager (which assumes only one api key exists).
  * <p>
@@ -67,7 +69,7 @@ public class ApplicationAuthenticationManager implements ReactiveAuthenticationM
                         }
                     })
                     .switchIfEmpty(defaultFallback(authentication))
-                    .doOnSubscribe(sub -> log.trace("Handling authentication of type '{}' and authentication status '{}' in application authentication manager ", authentication.getClass().getSimpleName(), authentication.isAuthenticated()));
+                    .doOnSubscribe(trace(log, "Handling authentication of type '{}' and authentication status '{}' in application authentication manager ", authentication.getClass().getSimpleName(), authentication.isAuthenticated()));
 
 
         } catch (Exception e) {
@@ -86,9 +88,8 @@ public class ApplicationAuthenticationManager implements ReactiveAuthenticationM
 
         } else if (authentication instanceof AnonymousAuthenticationToken token) {
             log.trace("Ignoring anonymous access without requested application in application authentication manager.");
-            return Mono.just(token);
+            return Mono.just(authentication).log("Ignoring anonymous access without requested application in application authentication manager.");
         } else {
-            log.trace("Leaving authentication of type {} untouched.", authentication.getClass().getSimpleName());
             return Mono.just(authentication);
         }
     }

@@ -25,6 +25,9 @@ public interface EntityStore extends Searchable, Resettable, ModelUpdates, Selec
 
 
 
+    default Mono<Void> reset(Authentication authentication, GrantedAuthority requiredAuthority) {
+        return this.reset(authentication, RepositoryType.ENTITIES, Authorities.SYSTEM);
+    }
 
     default Flux<BindingSet> query(String query, Authentication authentication) {
         return this.query(query, authentication, Authorities.READER);
