@@ -1,6 +1,5 @@
 package io.av360.maverick.graph.store.rdf4j.repository;
 
-import io.av360.maverick.graph.model.errors.UnknownPrefix;
 import io.av360.maverick.graph.model.vocabulary.Local;
 import io.av360.maverick.graph.model.vocabulary.SDO;
 import io.av360.maverick.graph.model.vocabulary.Transactions;
@@ -12,6 +11,7 @@ import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.util.Namespaces;
 import org.springframework.stereotype.Component;
+import reactor.core.publisher.Flux;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -36,14 +36,15 @@ public class SchemaRepository extends AbstractRepository implements SchemaStore 
     }
 
 
-    @Override
-    public String getNamespaceFor(String prefix) throws UnknownPrefix {
-        return namespaces.stream().filter(ns -> ns.getPrefix().equalsIgnoreCase(prefix)).findFirst().orElseThrow(() -> new UnknownPrefix(prefix)).getName();
-    }
 
     @Override
     public ValueFactory getValueFactory() {
         return SimpleValueFactory.getInstance();
+    }
+
+    @Override
+    public Flux<Namespace> listNamespaces() {
+        return Flux.fromIterable(namespaces);
     }
 
 }

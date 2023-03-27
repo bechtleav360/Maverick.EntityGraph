@@ -22,7 +22,7 @@ import java.io.ByteArrayOutputStream;
 import java.util.List;
 import java.util.Map;
 
-@Slf4j(topic = "graph.api.encoder")
+@Slf4j(topic = "graph.ctrl.io.encoder.bindings")
 public class BindingSetEncoder implements Encoder<BindingSet> {
     private static final List<MimeType> mimeTypes;
 

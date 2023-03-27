@@ -1,6 +1,7 @@
 package io.av360.maverick.graph.model.rdf;
 
 import io.av360.maverick.graph.model.vocabulary.Local;
+import org.eclipse.rdf4j.model.Namespace;
 import org.eclipse.rdf4j.model.base.AbstractIRI;
 
 public class LocalIRI extends AbstractIRI {
@@ -36,6 +37,10 @@ public class LocalIRI extends AbstractIRI {
 
     public static LocalIRI withDefinedNamespace(String namespace, String localname) {
         return new LocalIRI(namespace, localname);
+    }
+
+    public static LocalIRI withDefinedNamespace(Namespace namespace, String localname) {
+        return new LocalIRI(namespace.getName(), localname);
     }
 
 

@@ -6,7 +6,8 @@ import io.av360.maverick.graph.model.enums.RdfMimeTypes;
 import io.av360.maverick.graph.model.rdf.GeneratedIdentifier;
 import io.av360.maverick.graph.model.rdf.NamespaceAwareStatement;
 import io.av360.maverick.graph.services.EntityServices;
-import io.av360.maverick.graph.services.impl.QueryServicesImpl;
+import io.av360.maverick.graph.services.QueryServices;
+import io.av360.maverick.graph.services.SchemaServices;
 import io.av360.maverick.graph.store.rdf.models.TripleBag;
 import io.av360.maverick.graph.store.rdf.models.TripleModel;
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
@@ -16,9 +17,12 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.web.reactive.error.ErrorAttributes;
+import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
 import org.springframework.util.Assert;
 import org.springframework.web.bind.annotation.*;
@@ -28,63 +32,61 @@ import javax.annotation.Nullable;
 import java.util.Map;
 
 @RestController
-@RequestMapping(path = "/api/entities")
-@Slf4j(topic = "graph.api.entities")
+@Qualifier("EntityApi")
+@Order(1)
+@RequestMapping(path = "/api")
+@Slf4j(topic = "graph.ctrl.api.entities")
 @OpenAPIDefinition(
 
 )
 @SecurityRequirement(name = "api_key")
+@Tag(name = "Entities")
 public class Entities extends AbstractController {
 
     protected final ObjectMapper objectMapper;
     protected final EntityServices entityServices;
-    protected final QueryServicesImpl queryServices;
+    protected final QueryServices queryServices;
 
-    public Entities(ObjectMapper objectMapper, EntityServices graphService, QueryServicesImpl queryServices) {
+    protected final SchemaServices schemaServices;
+
+    public Entities(ObjectMapper objectMapper, EntityServices graphService, QueryServices queryServices, SchemaServices schemaServices) {
         this.objectMapper = objectMapper;
         this.entityServices = graphService;
         this.queryServices = queryServices;
+        this.schemaServices = schemaServices;
     }
 
     @Operation(summary = "Returns an entity with the given unique identifier. ")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "404", description = "Entity with the given identifier does not exist", content = { @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorAttributes.class))})
+            @ApiResponse(responseCode = "404", description = "Entity with the given identifier does not exist", content = {@Content(mediaType = "application/json", schema = @Schema(implementation = ErrorAttributes.class))})
     })
-    @GetMapping(value = "/{id}",
+    @GetMapping(value = "/entities/{id}",
             produces = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.N3_VALUE})
     @ResponseStatus(HttpStatus.OK)
-    Flux<NamespaceAwareStatement> read(@PathVariable String id, @RequestParam(required = false) @Nullable String property) {
-        if(StringUtils.isBlank(property)) {
+    public Flux<NamespaceAwareStatement> read(@PathVariable String id, @RequestParam(required = false) @Nullable String property) {
+        if (StringUtils.isBlank(property)) {
             Assert.isTrue(id.length() == GeneratedIdentifier.LENGTH, "Incorrect length for identifier.");
-
-            return super.getAuthentication()
-                    .flatMap(authentication -> entityServices.readEntity(id, authentication))
-                    .flatMapIterable(TripleModel::asStatements)
-                    .doOnSubscribe(s -> {
-                        if (log.isDebugEnabled()) log.debug("Request to read entity with id: {}", id);
-                    });
-        } else {
-            String[] split = splitPrefixedIdentifier(property);
-
-            return super.getAuthentication()
-                    .flatMap(authentication -> queryServices.findEntityByProperty(id, split[0], split[1], authentication))
-                    .flatMapIterable(TripleModel::asStatements)
-                    .doOnSubscribe(s -> {
-                        if (log.isDebugEnabled()) log.debug("Request to read entity with id: {}", id);
-                    });
         }
+
+
+        return super.getAuthentication()
+                .flatMap(authentication -> entityServices.find(id, property, authentication))
+                .flatMapIterable(TripleModel::asStatements)
+                .doOnSubscribe(s -> {
+                    if (log.isDebugEnabled()) log.debug("Request to read entity with id: {}", id);
+                });
 
 
     }
 
-    @GetMapping(value = "", produces = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.N3_VALUE})
+    @GetMapping(value = "/entities", produces = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.N3_VALUE})
     @ResponseStatus(HttpStatus.OK)
-    Flux<NamespaceAwareStatement> list(
-            @RequestParam(value = "limit", defaultValue = "5000") Integer limit,
+    public Flux<NamespaceAwareStatement> list(
+            @RequestParam(value = "limit", defaultValue = "100") Integer limit,
             @RequestParam(value = "offset", defaultValue = "0") Integer offset) {
 
         return super.getAuthentication()
-                .flatMapMany(authentication -> queryServices.listEntities(authentication, limit, offset))
+                .flatMapMany(authentication -> entityServices.list(authentication, limit, offset))
                 .flatMapIterable(TripleModel::asStatements)
                 .doOnSubscribe(s -> {
                     if (log.isDebugEnabled()) log.debug("Request to list entities");
@@ -92,33 +94,33 @@ public class Entities extends AbstractController {
     }
 
 
-
-
-    @PostMapping(value = "",
+    @PostMapping(value = "/entities",
             consumes = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.N3_VALUE},
             produces = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.N3_VALUE})
     @ResponseStatus(HttpStatus.ACCEPTED)
-    Flux<NamespaceAwareStatement> create(@RequestBody TripleBag request) {
+    public Flux<NamespaceAwareStatement> create(@RequestBody TripleBag request) {
         Assert.isTrue(request.getModel().size() > 0, "No statements in request detected.");
 
         return super.getAuthentication()
-                .flatMap(authentication -> entityServices.createEntity(request, Map.of(), authentication))
+                .flatMap(authentication -> entityServices.create(request, Map.of(), authentication))
                 .flatMapIterable(TripleModel::asStatements)
                 .doOnSubscribe(s -> {
                     if (log.isDebugEnabled()) log.debug("Request to create a new Entity");
-                    if (log.isTraceEnabled()) log.trace("Payload: \n {}", request.toString());
+                    if (log.isTraceEnabled()) log.trace("Payload: \n {}", request);
                 });
     }
 
-    @PostMapping(value = "/{id:[\\w|\\d|-|_]+}/{prefixedKey:[\\w|\\d]+\\.[\\w|\\d]+}",
+    @PostMapping(value = "/entities/{id:[\\w|\\d|-|_]+}/{prefixedKey:[\\w|\\d]+\\.[\\w|\\d]+}",
             consumes = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE},
             produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE})
     @ResponseStatus(HttpStatus.CREATED)
-    Flux<NamespaceAwareStatement> embed(@PathVariable String id, @PathVariable String prefixedKey, @RequestBody TripleBag value) {
+    public Flux<NamespaceAwareStatement> embed(@PathVariable String id, @PathVariable String prefixedKey, @RequestBody TripleBag value) {
 
-        String[] property = splitPrefixedIdentifier(prefixedKey);
         return super.getAuthentication()
-                .flatMap(authentication -> entityServices.linkEntityTo(id, property[0], property[1], value, authentication))
+                .flatMap(authentication ->
+                        schemaServices.resolvePrefixedName(prefixedKey)
+                                .flatMap(predicate -> entityServices.linkEntityTo(id, predicate, value, authentication))
+                )
                 .flatMapIterable(TripleModel::asStatements)
                 .doOnSubscribe(s -> {
                     if (log.isDebugEnabled())
@@ -127,14 +129,14 @@ public class Entities extends AbstractController {
     }
 
 
-    @DeleteMapping(value = "/{id:[\\w|\\d|-|_]+}",
+    @DeleteMapping(value = "/entities/{id:[\\w|\\d|-|_]+}",
             produces = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.N3_VALUE})
     @ResponseStatus(HttpStatus.OK)
-    Flux<NamespaceAwareStatement> delete(@PathVariable String id) {
+    public Flux<NamespaceAwareStatement> delete(@PathVariable String id) {
         Assert.isTrue(id.length() == GeneratedIdentifier.LENGTH, "Incorrect length for identifier.");
 
         return super.getAuthentication()
-                .flatMap(authentication -> entityServices.deleteEntity(id, authentication))
+                .flatMap(authentication -> entityServices.remove(id, authentication))
                 .flatMapIterable(TripleModel::asStatements)
                 .doOnSubscribe(s -> {
                     if (log.isDebugEnabled()) log.debug("Delete an Entity");

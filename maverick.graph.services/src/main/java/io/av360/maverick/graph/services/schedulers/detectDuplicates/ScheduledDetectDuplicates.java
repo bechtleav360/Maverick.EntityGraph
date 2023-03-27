@@ -1,7 +1,6 @@
 package io.av360.maverick.graph.services.schedulers.detectDuplicates;
 
 
-import io.av360.maverick.graph.model.security.ApiKeyAuthenticationToken;
 import io.av360.maverick.graph.model.security.Authorities;
 import io.av360.maverick.graph.model.vocabulary.SDO;
 import io.av360.maverick.graph.services.EntityServices;
@@ -10,7 +9,6 @@ import io.av360.maverick.graph.services.ValueServices;
 import io.av360.maverick.graph.store.rdf.models.Transaction;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.rdf4j.model.IRI;
-import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.vocabulary.DCTERMS;
@@ -23,13 +21,13 @@ import org.eclipse.rdf4j.sparqlbuilder.core.query.Queries;
 import org.eclipse.rdf4j.sparqlbuilder.core.query.SelectQuery;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -66,14 +64,14 @@ import java.util.TreeSet;
  *      For now we keep the duplicate but reroute all links to the original.
  */
 @Component
-@Slf4j(topic = "graph.schedulers.duplicates")
+@Slf4j(topic = "graph.jobs.duplicates")
 @ConditionalOnProperty(name = "application.features.schedulers.detectDuplicates", havingValue = "true")
 public class ScheduledDetectDuplicates {
 
     private record DuplicateCandidate(IRI sharedProperty, String type, String sharedValue) {    }
 
 
-    private record MislinkedStatement(Resource subject, IRI predicate, IRI object) {     }
+    private record MislinkedStatement(IRI subject, IRI predicate, IRI object) {     }
 
     private record Duplicate(IRI id) implements Comparable<Duplicate> {
         @Override
@@ -103,9 +101,7 @@ public class ScheduledDetectDuplicates {
     public void checkForDuplicatesScheduled() {
         if (labelCheckRunning) return;
 
-        ApiKeyAuthenticationToken adminAuthentication = new ApiKeyAuthenticationToken(new HashMap<>());
-        adminAuthentication.setAuthenticated(true);
-        adminAuthentication.grantAuthority(Authorities.SYSTEM);
+        AnonymousAuthenticationToken adminAuthentication = new AnonymousAuthenticationToken(this.getClass().getName(), "system", List.of(Authorities.SYSTEM));
 
         // FIXME: do this with all applicatations (run-as semantics)
 
@@ -199,7 +195,7 @@ public class ScheduledDetectDuplicates {
                 .doOnSubscribe(subscription -> log.trace("Trying to merge all duplicates, keeping entity '{}' as original", original.id()))
                 .flatMap(duplicate ->
                         this.findStatementsPointingToDuplicate(duplicate, authentication)
-                                .flatMap(mislinkedStatement -> this.relinkEntity(mislinkedStatement.subject(), mislinkedStatement.predicate(), mislinkedStatement.object(), original.id(), authentication))
+                                .flatMap(mislinkedStatement -> this.relinkEntity((IRI) mislinkedStatement.subject(), mislinkedStatement.predicate(), mislinkedStatement.object(), original.id(), authentication))
                                 .doOnNext(trx -> log.info("Relinking completed in Transaction {}", trx.getIdentifier()))
                                 .map(transaction -> duplicate)
                 )
@@ -212,11 +208,11 @@ public class ScheduledDetectDuplicates {
 
 
     private Mono<Transaction> removeDuplicate(IRI object, Authentication authentication) {
-        return this.entityServices.deleteEntity(object, authentication);
+        return this.entityServices.remove(object, authentication);
     }
 
-    private Mono<Transaction> relinkEntity(Resource subject, IRI predicate, Value object, Value id, Authentication authentication) {
-        return this.valueServices.replaceValue(subject, predicate, object, id, authentication);
+    private Mono<Transaction> relinkEntity(IRI subject, IRI predicate, Value object, Value id, Authentication authentication) {
+        return this.valueServices.replace(subject, predicate, object, id, authentication);
     }
 
 
@@ -238,9 +234,9 @@ public class ScheduledDetectDuplicates {
                     Value pVal = binding.getValue(predicate.getVarName());
                     Value sVal = binding.getValue(subject.getVarName());
 
-                    if (pVal.isIRI() && sVal.isResource()) {
+                    if (pVal.isIRI() && sVal.isIRI()) {
                         log.trace("Statement with subject identifier {} pointing with  predicate {} to the duplicate", sVal.stringValue(), pVal.stringValue());
-                        return Mono.just(new MislinkedStatement((Resource) sVal, (IRI) pVal, duplicate.id()));
+                        return Mono.just(new MislinkedStatement((IRI) sVal, (IRI) pVal, duplicate.id()));
                     } else return Mono.empty();
                 });
 

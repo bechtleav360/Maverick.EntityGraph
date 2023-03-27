@@ -23,12 +23,12 @@ import static org.springframework.web.reactive.function.server.RouterFunctions.r
 public class OpenApiConfiguration {
     @Bean
     RouterFunction<ServerResponse> routerFunction() {
-        return route(GET("/"), req ->
+        return route(GET("/swagger"), req ->
                 ServerResponse.temporaryRedirect(URI.create("/swagger-ui.html")).build()
         );
     }
 
-    @Bean
+    @Bean("EntityApiDefinition")
     public GroupedOpenApi entitiesAPI(@Value("${info.app.version:unknown}") String version) {
         return GroupedOpenApi.builder()
                 .group("Entities API")
@@ -39,7 +39,7 @@ public class OpenApiConfiguration {
                 .build();
     }
 
-    @Bean
+    @Bean("QueryApiDefinition")
     public GroupedOpenApi queryApi(@Value("${info.app.version:unknown}") String version) {
         return GroupedOpenApi.builder()
                 .group("Query API")
@@ -50,7 +50,7 @@ public class OpenApiConfiguration {
                 .build();
     }
 
-    @Bean
+    @Bean("TransactionsApiDefinition")
     public GroupedOpenApi transactionsApi(@Value("${info.app.version:unknown}") String version) {
         return GroupedOpenApi.builder()
                 .group("Transactions API")

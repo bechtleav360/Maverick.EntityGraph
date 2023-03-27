@@ -26,7 +26,7 @@ import java.util.Map;
  * The buffered statements encoder is required by formats with a header (JSON-LD, Turtle) and a concise syntax. Here,
  * we need to collect all statements to print a completed document. For n-quads or similar formats, we simply dump the statements.
  */
-@Slf4j(topic = "graph.api.encoder")
+@Slf4j(topic = "graph.ctrl.io.encoder.streaming")
 public class StatementsEncoder implements Encoder<NamespaceAwareStatement> {
     private static final List<MimeType> mimeTypes;
 

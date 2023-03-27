@@ -2,8 +2,8 @@ package io.av360.maverick.graph.api.converter.decoder;
 
 import io.av360.maverick.graph.store.rdf.helpers.RdfUtils;
 import io.av360.maverick.graph.store.rdf.helpers.TriplesCollector;
-import io.av360.maverick.graph.store.rdf.models.TripleModel;
 import io.av360.maverick.graph.store.rdf.models.TripleBag;
+import io.av360.maverick.graph.store.rdf.models.TripleModel;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.rdf4j.rio.RDFFormat;
 import org.eclipse.rdf4j.rio.RDFParser;
@@ -20,7 +20,7 @@ import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
 
-@Slf4j(topic = "graph.api.decoder")
+@Slf4j(topic = "graph.ctrl.io.decoder")
 public class StatementsDecoder implements Decoder<TripleBag> {
     private static final List<MimeType> mimeTypes;
 
@@ -71,12 +71,10 @@ public class StatementsDecoder implements Decoder<TripleBag> {
                         log.trace("Parsing of payload with mimetype '{}' completed", mimeType);
                         return Mono.just(handler.getModel());
                     } catch (Exception e) {
-                        log.error("Failed to parse request of mimetype '{}'", mimeType, e);
+                        log.warn("Failed to parse request of mimetype '{}'", mimeType);
                         return Mono.error(e);
                     }
                 });
-
-
     }
 
 

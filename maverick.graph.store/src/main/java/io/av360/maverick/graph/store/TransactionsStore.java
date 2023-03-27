@@ -1,6 +1,7 @@
 package io.av360.maverick.graph.store;
 
 import io.av360.maverick.graph.model.security.Authorities;
+import io.av360.maverick.graph.store.behaviours.Resettable;
 import io.av360.maverick.graph.store.rdf.models.Transaction;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
@@ -9,7 +10,7 @@ import reactor.core.publisher.Mono;
 
 import java.util.Collection;
 
-public interface TransactionsStore {
+public interface TransactionsStore extends Resettable {
 
 
     Mono<Transaction> store(Transaction transaction, Authentication authentication, GrantedAuthority requiredAuthority);
@@ -23,5 +24,9 @@ public interface TransactionsStore {
 
     default Mono<Transaction> store(Transaction transaction, Authentication authentication) {
         return this.store(transaction, authentication, Authorities.CONTRIBUTOR);
+    }
+
+    default Mono<Void> reset(Authentication authentication, GrantedAuthority requiredAuthority) {
+        return this.reset(authentication, RepositoryType.TRANSACTIONS, Authorities.SYSTEM);
     }
 }
