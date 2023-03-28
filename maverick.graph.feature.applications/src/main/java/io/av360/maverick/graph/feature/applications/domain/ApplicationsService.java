@@ -277,7 +277,10 @@ public class ApplicationsService {
                 ba.asString(varAppKey),
                 new ApplicationFlags(
                         ba.asBoolean(varAppFlagPersistent),
-                        ba.asBoolean(varAppFlagPublic)
+                        ba.asBoolean(varAppFlagPublic),
+                        null,
+                        null,
+                        null
                 )
         );
     }

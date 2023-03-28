@@ -4,11 +4,20 @@ import io.av360.maverick.graph.model.security.Authorities;
 import io.av360.maverick.graph.store.EntityStore;
 import io.av360.maverick.graph.store.RepositoryType;
 import lombok.extern.slf4j.Slf4j;
+import org.eclipse.rdf4j.model.Statement;
+import org.eclipse.rdf4j.rio.RDFFormat;
+import org.eclipse.rdf4j.rio.RDFWriter;
+import org.eclipse.rdf4j.rio.RDFWriterRegistry;
 import org.reactivestreams.Publisher;
 import org.springframework.core.io.buffer.DataBuffer;
+import org.springframework.core.io.buffer.DefaultDataBufferFactory;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+
+import java.io.StringWriter;
+import java.nio.charset.StandardCharsets;
 
 
 @Service
@@ -30,5 +39,16 @@ public class AdminServices {
     public Mono<Void> importEntities(Publisher<DataBuffer> bytes, String mimetype, Authentication authentication) {
         return this.graph.importStatements(bytes, mimetype, authentication, Authorities.APPLICATION)
                 .doOnSubscribe(sub -> log.info("Importing statements of type '{}' through admin services", mimetype));
+    }
+
+    public Flux<Statement> exportEntities(Authentication authentication) {
+        return this.graph.listStatements(null, null, null, authentication).flatMapIterable(statements -> {
+            StringWriter stringWriter = new StringWriter();
+            RDFWriter writer = RDFWriterRegistry.getInstance().get(RDFFormat.TURTLE).get().getWriter(stringWriter);
+            writer.startRDF();
+            statements.forEach(writer::handleStatement);
+            writer.endRDF();
+
+        }).
     }
 }
