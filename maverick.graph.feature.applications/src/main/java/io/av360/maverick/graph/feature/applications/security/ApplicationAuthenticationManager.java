@@ -51,9 +51,6 @@ public class ApplicationAuthenticationManager implements ReactiveAuthenticationM
 
         try {
             Assert.notNull(authentication, "Authentication is null in Authentication Manager");
-            Assert.notNull(authentication.getDetails(), "Authentication is missing request details.");
-            Assert.isTrue(authentication.getDetails() instanceof RequestDetails, "Authentication details of wrong type " + authentication.getDetails().getClass());
-
 
             return ReactiveApplicationContextHolder.getRequestedApplication()
                     .flatMap(requestedApplication -> {

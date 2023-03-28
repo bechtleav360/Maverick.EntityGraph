@@ -137,7 +137,11 @@ public class DefaultRepositoryBuilder implements RepositoryBuilder {
             Resource file = new FileSystemResource(path);
             LmdbStoreConfig config = new LmdbStoreConfig();
 
-            return new SailRepository(new LmdbStore(file.getFile(), config));
+            if(file.getFile().mkdirs()) {
+                return new SailRepository(new LmdbStore(file.getFile(), config));
+            } else throw new IOException("Failed to create path: "+ file.getFile());
+
+
         } catch (IOException e) {
             log.error("Failed to initialize persistent repository in path '{}'. Falling back to in-memory.", path, e);
             return new SailRepository(new MemoryStore());

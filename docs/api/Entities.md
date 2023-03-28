@@ -88,12 +88,32 @@ Relations are identified by `source entity - prefix.key - target entity`
 
 ## Property Details (Annotations)
 
-``POST /api/entities/{id}/values/{prefix.key}/details/{prefix.key}?append=true`` \
+
+``POST /api/entities/{id}/values/{prefix.key}/details/{prefix.key}`` \
 ``POST /api/entities/{id}/links/{prefix.key}/{targetId}/details/{prefix.key}``
 * Consumes: ``text/plain``,
 * Creates a statement about a statement use the post body as value
 * Creates also the value if it doesn't exist yet
-* For keep in line with the other endpoints, this call will overwrite an existing prefix.key combination. Add the query param "?append" to support multiple values. 
+* Will create a new statement, regardless of already existing statements (use put to replace)
+
+``PUT /api/entities/{id}/values/{prefix.key}/details/{prefix.key}`` \
+``PUT /api/entities/{id}/links/{prefix.key}/{targetId}/details/{prefix.key}``
+* Consumes: ``text/plain``,
+* Will create or change a statement about a statement
+* Is idempotent, it will replace the current value
+* Creates also the value if it doesn't exist yet
+* Equivalent to patch with "replace" instruction
+
+``PATCH /api/entities/{id}/values/{prefix.key}/details/{prefix.key}`` 
+* Changes a particular statement
+* The patch body has to include the patch instructions
+* Possible actions: 
+  * increment (for counts)
+  * decrement (for counts)
+  * replace 
+* Payload example: ``{ "action": "replace", "valuqwe": "new value" } ``
+
+
 
 ``POST /api/entities/{id}/values/{prefix.key}/details`` \
 ``POST /api/entities/{id}/links/{prefix.key}/{targetId}/details`` 

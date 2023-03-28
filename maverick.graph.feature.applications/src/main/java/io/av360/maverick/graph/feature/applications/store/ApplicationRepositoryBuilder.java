@@ -139,7 +139,7 @@ public class ApplicationRepositoryBuilder extends DefaultRepositoryBuilder {
 
 
 
-    private Repository buildApplicationsRepository(String basePath,Application application, RepositoryType repositoryType) {
+    private Repository buildApplicationsRepository(String basePath, Application application, RepositoryType repositoryType) {
         if (!application.flags().isPersistent() || !StringUtils.hasLength(basePath)) {
             log.debug("Initializing volatile {} repository for application '{}' [{}]", repositoryType.toString(), application.label(), application.key());
             return super.initializeVolatileRepository();
