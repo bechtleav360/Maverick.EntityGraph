@@ -1,4 +1,4 @@
-    # Queries
+# Queries
 
 Support for querying the graph
 

@@ -55,6 +55,11 @@
             <groupId>org.glassfish</groupId>
             <artifactId>jakarta.json</artifactId>
         </dependency>
+        <dependency>
+            <groupId>com.bechtle.maverick.graph</groupId>
+            <artifactId>graph-tests</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
 </project>

@@ -4,11 +4,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.eclipse.rdf4j.model.*;
 import org.eclipse.rdf4j.model.impl.LinkedHashModel;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
+import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.rio.RDFFormat;
 import org.eclipse.rdf4j.rio.RDFParser;
 import org.eclipse.rdf4j.rio.RDFWriter;
 import org.eclipse.rdf4j.rio.Rio;
 import org.eclipse.rdf4j.rio.helpers.ContextStatementCollector;
+import org.junit.jupiter.api.Assertions;
 import org.springframework.test.web.reactive.server.EntityExchangeResult;
 import org.springframework.util.Assert;
 
@@ -52,8 +54,13 @@ public class RdfConsumer implements Consumer<EntityExchangeResult<byte[]>> {
         collector = new ContextStatementCollector(SimpleValueFactory.getInstance());
         parser.setRDFHandler(collector);
 
+        if(entityExchangeResult == null || entityExchangeResult.getResponseBody() == null)
+
         Assert.notNull(entityExchangeResult, "Null result");
-        Assert.notNull(entityExchangeResult.getResponseBody(), "Null response body");
+
+        if(entityExchangeResult.getResponseBody() == null) {
+            return;
+        }
 
 
         try (ByteArrayInputStream bais = new ByteArrayInputStream(entityExchangeResult.getResponseBody())) {
@@ -99,5 +106,20 @@ public class RdfConsumer implements Consumer<EntityExchangeResult<byte[]>> {
 
     public int countValues(Resource s, IRI p) {
         return Long.valueOf(StreamSupport.stream(this.asModel().getStatements(s, p, null).spliterator(), false).count()).intValue();
+    }
+
+    public void print() {
+        System.out.println(this.dump(RDFFormat.TURTLE));
+    }
+
+
+    public String getEntityKey(IRI type) {
+        return this.getEntityIdentifier(type).getLocalName();
+    }
+
+    public IRI getEntityIdentifier(IRI type) {
+        Resource source = this.findStatement(null, RDF.TYPE, type).getSubject();
+        Assertions.assertTrue(source.isIRI());
+        return ((IRI) source);
     }
 }

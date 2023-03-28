@@ -40,5 +40,40 @@ logging:
     org:
       springframework:
         security: INFO
-    springfox: TRACE
 
+management:
+  info:
+    env:
+      enabled: true
+    git:
+      enabled: true
+      mode: full
+  health:
+    defaults:
+      enabled: false
+    probes:
+      enabled: true
+  endpoints:
+    web:
+      exposure:
+        include: "health, info, env, beans, git, loggers, metrics, scheduledTasks, logfile, mappings, prometheus"
+  endpoint:
+    discovery:
+      enabled: true
+    health:
+      enabled: true
+      show-details: always
+    info:
+      enabled: true
+    env:
+      enabled: true
+    loggers:
+      enabled: true
+    metrics:
+      enabled: true
+    scheduledTasks:
+      enabled: true
+    logfile:
+      enabled: true
+    prometheus:
+      enabled: true

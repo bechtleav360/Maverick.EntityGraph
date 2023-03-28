@@ -5,7 +5,6 @@ import org.springframework.security.authentication.InsufficientAuthenticationExc
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.ReactiveSecurityContextHolder;
 import org.springframework.security.core.context.SecurityContext;
-import org.springframework.util.Assert;
 import reactor.core.publisher.Mono;
 
 public class AbstractController {
@@ -19,9 +18,7 @@ public class AbstractController {
                 .switchIfEmpty(Mono.error(new InsufficientAuthenticationException("Request couldn't be authenticated.")));
     }
 
-    protected String[] splitPrefixedIdentifier(String prefixedKey) {
-        String[] property = prefixedKey.split("\\.");
-        Assert.isTrue(property.length == 2, "Failed to extract prefix and label from path parameter " + prefixedKey);
-        return property;
-    }
+
+
+
 }

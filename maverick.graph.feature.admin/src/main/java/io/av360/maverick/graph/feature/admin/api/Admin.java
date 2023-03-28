@@ -24,7 +24,7 @@ import java.util.Optional;
 @RestController
 @RequestMapping(path = "/api/admin/bulk")
 //@Api(tags = "Admin Operations")
-@Slf4j(topic = "graph.feature.admin.api")
+@Slf4j(topic = "graph.feat.admin.ctrl.api")
 @SecurityRequirement(name = "api_key")
 public class Admin extends AbstractController {
     protected final AdminServices adminServices;

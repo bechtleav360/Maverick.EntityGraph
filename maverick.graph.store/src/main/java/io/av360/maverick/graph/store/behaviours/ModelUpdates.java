@@ -1,5 +1,6 @@
 package io.av360.maverick.graph.store.behaviours;
 
+import io.av360.maverick.graph.store.rdf.models.Transaction;
 import org.eclipse.rdf4j.model.Model;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
@@ -21,5 +22,14 @@ public interface ModelUpdates extends RepositoryBehaviour {
      */
     Mono<Void> insert(Model model, Authentication authentication, GrantedAuthority requiredAuthority);
 
+
+    /**
+     * Adds the triples in the model to the transaction. Don't forget to commit the transaction.
+     *
+     * @param model       the statements to store
+     * @param transaction
+     * @return Returns the transaction statements
+     */
+    Mono<Transaction> insert(Model model, Transaction transaction);
 
 }

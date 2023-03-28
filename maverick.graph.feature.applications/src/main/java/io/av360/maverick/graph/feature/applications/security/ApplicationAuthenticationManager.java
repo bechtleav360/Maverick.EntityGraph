@@ -1,16 +1,25 @@
 package io.av360.maverick.graph.feature.applications.security;
 
-import io.av360.maverick.graph.api.security.errors.NoSubscriptionFound;
+import io.av360.maverick.graph.feature.applications.config.ReactiveApplicationContextHolder;
 import io.av360.maverick.graph.feature.applications.domain.ApplicationsService;
+import io.av360.maverick.graph.feature.applications.domain.model.Application;
+import io.av360.maverick.graph.model.security.AdminToken;
 import io.av360.maverick.graph.model.security.ApiKeyAuthenticationToken;
 import io.av360.maverick.graph.model.security.Authorities;
+import io.av360.maverick.graph.model.security.RequestDetails;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.authentication.ReactiveAuthenticationManager;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 import reactor.core.publisher.Mono;
+
+import java.io.IOException;
+import java.util.Optional;
+
+import static io.av360.maverick.graph.model.util.StreamsLogger.trace;
 
 /**
  * This authentication manager augments the default admin authentication manager (which assumes only one api key exists).
@@ -22,7 +31,7 @@ import reactor.core.publisher.Mono;
  * This class must not give Admin Authority.
  */
 @Component
-@Slf4j(topic = "graph.feature.apps.security")
+@Slf4j(topic = "graph.feat.apps.sec.mgr")
 public class ApplicationAuthenticationManager implements ReactiveAuthenticationManager {
 
 
@@ -31,77 +40,155 @@ public class ApplicationAuthenticationManager implements ReactiveAuthenticationM
     private final ApplicationsService subscriptionsService;
 
     public ApplicationAuthenticationManager(ApplicationsService subscriptionsService) {
-        log.trace("(Startup) Activated Application Authentication Manager (checking subscription api keys)");
+        log.trace("Activated Application Authentication Manager (checking subscription api keys)");
         this.subscriptionsService = subscriptionsService;
     }
 
 
+
     @Override
     public Mono<Authentication> authenticate(Authentication authentication) {
-        Assert.notNull(authentication, "Authentication is null in Authentication Manager");
-        log.trace("Handling authentication of type '{}' and authentication status '{}' in Application Authentication Manager ", authentication.getClass().getSimpleName(), authentication.isAuthenticated());
 
-        /*
-            we have to assume that the admin authentication comes later
-         */
-        if (authentication instanceof ApiKeyAuthenticationToken) {
-            // default case, we only asserted before that a valid api key was in the header
-            return handleApiKeyHader((ApiKeyAuthenticationToken) authentication)
-                    .map(auth -> this.handleSubscriptionKeyHeader((ApiKeyAuthenticationToken) auth))
-                    .map(auth -> (Authentication) auth);
-        } /*else {
-            // fallback to default application (which is always declined)
-            log.warn("Invalid authentication of type {} found and refused", authentication.getClass());
-            authentication.setAuthenticated(false);
-            return Mono.just(authentication);
-        }*/ else return Mono.just(authentication);
+        try {
+            Assert.notNull(authentication, "Authentication is null in Authentication Manager");
 
+            return ReactiveApplicationContextHolder.getRequestedApplication()
+                    .flatMap(requestedApplication -> {
+                        if (authentication instanceof AdminToken token) {
+                            log.trace("Authentication has system authority and application scope '{}' requested.", requestedApplication.label());
+                            return Mono.just(SubscriptionToken.fromAdminToken(token, requestedApplication));
+
+                        } else if (authentication instanceof ApiKeyAuthenticationToken token) {
+                            log.trace("Key in header, checking if it is subscription token.");
+                            return checkSubscriptionKeyForRequestedApplication(token, requestedApplication).map(auth -> auth);
+                        } else {
+                            return Mono.just(authentication);
+                        }
+                    })
+                    .switchIfEmpty(defaultFallback(authentication))
+                    .doOnSubscribe(trace(log, "Handling authentication of type '{}' and authentication status '{}' in application authentication manager ", authentication.getClass().getSimpleName(), authentication.isAuthenticated()));
+
+
+        } catch (Exception e) {
+            log.error("Failed to handle application authentication with error: '{}'", e.getMessage());
+            return Mono.error(e);
+        }
     }
 
+    private Mono<Authentication> defaultFallback(Authentication authentication) {
+        if (authentication instanceof AdminToken token) {
+            log.trace("Authentication has system authority, but not application scope requested.");
+            return Mono.just(authentication);
+        } else if (authentication instanceof ApiKeyAuthenticationToken token) {
+            log.trace("Key in header and no requested application, checking if it is subscription token.");
+            return this.checkSubscriptionKey(token).map(auth -> auth);
 
-    private Mono<? extends Authentication> handleApiKeyHader(ApiKeyAuthenticationToken apiKeyAuthenticationToken) {
-        Assert.isAssignable(Authentication.class, ApiKeyAuthenticationToken.class);
-
-        String apiKey = apiKeyAuthenticationToken.getApiKey().orElseThrow();
-        return this.subscriptionsService.getKey(apiKey, apiKeyAuthenticationToken)
-                .map(applicationApiKey -> {
-                    log.debug("Valid api key for application '{}' provided in header '{}'.", applicationApiKey.label(), ApiKeyAuthenticationToken.API_KEY_HEADER);
-                    ApplicationAuthenticationToken applicationAuthenticationToken = new ApplicationAuthenticationToken(apiKeyAuthenticationToken, applicationApiKey);
-                    // TODO: extract role from application key
-                    applicationAuthenticationToken.grantAuthority(Authorities.READER);
-                    applicationAuthenticationToken.setAuthenticated(true);
-                    return apiKeyAuthenticationToken;
-
-                })
-                .switchIfEmpty(Mono.just(apiKeyAuthenticationToken));
-
+        } else if (authentication instanceof AnonymousAuthenticationToken token) {
+            log.trace("Ignoring anonymous access without requested application in application authentication manager.");
+            return Mono.just(authentication).log("Ignoring anonymous access without requested application in application authentication manager.");
+        } else {
+            return Mono.just(authentication);
+        }
     }
 
     /**
-     * Check if an additional application api key is in the headers. If yes, we try to find the associated application and
-     * inject it into the authentication token for later use.
-     * <p>
-     * Note that this does not include any authorization
+     * Tries to find a subscription for the given api key. If found, we assign the matching authority.
      *
-     * @param apiKeyAuthenticationToken, the admin authentication
-     * @return the consumed authentication
+     * @param token the token in the header
+     * @return
      */
-    private Mono<? extends Authentication> handleSubscriptionKeyHeader(ApiKeyAuthenticationToken apiKeyAuthenticationToken) {
-        //
-        String subscriptionApiKey = apiKeyAuthenticationToken.getDetails().get(SUBSCRIPTION_KEY_HEADER);
-        if (StringUtils.hasLength(apiKeyAuthenticationToken.getDetails().get(SUBSCRIPTION_KEY_HEADER))) {
-            log.trace("Headers include a application key, trying to retrieve application details from storage.");
-            // check if we can find the api key in one of our subscriptions
-            return this.subscriptionsService.getKey(subscriptionApiKey, apiKeyAuthenticationToken)
-                    .map(application -> {
-                        log.debug("Valid api key for application '{}' provided in header '{}'.", application.label(), SUBSCRIPTION_KEY_HEADER);
-                        return new ApplicationAuthenticationToken(apiKeyAuthenticationToken, application);
-                    })
-                    .switchIfEmpty(Mono.error(new NoSubscriptionFound(subscriptionApiKey)));
+    protected Mono<? extends ApiKeyAuthenticationToken> checkSubscriptionKey(ApiKeyAuthenticationToken token) {
+        if (token instanceof AdminToken) return Mono.just(token);
+
+        return this.subscriptionsService.getSubscription(token.getApiKey().orElseThrow(), token)
+                .map(subscription -> {
+                    SubscriptionToken subscriptionToken = SubscriptionToken.fromApiKeyAuthentication(token, subscription, subscription.application());
+                    subscriptionToken.setRequestedApplication(subscription.application());
+                    grant(subscriptionToken);
+                    return subscriptionToken;
+                })
+                .flatMap(subscriptionToken -> Mono.just((ApiKeyAuthenticationToken) subscriptionToken))
+                .switchIfEmpty(Mono.just(token));
+    }
+
+    protected Mono<? extends ApiKeyAuthenticationToken> checkSubscriptionKeyForRequestedApplication(ApiKeyAuthenticationToken token, Application requestedApplication) {
+        if (token instanceof AdminToken) return Mono.just(token);
+
+        return this.subscriptionsService.getSubscription(token.getApiKey().orElseThrow(), token)
+                .map(subscription -> {
+
+                    SubscriptionToken st = SubscriptionToken.fromApiKeyAuthentication(token, subscription, subscription.application());
+                    st.setRequestedApplication(requestedApplication);
+
+                    // requested application matches subscription application
+                    if (requestedApplication.label().equalsIgnoreCase(subscription.application().label())) {
+                        grant(st);
+                    }
+                    // requested application does not match application for subscription
+                    else {
+                        // else we grant read access if public
+                        if (st.getRequestedApplication().flags().isPublic()) {
+                            log.trace("Valid subscription key for application '{}' unrelated to requested public application '{}' provided in header '{}'.", st.getApplication().label(), st.getRequestedApplication().label(), ApiKeyAuthenticationToken.API_KEY_HEADER);
+
+                            st.grantAuthority(Authorities.READER);
+                        } else {
+                            log.debug("Valid subscription key for application '{}' unrelated to private application '{}' provided in header '{}'.", st.getApplication().label(), st.getRequestedApplication().label(), ApiKeyAuthenticationToken.API_KEY_HEADER);
+                            st.purgeAuthorities();
+                        }
+                    }
+                    return st;
+                })
+                .flatMap(subscriptionToken -> Mono.just((ApiKeyAuthenticationToken) subscriptionToken))
+                .switchIfEmpty(Mono.just(token));
+
+    }
+
+    protected void grant(SubscriptionToken subscriptionToken) {
+        if (subscriptionToken.getSubscription().active()) {
+            subscriptionToken.setAuthenticated(true);
+
+            // TODO: extract role from application key
+            subscriptionToken.grantAuthority(Authorities.APPLICATION);
+            log.trace("Valid subscription key for application '{}' provided in header '{}'.", subscriptionToken.getRequestedApplication().label(), ApiKeyAuthenticationToken.API_KEY_HEADER);
         } else {
-            return Mono.just(apiKeyAuthenticationToken);
+            if (subscriptionToken.getRequestedApplication().flags().isPublic()) {
+                subscriptionToken.setAuthenticated(true);
+                subscriptionToken.grantAuthority(Authorities.READER);
+                log.debug("Inactive subscription key for public application '{}' provided in header '{}'.", subscriptionToken.getRequestedApplication().label(), ApiKeyAuthenticationToken.API_KEY_HEADER);
+            } else {
+                subscriptionToken.setAuthenticated(false);
+                subscriptionToken.purgeAuthorities();
+                log.warn("Inactive subscription key for private application '{}' provided in header '{}'.", subscriptionToken.getRequestedApplication().label(), ApiKeyAuthenticationToken.API_KEY_HEADER);
+            }
         }
     }
+
+
+    /**
+     * Returns the scope
+     *
+     * @param requestDetails request details such as path or headers
+     * @return scope if available
+     * @throws IOException if path is invalid
+     */
+    private Optional<String> getScopeFromPath(RequestDetails requestDetails) throws IOException {
+        Assert.isTrue(StringUtils.hasLength(requestDetails.path()), "Empty path in request details");
+
+        String[] split = requestDetails.path().split("/");
+        for (int i = 0; i < split.length; i++) {
+            if (split[i].equalsIgnoreCase("sc")) {
+                if (split.length > i + 1) {
+                    return Optional.of(split[i + 1]);
+                } else {
+                    throw new IOException("Invalid path in request, missing scope label: " + requestDetails.path());
+                }
+            }
+        }
+
+        return Optional.empty();
+    }
+
+
 
 
 }

@@ -13,26 +13,33 @@ public class ApiKeyAuthenticationToken implements Authentication {
     public static final String API_KEY_HEADER = "X-API-KEY";
     private final Set<Authorities.WeightedAuthority> authorities;
 
-    private final Map<String, String> headers;
+
+
+    private RequestDetails details;
     private boolean isAuthenticated;
 
 
-    public ApiKeyAuthenticationToken(Map<String, String> headers) {
-        this.headers = headers;
+
+    public ApiKeyAuthenticationToken() {
+        this(new RequestDetails(null, Map.of(), Map.of()));
+    }
+
+    public ApiKeyAuthenticationToken(RequestDetails details) {
+        this.details = details;
         this.authorities = new HashSet<>(Authorities.NO_AUTHORITIES);
     }
 
-    public ApiKeyAuthenticationToken() {
-        this(new HashMap<>());
-    }
 
+    public void setDetails(RequestDetails details) {
+        this.details = details;
+    }
     @Override
-    public Map<String, String> getDetails() {
-        return this.headers;
+    public RequestDetails getDetails() {
+        return this.details;
     }
 
     public Optional<String> getApiKey() {
-        return Optional.of(this.getDetails().get(API_KEY_HEADER));
+        return Optional.ofNullable(Objects.requireNonNull(this.getDetails()).headers().get(API_KEY_HEADER));
     }
 
     @Override
@@ -52,6 +59,10 @@ public class ApiKeyAuthenticationToken implements Authentication {
         // if(authority == Authorities.ADMIN && this.getAuthorities().contains(Authorities.USER)) throw new SecurityException("Granting admin authority while user authority has been set already");
 
         this.getAuthorities().add(authority);
+    }
+
+    public void purgeAuthorities() {
+        this.getAuthorities().clear();
     }
 
     @Override
