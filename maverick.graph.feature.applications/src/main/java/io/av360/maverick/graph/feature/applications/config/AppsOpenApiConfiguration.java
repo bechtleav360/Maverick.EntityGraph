@@ -16,7 +16,7 @@ public class AppsOpenApiConfiguration {
                 .addOpenApiCustomizer(openApi -> {
                     openApi.info(new Info().title("Maverick.EntityGraph Applications API").description("API to register applications and generate or revoke Api Keys (part of multi-tenancy feature). Requires admin authentication.").version(version));
                 })
-                .pathsToMatch("/api/applications/**", "/api/sc/**/entities/**")
+                .pathsToMatch("/api/applications/**", "/api/app/**/entities/**")
                 .build();
     }
 
