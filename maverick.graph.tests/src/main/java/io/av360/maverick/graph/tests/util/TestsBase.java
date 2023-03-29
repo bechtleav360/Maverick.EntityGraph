@@ -48,8 +48,14 @@ public abstract class TestsBase {
         this.transactionsStore = transactionsStore;
     }
 
-    public void printLogSeparator(int step) {
-        System.out.println("\n----------- Step: "+step+" -------------------------------------------------------------------------------------- \n");
+    int steps = 0;
+    protected void printStart(String label) {
+        System.out.println("\n----------- Starting: "+label+" --------------------------------------------------------------------------------------\n");
+        steps = 0;
+    }
+
+    public void printStep() {
+        System.out.println("\n----------- Step: "+ ++steps +" --------------------------------------------------------------------------------------");
     }
 
     public void printModel(Model md, RDFFormat rdfFormat) {
@@ -73,6 +79,7 @@ public abstract class TestsBase {
 
         StepVerifier.create(r1).verifyComplete();
     }
+
 
 
 }

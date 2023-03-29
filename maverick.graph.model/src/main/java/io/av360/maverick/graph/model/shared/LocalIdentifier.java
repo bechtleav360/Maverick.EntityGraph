@@ -4,7 +4,9 @@ import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
 
 public interface LocalIdentifier extends IRI {
-    public static int LENGTH = 10;
+    public static int LENGTH = 8;
+
+    public static char PADDING_CHAR = 'x';
 
     /**
      * @param obj, the IRI to check

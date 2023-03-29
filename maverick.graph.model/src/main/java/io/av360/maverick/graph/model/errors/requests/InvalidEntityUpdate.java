@@ -1,6 +1,7 @@
 package io.av360.maverick.graph.model.errors.requests;
 
 import io.av360.maverick.graph.model.errors.InvalidRequest;
+import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
 import org.springframework.http.HttpStatus;
 import org.springframework.util.StringUtils;
@@ -10,7 +11,10 @@ public class InvalidEntityUpdate extends InvalidRequest {
     private final String reason;
 
     public InvalidEntityUpdate(Resource entityIdentifier, String reason) {
-        this.key = entityIdentifier.stringValue();
+        if(entityIdentifier instanceof IRI iri)
+            this.key = iri.getLocalName();
+        else
+            this.key = entityIdentifier.stringValue();
         this.reason = reason;
     }
 

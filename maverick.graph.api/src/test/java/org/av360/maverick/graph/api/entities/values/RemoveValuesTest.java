@@ -7,7 +7,7 @@ import io.av360.maverick.graph.tests.util.RdfConsumer;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
-import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.locationtech.jts.util.Assert;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -24,16 +24,19 @@ import org.springframework.test.context.event.RecordApplicationEvents;
  */
 public class RemoveValuesTest extends ApiTestsBase {
 
-    @AfterEach
+    @BeforeEach
     public void resetRepository() {
         super.resetRepository();
     }
 
     @Test
     public void removeTitle() {
+        super.printStart("removeTitle");
+
         RdfConsumer rdfConsumer = super.upload("requests/create-valid.ttl");
         Statement video = rdfConsumer.findStatement(null, RDF.TYPE, SDO.VIDEO_OBJECT);
 
+        super.printStep();
         webClient.delete()
                 .uri(uriBuilder -> uriBuilder.path("/api/entities/{id}/values/sdo.title")
                         .build(
@@ -46,15 +49,19 @@ public class RemoveValuesTest extends ApiTestsBase {
                 .expectBody()
                 .consumeWith(rdfConsumer);
 
+        super.printStep();
         RdfConsumer resultConsumer = super.loadEntity((IRI) video.getSubject());
         Assert.equals(0, resultConsumer.countValues(video.getSubject(), SDO.TITLE));
     }
 
     @Test
     public void removeTitleWithLanguage() {
+        super.printStart("removeTitleWithLanguage");
+
         RdfConsumer rdfConsumer = super.upload("requests/create-valid_with_tags.ttl");
         Statement video = rdfConsumer.findStatement(null, RDF.TYPE, SDO.VIDEO_OBJECT);
 
+        super.printStep();
         webClient.delete()
                 .uri(uriBuilder -> uriBuilder.path("/api/entities/{id}/values/sdo.title")
                         .queryParam("lang", "de")
@@ -68,15 +75,19 @@ public class RemoveValuesTest extends ApiTestsBase {
                 .expectBody()
                 .consumeWith(rdfConsumer);
 
+        super.printStep();
         RdfConsumer resultConsumer = super.loadEntity((IRI) video.getSubject());
         Assert.equals(1, resultConsumer.countValues(video.getSubject(), SDO.TITLE));
     }
 
     @Test
     public void failToRemoveTitleWithLanguage() {
+        super.printStart("failToRemoveTitleWithLanguage");
+
         RdfConsumer rdfConsumer = super.upload("requests/create-valid_with_tags.ttl");
         Statement video = rdfConsumer.findStatement(null, RDF.TYPE, SDO.VIDEO_OBJECT);
 
+        super.printStep();
         webClient.delete()
                 .uri(uriBuilder -> uriBuilder.path("/api/entities/{id}/values/sdo.title")
                         .build(
@@ -91,9 +102,12 @@ public class RemoveValuesTest extends ApiTestsBase {
 
     @Test
     public void failToRemoveLink() {
+        super.printStart("failToRemoveLink");
+
         RdfConsumer rdfConsumer = super.upload("requests/create-esco.ttl");
         Statement entity = rdfConsumer.findStatement(null, RDF.TYPE, vf.createIRI("http://data.europa.eu/esco/model#", "Skill"));
 
+        super.printStep();
         webClient.delete()
                 .uri(uriBuilder -> uriBuilder.path("/api/entities/{id}/values/skos.broader")
                         .build(

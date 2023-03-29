@@ -91,12 +91,9 @@ public class BufferedStatementsEncoder implements Encoder<Statement> {
                     List<Statement> statements = tuple.getT1();
                     ServerHttpRequest request = tuple.getT2(); // we need the request to resolve the current request url
 
-
                     try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
 
-
                         RDFWriter writer = getWriter(mimeType, baos);
-
 
                         writer.startRDF();
 

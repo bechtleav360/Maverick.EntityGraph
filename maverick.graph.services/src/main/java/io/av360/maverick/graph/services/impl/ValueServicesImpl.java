@@ -128,45 +128,6 @@ public class ValueServicesImpl implements ValueServices {
 
 
 
-    /**
-     * Internal method to remove a value within an existing transaction.
-     */
-    public Mono<Transaction> removeValueDepr(IRI entityIdentifier, IRI predicate, String lang, Transaction transaction, Authentication authentication) {
-
-        return this.entityServices.getStore().listStatements(entityIdentifier, predicate, null, authentication)
-                .flatMap(statements -> {
-                    if (statements.size() > 1) {
-                        List<Statement> statementsToRemove = new ArrayList<>();
-                        if (StringUtils.isEmpty(lang)) {
-                            return Mono.error(new InvalidEntityUpdate(entityIdentifier, "Multiple values for given predicate detected, but no language tag in request."));
-                        }
-                        for (Statement st : statements) {
-                            Value object = st.getObject();
-                            if (object.isBNode()) {
-                                log.warn("Found a link to an anonymous node. Purge it from repository.");
-                                statementsToRemove.add(st);
-                            } else if (object.isIRI()) {
-                                return Mono.error(new InvalidEntityUpdate(entityIdentifier, "Invalid to remove links via the values api."));
-                            } else if (object.isLiteral()) {
-                                Literal currentLiteral = (Literal) object;
-                                if (StringUtils.equals(currentLiteral.getLanguage().orElse("invalid"), lang)) {
-                                    statementsToRemove.add(st);
-                                }
-                            }
-                        }
-
-
-                        return this.entityServices.getStore().removeStatements(statementsToRemove, transaction);
-                    } else {
-                        if (statements.size() == 1 && statements.get(0).getObject().isIRI()) {
-                            return Mono.error(new InvalidEntityUpdate(entityIdentifier, "Invalid to remove links via the values api."));
-                        }
-                        return this.entityServices.getStore().removeStatements(statements, transaction);
-                    }
-
-                })
-                .flatMap(trx -> this.entityServices.getStore().commit(trx, authentication));
-    }
 
 
     /**
@@ -222,6 +183,8 @@ public class ValueServicesImpl implements ValueServices {
                     if (statements.size() > 1) {
                         List<Statement> statementsToRemove = new ArrayList<>();
                         if (StringUtils.isEmpty(languageTag)) {
+                            log.error("Failed to identify unique statement for predicate {} to remove for entity {}.", predicate.getLocalName(), entityIdentifier.getLocalName());
+                            statements.forEach(st -> log.trace("Candidate: {} - {} ", st.getPredicate(), st.getObject()));
                             return Mono.error(new InvalidEntityUpdate(entityIdentifier, "Multiple values for given predicate detected, but no language tag in request."));
                         }
                         for (Statement st : statements) {

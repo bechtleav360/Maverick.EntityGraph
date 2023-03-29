@@ -35,7 +35,7 @@ class ApplicationsTest extends ApplicationsTestsBase {
 
     @Test
     public void createPublicApplication() {
-        super.printLogSeparator(1);
+        super.printStep();
 
         this.client.createApplication("test-public", new ApplicationFlags(false, true))
                 .expectStatus().isCreated()
@@ -48,22 +48,22 @@ class ApplicationsTest extends ApplicationsTestsBase {
     @Test
     public void listApplications() {
 
-        super.printLogSeparator(1);
+        super.printStep();
 
         this.client.createApplication("a", new ApplicationFlags(false, true))
                 .expectStatus().isCreated().expectBody().jsonPath("$.key").isNotEmpty();
 
-        super.printLogSeparator(2);
+        super.printStep();
 
         this.client.createApplication("b", new ApplicationFlags(true, true))
                 .expectStatus().isCreated().expectBody().jsonPath("$.key").isNotEmpty();
 
-        super.printLogSeparator(3);
+        super.printStep();
 
         this.client.createApplication("c", new ApplicationFlags(false, false))
                 .expectStatus().isCreated().expectBody().jsonPath("$.key").isNotEmpty();
 
-        super.printLogSeparator(4);
+        super.printStep();
 
         this.client.listApplications()
                         .expectStatus().isOk()

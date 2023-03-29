@@ -75,7 +75,7 @@ public class Links extends AbstractController {
                     """
 
     )
-    @PutMapping(value = "/entities/{source_id:[\\w|\\d|\\-|\\_]+}/links/{prefixedKey:[\\w|\\d]+\\.[\\w|\\d]+}/{target_id:[\\w|\\d|-|_]+}",
+    @PutMapping(value = "/entities/{source_id:[\\w|\\d|\\-|\\_]+}/links/{prefixedKey:[\\w|\\d]+\\.[\\w|\\d]+}/{target_id:[\\w|\\d|\\-|\\_]+}",
             produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE, MediaType.APPLICATION_JSON_VALUE})
     @ResponseStatus(HttpStatus.CREATED)
     public Flux<NamespaceAwareStatement> createLink(@PathVariable String source_id, @PathVariable String prefixedKey, @PathVariable String target_id) {

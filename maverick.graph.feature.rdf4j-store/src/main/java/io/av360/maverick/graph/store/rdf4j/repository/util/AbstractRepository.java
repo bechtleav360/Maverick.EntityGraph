@@ -130,13 +130,17 @@ public abstract class AbstractRepository implements RepositoryBehaviour, Stateme
     public Mono<Void> reset(Authentication authentication, RepositoryType repositoryType, GrantedAuthority requiredAuthority) {
         return getConnection(authentication, requiredAuthority).flatMap(connection -> {
             try (connection) {
-
                 RepositoryResult<Statement> statements = connection.getStatements(null, null, null);
                 if (log.isTraceEnabled())
                     log.trace("Removing {} statements from repository '{}'", statements.stream().count(), connection.getRepository());
-                connection.remove(statements);
+                connection.clear();
+
+                if(! connection.isEmpty())
+                    throw new RepositoryException("Repository not empty after clearing");
+
                 return Mono.empty();
             } catch (Exception e) {
+                log.error("Failed to clear repository: {}", connection.getRepository());
                 return Mono.error(e);
             }
         });

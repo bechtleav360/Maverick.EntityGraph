@@ -9,7 +9,6 @@ import io.av360.maverick.graph.tests.util.RdfConsumer;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -32,32 +31,28 @@ public class RemoveLinkTests extends ApiTestsBase {
 
     @BeforeEach
     public void setup() {
-        client = new TestEntitiesClient(super.webClient);
-    }
 
-    @AfterEach
-    public void resetRepository() {
+        client = new TestEntitiesClient(super.webClient);
         super.resetRepository();
     }
 
 
 
-
     @Test
     void deleteLink() {
-        super.printLogSeparator(1);
+        super.printStart("deleteLink");
         RdfConsumer rc1 = client.createEntity(EntitiesGenerator.generateCreativeWork());
         String sourceIdentifier = rc1.getEntityKey(SDO.CREATIVE_WORK);
 
-        super.printLogSeparator(2);
+        super.printStep();
         RdfConsumer rc2 = client.createEntity(EntitiesGenerator.generateDefinedTerm());
         String targetIdentifier = rc2.getEntityKey(SDO.DEFINED_TERM);
 
-        super.printLogSeparator(3);
+        super.printStep();
         client.createLink(sourceIdentifier, "sdo.hasDefinedTerm", targetIdentifier)
                 .expectStatus().isCreated();
 
-        super.printLogSeparator(4);
+        super.printStep();
         client.deleteLink(sourceIdentifier, "sdo.hasDefinedTerm", targetIdentifier)
                 .expectStatus().isOk();
 
@@ -66,52 +61,52 @@ public class RemoveLinkTests extends ApiTestsBase {
 
     @Test
     void deleteUnknownLink() {
-        super.printLogSeparator(1);
+        super.printStart("deleteUnknownLink");
         RdfConsumer rc1 = client.createEntity(EntitiesGenerator.generateCreativeWork());
         Resource source = rc1.findStatement(null, RDF.TYPE, SDO.CREATIVE_WORK).getSubject();
         Assertions.assertTrue(source.isIRI());
         String sourceIdentifier = ((IRI) source).getLocalName();
 
-        super.printLogSeparator(2);
+        super.printStep();
         RdfConsumer rc2 = client.createEntity(EntitiesGenerator.generateDefinedTerm());
         Resource target = rc2.findStatement(null, RDF.TYPE, SDO.DEFINED_TERM).getSubject();
         Assertions.assertTrue(target.isIRI());
         String targetIdentifier = ((IRI) target).getLocalName();
 
-        super.printLogSeparator(3);
+        super.printStep();
         client.createLink(sourceIdentifier, "sdo.hasDefinedTerm", targetIdentifier)
                 .expectStatus().isCreated();
 
-        super.printLogSeparator(4);
+        super.printStep();
         client.deleteLink(sourceIdentifier, "sdo.teaches", targetIdentifier)
                 .expectStatus().isOk();
     }
 
     @Test
     void deleteForUnknownEntity() {
-        super.printLogSeparator(1);
+        super.printStart("deleteForUnknownEntity");
         RdfConsumer rc1 = client.createEntity(EntitiesGenerator.generateCreativeWork());
         Resource source = rc1.findStatement(null, RDF.TYPE, SDO.CREATIVE_WORK).getSubject();
         Assertions.assertTrue(source.isIRI());
         String sourceIdentifier = ((IRI) source).getLocalName();
 
-        super.printLogSeparator(2);
+        super.printStep();
         RdfConsumer rc2 = client.createEntity(EntitiesGenerator.generateDefinedTerm());
         Resource target = rc2.findStatement(null, RDF.TYPE, SDO.DEFINED_TERM).getSubject();
         Assertions.assertTrue(target.isIRI());
         String targetIdentifier = ((IRI) target).getLocalName();
 
-        super.printLogSeparator(3);
+        super.printStep();
         RdfConsumer rc3 = client.createEntity(EntitiesGenerator.generateDefinedTerm());
         Resource another = rc2.findStatement(null, RDF.TYPE, SDO.DEFINED_TERM).getSubject();
         Assertions.assertTrue(target.isIRI());
         String anotherIdentifier = ((IRI) target).getLocalName();
 
-        super.printLogSeparator(4);
+        super.printStep();
         client.createLink(sourceIdentifier, "sdo.hasDefinedTerm", targetIdentifier)
                 .expectStatus().isCreated();
 
-        super.printLogSeparator(5);
+        super.printStep();
         client.deleteLink(anotherIdentifier, "sdo.hasDefinedTerm", targetIdentifier)
                 .expectStatus().isOk();
 

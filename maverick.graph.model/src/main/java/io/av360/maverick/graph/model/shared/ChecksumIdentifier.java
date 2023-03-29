@@ -40,7 +40,7 @@ public class ChecksumIdentifier extends LocalIRI implements LocalIdentifier  {
 
         if (oldIdentifier instanceof IRI iri) {
             // TODO: generate fingerprint of old resource with fixed length
-            super.setLocalName(generateChecksum(iri));
+            super.setLocalName(generateIdentifier(iri));
         } else {
             log.warn("Generating identifier for anonymous node, falling back to random identifier");
             throw new InvalidEntityModel("Generating checksum identifier of resource (not IRI): "+ oldIdentifier);
@@ -51,55 +51,56 @@ public class ChecksumIdentifier extends LocalIRI implements LocalIdentifier  {
 
     public ChecksumIdentifier(String namespace, IRI oldIdentifier) {
         super(namespace);
-        super.setLocalName(generateChecksum(oldIdentifier));
+        super.setLocalName(generateIdentifier(oldIdentifier));
     }
 
 
     /**
      * Generates a new and reproducible identifier from the old resource identifier (its namespace) and a characteristic property
      * @param namespace the new local namespace
-     * @param subj the subject iri
-     * @param value characteristic property (rdfs:label, dc:identifier, ...)
+     * @param values characteristic property (rdfs:label, dc:identifier, ...)
      */
-    public ChecksumIdentifier(Namespace namespace, Value ... subj) {
+    public ChecksumIdentifier(Namespace namespace, Value ... values) {
 
         super(namespace.getName());
 
-        String collect = Arrays.stream(subj).map(Value::stringValue).collect(Collectors.joining());
+        String collect = Arrays.stream(values).map(Value::stringValue).collect(Collectors.joining());
         super.setLocalName(generateChecksum(collect));
     }
 
 
 
-
-
-    private  String generateFingerprint(String localName) {
-        String s = Hashing.fingerprint2011().hashString(localName, StandardCharsets.UTF_8).toString();
-
-        if (s.length() < LENGTH) s = s.concat(s);
-        return s.substring(0, LENGTH);
+    private String generateIdentifier(IRI iri) {
+        return this.generateIdentifier(iri.getNamespace(), iri.getLocalName());
     }
 
-    private String generateChecksum(IRI iri) {
-        return this.generateChecksum(iri.getNamespace(), iri.getLocalName());
-    }
-
-
-    private String generateChecksum(String first, String ... others) {
+    private String generateIdentifier(String first, String ... others) {
         StringBuilder stringBuilder = new StringBuilder(first);
         Arrays.stream(others).forEach(stringBuilder::append);
 
+        return this.generateFingerprint(stringBuilder.toString());
+    }
+
+
+
+
+
+
+    private String generateChecksum(String val) {
         checksum.reset();
-        checksum.update(stringBuilder.toString().getBytes(), 0, stringBuilder.length());
+        checksum.update(val.getBytes(), 0, val.length());
 
         return this.dec2Base(BigInteger.valueOf(checksum.getValue()));
 
     }
 
-
+    private  String generateFingerprint(String val) {
+        long l = Hashing.murmur3_32_fixed().hashString(val, StandardCharsets.UTF_8).padToLong();
+        return this.dec2Base(BigInteger.valueOf(l));
+    }
 
     //private final char[] alphabet = "abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ".toCharArray();
-    private final char[] alphabet = "abcdefghijklmnopqrstuvwxyz0123456789".toCharArray();
+    private final char[] alphabet = "abcdefghijklmnopqrstuvwyz0123456789_".toCharArray();
 
     private String dec2Base(BigInteger number) {
         Stack<Integer> stack = new Stack<>();
@@ -129,7 +130,7 @@ public class ChecksumIdentifier extends LocalIRI implements LocalIdentifier  {
 
         StringBuilder sb = new StringBuilder(str);
         while (sb.length() < LENGTH) {
-            sb.append('-');
+            sb.append(PADDING_CHAR);
         }
 
         return sb.toString();
