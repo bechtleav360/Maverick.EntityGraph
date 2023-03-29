@@ -2,22 +2,33 @@ package io.av360.maverick.graph.feature.admin.config;
 
 import io.swagger.v3.oas.models.info.Info;
 import org.springdoc.core.models.GroupedOpenApi;
+import org.springframework.beans.factory.InitializingBean;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
-public class AdminOpenApiConfiguration {
+public class AdminOpenApiConfiguration implements InitializingBean {
 
-    @Bean
-    public GroupedOpenApi adminApiDefinition(@Value("${info.app.version:unknown}") String version) {
+    @Bean("AdminApiDefinitionBuilder")
+    public GroupedOpenApi.Builder adminApiDefinitionBuilder(@Value("${info.app.version:unknown}") String version) {
         return GroupedOpenApi.builder()
                 .group("Admin API")
                 .addOpenApiCustomizer(openApi -> {
                     openApi.info(new Info().title("Admin API").description("API for admin operations (part of admin feature).").version(version));
                 })
-                .pathsToMatch("/api/admin/**")
-                .build();
+                .pathsToMatch("/api/admin/**");
+    }
+
+    @Bean("AdminApiDefinition")
+    public GroupedOpenApi adminApiDefinition(@Qualifier("AdminApiDefinitionBuilder") GroupedOpenApi.Builder builder) {
+        return builder.build();
+    }
+
+    @Override
+    public void afterPropertiesSet() throws Exception {
+
     }
 
     /*

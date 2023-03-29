@@ -1,6 +1,6 @@
 package io.av360.maverick.graph.services.transformers.mergeDuplicates;
 
-import io.av360.maverick.graph.model.rdf.GeneratedIdentifier;
+import io.av360.maverick.graph.model.shared.ChecksumIdentifier;
 import io.av360.maverick.graph.services.QueryServices;
 import io.av360.maverick.graph.services.transformers.Transformer;
 import io.av360.maverick.graph.store.rdf.models.TripleModel;
@@ -89,7 +89,7 @@ public class MergeDuplicates implements Transformer {
     private boolean checkForEmbeddedNamedEntities(TripleModel triples) {
         return triples.embeddedObjects()
                 .stream()
-                .anyMatch(object -> object.isIRI() && (!(object instanceof GeneratedIdentifier)));
+                .anyMatch(object -> object.isIRI() && (!(object instanceof ChecksumIdentifier)));
     }
 
     /**
@@ -100,14 +100,14 @@ public class MergeDuplicates implements Transformer {
     private boolean checkForEmbeddedAnonymousEntities(TripleModel triples) {
         return triples.embeddedObjects()
                 .stream()
-                .anyMatch(object -> object.isBNode() || object instanceof GeneratedIdentifier);
+                .anyMatch(object -> object.isBNode() || object instanceof ChecksumIdentifier);
 
 
     }
 
 
     private boolean isResourceAnonymous(Value resource) {
-        return resource.isBNode() || resource instanceof GeneratedIdentifier;
+        return resource.isBNode() || resource instanceof ChecksumIdentifier;
     }
 
     /**

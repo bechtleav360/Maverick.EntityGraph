@@ -23,9 +23,6 @@ public class LocalIRI extends AbstractIRI {
         this.namespace = namespace;
     }
 
-    public static LocalIRI from(org.eclipse.rdf4j.model.IRI iri) {
-        return new LocalIRI(iri.getNamespace(), iri.getLocalName());
-    }
 
     public static LocalIRI from(String namespace, String localName) {
         return new LocalIRI(namespace, localName);

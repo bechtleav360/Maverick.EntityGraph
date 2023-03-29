@@ -3,8 +3,9 @@ package io.av360.maverick.graph.api.controller.entities;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.av360.maverick.graph.api.controller.AbstractController;
 import io.av360.maverick.graph.model.enums.RdfMimeTypes;
-import io.av360.maverick.graph.model.rdf.GeneratedIdentifier;
 import io.av360.maverick.graph.model.rdf.NamespaceAwareStatement;
+import io.av360.maverick.graph.model.shared.LocalIdentifier;
+import io.av360.maverick.graph.model.shared.RandomIdentifier;
 import io.av360.maverick.graph.services.EntityServices;
 import io.av360.maverick.graph.services.QueryServices;
 import io.av360.maverick.graph.services.SchemaServices;
@@ -65,7 +66,7 @@ public class Entities extends AbstractController {
     @ResponseStatus(HttpStatus.OK)
     public Flux<NamespaceAwareStatement> read(@PathVariable String id, @RequestParam(required = false) @Nullable String property) {
         if (StringUtils.isBlank(property)) {
-            Assert.isTrue(id.length() == GeneratedIdentifier.LENGTH, "Incorrect length for identifier.");
+            Assert.isTrue(id.length() == LocalIdentifier.LENGTH, "Incorrect length for identifier.");
         }
 
 
@@ -110,7 +111,7 @@ public class Entities extends AbstractController {
                 });
     }
 
-    @PostMapping(value = "/entities/{id:[\\w|\\d|-|_]+}/{prefixedKey:[\\w|\\d]+\\.[\\w|\\d]+}",
+    @PostMapping(value = "/entities/{id:[\\w|\\d|\\-|\\_]+}/{prefixedKey:[\\w|\\d]+\\.[\\w|\\d]+}",
             consumes = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE},
             produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE})
     @ResponseStatus(HttpStatus.CREATED)
@@ -129,11 +130,11 @@ public class Entities extends AbstractController {
     }
 
 
-    @DeleteMapping(value = "/entities/{id:[\\w|\\d|-|_]+}",
+    @DeleteMapping(value = "/entities/{id:[\\w|\\d|\\-|\\_]+}",
             produces = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.N3_VALUE})
     @ResponseStatus(HttpStatus.OK)
     public Flux<NamespaceAwareStatement> delete(@PathVariable String id) {
-        Assert.isTrue(id.length() == GeneratedIdentifier.LENGTH, "Incorrect length for identifier.");
+        Assert.isTrue(id.length() == RandomIdentifier.LENGTH, "Incorrect length for identifier.");
 
         return super.getAuthentication()
                 .flatMap(authentication -> entityServices.remove(id, authentication))

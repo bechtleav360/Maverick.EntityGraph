@@ -7,6 +7,7 @@ import io.av360.maverick.graph.tests.util.RdfConsumer;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.locationtech.jts.util.Assert;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -22,6 +23,11 @@ import org.springframework.test.context.event.RecordApplicationEvents;
  * Tests for endpoint POST /api/rs/{id}/{prefix.key}
  */
 public class RemoveValuesTest extends ApiTestsBase {
+
+    @AfterEach
+    public void resetRepository() {
+        super.resetRepository();
+    }
 
     @Test
     public void removeTitle() {

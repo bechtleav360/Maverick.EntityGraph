@@ -12,6 +12,7 @@ import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.model.vocabulary.RDFS;
+import org.eclipse.rdf4j.rio.RDFFormat;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -29,7 +30,6 @@ import java.util.TreeSet;
 import java.util.stream.Collectors;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-// @ContextConfiguration(classes = Tex.class)
 @RecordApplicationEvents
 @ActiveProfiles("test")
 @Slf4j
@@ -87,15 +87,15 @@ public class MergeDuplicateTests extends TestsBase  {
     @Test
     public void createEmbeddedEntitiesWithSharedItemsInSeparateRequests() throws InterruptedException, IOException {
         log.info("---------- Running test: Create embedded with shared items in separate requests ---------- ");
-        Mono<Transaction> tx1 = entityServicesClient.importFileMono(new ClassPathResource("requests/create-valid_withEmbedded.ttl"));
-        Mono<Transaction> tx2 = entityServicesClient.importFileMono(new ClassPathResource("requests/create-valid_withEmbedded_second.ttl"));
-        Mono<Void> scheduler = this.scheduledDetectDuplicates.checkForDuplicates(RDFS.LABEL, TestSecurityConfig.createAuthenticationToken());
+        Mono<Transaction> tx1 = entityServicesClient.importFileMono(new ClassPathResource("requests/create-valid_withEmbedded.ttl")).doOnSubscribe(sub -> log.trace("-------- 1"));
+        Mono<Transaction> tx2 = entityServicesClient.importFileMono(new ClassPathResource("requests/create-valid_withEmbedded_second.ttl")).doOnSubscribe(sub -> log.trace("-------- 2"));
+        Mono<Void> scheduler = this.scheduledDetectDuplicates.checkForDuplicates(RDFS.LABEL, TestSecurityConfig.createAuthenticationToken()).doOnSubscribe(sub -> log.trace("-------- 3"));
         Mono<Model> getAll = entityServicesClient.getModel();
 
         StepVerifier.create(
                 tx1.then(tx2).then(scheduler).then(getAll)
                 ).assertNext(model -> {
-
+                    super.printModel(model, RDFFormat.TURTLE);
 
                     Set<Resource> videos = model.filter(null, RDF.TYPE, SDO.VIDEO_OBJECT).subjects();
                     Assertions.assertEquals(3, videos.size());

@@ -170,6 +170,8 @@ public class CreateValuesTest extends ApiTestsBase {
 
         String title = "A new title@en";
 
+
+        super.printLogSeparator(1);
         webClient.post()
                 .uri(uriBuilder -> uriBuilder.path("/api/entities/{id}/values/sdo.title")
                         .build(
@@ -189,11 +191,16 @@ public class CreateValuesTest extends ApiTestsBase {
 
     @Test
     public void addTitleWithUnknownLanguageTag() {
+
+        super.printLogSeparator(1);
         RdfConsumer rdfConsumer = super.upload("requests/create-valid_with_tags.ttl");
+        rdfConsumer.dump(RDFFormat.TURTLE);
+
         Statement video = rdfConsumer.findStatement(null, RDF.TYPE, SDO.VIDEO_OBJECT);
 
         String title = "A new title@this-is-.invalid";
 
+        super.printLogSeparator(2);
         webClient.post()
                 .uri(uriBuilder -> uriBuilder.path("/api/entities/{id}/values/sdo.title")
                         .build(
@@ -207,6 +214,7 @@ public class CreateValuesTest extends ApiTestsBase {
                 .expectStatus().isOk();
 
         // value must include fallback as language tag
+        super.printLogSeparator(4);
         rdfConsumer = new RdfConsumer(RDFFormat.TURTLE);
         webClient.get()
                 .uri(uriBuilder -> uriBuilder.path("/api/entities/{id}")
@@ -223,6 +231,7 @@ public class CreateValuesTest extends ApiTestsBase {
 
         System.out.println(rdfConsumer.dump(RDFFormat.TURTLE));
 
+        super.printLogSeparator(5);
         AtomicBoolean found = new AtomicBoolean(false);
         rdfConsumer.getStatements().forEach(statement -> {
             if(statement.getPredicate().equals(SDO.TITLE)) {

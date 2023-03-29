@@ -52,7 +52,7 @@ public abstract class TestsBase {
         System.out.println("\n----------- Step: "+step+" -------------------------------------------------------------------------------------- \n");
     }
 
-    public void print(Model md, RDFFormat rdfFormat) {
+    public void printModel(Model md, RDFFormat rdfFormat) {
        String m = this.dumpModel(md, rdfFormat);
        log.trace("Current model: \n {}", m);
     }

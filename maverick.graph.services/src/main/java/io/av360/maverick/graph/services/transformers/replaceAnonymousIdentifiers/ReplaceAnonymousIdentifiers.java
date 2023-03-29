@@ -1,23 +1,22 @@
 package io.av360.maverick.graph.services.transformers.replaceAnonymousIdentifiers;
 
-import io.av360.maverick.graph.model.rdf.GeneratedIdentifier;
+import io.av360.maverick.graph.model.errors.store.InvalidEntityModel;
 import io.av360.maverick.graph.model.rdf.NamespaceAwareStatement;
+import io.av360.maverick.graph.model.shared.ChecksumIdentifier;
+import io.av360.maverick.graph.model.shared.RandomIdentifier;
 import io.av360.maverick.graph.model.vocabulary.Local;
+import io.av360.maverick.graph.model.vocabulary.SDO;
 import io.av360.maverick.graph.services.transformers.Transformer;
 import io.av360.maverick.graph.store.rdf.models.TripleModel;
 import lombok.extern.slf4j.Slf4j;
-import org.eclipse.rdf4j.model.IRI;
-import org.eclipse.rdf4j.model.Resource;
-import org.eclipse.rdf4j.model.Statement;
+import org.eclipse.rdf4j.model.*;
+import org.eclipse.rdf4j.model.vocabulary.*;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Replaces blank nodes with valid IRIs
@@ -36,23 +35,60 @@ public class ReplaceAnonymousIdentifiers implements Transformer {
 
     @Override
     public Mono<? extends TripleModel> handle(TripleModel triples, Map<String, String> parameters, Authentication authentication) {
-        log.trace("Generating local identifiers for anonymous identifiers in incoming model.");
+        return Mono.create(sink -> {
 
-        for (Resource obj : new ArrayList<>(triples.getModel().subjects())) {
-            /* Handle Ids */
-            if (obj.isBNode()) {
-                // generate a new qualified identifier if it is an anonymous node
-                this.skolemize(obj, triples);
+            try {
+                Map<BNode, IRI> mappings = new HashMap<>();
+
+                for (Resource obj : new ArrayList<>(triples.getModel().subjects())) {
+                    /* Handle Ids */
+                    if (obj.isBNode()) {
+                        // generate a new qualified identifier if it is an anonymous node
+                        IRI newIdentifier = this.skolemize(obj, triples);
+                        mappings.put((BNode) obj, newIdentifier);
+                    }
+                }
+                if(mappings.size() > 0) {
+                    log.debug("Generated local identifiers for anonymous identifiers in incoming model.");
+                    mappings.forEach((bn, iri) -> log.trace("Mapping {} to {}", bn, iri));
+                }
+
+
+                sink.success(triples);
+            } catch (Exception | InvalidEntityModel e) {
+                sink.error(e);
             }
-        }
-        return Mono.just(triples);
+        });
+
+
+
     }
 
-    public void skolemize(Resource subj, TripleModel triples) {
+    public IRI skolemize(Resource subj, TripleModel triples) throws InvalidEntityModel {
 
-        IRI identifier = new GeneratedIdentifier(Local.Entities.NS);
 
-        List<NamespaceAwareStatement> copy = Collections.unmodifiableList(triples.streamNamespaceAwareStatements().toList());
+
+        List<Optional<Value>> props = new ArrayList<>();
+        props.add(triples.findDistinctValue(subj, RDFS.LABEL));
+        props.add(triples.findDistinctValue(subj, DC.IDENTIFIER));
+        props.add(triples.findDistinctValue(subj, DCTERMS.IDENTIFIER));
+        props.add(triples.findDistinctValue(subj, SKOS.PREF_LABEL));
+        props.add(triples.findDistinctValue(subj, SDO.IDENTIFIER));
+        props.add(triples.findDistinctValue(subj, SDO.TERM_CODE));
+
+        Optional<Value> value = props.stream().filter(Optional::isPresent).findFirst().orElse(Optional.empty());
+        Optional<Value> entityType = triples.findDistinctValue(subj, RDF.TYPE);
+        IRI identifier;
+        if(value.isPresent() && entityType.isPresent()) {
+            // we build the identifier from entity type and value
+
+
+            identifier = new ChecksumIdentifier(Local.Entities.NS, entityType.get(), value.get());
+        } else {
+            identifier = new RandomIdentifier(Local.Entities.NS);
+        }
+
+        List<NamespaceAwareStatement> copy = triples.streamNamespaceAwareStatements().toList();
 
         triples.reset();
 
@@ -65,6 +101,8 @@ public class ReplaceAnonymousIdentifiers implements Transformer {
                 triples.getBuilder().add(st.getSubject(), st.getPredicate(), st.getObject());
             }
         }
+
+        return identifier;
     }
 
 

@@ -1,6 +1,7 @@
-package io.av360.maverick.graph.model.rdf;
+package io.av360.maverick.graph.model.shared;
 
 import com.google.common.hash.Hashing;
+import io.av360.maverick.graph.model.rdf.LocalIRI;
 import org.apache.commons.text.RandomStringGenerator;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Namespace;
@@ -19,11 +20,11 @@ import java.util.Base64;
  * FIXME: should require the current id (either bnode or externally set) to create reproducible ids
  * FIXME: should also keep track of the original id (we should store this in the provenance)
  */
-public class GeneratedIdentifier extends LocalIRI {
+public class RandomIdentifier extends LocalIRI implements LocalIdentifier {
     private static final SecureRandom secureRandom;
     private static final RandomStringGenerator randomStringGenerator;
     private static final char[][] range = {{'a', 'z'}, {'0', '9'}};
-    public static int LENGTH = 12;
+
 
     static {
         secureRandom = new SecureRandom();
@@ -32,13 +33,13 @@ public class GeneratedIdentifier extends LocalIRI {
                 .build();
     }
 
-    public GeneratedIdentifier(String namespace) {
+    public RandomIdentifier(String namespace) {
         super(namespace);
         super.setLocalName(generateRandomKey());
     }
 
 
-    public GeneratedIdentifier(String namespace, Resource oldIdentifier) {
+    public RandomIdentifier(String namespace, Resource oldIdentifier) {
         super(namespace);
 
         if (oldIdentifier.isIRI()) {
@@ -49,14 +50,8 @@ public class GeneratedIdentifier extends LocalIRI {
 
     }
 
-    public GeneratedIdentifier(String namespace, String oldIdentifier) {
-        super(namespace);
-        super.setLocalName(generateDerivedIdentifier(oldIdentifier));
 
-    }
-
-
-    public GeneratedIdentifier(Namespace defaultNamespace) {
+    public RandomIdentifier(Namespace defaultNamespace) {
         this(defaultNamespace.getName());
     }
 
@@ -65,7 +60,7 @@ public class GeneratedIdentifier extends LocalIRI {
      * @return true, if the given resource conforms to a local identifier
      */
     public static boolean is(IRI obj, String ns) {
-        return (obj instanceof GeneratedIdentifier)
+        return (obj instanceof RandomIdentifier)
                 ||
                 (obj.getNamespace().equalsIgnoreCase(ns)) && (obj.getLocalName().length() == LENGTH);
     }
@@ -93,7 +88,7 @@ public class GeneratedIdentifier extends LocalIRI {
     }
 
     public static IRI get(String namespace) {
-        return new GeneratedIdentifier(namespace);
+        return new RandomIdentifier(namespace);
 
     }
 

@@ -74,7 +74,7 @@ class CheckGlobalIdentifiersTest extends TestsBase {
 
         StepVerifier.create(readModelMono)
                 .consumeNextWith(model -> {
-                    super.print(model, RDFFormat.JSONLD);
+                    super.printModel(model, RDFFormat.JSONLD);
                 }).verifyComplete();
 
     }

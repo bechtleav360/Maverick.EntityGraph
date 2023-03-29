@@ -41,7 +41,7 @@ public class Values extends AbstractController {
         this.schemaServices = schemaServices;
     }
     @Operation(summary = "Returns a list of value property of the selected entity.  ")
-    @GetMapping(value = "/entities/{id:[\\w|\\d|-|_]+}/values",
+    @GetMapping(value = "/entities/{id:[\\w|\\d|\\-|\\_]+}/values",
             produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE, MediaType.APPLICATION_JSON_VALUE})
     @ResponseStatus(HttpStatus.OK)
     public Flux<NamespaceAwareStatement> listEntityValues(@PathVariable String id) {
@@ -51,7 +51,7 @@ public class Values extends AbstractController {
 
 
     //  @ApiOperation(value = "Sets a value for an entity. Replaces an existing value. ")
-    @PostMapping(value = "/entities/{id:[\\w|\\d|-|_]+}/values/{prefixedKey:[\\w|\\d]+\\.[\\w|\\d]+}",
+    @PostMapping(value = "/entities/{id:[\\w|\\d|\\-|\\_]+}/values/{prefixedKey:[\\w|\\d]+\\.[\\w|\\d|\\-|\\_]+}",
             consumes = MediaType.TEXT_PLAIN_VALUE,
             produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE})
     @ResponseStatus(HttpStatus.OK)
@@ -70,7 +70,7 @@ public class Values extends AbstractController {
 
 
     @Operation(summary = "Create or update multiple value properties for the selected entity.")
-    @PostMapping(value = "/entities/{id:[\\w|\\d|-|_]+}/values",
+    @PostMapping(value = "/entities/{id:[\\w|\\d|\\-|\\_]+}/values",
             produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE, MediaType.APPLICATION_JSON_VALUE})
     @ResponseStatus(HttpStatus.OK)
     public Flux<NamespaceAwareStatement> listEntityValues(@PathVariable String id, @RequestBody String value) {
@@ -78,7 +78,7 @@ public class Values extends AbstractController {
     }
 
     @Operation(summary = "Removes a property value.")
-    @DeleteMapping(value = "/entities/{id:[\\w|\\d|-|_]+}/values/{prefixedKey:[\\w|\\d]+\\.[\\w|\\d]+}",
+    @DeleteMapping(value = "/entities/{id:[\\w|\\d|\\-|\\_]+}/values/{prefixedKey:[\\w|\\d]+\\.[\\w|\\d]+}",
             produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE})
     @ResponseStatus(HttpStatus.OK)
     public Flux<NamespaceAwareStatement> delete(@PathVariable String id, @PathVariable String prefixedKey, @RequestParam(required = false) String lang) {

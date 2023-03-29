@@ -25,7 +25,7 @@ public class Queries extends AbstractController {
 
     @PostMapping(value = "/select", consumes = "text/plain", produces = {"text/csv", "application/sparql-results+json"})
     @io.swagger.v3.oas.annotations.parameters.RequestBody(
-            description = "Sparql Query",
+            description = "Sparql Select Query",
             content = @Content(examples = {
                     @ExampleObject(name = "Select types", value = "SELECT ?entity  ?type WHERE { ?entity a ?type } LIMIT 100"),
                     @ExampleObject(name = "Query everything", value = "SELECT ?a ?b ?c  ?type WHERE { ?a ?b ?c } LIMIT 100")
@@ -44,6 +44,12 @@ public class Queries extends AbstractController {
 
     @PostMapping(value = "/construct", consumes = "text/plain", produces = {"text/turtle", "application/ld+json"})
     @ResponseStatus(HttpStatus.ACCEPTED)
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(
+            description = "Sparql Construct Query",
+            content = @Content(examples = {
+                    @ExampleObject(name = "Query everything", value = "CONSTRUCT WHERE { ?s ?p ?o . } LIMIT 100")
+            })
+    )
     public Flux<NamespaceAwareStatement> queryStatements(@RequestBody String query) {
 
         return getAuthentication()

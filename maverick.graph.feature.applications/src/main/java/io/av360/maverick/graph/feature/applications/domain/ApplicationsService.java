@@ -11,8 +11,9 @@ import io.av360.maverick.graph.feature.applications.domain.model.Subscription;
 import io.av360.maverick.graph.feature.applications.domain.vocab.ApplicationTerms;
 import io.av360.maverick.graph.feature.applications.domain.vocab.SubscriptionTerms;
 import io.av360.maverick.graph.feature.applications.store.ApplicationsStore;
-import io.av360.maverick.graph.model.rdf.GeneratedIdentifier;
 import io.av360.maverick.graph.model.security.Authorities;
+import io.av360.maverick.graph.model.shared.LocalIdentifier;
+import io.av360.maverick.graph.model.shared.RandomIdentifier;
 import io.av360.maverick.graph.model.vocabulary.Local;
 import io.av360.maverick.graph.store.rdf.helpers.BindingsAccessor;
 import lombok.extern.slf4j.Slf4j;
@@ -75,14 +76,12 @@ public class ApplicationsService {
      */
     public Mono<Application> createApplication(String label, ApplicationFlags flags, Authentication authentication) {
 
-        // generate application iri
-        String applicationIdentifier = GeneratedIdentifier.generateRandomKey(16);
-        GeneratedIdentifier subject = new GeneratedIdentifier(Local.Subscriptions.NAMESPACE, applicationIdentifier);
+        LocalIdentifier subject = new RandomIdentifier(Local.Subscriptions.NAMESPACE);
 
         Application application = new Application(
                 subject,
                 label,
-                applicationIdentifier,
+                subject.getLocalName(),
                 flags
         );
 
@@ -188,9 +187,9 @@ public class ApplicationsService {
         return this.getApplication(applicationIdentifier, authentication)
                 .map(application ->
                         new Subscription(
-                                new GeneratedIdentifier(Local.Subscriptions.NAMESPACE),
+                                new RandomIdentifier(Local.Subscriptions.NAMESPACE),
                                 subscriptionLabel,
-                                GeneratedIdentifier.generateRandomKey(16),
+                                RandomIdentifier.generateRandomKey(16),
                                 true,
                                 ZonedDateTime.now().toString(),
                                 application

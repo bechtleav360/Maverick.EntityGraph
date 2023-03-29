@@ -50,7 +50,7 @@ public class QueryServicesImpl implements QueryServices {
     public Flux<BindingSet> queryValues(SelectQuery query, Authentication authentication) {
         return this.entityStore.query(query.getQueryString(), authentication)
                 .doOnSubscribe(subscription -> {
-                    if (log.isTraceEnabled()) log.trace("Running select query in entity store: \n {}", query);
+                    if (log.isTraceEnabled()) log.trace("Running select query in {}:  {}", this.entityStore.getRepositoryType(), query.getQueryString().replace('\n', ' ').trim());
                 });
     }
 
@@ -68,7 +68,7 @@ public class QueryServicesImpl implements QueryServices {
     public Flux<NamespaceAwareStatement> queryGraph(ConstructQuery query, Authentication authentication) {
         return this.entityStore.construct(query.getQueryString(), authentication)
                 .doOnSubscribe(subscription -> {
-                    if (log.isTraceEnabled()) log.trace("Running construct query in entity store: \n {}", query.getQueryString());
+                    if (log.isTraceEnabled()) log.trace("Running construct query in entity store: \n {}", query.getQueryString().replace('\n', ' ').trim());
                 });
     }
 

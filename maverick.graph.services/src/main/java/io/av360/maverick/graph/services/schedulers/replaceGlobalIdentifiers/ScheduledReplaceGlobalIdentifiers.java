@@ -1,8 +1,9 @@
 package io.av360.maverick.graph.services.schedulers.replaceGlobalIdentifiers;
 
-import io.av360.maverick.graph.model.rdf.GeneratedIdentifier;
 import io.av360.maverick.graph.model.security.ApiKeyAuthenticationToken;
 import io.av360.maverick.graph.model.security.Authorities;
+import io.av360.maverick.graph.model.shared.LocalIdentifier;
+import io.av360.maverick.graph.model.shared.RandomIdentifier;
 import io.av360.maverick.graph.model.vocabulary.Local;
 import io.av360.maverick.graph.model.vocabulary.Transactions;
 import io.av360.maverick.graph.services.QueryServices;
@@ -119,7 +120,11 @@ public class ScheduledReplaceGlobalIdentifiers {
     private Mono<StatementsBag> storeNewStatements(StatementsBag statements) {
         ModelBuilder builder = new ModelBuilder();
 
-        GeneratedIdentifier generatedIdentifier = new GeneratedIdentifier(Local.Entities.NAMESPACE, statements.globalIdentifier());
+        LocalIdentifier.build(Local.Entities.NAMESPACE, statements.globalIdentifier());
+
+        // TODO: find a way to extract characteristic properties
+        log.warn("Building random generator for anonymous node");
+        LocalIdentifier generatedIdentifier = new RandomIdentifier(Local.Entities.NAMESPACE);
 
         statements.subjectStatements().forEach(statement -> {
             builder.add(generatedIdentifier, statement.getPredicate(), statement.getObject());

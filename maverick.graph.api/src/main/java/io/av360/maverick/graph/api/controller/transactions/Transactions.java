@@ -3,8 +3,8 @@ package io.av360.maverick.graph.api.controller.transactions;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.av360.maverick.graph.api.controller.AbstractController;
 import io.av360.maverick.graph.model.enums.RdfMimeTypes;
-import io.av360.maverick.graph.model.rdf.GeneratedIdentifier;
 import io.av360.maverick.graph.model.rdf.NamespaceAwareStatement;
+import io.av360.maverick.graph.model.shared.LocalIdentifier;
 import io.av360.maverick.graph.services.TransactionsService;
 import io.av360.maverick.graph.store.rdf.models.TripleModel;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -34,10 +34,10 @@ public class Transactions extends AbstractController {
     }
 
     //@ApiOperation(value = "Read transaction")
-    @GetMapping(value = "/{id:[\\w|\\d|-|_]+}", produces = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.NQUADS_VALUE, RdfMimeTypes.N3_VALUE})
+    @GetMapping(value = "/{id:[\\w|\\d|\\-|\\_]+}", produces = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.NQUADS_VALUE, RdfMimeTypes.N3_VALUE})
     @ResponseStatus(HttpStatus.OK)
     Flux<NamespaceAwareStatement> read(@PathVariable String id) {
-        Assert.isTrue(id.length() == GeneratedIdentifier.LENGTH, "Incorrect length for identifier.");
+        Assert.isTrue(id.length() == LocalIdentifier.LENGTH, "Incorrect length for identifier.");
 
         // FIXME: marker to use transactions repository
         return super.getAuthentication()

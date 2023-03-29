@@ -1,6 +1,6 @@
 package io.av360.maverick.graph.tests.generator;
 
-import io.av360.maverick.graph.model.rdf.GeneratedIdentifier;
+import io.av360.maverick.graph.model.shared.RandomIdentifier;
 import org.apache.commons.text.RandomStringGenerator;
 import org.eclipse.rdf4j.model.BNode;
 import org.eclipse.rdf4j.model.Namespace;
@@ -46,7 +46,7 @@ public class GeneratorCommons {
 
 
     public static String generateRandomEntityIdentifier() {
-        return identifierGenerator.generate(GeneratedIdentifier.LENGTH);
+        return identifierGenerator.generate(RandomIdentifier.LENGTH);
     }
 
     static String generateRandomWords(int length) {

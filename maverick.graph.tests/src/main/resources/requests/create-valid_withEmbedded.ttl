@@ -5,11 +5,13 @@
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
 [] a ns1:VideoObject ;
+    ns1:identifier "a" ;
     ns1:hasDefinedTerm [ a ns1:DefinedTerm ;
             rdfs:label "Term 1" ] .
 
 
 [] a ns1:VideoObject ;
+    ns1:identifier "b" ;
     ns1:hasDefinedTerm [ a ns1:DefinedTerm ;
             rdfs:label "Term 1" ] .
 
