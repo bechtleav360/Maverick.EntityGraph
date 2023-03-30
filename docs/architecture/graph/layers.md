@@ -3,11 +3,13 @@
 Conceptually, we distinguish between certain perspectives on the graph:
 
 * the *schema* layer, which stores our domain model
-* the immutable *entity* layer (or data, or documents, or whatever): the baseline, storing the facts. The facts are either stored
+* the immutable *entities* layer (or data, or documents, or whatever): the baseline, storing the facts. The facts are either stored
   only in the graph, or are shadow copies from a remote third-party application through connectors. Standard reasoning
   and business rules is used to alter the state of this layer.
-* The mutable *relations* layer, which links the entities using the feedback from the users. 
-* the *assertions* layer, which stores assertions about edges and values. The assertions are either coming from user
+* The mutable *assertions* layer with proposed modifications for the entities. These can either be
+  *  relations which link entities using the feedback from the users. 
+  *  new properties (also overwriting existing properties on the entities layer)
+* the *recommendation* layer, which stores assertions about edges and values. The assertions are either coming from user
   feedback or from ML models.
 
 

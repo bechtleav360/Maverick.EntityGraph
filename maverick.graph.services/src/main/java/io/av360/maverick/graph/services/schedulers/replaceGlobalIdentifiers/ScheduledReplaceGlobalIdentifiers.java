@@ -1,8 +1,9 @@
 package io.av360.maverick.graph.services.schedulers.replaceGlobalIdentifiers;
 
-import io.av360.maverick.graph.model.rdf.GeneratedIdentifier;
 import io.av360.maverick.graph.model.security.ApiKeyAuthenticationToken;
 import io.av360.maverick.graph.model.security.Authorities;
+import io.av360.maverick.graph.model.shared.LocalIdentifier;
+import io.av360.maverick.graph.model.shared.RandomIdentifier;
 import io.av360.maverick.graph.model.vocabulary.Local;
 import io.av360.maverick.graph.model.vocabulary.Transactions;
 import io.av360.maverick.graph.services.QueryServices;
@@ -39,7 +40,7 @@ import java.util.List;
  * }
  * LIMIT 100
  */
-@Slf4j(topic = "graph.schedulers.identifiers")
+@Slf4j(topic = "graph.jobs.identifiers")
 @Component
 @ConditionalOnProperty(name = "application.features.schedulers.replaceGlobalIdentifiers", havingValue = "true")
 public class ScheduledReplaceGlobalIdentifiers {
@@ -66,15 +67,15 @@ public class ScheduledReplaceGlobalIdentifiers {
 
         this.checkForGlobalIdentifiers(authentication)
                 .collectList()
-                .doOnError(throwable -> log.error("(Scheduled) Checking for invalided identifiers failed. ", throwable))
+                .doOnError(throwable -> log.error("Checking for global identifiers failed. ", throwable))
                 .doOnSuccess(list -> {
                     Integer reduce = list.stream()
                             .map(transaction -> transaction.listModifiedResources().size())
                             .reduce(0, Integer::sum);
                     if (reduce > 0) {
-                        log.debug("(Scheduled) Checking for invalided identifiers completed, {} resources were updated.", reduce);
+                        log.info("Checking for external identifiers completed, {} resource identifiers have been converted to locally resolvable identifiers.", reduce);
                     } else {
-                        log.debug("(Scheduled) No invalided identifiers found");
+                        log.trace("No global identifiers found");
                     }
 
                 }).subscribe();
@@ -113,13 +114,17 @@ public class ScheduledReplaceGlobalIdentifiers {
         ArrayList<Statement> statements = new ArrayList<>(statementsBag.subjectStatements());
         statements.addAll(statementsBag.objectStatements());
 
-        return entityStore.delete(statements, statementsBag.transaction());
+        return entityStore.removeStatements(statements, statementsBag.transaction());
     }
 
     private Mono<StatementsBag> storeNewStatements(StatementsBag statements) {
         ModelBuilder builder = new ModelBuilder();
 
-        GeneratedIdentifier generatedIdentifier = new GeneratedIdentifier(Local.Entities.NAMESPACE, statements.globalIdentifier());
+        LocalIdentifier.build(Local.Entities.NAMESPACE, statements.globalIdentifier());
+
+        // TODO: find a way to extract characteristic properties
+        log.warn("Building random generator for anonymous node");
+        LocalIdentifier generatedIdentifier = new RandomIdentifier(Local.Entities.NAMESPACE);
 
         statements.subjectStatements().forEach(statement -> {
             builder.add(generatedIdentifier, statement.getPredicate(), statement.getObject());

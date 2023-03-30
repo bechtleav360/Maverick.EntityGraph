@@ -11,7 +11,6 @@ import java.util.stream.Collectors;
 
 public class RdfUtils {
 
-
     public static Optional<RDFParserFactory> getParserFactory(MimeType mimeType) {
         assert mimeType != null;
 

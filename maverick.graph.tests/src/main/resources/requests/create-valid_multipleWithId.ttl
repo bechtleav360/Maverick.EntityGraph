@@ -1,0 +1,13 @@
+@prefix : <http://example.org/videos#> .
+@prefix ns1: <https://schema.org/> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+:1 a ns1:video ;
+    ns1:identifier "_a" ;
+    ns1:title "Video 1" .
+
+
+:2 a ns1:video ;
+    ns1:identifier "_b" ;
+    ns1:title "Video 1" .

@@ -4,5 +4,13 @@ public enum RepositoryType {
     ENTITIES,
     SCHEMA,
     TRANSACTIONS,
-    APPLICATION
+    APPLICATION;
+
+
+    @Override
+    public String toString() {
+        return name().toLowerCase();
+    }
+
+
 }

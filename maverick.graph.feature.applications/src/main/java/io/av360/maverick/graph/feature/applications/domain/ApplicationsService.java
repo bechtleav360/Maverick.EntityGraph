@@ -2,14 +2,19 @@ package io.av360.maverick.graph.feature.applications.domain;
 
 import io.av360.maverick.graph.api.security.errors.RevokedApiKeyUsed;
 import io.av360.maverick.graph.api.security.errors.UnknownApiKey;
+import io.av360.maverick.graph.feature.applications.config.Globals;
+import io.av360.maverick.graph.feature.applications.domain.errors.InvalidApplication;
 import io.av360.maverick.graph.feature.applications.domain.events.ApplicationCreatedEvent;
 import io.av360.maverick.graph.feature.applications.domain.events.TokenCreatedEvent;
 import io.av360.maverick.graph.feature.applications.domain.model.Application;
-import io.av360.maverick.graph.feature.applications.domain.model.ApplicationToken;
+import io.av360.maverick.graph.feature.applications.domain.model.ApplicationFlags;
+import io.av360.maverick.graph.feature.applications.domain.model.Subscription;
+import io.av360.maverick.graph.feature.applications.domain.vocab.ApplicationTerms;
+import io.av360.maverick.graph.feature.applications.domain.vocab.SubscriptionTerms;
 import io.av360.maverick.graph.feature.applications.store.ApplicationsStore;
-import io.av360.maverick.graph.model.errors.DuplicateRecordsException;
-import io.av360.maverick.graph.model.rdf.GeneratedIdentifier;
 import io.av360.maverick.graph.model.security.Authorities;
+import io.av360.maverick.graph.model.shared.LocalIdentifier;
+import io.av360.maverick.graph.model.shared.RandomIdentifier;
 import io.av360.maverick.graph.model.vocabulary.Local;
 import io.av360.maverick.graph.store.rdf.helpers.BindingsAccessor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,28 +29,41 @@ import org.eclipse.rdf4j.sparqlbuilder.core.query.SelectQuery;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
-import org.springframework.util.Assert;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.time.ZonedDateTime;
-import java.util.List;
+
+import static io.av360.maverick.graph.model.util.StreamsLogger.debug;
 
 /**
  * Applications separate tenants. Each application has its own separate stores.
  * An application has a set of unique API Keys. The api key identifies the application.
  */
 @Service
-@Slf4j(topic = "graph.feature.apps.domain")
+@Slf4j(topic = "graph.feat.apps.svc")
 public class ApplicationsService {
+
+    private static final Variable varAppIri = SparqlBuilder.var("appNode");
+    private static final Variable varAppKey = SparqlBuilder.var("appId");
+    private static final Variable varAppLabel = SparqlBuilder.var("appLabel");
+    private static final Variable varAppFlagPersistent = SparqlBuilder.var("appPersistent");
+    private static final Variable varAppFlagPublic = SparqlBuilder.var("appPublic");
+
+    private static final Variable varSubIri = SparqlBuilder.var("subNode");
+    private static final Variable varSubKey = SparqlBuilder.var("subId");
+    private static final Variable varSubIssued = SparqlBuilder.var("subIssued");
+    private static final Variable varSubActive = SparqlBuilder.var("subActive");
+    private static final Variable varSubLabel = SparqlBuilder.var("subLabel");
+
 
     private final ApplicationsStore applicationsStore;
 
     private final ApplicationEventPublisher eventPublisher;
 
 
-    public ApplicationsService(ApplicationsStore store, ApplicationEventPublisher eventPublisher) {
-        this.applicationsStore = store;
+    public ApplicationsService(ApplicationsStore applicationsStore, ApplicationEventPublisher eventPublisher) {
+        this.applicationsStore = applicationsStore;
         this.eventPublisher = eventPublisher;
     }
 
@@ -53,31 +71,30 @@ public class ApplicationsService {
      * Creates a new application.
      *
      * @param label          Label for the application
-     * @param persistent     True if data should be stored on disk
+     * @param flags            Flags for this application
      * @param authentication Current authentication information
      * @return New application as mono
      */
-    public Mono<Application> createApplication(String label, boolean persistent, Authentication authentication) {
+    public Mono<Application> createApplication(String label, ApplicationFlags flags, Authentication authentication) {
 
-        // generate application identifier
-        String applicationIdentifier = GeneratedIdentifier.generateRandomKey(16);
-        GeneratedIdentifier subject = new GeneratedIdentifier(Local.Subscriptions.NAMESPACE, applicationIdentifier);
+        LocalIdentifier subject = new RandomIdentifier(Local.Subscriptions.NAMESPACE);
 
         Application application = new Application(
                 subject,
                 label,
-                applicationIdentifier,
-                persistent
+                subject.getLocalName(),
+                flags
         );
 
         // store application
         ModelBuilder modelBuilder = new ModelBuilder();
 
         modelBuilder.subject(application.iri());
-        modelBuilder.add(RDF.TYPE, Application.TYPE);
-        modelBuilder.add(Application.HAS_KEY, application.key());
-        modelBuilder.add(Application.HAS_LABEL, application.label());
-        modelBuilder.add(Application.IS_PERSISTENT, application.persistent());
+        modelBuilder.add(RDF.TYPE, ApplicationTerms.TYPE);
+        modelBuilder.add(ApplicationTerms.HAS_KEY, application.key());
+        modelBuilder.add(ApplicationTerms.HAS_LABEL, application.label());
+        modelBuilder.add(ApplicationTerms.IS_PERSISTENT, flags.isPersistent());
+        modelBuilder.add(ApplicationTerms.IS_PUBLIC, flags.isPublic());
 
 
         return this.applicationsStore.insert(modelBuilder.build(), authentication, Authorities.SYSTEM)
@@ -85,60 +102,34 @@ public class ApplicationsService {
                 .doOnSuccess(app -> {
                     this.eventPublisher.publishEvent(new ApplicationCreatedEvent(app));
                 })
-                .doOnSubscribe(subs -> log.debug("Creating a new application with label '{}' and persistence set to '{}' ", label, persistent));
+                .doOnSubscribe(debug(log, "Creating a new application with label '{}' and persistence set to '{}' ", label, flags.isPersistent()));
     }
 
 
-    public Mono<ApplicationToken> getKey(String keyIdentifier, Authentication authentication) {
+    public Mono<Subscription> getSubscription(String subscriptionIdentifier, Authentication authentication) {
 
-        Variable nodeKey = SparqlBuilder.var("n1");
-        Variable nodeSubscription = SparqlBuilder.var("n2");
 
-        Variable keyDate = SparqlBuilder.var("c");
-        Variable keyActive = SparqlBuilder.var("d");
-        Variable keyName = SparqlBuilder.var("e");
-        Variable subscriptionIdentifier = SparqlBuilder.var("b");
-        Variable subActive = SparqlBuilder.var("f");
-        Variable sublabel = SparqlBuilder.var("g");
 
         SelectQuery q = Queries.SELECT()
-                .where(nodeKey.has(ApplicationToken.HAS_KEY, keyIdentifier)
-                        .andHas(ApplicationToken.HAS_LABEL, keyName)
-                        .andHas(ApplicationToken.HAS_ISSUE_DATE, keyDate)
-                        .andHas(ApplicationToken.IS_ACTIVE, keyActive)
-                        .andHas(ApplicationToken.OF_SUBSCRIPTION, nodeSubscription)
-                        .and(nodeSubscription.has(Application.HAS_KEY, subscriptionIdentifier)
-                                .andHas(Application.IS_PERSISTENT, subActive)
-                                .andHas(Application.HAS_LABEL, sublabel)
+                .where(varSubIri.has(SubscriptionTerms.HAS_KEY, subscriptionIdentifier)
+                        .andHas(SubscriptionTerms.HAS_LABEL, varSubLabel)
+                        .andHas(SubscriptionTerms.HAS_ISSUE_DATE, varSubIssued)
+                        .andHas(SubscriptionTerms.IS_ACTIVE, varSubActive)
+                        .andHas(SubscriptionTerms.FOR_APPLICATION, varAppKey)
+                        .and(varAppIri.has(ApplicationTerms.HAS_KEY, varAppKey)
+                                .andHas(ApplicationTerms.IS_PERSISTENT, varAppFlagPersistent)
+                                .andHas(ApplicationTerms.IS_PUBLIC, varAppFlagPublic)
+                                .andHas(ApplicationTerms.HAS_LABEL, varAppLabel)
                         )
                 );
         return this.applicationsStore.query(q, authentication, Authorities.APPLICATION)
-                .collectList()
-                .flatMap(result -> {
-                    List<BindingSet> bindingSets = result.stream().toList();
-                    Assert.isTrue(bindingSets.size() == 1, "Found multiple key definitions for id " + keyIdentifier);
-                    return Mono.just(bindingSets.get(0));
-                })
+                .singleOrEmpty()
                 .map(BindingsAccessor::new)
-                .map(ba ->
-                        new ApplicationToken(
-                                ba.asIRI(nodeKey),
-                                ba.asString(keyName),
-                                keyIdentifier,
-                                ba.asBoolean(keyActive),
-                                ba.asString(keyDate),
-                                new Application(
-                                        ba.asIRI(nodeSubscription),
-                                        ba.asString(sublabel),
-                                        ba.asString(subscriptionIdentifier),
-                                        ba.asBoolean(subActive)
-                                )
-                        )
-                )
-                .switchIfEmpty(Mono.error(new UnknownApiKey(keyIdentifier)))
-                .filter(ApplicationToken::active)
-                .switchIfEmpty(Mono.error(new RevokedApiKeyUsed(keyIdentifier)))
-                .doOnSubscribe(subs -> log.debug("Requesting application details for application key '{}'", keyIdentifier));
+                .map(this::buildSubscriptionFromBindings)
+                .switchIfEmpty(Mono.error(new UnknownApiKey(subscriptionIdentifier)))
+                .filter(Subscription::active)
+                .switchIfEmpty(Mono.error(new RevokedApiKeyUsed(subscriptionIdentifier)))
+                .doOnSubscribe(subs -> log.debug("Requesting application details for application key '{}'", subscriptionIdentifier));
 
 
     }
@@ -147,161 +138,180 @@ public class ApplicationsService {
         return (IRI) bindings.getValue(var.getVarName());
     }
 
-    public Flux<ApplicationToken> getKeysForApplication(String applicationIdentifier, Authentication authentication) {
+    public Flux<Subscription> listSubscriptionsForApplication(String applicationIdentifier, Authentication authentication) {
 
+        return this.getApplication(applicationIdentifier, authentication)
+                .flatMapMany(app -> {
+                    SelectQuery q = Queries.SELECT()
+                            .where(varSubIri.has(SubscriptionTerms.HAS_KEY, varSubKey)
+                                    .andHas(SubscriptionTerms.HAS_LABEL, varSubLabel)
+                                    .andHas(SubscriptionTerms.HAS_ISSUE_DATE, varSubIssued)
+                                    .andHas(SubscriptionTerms.IS_ACTIVE, varSubActive)
+                                    .andHas(SubscriptionTerms.FOR_APPLICATION, app.key())
+                            );
 
-        Variable nodeKey = SparqlBuilder.var("n1");
-        Variable nodeSubscription = SparqlBuilder.var("n2");
-
-        Variable keyIdentifier = SparqlBuilder.var("b");
-        Variable keyDate = SparqlBuilder.var("c");
-        Variable keyActive = SparqlBuilder.var("d");
-        Variable keyName = SparqlBuilder.var("e");
-        Variable subPersistent = SparqlBuilder.var("f");
-        Variable sublabel = SparqlBuilder.var("g");
-
-        SelectQuery q = Queries.SELECT()
-                .where(nodeKey.has(ApplicationToken.HAS_KEY, keyIdentifier)
-                        .andHas(ApplicationToken.HAS_LABEL, keyName)
-                        .andHas(ApplicationToken.HAS_ISSUE_DATE, keyDate)
-                        .andHas(ApplicationToken.IS_ACTIVE, keyActive)
-                        .andHas(ApplicationToken.OF_SUBSCRIPTION, nodeSubscription)
-                        .and(nodeSubscription.has(Application.HAS_KEY, applicationIdentifier)
-                                .andHas(Application.IS_PERSISTENT, subPersistent)
-                                .andHas(Application.HAS_LABEL, sublabel)
-                        )
-
-                );
-        String qs = q.getQueryString();
-
-        return this.applicationsStore.query(q, authentication, Authorities.APPLICATION)
-                .map(BindingsAccessor::new)
-                .map(ba ->
-                        new ApplicationToken(
-                                ba.asIRI(nodeKey),
-                                ba.asString(keyName),
-                                ba.asString(keyIdentifier),
-                                ba.asBoolean(keyActive),
-                                ba.asString(keyDate),
-                                new Application(
-                                        ba.asIRI(nodeSubscription),
-                                        ba.asString(sublabel),
-                                        applicationIdentifier,
-                                        ba.asBoolean(subPersistent)
-
-                                )
-                        )
-                )
-                .doOnSubscribe(sub -> log.debug("Requesting all API Keys for application with key '{}'", applicationIdentifier));
+                    return this.applicationsStore.query(q, authentication, Authorities.APPLICATION)
+                            .map(BindingsAccessor::new)
+                            .map(ba -> this.buildSubscriptionFromBindings(ba, app));
+                })
+                .doOnSubscribe(debug(log, "Requesting all API Keys for application with key '{}'", applicationIdentifier));
     }
 
 
-    public Flux<Application> getApplications(Authentication authentication) {
-
-
-        Variable node = SparqlBuilder.var("n");
-        Variable key = SparqlBuilder.var("a");
-        Variable label = SparqlBuilder.var("b");
-        Variable persistent = SparqlBuilder.var("c");
+    public Flux<Application> listApplications(Authentication authentication) {
 
 
         SelectQuery q = Queries.SELECT()
-                .where(node.isA(Application.TYPE)
-                        .andHas(Application.HAS_KEY, key)
-                        .andHas(Application.HAS_LABEL, label)
-                        .andHas(Application.IS_PERSISTENT, persistent)
+                .where(varAppIri.isA(ApplicationTerms.TYPE)
+                        .andHas(ApplicationTerms.HAS_KEY, varAppKey)
+                        .andHas(ApplicationTerms.HAS_LABEL, varAppLabel)
+                        .andHas(ApplicationTerms.IS_PERSISTENT, varAppFlagPersistent)
+                        .andHas(ApplicationTerms.IS_PUBLIC, varAppFlagPublic)
                 )
                 .limit(100);
 
         return this.applicationsStore.query(q, authentication, Authorities.SYSTEM)
                 .map(BindingsAccessor::new)
-                .map(ba ->
-                        new Application(
-                                ba.asIRI(node),
-                                ba.asString(label),
-                                ba.asString(key),
-                                ba.asBoolean(persistent)
-                        )
-                )
-                .doOnSubscribe(sub -> log.debug("Requesting all applications"));
+                .map(this::buildApplicationFromBindings)
+                .doOnSubscribe(debug(log, "Loading all applications from repository."));
 
     }
 
     public Mono<Void> revokeToken(String subscriptionId, String name, Authentication authentication) {
-        log.debug("(Service) Revoking api key for application '{}'", subscriptionId);
+        log.debug(" Revoking api key for application '{}'", subscriptionId);
 
         return Mono.error(new UnsupportedOperationException());
     }
 
-    public Mono<ApplicationToken> generateToken(String applicationIdentifier, String name, Authentication authentication) {
+    public Mono<Subscription> createSubscription(String applicationIdentifier, String subscriptionLabel, Authentication authentication) {
 
-
-        Variable node = SparqlBuilder.var("node");
-        Variable subPersistent = SparqlBuilder.var("f");
-        Variable sublabel = SparqlBuilder.var("g");
-
-        SelectQuery q = Queries.SELECT()
-                .where(node.isA(Application.TYPE)
-                        .andHas(Application.HAS_KEY, applicationIdentifier)
-                        .andHas(Application.HAS_LABEL, sublabel)
-                        .andHas(Application.IS_PERSISTENT, subPersistent)
-                )
-
-                .limit(2);
-
-
-        return this.applicationsStore.query(q, authentication, Authorities.APPLICATION)
-                .collectList()
-                .flatMap(this::getUniqueBindingSet)
-                .map(BindingsAccessor::new)
-                .map(ba ->
-                        new Application(
-                                ba.asIRI(node),
-                                ba.asString(sublabel),
-                                applicationIdentifier,
-                                ba.asBoolean(subPersistent)
-                        )
-                )
-                .map(subscription ->
-                        new ApplicationToken(
-                                new GeneratedIdentifier(Local.Subscriptions.NAMESPACE),
-                                name,
-                                GeneratedIdentifier.generateRandomKey(16),
+        return this.getApplication(applicationIdentifier, authentication)
+                .map(application ->
+                        new Subscription(
+                                new RandomIdentifier(Local.Subscriptions.NAMESPACE),
+                                subscriptionLabel,
+                                RandomIdentifier.generateRandomKey(16),
                                 true,
                                 ZonedDateTime.now().toString(),
-                                subscription
+                                application
                         )
                 )
                 .flatMap(apiKey -> {
                     ModelBuilder modelBuilder = new ModelBuilder();
                     modelBuilder.subject(apiKey.iri());
-                    modelBuilder.add(RDF.TYPE, ApplicationToken.TYPE);
-                    modelBuilder.add(ApplicationToken.HAS_KEY, apiKey.key());
-                    modelBuilder.add(ApplicationToken.HAS_LABEL, apiKey.label());
-                    modelBuilder.add(ApplicationToken.HAS_ISSUE_DATE, apiKey.issueDate());
-                    modelBuilder.add(ApplicationToken.IS_ACTIVE, apiKey.active());
-                    modelBuilder.add(ApplicationToken.OF_SUBSCRIPTION, apiKey.application().key());
-                    modelBuilder.add(apiKey.application().iri(), Application.HAS_API_KEY, apiKey.iri());
+                    modelBuilder.add(RDF.TYPE, SubscriptionTerms.TYPE);
+                    modelBuilder.add(SubscriptionTerms.HAS_KEY, apiKey.key());
+                    modelBuilder.add(SubscriptionTerms.HAS_LABEL, apiKey.label());
+                    modelBuilder.add(SubscriptionTerms.HAS_ISSUE_DATE, apiKey.issueDate());
+                    modelBuilder.add(SubscriptionTerms.IS_ACTIVE, apiKey.active());
+                    modelBuilder.add(SubscriptionTerms.FOR_APPLICATION, apiKey.application().key());
+                    modelBuilder.add(apiKey.application().iri(), ApplicationTerms.HAS_API_KEY, apiKey.iri());
 
                     return this.applicationsStore.insert(modelBuilder.build(), authentication, Authorities.APPLICATION).then(Mono.just(apiKey));
                 })
                 .doOnSuccess(token -> {
                     this.eventPublisher.publishEvent(new TokenCreatedEvent(token));
                 })
-                .doOnSubscribe(subs -> log.debug("Generating new api key for subscriptions '{}'", applicationIdentifier));
-    }
-
-    private Mono<BindingSet> getUniqueBindingSet(List<BindingSet> result) {
-        if (result.isEmpty()) return Mono.empty();
-
-        if (result.size() > 1) {
-            log.error("Found multiple results when expected exactly one");
-            return Mono.error(new DuplicateRecordsException());
-        }
-
-        return Mono.just(result.get(0));
-
+                .doOnSubscribe(debug(log, "Generating new subscription key for application '{}'", applicationIdentifier));
     }
 
 
+    public Mono<Application> getApplication(String applicationKey, Authentication authentication) {
+
+
+
+        SelectQuery q = Queries.SELECT().distinct()
+                .where(varAppIri.isA(ApplicationTerms.TYPE)
+                        .andHas(ApplicationTerms.HAS_KEY, applicationKey)
+                        .andHas(ApplicationTerms.HAS_LABEL, varAppLabel)
+                        .andHas(ApplicationTerms.IS_PERSISTENT, varAppFlagPersistent)
+                        .andHas(ApplicationTerms.IS_PUBLIC, varAppFlagPublic)
+                );
+        String queryString = q.getQueryString();
+        return this.applicationsStore.query(q, authentication, Authorities.READER)
+                .singleOrEmpty()
+                .switchIfEmpty(Mono.error(new InvalidApplication(applicationKey)))
+                .map(BindingsAccessor::new)
+                .map(ba -> new Application(
+                        ba.asIRI(varAppIri),
+                        ba.asString(varAppLabel),
+                        applicationKey,
+                        new ApplicationFlags(
+                                ba.asBoolean(varAppFlagPersistent),
+                                ba.asBoolean(varAppFlagPublic)
+                        )
+                ))
+                .doOnSubscribe(debug(log, "Requesting application with identifier '{}'", applicationKey));
+    }
+
+
+
+
+    public Mono<Application> getApplicationByLabel(String applicationLabel, Authentication authentication) {
+        if(applicationLabel.equalsIgnoreCase(Globals.DEFAULT_APPLICATION_LABEL)) return Mono.empty();
+
+        SelectQuery q = Queries.SELECT()
+                .where(varAppIri.isA(ApplicationTerms.TYPE)
+                        .andHas(ApplicationTerms.HAS_KEY, varAppKey)
+                        .andHas(ApplicationTerms.HAS_LABEL, applicationLabel)
+                        .andHas(ApplicationTerms.IS_PERSISTENT, varAppFlagPersistent)
+                        .andHas(ApplicationTerms.IS_PUBLIC, varAppFlagPublic)
+                );
+
+
+        return this.applicationsStore.query(q, authentication, Authorities.APPLICATION)
+                .switchIfEmpty(Mono.error(new InvalidApplication(applicationLabel)))
+                .doOnNext(bindings -> {
+                    log.trace("Found application: {}", bindings.getValue(varAppLabel.getVarName()));
+                })
+                .collectList()
+                .flatMap(BindingsAccessor::getUniqueBindingSet)
+                .map(BindingsAccessor::new)
+                .map(ba -> new Application(
+                        ba.asIRI(varAppIri),
+                        applicationLabel,
+                        ba.asString(varAppKey),
+                        new ApplicationFlags(
+                                ba.asBoolean(varAppFlagPersistent),
+                                ba.asBoolean(varAppFlagPublic)
+                        )
+                ))
+                .doOnSubscribe(sub -> log.debug("Requesting application with label '{}'", applicationLabel));
+    }
+
+    private Application buildApplicationFromBindings(BindingsAccessor ba) {
+        return new Application(
+                ba.asIRI(varAppIri),
+                ba.asString(varAppLabel),
+                ba.asString(varAppKey),
+                new ApplicationFlags(
+                        ba.asBoolean(varAppFlagPersistent),
+                        ba.asBoolean(varAppFlagPublic)
+                )
+        );
+    }
+
+    private Subscription buildSubscriptionFromBindings(BindingsAccessor ba, Application app) {
+
+        return new Subscription(
+                ba.asIRI(varSubIri),
+                ba.asString(varSubLabel),
+                ba.asString(varSubKey),
+                ba.asBoolean(varSubActive),
+                ba.asString(varSubIssued),
+                app
+                );
+    }
+
+    private Subscription buildSubscriptionFromBindings(BindingsAccessor ba) {
+
+        return new Subscription(
+                ba.asIRI(varSubIri),
+                ba.asString(varSubLabel),
+                ba.asString(varSubKey),
+                ba.asBoolean(varSubActive),
+                ba.asString(varSubIssued),
+                this.buildApplicationFromBindings(ba)
+        );
+    }
 }

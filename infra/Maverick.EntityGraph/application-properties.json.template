@@ -37,7 +37,9 @@
             }
         }
     },
-
+  "server": {
+    "use-forward-headers": true
+  },
     "spring": {
         "profiles": {
             "active": "stage"

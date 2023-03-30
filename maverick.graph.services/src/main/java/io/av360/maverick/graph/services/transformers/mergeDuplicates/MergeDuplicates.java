@@ -1,7 +1,6 @@
 package io.av360.maverick.graph.services.transformers.mergeDuplicates;
 
-import io.av360.maverick.graph.model.errors.MissingType;
-import io.av360.maverick.graph.model.rdf.GeneratedIdentifier;
+import io.av360.maverick.graph.model.shared.ChecksumIdentifier;
 import io.av360.maverick.graph.services.QueryServices;
 import io.av360.maverick.graph.services.transformers.Transformer;
 import io.av360.maverick.graph.store.rdf.models.TripleModel;
@@ -30,7 +29,7 @@ import reactor.core.publisher.Mono;
 import java.util.*;
 import java.util.stream.Collectors;
 
-@Slf4j(topic = "graph.transformer.deduplication")
+@Slf4j(topic = "graph.srvc.transformer.deduplication")
 @Component
 /**
  * Checks whether duplicates exist in the incoming model. Does not check within the repository (this is delegated to a
@@ -90,7 +89,7 @@ public class MergeDuplicates implements Transformer {
     private boolean checkForEmbeddedNamedEntities(TripleModel triples) {
         return triples.embeddedObjects()
                 .stream()
-                .anyMatch(object -> object.isIRI() && (!(object instanceof GeneratedIdentifier)));
+                .anyMatch(object -> object.isIRI() && (!(object instanceof ChecksumIdentifier)));
     }
 
     /**
@@ -101,14 +100,14 @@ public class MergeDuplicates implements Transformer {
     private boolean checkForEmbeddedAnonymousEntities(TripleModel triples) {
         return triples.embeddedObjects()
                 .stream()
-                .anyMatch(object -> object.isBNode() || object instanceof GeneratedIdentifier);
+                .anyMatch(object -> object.isBNode() || object instanceof ChecksumIdentifier);
 
 
     }
 
 
     private boolean isResourceAnonymous(Value resource) {
-        return resource.isBNode() || resource instanceof GeneratedIdentifier;
+        return resource.isBNode() || resource instanceof ChecksumIdentifier;
     }
 
     /**
@@ -146,7 +145,10 @@ public class MergeDuplicates implements Transformer {
         int count = 0;
         for (Resource anonymous : anonymousObjects) {
             Iterator<Statement> typeStatement = unmodifiable.getStatements(anonymous, RDF.TYPE, null).iterator();
-            if (!typeStatement.hasNext()) throw new MissingType(anonymous);
+            if (!typeStatement.hasNext()) {
+                log.error("Missing type definition for node with id: "+anonymous);
+                continue;
+            }
             Value typeValue = typeStatement.next().getObject();
 
             Iterator<Statement> labelStatement = unmodifiable.getStatements(anonymous, RDFS.LABEL, null).iterator();
@@ -210,7 +212,7 @@ public class MergeDuplicates implements Transformer {
 
                             Value type = triples.streamStatements(resource, RDF.TYPE, null)
                                     .findFirst()
-                                    .orElseThrow(() -> new MissingType(resource)).getObject();
+                                    .orElseThrow(() -> new RuntimeException("Missing type for node with id: "+resource)).getObject();
                             triples.streamStatements(resource, RDFS.LABEL, null)
                                     .findFirst()
                                     .ifPresent(statement -> c.next(new LocalEntity(type, statement.getObject(), resource)));

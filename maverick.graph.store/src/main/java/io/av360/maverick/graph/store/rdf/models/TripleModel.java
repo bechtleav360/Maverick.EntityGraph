@@ -6,9 +6,7 @@ import org.eclipse.rdf4j.model.*;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 
 import java.io.Serializable;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -113,7 +111,18 @@ public class TripleModel implements NamespaceAware, Serializable {
         return this.streamStatements(subject, predicate, null).map(Statement::getObject);
     }
 
+    public Value getDistinctValue(Resource subject, IRI predicate) throws NoSuchElementException {
+        return this.findDistinctValue(subject, predicate).orElseThrow();
+    }
+
+    public Optional<Value> findDistinctValue(Resource subject, IRI predicate) {
+        return this.streamValues(subject, predicate).findFirst();
+    }
+
+
     public boolean hasStatement(Resource obj, IRI pred, Value val) {
         return this.getModel().getStatements(obj, pred, val).iterator().hasNext();
     }
+
+
 }

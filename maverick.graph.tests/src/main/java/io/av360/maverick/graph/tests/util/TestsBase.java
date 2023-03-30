@@ -1,101 +1,85 @@
 package io.av360.maverick.graph.tests.util;
 
-import io.av360.maverick.graph.store.rdf.helpers.RdfUtils;
+import io.av360.maverick.graph.model.security.Authorities;
+import io.av360.maverick.graph.store.EntityStore;
+import io.av360.maverick.graph.store.TransactionsStore;
+import io.av360.maverick.graph.tests.config.TestSecurityConfig;
+import lombok.extern.slf4j.Slf4j;
 import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Literal;
+import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.rio.RDFFormat;
+import org.eclipse.rdf4j.rio.RDFWriter;
+import org.eclipse.rdf4j.rio.Rio;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.io.ClassPathResource;
-import org.springframework.core.io.Resource;
-import org.springframework.http.MediaType;
-import org.springframework.test.web.reactive.server.WebTestClient;
-import org.springframework.web.reactive.function.BodyInserters;
+import org.springframework.security.authentication.TestingAuthenticationToken;
+import reactor.core.publisher.Mono;
+import reactor.test.StepVerifier;
 
+import java.io.StringWriter;
+
+@Slf4j
 public abstract class TestsBase {
 
     protected static ValueFactory vf = SimpleValueFactory.getInstance();
 
 
-    protected WebTestClient webClient;
+    private EntityStore entityStore;
+
+    private TransactionsStore transactionsStore;
+
+
+
+
+
+    protected IRI createIRIFrom(String url) {
+        return vf.createIRI(url);
+    }
+
+    protected Literal createLiteralFrom(String value) {
+        return vf.createLiteral(value);
+    }
 
     @Autowired
-    public void setWebClient(WebTestClient webClient) {
-        this.webClient = webClient;
+    public void setStores(EntityStore entityStore, TransactionsStore transactionsStore) {
+        this.entityStore = entityStore;
+        this.transactionsStore = transactionsStore;
+    }
+
+    int steps = 0;
+    protected void printStart(String label) {
+        System.out.println("\n----------- Starting: "+label+" --------------------------------------------------------------------------------------\n");
+        steps = 0;
+    }
+
+    public void printStep() {
+        System.out.println("\n----------- Step: "+ ++steps +" --------------------------------------------------------------------------------------");
+    }
+
+    public void printModel(Model md, RDFFormat rdfFormat) {
+       String m = this.dumpModel(md, rdfFormat);
+       log.trace("Current model: \n {}", m);
+    }
+
+    public String dumpModel(Model md, RDFFormat rdfFormat) {
+        StringWriter sw = new StringWriter();
+        RDFWriter writer = Rio.createWriter(rdfFormat, sw);
+        writer.startRDF();
+        md.forEach(writer::handleStatement);
+        writer.endRDF();
+        return sw.toString();
+    }
+
+    protected void resetRepository() {
+        TestingAuthenticationToken token = TestSecurityConfig.createAuthenticationToken();
+        Mono<Void> r1 = this.entityStore.reset(token, Authorities.SYSTEM)
+                .then(this.transactionsStore.reset(token, Authorities.SYSTEM));
+
+        StepVerifier.create(r1).verifyComplete();
     }
 
 
-    protected void dump() {
 
-        CsvConsumer csvConsumer = new CsvConsumer();
-        webClient
-                .post()
-                .uri("/api/query/select")
-                .contentType(MediaType.parseMediaType("text/plain"))
-                .accept(MediaType.parseMediaType("text/csv"))
-                .body(BodyInserters.fromValue("SELECT DISTINCT * WHERE { ?s ?p ?o }"))
-                .exchange()
-                .expectStatus().isAccepted()
-                .expectBody()
-                .consumeWith(csvConsumer);
-
-        System.out.println(csvConsumer.getAsString());
-
-    }
-
-
-    protected void resetRepository(String repositoryType) {
-        webClient.get()
-                .uri(uriBuilder ->
-                        uriBuilder.path("/api/admin/bulk/reset")
-                                .queryParam("name", repositoryType)
-                                .build()
-
-                )
-                .exchange()
-                .expectStatus().isAccepted();
-    }
-
-    protected RdfConsumer upload(String path) {
-        Resource file = new ClassPathResource(path);
-        return this.upload(file);
-
-    }
-
-    protected RdfConsumer upload(Resource file) {
-        RdfConsumer rdfConsumer = new RdfConsumer(RDFFormat.TURTLE, true);
-
-        webClient.post()
-                .uri("/api/entities")
-                .contentType(RdfUtils.getMediaType(RDFFormat.TURTLE))
-                .accept(RdfUtils.getMediaType(RDFFormat.TURTLE))
-                .body(BodyInserters.fromResource(file))
-                .header("X-API-KEY", "test")
-                .exchange()
-                .expectStatus().isAccepted()
-                .expectBody()
-                .consumeWith(rdfConsumer);
-
-        return rdfConsumer;
-    }
-
-    protected RdfConsumer loadEntity(IRI subject) {
-
-        RdfConsumer rdfConsumer = new RdfConsumer(RDFFormat.TURTLE, true);
-        webClient.get()
-                .uri(uriBuilder -> uriBuilder.path("/api/entities/{id}")
-                        .build(
-                                subject.getLocalName()
-                        )
-
-                )
-                .accept(RdfUtils.getMediaType(RDFFormat.TURTLE))
-                .header("X-API-KEY", "test")
-                .exchange()
-                .expectStatus().isOk()
-                .expectBody()
-                .consumeWith(rdfConsumer);
-        return rdfConsumer;
-
-    }
 }

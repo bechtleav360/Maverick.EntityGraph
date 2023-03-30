@@ -3,9 +3,9 @@ package io.av360.maverick.graph.api.controller.transactions;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.av360.maverick.graph.api.controller.AbstractController;
 import io.av360.maverick.graph.model.enums.RdfMimeTypes;
-import io.av360.maverick.graph.model.rdf.GeneratedIdentifier;
 import io.av360.maverick.graph.model.rdf.NamespaceAwareStatement;
-import io.av360.maverick.graph.services.EntityServices;
+import io.av360.maverick.graph.model.shared.LocalIdentifier;
+import io.av360.maverick.graph.services.TransactionsService;
 import io.av360.maverick.graph.store.rdf.models.TripleModel;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import lombok.extern.slf4j.Slf4j;
@@ -20,30 +20,45 @@ import reactor.core.publisher.Flux;
 @RestController
 @RequestMapping(path = "/api/transactions")
 //@Api(tags = "Transactions")
-@Slf4j(topic = "graph.api.transactions")
+@Slf4j(topic = "graph.ctrl.api.transactions")
 @SecurityRequirement(name = "api_key")
 public class Transactions extends AbstractController {
 
     protected final ObjectMapper objectMapper;
-    protected final EntityServices graphService;
+    protected final TransactionsService transactionsService;
 
-    public Transactions(ObjectMapper objectMapper, EntityServices graphService) {
+
+    public Transactions(ObjectMapper objectMapper, TransactionsService transactionsService) {
         this.objectMapper = objectMapper;
-        this.graphService = graphService;
+        this.transactionsService = transactionsService;
     }
 
     //@ApiOperation(value = "Read transaction")
-    @GetMapping(value = "/{id:[\\w|\\d|-|_]+}", produces = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.NQUADS_VALUE, RdfMimeTypes.N3_VALUE})
+    @GetMapping(value = "/{id:[\\w|\\d|\\-|\\_]+}", produces = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.NQUADS_VALUE, RdfMimeTypes.N3_VALUE})
     @ResponseStatus(HttpStatus.OK)
     Flux<NamespaceAwareStatement> read(@PathVariable String id) {
-        Assert.isTrue(id.length() == GeneratedIdentifier.LENGTH, "Incorrect length for identifier.");
+        Assert.isTrue(id.length() == LocalIdentifier.LENGTH, "Incorrect length for identifier.");
 
         // FIXME: marker to use transactions repository
         return super.getAuthentication()
-                .flatMap(authentication -> graphService.readEntity(id, authentication))
+                .flatMap(authentication -> transactionsService.find(id, authentication))
                 .flatMapIterable(TripleModel::asStatements)
                 .doOnSubscribe(s -> {
                     if (log.isTraceEnabled()) log.trace("Reading transaction with id: {}", id);
+                });
+    }
+
+    @GetMapping(value = "", produces = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.NQUADS_VALUE, RdfMimeTypes.N3_VALUE})
+    @ResponseStatus(HttpStatus.OK)
+    Flux<NamespaceAwareStatement> list(@RequestParam(value = "limit", defaultValue = "100") Integer limit,
+                                       @RequestParam(value = "offset", defaultValue = "0") Integer offset) {
+
+        // FIXME: marker to use transactions repository
+        return super.getAuthentication()
+                .flatMapMany(authentication -> transactionsService.list(limit, offset, authentication))
+                .flatMapIterable(TripleModel::asStatements)
+                .doOnSubscribe(s -> {
+                    if (log.isTraceEnabled()) log.trace("Listing last {} transactions with offset {}", limit, offset);
                 });
     }
 

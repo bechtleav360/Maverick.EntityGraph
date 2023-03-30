@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.Map;
 
 @Component
-@Slf4j(topic = "graph.transformer.delegator")
+@Slf4j(topic = "graph.srvc.transformers.delegator")
 public class DelegatingTransformer implements Transformer {
 
     private List<Transformer> transformers;

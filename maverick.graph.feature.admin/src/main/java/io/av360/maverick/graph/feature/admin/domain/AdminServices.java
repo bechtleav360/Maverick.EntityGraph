@@ -12,7 +12,7 @@ import reactor.core.publisher.Mono;
 
 
 @Service
-@Slf4j(topic = "graph.feature.admin.domain")
+@Slf4j(topic = "graph.feat.admin.svc")
 public class AdminServices {
 
     private final EntityStore graph;
@@ -23,7 +23,7 @@ public class AdminServices {
 
 
     public Mono<Void> reset(Authentication authentication, RepositoryType repositoryType) {
-        return this.graph.reset(authentication, repositoryType, Authorities.APPLICATION)
+        return this.graph.reset(authentication, repositoryType, Authorities.SYSTEM)
                 .doOnSubscribe(sub -> log.info("Purging repository through admin services"));
     }
 

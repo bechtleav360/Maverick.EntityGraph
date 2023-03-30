@@ -5,10 +5,13 @@
 application:
   security:
     enabled: true
-    apiKey: "xxx"
+    apiKey: "123"
     basic:
       enabled: false
   features:
+    modules:
+      applications: true
+      admin: true
     schedulers:
       detectDuplicates: false
       replaceGlobalIdentifiers: true
@@ -21,13 +24,13 @@ application:
   storage:
     default:
       persistent: true
-      path: "/var/data/application"
+      path: "D:/Graphen/default"
     entities:
       persistent: true
-      path: "/var/data/entities"
+      path: "D:/Graphen/entities"
     transactions:
       persistent: true
-      path: "/var/data/transactions"
+      path: "D:/Graphen/transactions"
 
 spring:
   security:
@@ -37,30 +40,13 @@ spring:
 
 logging:
   level:
-    com:
-      bechtle: TRACE
+    graph:
+      jobs: DEBUG
+      repo: TRACE
+      srvc: TRACE
+      ctrl: TRACE
+
     org:
       springframework:
         security: INFO
 
-
-management:
-  endpoints:
-    web:
-      exposure:
-        include: "health, info, env, loggers, metrics, scheduledTasks, logfile, mappings"
-  endpoint:
-    health:
-      enabled: true
-    info:
-      enabled: true
-    env:
-      enabled: true
-    loggers:
-      enabled: true
-    metrics:
-      enabled: true
-    scheduledTasks:
-      enabled: true
-    logfile:
-      enabled: true

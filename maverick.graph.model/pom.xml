@@ -43,5 +43,9 @@
             <artifactId>spring-web</artifactId>
             <scope>compile</scope>
         </dependency>
+        <dependency>
+            <groupId>org.reactivestreams</groupId>
+            <artifactId>reactive-streams</artifactId>
+        </dependency>
     </dependencies>
 </project>

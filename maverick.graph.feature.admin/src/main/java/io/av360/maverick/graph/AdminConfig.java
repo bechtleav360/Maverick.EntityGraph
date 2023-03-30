@@ -12,7 +12,7 @@ import org.springframework.context.annotation.Configuration;
         name = "application.features.modules.admin"
 )
 @ComponentScan(basePackages = "io.av360.maverick.graph.feature.admin")
-@Slf4j(topic = "graph.feature.admin")
+@Slf4j(topic = "graph.feat.admin")
 public class AdminConfig {
 
     @PostConstruct

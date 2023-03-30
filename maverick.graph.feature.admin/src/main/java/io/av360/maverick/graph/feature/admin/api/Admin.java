@@ -24,7 +24,7 @@ import java.util.Optional;
 @RestController
 @RequestMapping(path = "/api/admin/bulk")
 //@Api(tags = "Admin Operations")
-@Slf4j(topic = "graph.feature.admin.api")
+@Slf4j(topic = "graph.feat.admin.ctrl.api")
 @SecurityRequirement(name = "api_key")
 public class Admin extends AbstractController {
     protected final AdminServices adminServices;
@@ -47,7 +47,7 @@ public class Admin extends AbstractController {
 
         return super.getAuthentication()
                 .flatMap(auth -> adminServices.reset(auth, repositoryType))
-                .doOnError(throwable -> log.error("Error while purging repository.", throwable))
+                .doOnError(throwable -> log.error("Error while purging repository. Type '{}' with reason: {}", throwable.getClass().getSimpleName(), throwable.getMessage() ))
                 .doOnSubscribe(s -> log.debug("Request to empty the repository of type '{}'", repositoryType));
     }
 

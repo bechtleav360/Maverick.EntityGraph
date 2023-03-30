@@ -8,11 +8,13 @@ spring:
 application:
   security:
     enabled: false
-    apiKey: "123"
+    apiKey: "test"
+    basic:
+      enabled: false
   features:
     modules:
-      admin: true
       applications: true
+      admin: false
     schedulers:
       detectDuplicates: true
       replaceGlobalIdentifiers: true
