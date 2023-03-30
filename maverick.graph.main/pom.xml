@@ -4,7 +4,7 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
         <artifactId>graph-parent</artifactId>
-        <groupId>com.bechtle.maverick.graph</groupId>
+        <groupId>org.av360.maverick.graph</groupId>
         <version>${revision}</version>
     </parent>
     <properties>
@@ -53,23 +53,23 @@
             <artifactId>logback-jackson</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.bechtle.maverick.graph</groupId>
+            <groupId>org.av360.maverick.graph</groupId>
             <artifactId>graph-api</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.bechtle.maverick.graph</groupId>
+            <groupId>org.av360.maverick.graph</groupId>
             <artifactId>graph-feature-admin</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.bechtle.maverick.graph</groupId>
+            <groupId>org.av360.maverick.graph</groupId>
             <artifactId>graph-feature-applications</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.bechtle.maverick.graph</groupId>
+            <groupId>org.av360.maverick.graph</groupId>
             <artifactId>graph-store-rdf4j</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.bechtle.maverick.graph</groupId>
+            <groupId>org.av360.maverick.graph</groupId>
             <artifactId>graph-tests</artifactId>
             <scope>test</scope>
         </dependency>
@@ -119,7 +119,7 @@
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <configuration>
-                    <mainClass>io.av360.maverick.graph.main.Application</mainClass>
+                    <mainClass>org.av360.maverick.graph.main.Application</mainClass>
                     <image>
                         <!--suppress UnresolvedMavenProperty -->
                         <name>${image.name}</name>

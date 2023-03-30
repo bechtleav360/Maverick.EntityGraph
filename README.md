@@ -64,7 +64,7 @@ You can find a Helm chart in the infra folder. Follow the directions documented 
 - Your GIT PAT for the credentials
 - ``bechtleav360/maverick-entity-graph:latest`` as full image name
 
-3. Enable io.av360.maverick.graph.Application logging
+3. Enable org.av360.maverick.graph.Application logging
 4. Add application property "SPRING_APPLICATION_JSON" (see below)
 5. Add application property "PORT" in configuration
 

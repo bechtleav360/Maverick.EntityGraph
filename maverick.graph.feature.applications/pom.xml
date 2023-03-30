@@ -4,7 +4,7 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
         <artifactId>graph-parent</artifactId>
-        <groupId>com.bechtle.maverick.graph</groupId>
+        <groupId>org.av360.maverick.graph</groupId>
         <version>${revision}</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
@@ -19,28 +19,28 @@
             <optional>true</optional>
         </dependency>
         <dependency>
-            <groupId>com.bechtle.maverick.graph</groupId>
+            <groupId>org.av360.maverick.graph</groupId>
             <artifactId>graph-model</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.bechtle.maverick.graph</groupId>
+            <groupId>org.av360.maverick.graph</groupId>
             <artifactId>graph-api</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.bechtle.maverick.graph</groupId>
+            <groupId>org.av360.maverick.graph</groupId>
             <artifactId>graph-store</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.bechtle.maverick.graph</groupId>
+            <groupId>org.av360.maverick.graph</groupId>
             <artifactId>graph-store-rdf4j</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.bechtle.maverick.graph</groupId>
+            <groupId>org.av360.maverick.graph</groupId>
             <artifactId>graph-tests</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>com.bechtle.maverick.graph</groupId>
+            <groupId>org.av360.maverick.graph</groupId>
             <artifactId>graph-feature-admin</artifactId>
             <scope>test</scope>
         </dependency>

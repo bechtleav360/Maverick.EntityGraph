@@ -1,12 +1,12 @@
 package org.av360.maverick.graph.api.entities.links;
 
-import io.av360.maverick.graph.model.vocabulary.SDO;
-import io.av360.maverick.graph.tests.clients.TestEntitiesClient;
-import io.av360.maverick.graph.tests.config.TestSecurityConfig;
-import io.av360.maverick.graph.tests.generator.EntitiesGenerator;
-import io.av360.maverick.graph.tests.generator.GeneratorCommons;
-import io.av360.maverick.graph.tests.util.ApiTestsBase;
-import io.av360.maverick.graph.tests.util.RdfConsumer;
+import org.av360.maverick.graph.model.vocabulary.SDO;
+import org.av360.maverick.graph.tests.clients.TestEntitiesClient;
+import org.av360.maverick.graph.tests.config.TestSecurityConfig;
+import org.av360.maverick.graph.tests.generator.EntitiesGenerator;
+import org.av360.maverick.graph.tests.generator.GeneratorCommons;
+import org.av360.maverick.graph.tests.util.ApiTestsBase;
+import org.av360.maverick.graph.tests.util.RdfConsumer;
 import org.eclipse.rdf4j.model.IRI;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
