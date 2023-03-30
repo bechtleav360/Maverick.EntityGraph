@@ -1,7 +1,6 @@
-package org.av360.maverick.graph.services.schedulers.replaceGlobalIdentifiers;
+package org.av360.maverick.graph.feature.jobs.services;
 
-import org.av360.maverick.graph.model.security.ApiKeyAuthenticationToken;
-import org.av360.maverick.graph.model.security.Authorities;
+import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.model.shared.LocalIdentifier;
 import org.av360.maverick.graph.model.shared.RandomIdentifier;
 import org.av360.maverick.graph.model.vocabulary.Local;
@@ -10,14 +9,11 @@ import org.av360.maverick.graph.services.QueryServices;
 import org.av360.maverick.graph.store.EntityStore;
 import org.av360.maverick.graph.store.TransactionsStore;
 import org.av360.maverick.graph.store.rdf.models.Transaction;
-import lombok.extern.slf4j.Slf4j;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.util.ModelBuilder;
 import org.eclipse.rdf4j.model.vocabulary.DC;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
@@ -42,8 +38,7 @@ import java.util.List;
  */
 @Slf4j(topic = "graph.jobs.identifiers")
 @Component
-@ConditionalOnProperty(name = "application.features.schedulers.replaceGlobalIdentifiers", havingValue = "true")
-public class ScheduledReplaceGlobalIdentifiers {
+public class ReplaceExternalIdentifiersService {
 
     // FIXME: should not directly access the services
     private final QueryServices queryServices;
@@ -52,37 +47,20 @@ public class ScheduledReplaceGlobalIdentifiers {
     private final TransactionsStore trxStore;
 
 
-    public ScheduledReplaceGlobalIdentifiers(QueryServices queryServices, EntityStore store, TransactionsStore trxStore) {
+    public ReplaceExternalIdentifiersService(QueryServices queryServices, EntityStore store, TransactionsStore trxStore) {
         this.queryServices = queryServices;
         this.entityStore = store;
         this.trxStore = trxStore;
     }
-
-
-    @Scheduled(fixedDelay = 60000)
-    public void checkForGlobalIdentifiersScheduled() {
-        ApiKeyAuthenticationToken authentication = new ApiKeyAuthenticationToken();
-        authentication.setAuthenticated(true);
-        authentication.grantAuthority(Authorities.SYSTEM);
-
-        this.checkForGlobalIdentifiers(authentication)
-                .collectList()
-                .doOnError(throwable -> log.error("Checking for global identifiers failed. ", throwable))
-                .doOnSuccess(list -> {
-                    Integer reduce = list.stream()
-                            .map(transaction -> transaction.listModifiedResources().size())
-                            .reduce(0, Integer::sum);
-                    if (reduce > 0) {
-                        log.info("Checking for external identifiers completed, {} resource identifiers have been converted to locally resolvable identifiers.", reduce);
-                    } else {
-                        log.trace("No global identifiers found");
-                    }
-
-                }).subscribe();
+    private boolean labelCheckRunning = false;
+    public boolean isRunning() {
+        return labelCheckRunning;
     }
 
 
+
     public Flux<Transaction> checkForGlobalIdentifiers(Authentication authentication) {
+
         return findGlobalIdentifiers(authentication)
                 .flatMap(value -> this.getOldStatements(value, authentication))
                 .flatMap(this::storeNewStatements)
@@ -97,7 +75,14 @@ public class ScheduledReplaceGlobalIdentifiers {
                 .doOnError(throwable -> {
                     log.error("Exception during check for global identifiers: {}", throwable.getMessage());
                 })
-                ;
+                .doOnSubscribe(sub -> {
+                    log.trace("Checking for external identifiers.");
+                    labelCheckRunning = true;
+
+                })
+                .doOnComplete(() -> {
+                    labelCheckRunning = false;
+                });
     }
 
     private Flux<Transaction> commit(List<Transaction> transactions, Authentication authentication) {
@@ -183,6 +168,8 @@ public class ScheduledReplaceGlobalIdentifiers {
         return queryServices.queryValues(query, authentication)
                 .map(bindings -> bindings.getValue("a"));
     }
+
+
 
 
     private record StatementsBag(List<Statement> subjectStatements, List<Statement> objectStatements,

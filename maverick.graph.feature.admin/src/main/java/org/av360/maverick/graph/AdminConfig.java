@@ -9,7 +9,7 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration
 @ConditionalOnProperty(
-        name = "application.features.modules.admin"
+        name = "application.features.modules.admin.enabled"
 )
 @ComponentScan(basePackages = "org.av360.maverick.graph.feature.admin")
 @Slf4j(topic = "graph.feat.admin")

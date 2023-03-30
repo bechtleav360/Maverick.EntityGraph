@@ -9,16 +9,16 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration
 @ConditionalOnProperty(
-        name = "application.features.modules.applications.enabled"
+        name = "application.features.modules.jobs.enabled"
 )
 @ComponentScan(
-        basePackages = "org.av360.maverick.graph.feature.applications"
+        basePackages = "org.av360.maverick.graph.feature.jobs"
 )
 @Slf4j(topic = "graph.feat.apps")
-public class ApplicationsConfig {
+public class JobsFeatureConfig {
 
     @PostConstruct
     public void logActivation() {
-        log.info("Activated Feature: Multi-tenancy through Applications and Subscriptions");
+        log.info("Activated Feature: Scheduled Jobs");
     }
 }

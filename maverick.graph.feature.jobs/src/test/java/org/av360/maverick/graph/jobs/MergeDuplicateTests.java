@@ -1,12 +1,11 @@
-package org.av360.maverick.graph.services.schedulers;
+package org.av360.maverick.graph.jobs;
 
+import lombok.extern.slf4j.Slf4j;
+import org.av360.maverick.graph.feature.jobs.services.DetectDuplicatesService;
 import org.av360.maverick.graph.model.vocabulary.SDO;
-import org.av360.maverick.graph.services.clients.EntityServicesClient;
-import org.av360.maverick.graph.services.schedulers.detectDuplicates.ScheduledDetectDuplicates;
 import org.av360.maverick.graph.store.rdf.models.Transaction;
 import org.av360.maverick.graph.tests.config.TestSecurityConfig;
 import org.av360.maverick.graph.tests.util.TestsBase;
-import lombok.extern.slf4j.Slf4j;
 import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Value;
@@ -37,7 +36,7 @@ public class MergeDuplicateTests extends TestsBase  {
 
 
     @Autowired
-    private ScheduledDetectDuplicates scheduledDetectDuplicates;
+    private DetectDuplicatesService scheduledDetectDuplicates;
 
     @Autowired
     EntityServicesClient entityServicesClient;

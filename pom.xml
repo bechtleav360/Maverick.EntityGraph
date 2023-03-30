@@ -120,6 +120,11 @@
             </dependency>
             <dependency>
                 <groupId>org.av360.maverick.graph</groupId>
+                <artifactId>graph-feature-jobs</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.av360.maverick.graph</groupId>
                 <artifactId>graph-services</artifactId>
                 <version>${project.version}</version>
             </dependency>

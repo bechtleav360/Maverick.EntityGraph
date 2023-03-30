@@ -10,11 +10,15 @@ application:
       enabled: false
   features:
     modules:
-      applications: true
-      admin: true
-    schedulers:
-      detectDuplicates: false
-      replaceGlobalIdentifiers: true
+      applications:
+        enabled: true
+      admin:
+        enabled: true
+      jobs:
+        enabled: true
+        scheduled:
+          detectDuplicates: false
+          replaceIdentifiers: true
     transformers:
       replaceGlobalIdentifiers: true
       replaceAnonymousIdentifiers: true

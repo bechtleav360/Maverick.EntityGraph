@@ -18,4 +18,32 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
+    <dependencies>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>org.av360.maverick.graph</groupId>
+            <artifactId>graph-api</artifactId>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.projectreactor</groupId>
+            <artifactId>reactor-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.av360.maverick.graph</groupId>
+            <artifactId>graph-tests</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.av360.maverick.graph</groupId>
+            <artifactId>graph-store-rdf4j</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
 </project>

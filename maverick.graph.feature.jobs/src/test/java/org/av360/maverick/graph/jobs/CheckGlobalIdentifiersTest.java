@@ -1,12 +1,11 @@
-package org.av360.maverick.graph.services.schedulers;
+package org.av360.maverick.graph.jobs;
 
-import org.av360.maverick.graph.services.clients.EntityServicesClient;
-import org.av360.maverick.graph.services.schedulers.replaceGlobalIdentifiers.ScheduledReplaceGlobalIdentifiers;
+import lombok.extern.slf4j.Slf4j;
+import org.av360.maverick.graph.feature.jobs.services.ReplaceExternalIdentifiersService;
 import org.av360.maverick.graph.store.rdf.models.Transaction;
 import org.av360.maverick.graph.tests.config.TestRepositoryConfig;
 import org.av360.maverick.graph.tests.config.TestSecurityConfig;
 import org.av360.maverick.graph.tests.util.TestsBase;
-import lombok.extern.slf4j.Slf4j;
 import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.rio.RDFFormat;
 import org.junit.jupiter.api.AfterEach;
@@ -35,7 +34,7 @@ import java.time.temporal.ChronoUnit;
 class CheckGlobalIdentifiersTest extends TestsBase {
 
     @Autowired
-    private ScheduledReplaceGlobalIdentifiers scheduled;
+    private ReplaceExternalIdentifiersService scheduled;
 
 
     @Autowired
@@ -50,14 +49,15 @@ class CheckGlobalIdentifiersTest extends TestsBase {
     @Test
     void checkForGlobalIdentifiers() throws IOException {
 
+        super.printStart("checkForGlobalIdentifiers");
+
         // Mono<Transaction> tx1 = entityServicesClient.importFileMono(new ClassPathResource("requests/create-esco.ttl"));
 
-        Mono<Void> importMono = entityServicesClient.importFileToStore(new ClassPathResource("requests/create-esco.ttl"));
-        Mono<Model> readModelMono = entityServicesClient.getModel();
+        Mono<Void> importMono = entityServicesClient.importFileToStore(new ClassPathResource("requests/create-esco.ttl")).doOnSubscribe(sub -> super.printStep());
+        Mono<Model> readModelMono = entityServicesClient.getModel().doOnSubscribe(sub -> super.printStep());
 
 
-
-        Flux<Transaction> actionMono = scheduled.checkForGlobalIdentifiers(TestSecurityConfig.createAuthenticationToken());
+        Flux<Transaction> actionMono = scheduled.checkForGlobalIdentifiers(TestSecurityConfig.createAuthenticationToken()).doOnSubscribe(sub -> super.printStep());
 
         StepVerifier.create(importMono.then(readModelMono))
                 .assertNext(md -> {

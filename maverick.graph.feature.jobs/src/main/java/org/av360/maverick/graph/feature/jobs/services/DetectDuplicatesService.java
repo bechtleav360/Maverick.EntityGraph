@@ -1,32 +1,23 @@
-package org.av360.maverick.graph.services.schedulers.detectDuplicates;
+package org.av360.maverick.graph.feature.jobs.services;
 
 
-import org.av360.maverick.graph.model.security.Authorities;
-import org.av360.maverick.graph.model.vocabulary.SDO;
+import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.services.EntityServices;
 import org.av360.maverick.graph.services.QueryServices;
 import org.av360.maverick.graph.services.ValueServices;
 import org.av360.maverick.graph.store.rdf.models.Transaction;
-import lombok.extern.slf4j.Slf4j;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
-import org.eclipse.rdf4j.model.vocabulary.DCTERMS;
-import org.eclipse.rdf4j.model.vocabulary.RDFS;
-import org.eclipse.rdf4j.model.vocabulary.SKOS;
 import org.eclipse.rdf4j.sparqlbuilder.constraint.Expressions;
 import org.eclipse.rdf4j.sparqlbuilder.core.SparqlBuilder;
 import org.eclipse.rdf4j.sparqlbuilder.core.Variable;
 import org.eclipse.rdf4j.sparqlbuilder.core.query.Queries;
 import org.eclipse.rdf4j.sparqlbuilder.core.query.SelectQuery;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import reactor.core.scheduler.Schedulers;
 
 import java.util.List;
 import java.util.SortedSet;
@@ -65,11 +56,10 @@ import java.util.TreeSet;
  */
 @Component
 @Slf4j(topic = "graph.jobs.duplicates")
-@ConditionalOnProperty(name = "application.features.schedulers.detectDuplicates", havingValue = "true")
-public class ScheduledDetectDuplicates {
+public class DetectDuplicatesService {
+
 
     private record DuplicateCandidate(IRI sharedProperty, String type, String sharedValue) {    }
-
 
     private record MislinkedStatement(IRI subject, IRI predicate, IRI object) {     }
 
@@ -86,7 +76,7 @@ public class ScheduledDetectDuplicates {
     private final ValueServices valueServices;
     private final SimpleValueFactory valueFactory;
 
-    public ScheduledDetectDuplicates(EntityServices service, QueryServices queryServices, ValueServices valueServices) {
+    public DetectDuplicatesService(EntityServices service, QueryServices queryServices, ValueServices valueServices) {
         this.entityServices = service;
         this.queryServices = queryServices;
         this.valueServices = valueServices;
@@ -97,21 +87,11 @@ public class ScheduledDetectDuplicates {
     // https://github.com/spring-projects/spring-framework/issues/23533
     private boolean labelCheckRunning = false;
 
-    @Scheduled(fixedRate = 60000)
-    public void checkForDuplicatesScheduled() {
-        if (labelCheckRunning) return;
-
-        AnonymousAuthenticationToken adminAuthentication = new AnonymousAuthenticationToken(this.getClass().getName(), "system", List.of(Authorities.SYSTEM));
-
-        // FIXME: do this with all applicatations (run-as semantics)
-
-
-        this.checkForDuplicates(RDFS.LABEL, adminAuthentication)
-                .then(this.checkForDuplicates(SDO.IDENTIFIER, adminAuthentication))
-                .then(this.checkForDuplicates(SKOS.PREF_LABEL, adminAuthentication))
-                .then(this.checkForDuplicates(DCTERMS.IDENTIFIER, adminAuthentication))
-                .publishOn(Schedulers.single()).subscribe();
+    public boolean isRunning() {
+        return labelCheckRunning;
     }
+
+
 
     public Mono<Void> checkForDuplicates(IRI characteristicProperty, Authentication authentication) {
         return this.findCandidates(characteristicProperty, authentication)
