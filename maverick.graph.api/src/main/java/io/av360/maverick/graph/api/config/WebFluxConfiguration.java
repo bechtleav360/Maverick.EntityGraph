@@ -13,11 +13,18 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.http.codec.ServerCodecConfigurer;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.web.reactive.accept.RequestedContentTypeResolverBuilder;
+import org.springframework.web.reactive.config.CorsRegistry;
 import org.springframework.web.reactive.config.WebFluxConfigurer;
 import org.springframework.web.server.WebFilter;
 
 @Configuration
 public class WebFluxConfiguration implements WebFluxConfigurer {
+    @Override
+    public void addCorsMappings(CorsRegistry corsRegistry) {
+        corsRegistry.addMapping("/**")
+                .allowedMethods("GET")
+                .maxAge(3600);
+    }
 
     private final SchemaServices schemaServices;
 
