@@ -1,16 +1,14 @@
 package org.av360.maverick.graph.services.transformers.replaceGlobalIdentifiers;
 
-import org.av360.maverick.graph.model.rdf.NamespaceAwareStatement;
-import org.av360.maverick.graph.model.rdf.NamespacedModelBuilder;
-import org.av360.maverick.graph.model.shared.ChecksumIdentifier;
-import org.av360.maverick.graph.model.shared.LocalIdentifier;
-import org.av360.maverick.graph.model.vocabulary.Local;
-import org.av360.maverick.graph.services.EntityServices;
-import org.av360.maverick.graph.services.QueryServices;
-import org.av360.maverick.graph.services.transformers.Transformer;
-import org.av360.maverick.graph.store.rdf.models.TripleModel;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.Pair;
+import org.av360.maverick.graph.model.identifier.IdentifierFactory;
+import org.av360.maverick.graph.model.identifier.LocalIdentifier;
+import org.av360.maverick.graph.model.rdf.NamespaceAwareStatement;
+import org.av360.maverick.graph.model.rdf.NamespacedModelBuilder;
+import org.av360.maverick.graph.model.vocabulary.Local;
+import org.av360.maverick.graph.services.transformers.Transformer;
+import org.av360.maverick.graph.store.rdf.models.TripleModel;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Statement;
@@ -35,13 +33,19 @@ import java.util.stream.Collectors;
 @Slf4j(topic = "graph.srvc.transformer.identifiers")
 @Component
 @ConditionalOnProperty(name = "application.features.transformers.replaceGlobalIdentifiers", havingValue = "true")
-public class ReplaceGlobalIdentifiers implements Transformer {
+public class ExternalIdentifierTransformer implements Transformer {
 
+    private final IdentifierFactory identifierFactory;
+
+    public ExternalIdentifierTransformer(IdentifierFactory identifierFactory) {
+        this.identifierFactory = identifierFactory;
+    }
+
+
+    // TODO: split into several steps (in particular creating the local identifier part) and create a delegating bean in app feature which overrides the local identifier generation
+    // it should append the current application label to the namespace urn
     @Override
     public Mono<? extends TripleModel> handle(TripleModel triples, Map<String, String> parameters, Authentication authentication) {
-
-
-
 
         List<NamespaceAwareStatement> copy = triples.streamNamespaceAwareStatements().toList();
 
@@ -49,7 +53,7 @@ public class ReplaceGlobalIdentifiers implements Transformer {
                 .filter(Value::isIRI)
                 .filter(iri -> !LocalIdentifier.is((IRI) iri, Local.Entities.NAMESPACE))
                 // TODO: here we should extract characteristic properties and include them in the identifier generation
-                .map(iri -> Pair.of(iri, new ChecksumIdentifier(Local.Entities.NAMESPACE, (IRI) iri)))
+                .map(iri -> Pair.of(iri, identifierFactory.createReproducibleIdentifier(Local.Entities.NS, iri)))
                 .collect(Collectors.toMap(Pair::getKey, Pair::getValue));
         triples.reset();
 
@@ -80,13 +84,4 @@ public class ReplaceGlobalIdentifiers implements Transformer {
 
     }
 
-    @Override
-    public void registerEntityService(EntityServices entityServicesImpl) {
-
-    }
-
-    @Override
-    public void registerQueryService(QueryServices queryServices) {
-
-    }
 }

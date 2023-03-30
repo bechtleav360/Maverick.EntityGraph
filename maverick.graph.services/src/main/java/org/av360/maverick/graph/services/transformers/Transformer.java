@@ -12,9 +12,8 @@ public interface Transformer {
 
     Mono<? extends TripleModel> handle(TripleModel model, Map<String, String> parameters, Authentication authentication);
 
-    default void registerEntityService(EntityServices entityServicesImpl) {
-    }
 
-    default void registerQueryService(QueryServices queryServices) {
-    }
+    default void registerEntityService(EntityServices entityServices) {}
+
+    default void registerQueryService(QueryServices queryServices) {}
 }

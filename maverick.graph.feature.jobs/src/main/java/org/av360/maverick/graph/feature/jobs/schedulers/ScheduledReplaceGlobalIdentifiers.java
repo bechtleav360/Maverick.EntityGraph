@@ -1,7 +1,7 @@
 package org.av360.maverick.graph.feature.jobs.schedulers;
 
 import lombok.extern.slf4j.Slf4j;
-import org.av360.maverick.graph.feature.jobs.services.ReplaceExternalIdentifiersService;
+import org.av360.maverick.graph.feature.jobs.services.ReplaceExternalIdentifiersServiceV2;
 import org.av360.maverick.graph.model.security.AdminToken;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -25,10 +25,10 @@ import org.springframework.stereotype.Component;
 public class ScheduledReplaceGlobalIdentifiers {
 
     // FIXME: should not directly access the services
-    private final ReplaceExternalIdentifiersService job;
+    private final ReplaceExternalIdentifiersServiceV2 job;
 
 
-    public ScheduledReplaceGlobalIdentifiers(ReplaceExternalIdentifiersService job) {
+    public ScheduledReplaceGlobalIdentifiers(ReplaceExternalIdentifiersServiceV2 job) {
         this.job = job;
     }
 

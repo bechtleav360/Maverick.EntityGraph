@@ -1,5 +1,8 @@
 package org.av360.maverick.graph.feature.applications.domain;
 
+import lombok.extern.slf4j.Slf4j;
+import org.av360.maverick.graph.api.security.errors.RevokedApiKeyUsed;
+import org.av360.maverick.graph.api.security.errors.UnknownApiKey;
 import org.av360.maverick.graph.feature.applications.config.Globals;
 import org.av360.maverick.graph.feature.applications.domain.errors.InvalidApplication;
 import org.av360.maverick.graph.feature.applications.domain.events.ApplicationCreatedEvent;
@@ -10,15 +13,13 @@ import org.av360.maverick.graph.feature.applications.domain.model.Subscription;
 import org.av360.maverick.graph.feature.applications.domain.vocab.ApplicationTerms;
 import org.av360.maverick.graph.feature.applications.domain.vocab.SubscriptionTerms;
 import org.av360.maverick.graph.feature.applications.store.ApplicationsStore;
+import org.av360.maverick.graph.model.identifier.IdentifierFactory;
+import org.av360.maverick.graph.model.identifier.LocalIdentifier;
+import org.av360.maverick.graph.model.identifier.RandomIdentifier;
 import org.av360.maverick.graph.model.security.Authorities;
-import org.av360.maverick.graph.model.shared.LocalIdentifier;
-import org.av360.maverick.graph.model.shared.RandomIdentifier;
+import org.av360.maverick.graph.model.util.StreamsLogger;
 import org.av360.maverick.graph.model.vocabulary.Local;
 import org.av360.maverick.graph.store.rdf.helpers.BindingsAccessor;
-import lombok.extern.slf4j.Slf4j;
-import org.av360.maverick.graph.api.security.errors.RevokedApiKeyUsed;
-import org.av360.maverick.graph.api.security.errors.UnknownApiKey;
-import org.av360.maverick.graph.model.util.StreamsLogger;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.util.ModelBuilder;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
@@ -60,10 +61,13 @@ public class ApplicationsService {
 
     private final ApplicationEventPublisher eventPublisher;
 
+    private final IdentifierFactory identifierFactory;
 
-    public ApplicationsService(ApplicationsStore applicationsStore, ApplicationEventPublisher eventPublisher) {
+
+    public ApplicationsService(ApplicationsStore applicationsStore, ApplicationEventPublisher eventPublisher, IdentifierFactory identifierFactory) {
         this.applicationsStore = applicationsStore;
         this.eventPublisher = eventPublisher;
+        this.identifierFactory = identifierFactory;
     }
 
     /**
@@ -76,7 +80,7 @@ public class ApplicationsService {
      */
     public Mono<Application> createApplication(String label, ApplicationFlags flags, Authentication authentication) {
 
-        LocalIdentifier subject = new RandomIdentifier(Local.Subscriptions.NAMESPACE);
+        LocalIdentifier subject = identifierFactory.createRandomIdentifier(Local.Subscriptions.NAMESPACE);
 
         Application application = new Application(
                 subject,
@@ -187,7 +191,7 @@ public class ApplicationsService {
         return this.getApplication(applicationIdentifier, authentication)
                 .map(application ->
                         new Subscription(
-                                new RandomIdentifier(Local.Subscriptions.NAMESPACE),
+                                identifierFactory.createRandomIdentifier(Local.Subscriptions.NAMESPACE),
                                 subscriptionLabel,
                                 RandomIdentifier.generateRandomKey(16),
                                 true,

@@ -1,5 +1,6 @@
 package org.av360.maverick.graph.services.impl;
 
+import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.model.enums.Activity;
 import org.av360.maverick.graph.model.errors.requests.EntityNotFound;
 import org.av360.maverick.graph.model.rdf.LocalIRI;
@@ -16,11 +17,9 @@ import org.av360.maverick.graph.store.TransactionsStore;
 import org.av360.maverick.graph.store.rdf.models.Entity;
 import org.av360.maverick.graph.store.rdf.models.Transaction;
 import org.av360.maverick.graph.store.rdf.models.TripleBag;
-import lombok.extern.slf4j.Slf4j;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Resource;
-import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.sparqlbuilder.core.SparqlBuilder;
 import org.eclipse.rdf4j.sparqlbuilder.core.Variable;
 import org.eclipse.rdf4j.sparqlbuilder.core.query.Queries;
@@ -34,9 +33,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 
 @Slf4j(topic = "graph.srvc.entity")
 @Service
@@ -82,7 +79,7 @@ public class EntityServicesImpl implements EntityServices {
         Variable idVariable = SparqlBuilder.var("id");
 
         SelectQuery query = Queries.SELECT(idVariable).where(
-                idVariable.isA(Local.Entities.TYPE)).limit(limit).offset(offset);
+                idVariable.isA(Local.Entities.INDIVIDUAL)).limit(limit).offset(offset);
 
         return this.queryServices.queryValues(query.getQueryString(), authentication)
                 .map(bindings -> (IRI) bindings.getValue(idVariable.getVarName()))
@@ -241,17 +238,6 @@ public class EntityServicesImpl implements EntityServices {
                     return transformers.handle(sts, parameters, authentication);
 
                     /* TODO: check if create of resource of given type is supported or is it delegated to connector */
-
-                })
-                .map(sts -> {
-                    // we explicitly type the incoming object as entity (required for distinguish between entities and embedded entities in later queries)
-                    Set<Resource> identifiers = new HashSet<>(sts.getModel().filter(null, RDF.TYPE, null).subjects());
-
-                    identifiers.forEach(id ->
-                            sts.getModel().add(id, RDF.TYPE, Local.Entities.TYPE)
-                    );
-
-                    return sts;
 
                 })
 

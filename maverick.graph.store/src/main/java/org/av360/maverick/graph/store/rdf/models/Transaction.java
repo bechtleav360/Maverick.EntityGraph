@@ -1,11 +1,11 @@
 package org.av360.maverick.graph.store.rdf.models;
 
+import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.model.enums.Activity;
+import org.av360.maverick.graph.model.identifier.DefaultIdentifierFactory;
 import org.av360.maverick.graph.model.rdf.NamespaceAwareStatement;
-import org.av360.maverick.graph.model.shared.RandomIdentifier;
 import org.av360.maverick.graph.model.vocabulary.Local;
 import org.av360.maverick.graph.model.vocabulary.Transactions;
-import lombok.extern.slf4j.Slf4j;
 import org.eclipse.rdf4j.model.*;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.vocabulary.PROV;
@@ -33,7 +33,7 @@ public class Transaction extends TripleModel {
 
     public Transaction() {
         super();
-        transactionIdentifier = new RandomIdentifier(Local.Transactions.NAMESPACE);
+        transactionIdentifier = DefaultIdentifierFactory.getInstance().createRandomIdentifier(Local.Transactions.NAMESPACE);
 
         super.getBuilder()
                 .namedGraph(Transactions.GRAPH_PROVENANCE)

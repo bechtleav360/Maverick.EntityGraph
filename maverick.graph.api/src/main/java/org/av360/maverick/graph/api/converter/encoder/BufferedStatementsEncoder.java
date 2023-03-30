@@ -1,11 +1,11 @@
 package org.av360.maverick.graph.api.converter.encoder;
 
+import lombok.extern.slf4j.Slf4j;
+import org.av360.maverick.graph.api.config.ReactiveRequestContextHolder;
 import org.av360.maverick.graph.model.enums.RdfMimeTypes;
 import org.av360.maverick.graph.model.vocabulary.Local;
 import org.av360.maverick.graph.services.SchemaServices;
 import org.av360.maverick.graph.store.rdf.helpers.RdfUtils;
-import lombok.extern.slf4j.Slf4j;
-import org.av360.maverick.graph.api.config.ReactiveRequestContextHolder;
 import org.eclipse.rdf4j.model.*;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.rio.RDFFormat;
@@ -84,7 +84,7 @@ public class BufferedStatementsEncoder implements Encoder<Statement> {
                 })
                 .map(statement -> (Statement) statement)
                 // we filter out any internal statements
-                .filter(statement -> !statement.getObject().equals(Local.Entities.TYPE))
+                .filter(statement -> !statement.getObject().equals(Local.Entities.INDIVIDUAL))
                 .collectList()
                 .flatMap(list ->  Mono.zip(Mono.just(list), ReactiveRequestContextHolder.getRequest()))
                 .flatMapMany(tuple -> {
@@ -132,10 +132,17 @@ public class BufferedStatementsEncoder implements Encoder<Statement> {
 
     private <T extends Value> T convertLocalIRI(T value, ServerHttpRequest request, SimpleValueFactory vf) {
         if(value instanceof IRI iri) {
-            if(iri.getNamespace().startsWith("urn:pwid:eg:")) {
+
+            if(iri.getNamespace().startsWith(Local.URN_PREFIX)) {
+
+                /* ok, here the application module is leaking into the default implementation. If the IRI namespace includes a qualifier,
+                   we inject it as scope
+                 */
                 String path = iri.getLocalName();
 
                 if(iri.getNamespace().startsWith(Local.Entities.NAMESPACE)) {
+
+
                     path = "/api/entities/"+path;
                 }
 

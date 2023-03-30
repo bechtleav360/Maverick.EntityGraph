@@ -15,7 +15,7 @@ import org.eclipse.rdf4j.sparqlbuilder.core.Variable;
 import org.eclipse.rdf4j.sparqlbuilder.core.query.Queries;
 import org.eclipse.rdf4j.sparqlbuilder.core.query.SelectQuery;
 import org.springframework.security.core.Authentication;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -54,7 +54,7 @@ import java.util.TreeSet;
  *  TODO:
  *      For now we keep the duplicate but reroute all links to the original.
  */
-@Component
+@Service
 @Slf4j(topic = "graph.jobs.duplicates")
 public class DetectDuplicatesService {
 

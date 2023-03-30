@@ -1,14 +1,14 @@
 package org.av360.maverick.graph.api.controller.transactions;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.av360.maverick.graph.model.enums.RdfMimeTypes;
-import org.av360.maverick.graph.model.rdf.NamespaceAwareStatement;
-import org.av360.maverick.graph.model.shared.LocalIdentifier;
-import org.av360.maverick.graph.services.TransactionsService;
-import org.av360.maverick.graph.store.rdf.models.TripleModel;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.api.controller.AbstractController;
+import org.av360.maverick.graph.model.enums.RdfMimeTypes;
+import org.av360.maverick.graph.model.identifier.LocalIdentifier;
+import org.av360.maverick.graph.model.rdf.NamespaceAwareStatement;
+import org.av360.maverick.graph.services.TransactionsService;
+import org.av360.maverick.graph.store.rdf.models.TripleModel;
 import org.springframework.http.HttpStatus;
 import org.springframework.util.Assert;
 import org.springframework.web.bind.annotation.*;

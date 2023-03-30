@@ -1,11 +1,11 @@
 package org.av360.maverick.graph.services.transformers.mergeDuplicates;
 
-import org.av360.maverick.graph.model.shared.ChecksumIdentifier;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.tuple.Triple;
+import org.av360.maverick.graph.model.identifier.ChecksumIdentifier;
 import org.av360.maverick.graph.services.QueryServices;
 import org.av360.maverick.graph.services.transformers.Transformer;
 import org.av360.maverick.graph.store.rdf.models.TripleModel;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.tuple.Triple;
 import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Statement;
@@ -37,14 +37,8 @@ import java.util.stream.Collectors;
  */
 @ConditionalOnProperty(name = "application.features.transformers.mergeDuplicates", havingValue = "true")
 public class MergeDuplicates implements Transformer {
-
     private QueryServices queryServices;
 
-    @Override
-    public void registerQueryService(QueryServices queryServices) {
-        this.queryServices = queryServices;
-
-    }
 
     // FIXME: should only operate on local model -> the rerouting to existing entity should happen through scheduler
 
@@ -80,6 +74,8 @@ public class MergeDuplicates implements Transformer {
                 .flatMap(this::checkIfLinkedNamedEntityExistsInGraph)
                 .switchIfEmpty(Mono.just(model));
     }
+
+
 
     /**
      * Checks whether we have named embedded entities. The named entity is either in payload or already in graph
@@ -121,7 +117,7 @@ public class MergeDuplicates implements Transformer {
      * @param triples
      */
     public Mono<TripleModel> mergeDuplicatedWithinModel(TripleModel triples) {
-        log.trace("Merging duplicates within the model with {} statements", triples.streamStatements().count());
+
         Model unmodifiable = new LinkedHashModel(triples.getModel()).unmodifiable();
 
         /*
@@ -171,7 +167,13 @@ public class MergeDuplicates implements Transformer {
             }
 
         }
-        log.trace("{} anonymous embedded entities merged", count);
+        if(count == 0 && log.isTraceEnabled()) {
+            log.trace("{} anonymous embedded entities merged in model with {} statements", count, triples.streamStatements().count());
+        } else {
+            log.debug("{} anonymous embedded entities merged in model with {} statements", count, triples.streamStatements().count());
+        }
+
+
         return Mono.just(triples);
 
     }
@@ -262,10 +264,14 @@ public class MergeDuplicates implements Transformer {
      * @param triples
      */
     public Mono<TripleModel> checkIfLinkedNamedEntityExistsInGraph(TripleModel triples) {
-        log.trace("(Transformer) Checking for duplicates in graph skipped");
+        log.trace("Checking for duplicates in graph skipped");
 
         return Mono.just(triples);
     }
 
 
+    @Override
+    public void registerQueryService(QueryServices queryServices) {
+        this.queryServices = queryServices;
+    }
 }

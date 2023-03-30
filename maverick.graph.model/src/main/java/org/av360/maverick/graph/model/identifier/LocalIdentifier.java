@@ -1,7 +1,6 @@
-package org.av360.maverick.graph.model.shared;
+package org.av360.maverick.graph.model.identifier;
 
 import org.eclipse.rdf4j.model.IRI;
-import org.eclipse.rdf4j.model.Resource;
 
 public interface LocalIdentifier extends IRI {
     public static int LENGTH = 8;
@@ -18,7 +17,4 @@ public interface LocalIdentifier extends IRI {
                 (obj.getNamespace().equalsIgnoreCase(ns)) && (obj.getLocalName().length() == LENGTH);
     }
 
-    static void build(String namespace, Resource globalIdentifier) {
-
-    }
 }

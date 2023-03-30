@@ -1,11 +1,9 @@
-package org.av360.maverick.graph.model.shared;
+package org.av360.maverick.graph.model.identifier;
 
 import com.google.common.hash.Hashing;
-import org.av360.maverick.graph.model.rdf.LocalIRI;
 import org.apache.commons.text.RandomStringGenerator;
+import org.av360.maverick.graph.model.rdf.LocalIRI;
 import org.eclipse.rdf4j.model.IRI;
-import org.eclipse.rdf4j.model.Namespace;
-import org.eclipse.rdf4j.model.Resource;
 
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
@@ -33,27 +31,12 @@ public class RandomIdentifier extends LocalIRI implements LocalIdentifier {
                 .build();
     }
 
-    public RandomIdentifier(String namespace) {
+    RandomIdentifier(String namespace) {
         super(namespace);
         super.setLocalName(generateRandomKey());
     }
 
 
-    public RandomIdentifier(String namespace, Resource oldIdentifier) {
-        super(namespace);
-
-        if (oldIdentifier.isIRI()) {
-            super.setLocalName(generateDerivedIdentifier(((IRI) oldIdentifier).getLocalName()));
-        } else {
-            super.setLocalName(generateRandomKey());
-        }
-
-    }
-
-
-    public RandomIdentifier(Namespace defaultNamespace) {
-        this(defaultNamespace.getName());
-    }
 
     /**
      * @param obj, the IRI to check
@@ -87,10 +70,6 @@ public class RandomIdentifier extends LocalIRI implements LocalIdentifier {
         return s.substring(0, LENGTH);
     }
 
-    public static IRI get(String namespace) {
-        return new RandomIdentifier(namespace);
-
-    }
 
 
 }

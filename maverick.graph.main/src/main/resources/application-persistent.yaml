@@ -18,11 +18,12 @@ application:
         enabled: true
         scheduled:
           detectDuplicates: false
-          replaceIdentifiers: true
+          replaceIdentifiers: false
     transformers:
       replaceGlobalIdentifiers: true
       replaceAnonymousIdentifiers: true
       mergeDuplicates: true
+      typeCoercion: true
     validators:
       checkRequiredType: true
   storage:
@@ -45,10 +46,11 @@ spring:
 logging:
   level:
     graph:
-      jobs: DEBUG
+      jobs: TRACE
       repo: TRACE
       srvc: TRACE
       ctrl: TRACE
+
 
     org:
       springframework:

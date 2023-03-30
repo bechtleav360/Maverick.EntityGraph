@@ -6,7 +6,8 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.api.controller.AbstractController;
 import org.av360.maverick.graph.feature.jobs.services.DetectDuplicatesService;
-import org.av360.maverick.graph.feature.jobs.services.ReplaceExternalIdentifiersService;
+import org.av360.maverick.graph.feature.jobs.services.ReplaceExternalIdentifiersServiceV2;
+import org.av360.maverick.graph.feature.jobs.services.TypeCoercionService;
 import org.av360.maverick.graph.services.SchemaServices;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -22,13 +23,16 @@ public class JobsCtrl extends AbstractController {
 
 
     final DetectDuplicatesService detectDuplicatesJob;
-    final ReplaceExternalIdentifiersService replaceExternalIdentifiersJob;
+    final ReplaceExternalIdentifiersServiceV2 replaceExternalIdentifiersJob;
+
+    final TypeCoercionService typeCoercionService;
 
     final SchemaServices schemaServices;
 
-    public JobsCtrl(DetectDuplicatesService detectDuplicatesJob, ReplaceExternalIdentifiersService replaceExternalIdentifiersJob, SchemaServices schemaServices) {
+    public JobsCtrl(DetectDuplicatesService detectDuplicatesJob, ReplaceExternalIdentifiersServiceV2 replaceExternalIdentifiersJob, TypeCoercionService typeCoercionService, SchemaServices schemaServices) {
         this.detectDuplicatesJob = detectDuplicatesJob;
         this.replaceExternalIdentifiersJob = replaceExternalIdentifiersJob;
+        this.typeCoercionService = typeCoercionService;
         this.schemaServices = schemaServices;
     }
 
@@ -56,6 +60,15 @@ public class JobsCtrl extends AbstractController {
     Mono<Void> execSkolemizationJob() {
         return super.getAuthentication()
                 .flatMapMany(this.replaceExternalIdentifiersJob::checkForGlobalIdentifiers).then();
+
+    }
+
+
+    @PostMapping(value = "/execute/coercion")
+    @ResponseStatus(HttpStatus.OK)
+    Mono<Void> execCoercionJob() {
+        return super.getAuthentication()
+                .flatMapMany(this.typeCoercionService::run).then();
 
     }
 

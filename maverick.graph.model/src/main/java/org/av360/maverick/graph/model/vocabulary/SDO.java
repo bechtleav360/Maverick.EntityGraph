@@ -27,6 +27,8 @@ public class SDO {
     public static final IRI TITLE = vf.createIRI(NAMESPACE, "title");
 
     public static final IRI TERM_CODE = vf.createIRI(NAMESPACE, "termCode");;
+
+    public static final IRI CATEGORY_CODE = vf.createIRI(NAMESPACE, "CategoryCode");
     public SDO() {
     }
 }

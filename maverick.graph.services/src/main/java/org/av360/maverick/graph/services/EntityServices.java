@@ -1,10 +1,10 @@
 package org.av360.maverick.graph.services;
 
+import jakarta.annotation.Nullable;
 import org.av360.maverick.graph.store.EntityStore;
 import org.av360.maverick.graph.store.rdf.models.Entity;
 import org.av360.maverick.graph.store.rdf.models.Transaction;
 import org.av360.maverick.graph.store.rdf.models.TripleBag;
-import jakarta.annotation.Nullable;
 import org.eclipse.rdf4j.model.IRI;
 import org.springframework.security.core.Authentication;
 import reactor.core.publisher.Flux;
@@ -96,4 +96,5 @@ public interface EntityServices {
     Mono<IRI> resolveAndVerify(String key, Authentication authentication);
 
     EntityStore getStore();
+
 }

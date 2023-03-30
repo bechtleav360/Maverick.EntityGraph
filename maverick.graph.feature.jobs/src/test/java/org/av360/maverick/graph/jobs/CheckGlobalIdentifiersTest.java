@@ -1,7 +1,7 @@
 package org.av360.maverick.graph.jobs;
 
 import lombok.extern.slf4j.Slf4j;
-import org.av360.maverick.graph.feature.jobs.services.ReplaceExternalIdentifiersService;
+import org.av360.maverick.graph.feature.jobs.services.ReplaceExternalIdentifiersServiceV2;
 import org.av360.maverick.graph.store.rdf.models.Transaction;
 import org.av360.maverick.graph.tests.config.TestRepositoryConfig;
 import org.av360.maverick.graph.tests.config.TestSecurityConfig;
@@ -34,7 +34,7 @@ import java.time.temporal.ChronoUnit;
 class CheckGlobalIdentifiersTest extends TestsBase {
 
     @Autowired
-    private ReplaceExternalIdentifiersService scheduled;
+    private ReplaceExternalIdentifiersServiceV2 scheduled;
 
 
     @Autowired

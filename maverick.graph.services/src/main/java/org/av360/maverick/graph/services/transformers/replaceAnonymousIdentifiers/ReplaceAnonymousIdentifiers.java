@@ -1,14 +1,13 @@
 package org.av360.maverick.graph.services.transformers.replaceAnonymousIdentifiers;
 
+import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.model.errors.store.InvalidEntityModel;
+import org.av360.maverick.graph.model.identifier.IdentifierFactory;
 import org.av360.maverick.graph.model.rdf.NamespaceAwareStatement;
-import org.av360.maverick.graph.model.shared.ChecksumIdentifier;
-import org.av360.maverick.graph.model.shared.RandomIdentifier;
 import org.av360.maverick.graph.model.vocabulary.Local;
 import org.av360.maverick.graph.model.vocabulary.SDO;
 import org.av360.maverick.graph.services.transformers.Transformer;
 import org.av360.maverick.graph.store.rdf.models.TripleModel;
-import lombok.extern.slf4j.Slf4j;
 import org.eclipse.rdf4j.model.*;
 import org.eclipse.rdf4j.model.vocabulary.*;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -32,6 +31,11 @@ import java.util.*;
 @ConditionalOnProperty(name = "application.features.transformers.replaceAnonymousIdentifiers", havingValue = "true")
 public class ReplaceAnonymousIdentifiers implements Transformer {
 
+    private final IdentifierFactory identifierFactory;
+
+    public ReplaceAnonymousIdentifiers(IdentifierFactory identifierFactory) {
+        this.identifierFactory = identifierFactory;
+    }
 
     @Override
     public Mono<? extends TripleModel> handle(TripleModel triples, Map<String, String> parameters, Authentication authentication) {
@@ -81,11 +85,10 @@ public class ReplaceAnonymousIdentifiers implements Transformer {
         IRI identifier;
         if(value.isPresent() && entityType.isPresent()) {
             // we build the identifier from entity type and value
+            identifier = identifierFactory.createReproducibleIdentifier(Local.Entities.NS, entityType.get(), value.get());
 
-
-            identifier = new ChecksumIdentifier(Local.Entities.NS, entityType.get(), value.get());
         } else {
-            identifier = new RandomIdentifier(Local.Entities.NS);
+            identifier = identifierFactory.createRandomIdentifier(Local.Entities.NS);
         }
 
         List<NamespaceAwareStatement> copy = triples.streamNamespaceAwareStatements().toList();

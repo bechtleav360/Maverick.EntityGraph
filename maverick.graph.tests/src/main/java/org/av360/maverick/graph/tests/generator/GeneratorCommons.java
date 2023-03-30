@@ -1,7 +1,7 @@
 package org.av360.maverick.graph.tests.generator;
 
-import org.av360.maverick.graph.model.shared.RandomIdentifier;
 import org.apache.commons.text.RandomStringGenerator;
+import org.av360.maverick.graph.model.identifier.RandomIdentifier;
 import org.eclipse.rdf4j.model.BNode;
 import org.eclipse.rdf4j.model.Namespace;
 import org.eclipse.rdf4j.model.ValueFactory;

@@ -15,7 +15,7 @@ public class TripleModel implements NamespaceAware, Serializable {
 
     private NamespacedModelBuilder modelBuilder;
 
-    protected TripleModel(Model model) {
+    public TripleModel(Model model) {
         this.modelBuilder = new NamespacedModelBuilder(model, Set.of());
     }
 
@@ -72,6 +72,14 @@ public class TripleModel implements NamespaceAware, Serializable {
         return result;
     }
 
+    public Map<Resource, Model> listFragments() {
+        Map<Resource, Model> result = new HashMap<>();
+        this.getModel().subjects().forEach(subject ->  {
+            result.put(subject, this.getModel().filter(subject, null, null));
+        });
+        return result;
+    }
+
     public Stream<NamespaceAwareStatement> streamNamespaceAwareStatements() {
         return this.getModel().stream().map(sts -> NamespaceAwareStatement.wrap(sts, getNamespaces()));
     }
@@ -123,6 +131,7 @@ public class TripleModel implements NamespaceAware, Serializable {
     public boolean hasStatement(Resource obj, IRI pred, Value val) {
         return this.getModel().getStatements(obj, pred, val).iterator().hasNext();
     }
+
 
 
 }

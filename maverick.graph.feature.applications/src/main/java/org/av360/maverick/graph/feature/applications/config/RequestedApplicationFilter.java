@@ -2,11 +2,11 @@ package org.av360.maverick.graph.feature.applications.config;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
+import jakarta.validation.constraints.NotNull;
 import org.av360.maverick.graph.feature.applications.domain.ApplicationsService;
 import org.av360.maverick.graph.feature.applications.domain.events.ApplicationDeletedEvent;
 import org.av360.maverick.graph.feature.applications.domain.model.Application;
 import org.av360.maverick.graph.model.security.AdminToken;
-import jakarta.validation.constraints.NotNull;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.server.reactive.ServerHttpRequest;
@@ -107,7 +107,7 @@ public class RequestedApplicationFilter implements WebFilter, ApplicationListene
 
         String[] split = path.split("/");
         for (int i = 0; i < split.length; i++) {
-            if (split[i].equalsIgnoreCase("app")) {
+            if (split[i].equalsIgnoreCase("s")) {
                 if (split.length > i + 1) {
                     return Optional.of(split[i + 1]);
                 } else {

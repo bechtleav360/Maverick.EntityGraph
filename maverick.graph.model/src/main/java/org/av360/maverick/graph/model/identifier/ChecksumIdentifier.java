@@ -1,14 +1,11 @@
-package org.av360.maverick.graph.model.shared;
+package org.av360.maverick.graph.model.identifier;
 
 import com.google.common.hash.Hashing;
-import org.av360.maverick.graph.model.errors.store.InvalidEntityModel;
-import org.av360.maverick.graph.model.rdf.LocalIRI;
 import lombok.extern.slf4j.Slf4j;
+import org.av360.maverick.graph.model.rdf.LocalIRI;
 import org.eclipse.rdf4j.model.IRI;
-import org.eclipse.rdf4j.model.Namespace;
-import org.eclipse.rdf4j.model.Resource;
-import org.eclipse.rdf4j.model.Value;
 
+import java.io.Serializable;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
@@ -33,40 +30,19 @@ public class ChecksumIdentifier extends LocalIRI implements LocalIdentifier  {
     private static final Checksum checksum = new CRC32C();
 
 
-
-
-    public ChecksumIdentifier(String namespace, Resource oldIdentifier) throws InvalidEntityModel {
-        super(namespace);
-
-        if (oldIdentifier instanceof IRI iri) {
-            // TODO: generate fingerprint of old resource with fixed length
-            super.setLocalName(generateIdentifier(iri));
-        } else {
-            log.warn("Generating identifier for anonymous node, falling back to random identifier");
-            throw new InvalidEntityModel("Generating checksum identifier of resource (not IRI): "+ oldIdentifier);
-        }
-    }
-
-
-
-    public ChecksumIdentifier(String namespace, IRI oldIdentifier) {
-        super(namespace);
-        super.setLocalName(generateIdentifier(oldIdentifier));
-    }
-
-
     /**
      * Generates a new and reproducible identifier from the old resource identifier (its namespace) and a characteristic property
      * @param namespace the new local namespace
-     * @param values characteristic property (rdfs:label, dc:identifier, ...)
+     * @param parts characteristic property (rdfs:label, dc:identifier, ...)
      */
-    public ChecksumIdentifier(Namespace namespace, Value ... values) {
+    public ChecksumIdentifier(String namespace, Serializable ... parts) {
 
-        super(namespace.getName());
+        super(namespace);
 
-        String collect = Arrays.stream(values).map(Value::stringValue).collect(Collectors.joining());
+        String collect = Arrays.stream(parts).map(Object::toString).collect(Collectors.joining());
         super.setLocalName(generateChecksum(collect));
     }
+
 
 
 
