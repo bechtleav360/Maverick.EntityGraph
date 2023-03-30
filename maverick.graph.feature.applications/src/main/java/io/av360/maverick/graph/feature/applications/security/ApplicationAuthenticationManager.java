@@ -85,7 +85,7 @@ public class ApplicationAuthenticationManager implements ReactiveAuthenticationM
 
         } else if (authentication instanceof AnonymousAuthenticationToken token) {
             log.trace("Ignoring anonymous access without requested application in application authentication manager.");
-            return Mono.just(authentication).log("Ignoring anonymous access without requested application in application authentication manager.");
+            return Mono.just(authentication);
         } else {
             return Mono.just(authentication);
         }

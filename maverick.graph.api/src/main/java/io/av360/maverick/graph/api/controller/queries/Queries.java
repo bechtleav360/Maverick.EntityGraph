@@ -37,7 +37,7 @@ public class Queries extends AbstractController {
         return getAuthentication()
                 .flatMapMany(authentication -> queryServices.queryValues(query, authentication))
                 .doOnSubscribe(s -> {
-                    if (log.isDebugEnabled()) log.debug("Search graph with tuples query: {}", query);
+                    if (log.isDebugEnabled()) log.debug("Request to search graph with tuples query: {}", query);
                 });
     }
 
@@ -55,7 +55,7 @@ public class Queries extends AbstractController {
         return getAuthentication()
                 .flatMapMany(authentication -> queryServices.queryGraph(query, authentication))
                 .doOnSubscribe(s -> {
-                    if (log.isDebugEnabled()) log.debug("Search graph with construct query: {}", query);
+                    if (log.isDebugEnabled()) log.debug("Request to search graph with construct query: {}", query);
                 });
 
     }

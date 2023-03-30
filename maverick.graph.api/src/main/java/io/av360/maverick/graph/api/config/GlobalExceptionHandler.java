@@ -9,6 +9,7 @@ import org.springframework.boot.web.error.ErrorAttributeOptions;
 import org.springframework.boot.web.reactive.error.DefaultErrorAttributes;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.reactive.function.server.ServerRequest;
 
 import java.util.Map;
@@ -63,6 +64,11 @@ public class GlobalExceptionHandler extends DefaultErrorAttributes {
             errorAttributes.remove("exception");
             errorAttributes.remove("trace");
         } else if (error instanceof SecurityException) {
+            errorAttributes.replace("status", HttpStatus.UNAUTHORIZED.value());
+            errorAttributes.replace("error", HttpStatus.UNAUTHORIZED.getReasonPhrase());
+            errorAttributes.remove("exception");
+            errorAttributes.remove("trace");
+        } else if (error instanceof AuthenticationException) {
             errorAttributes.replace("status", HttpStatus.UNAUTHORIZED.value());
             errorAttributes.replace("error", HttpStatus.UNAUTHORIZED.getReasonPhrase());
             errorAttributes.remove("exception");

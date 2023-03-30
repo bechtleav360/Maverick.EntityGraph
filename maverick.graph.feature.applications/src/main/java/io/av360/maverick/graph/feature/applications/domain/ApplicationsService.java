@@ -2,6 +2,7 @@ package io.av360.maverick.graph.feature.applications.domain;
 
 import io.av360.maverick.graph.api.security.errors.RevokedApiKeyUsed;
 import io.av360.maverick.graph.api.security.errors.UnknownApiKey;
+import io.av360.maverick.graph.feature.applications.config.Globals;
 import io.av360.maverick.graph.feature.applications.domain.errors.InvalidApplication;
 import io.av360.maverick.graph.feature.applications.domain.events.ApplicationCreatedEvent;
 import io.av360.maverick.graph.feature.applications.domain.events.TokenCreatedEvent;
@@ -217,18 +218,29 @@ public class ApplicationsService {
 
     public Mono<Application> getApplication(String applicationKey, Authentication authentication) {
 
+
+
         SelectQuery q = Queries.SELECT().distinct()
                 .where(varAppIri.isA(ApplicationTerms.TYPE)
-                        .andHas(ApplicationTerms.HAS_KEY, varAppKey)
+                        .andHas(ApplicationTerms.HAS_KEY, applicationKey)
                         .andHas(ApplicationTerms.HAS_LABEL, varAppLabel)
                         .andHas(ApplicationTerms.IS_PERSISTENT, varAppFlagPersistent)
                         .andHas(ApplicationTerms.IS_PUBLIC, varAppFlagPublic)
                 );
-
+        String queryString = q.getQueryString();
         return this.applicationsStore.query(q, authentication, Authorities.READER)
                 .singleOrEmpty()
+                .switchIfEmpty(Mono.error(new InvalidApplication(applicationKey)))
                 .map(BindingsAccessor::new)
-                .map(this::buildApplicationFromBindings)
+                .map(ba -> new Application(
+                        ba.asIRI(varAppIri),
+                        ba.asString(varAppLabel),
+                        applicationKey,
+                        new ApplicationFlags(
+                                ba.asBoolean(varAppFlagPersistent),
+                                ba.asBoolean(varAppFlagPublic)
+                        )
+                ))
                 .doOnSubscribe(debug(log, "Requesting application with identifier '{}'", applicationKey));
     }
 
@@ -236,12 +248,12 @@ public class ApplicationsService {
 
 
     public Mono<Application> getApplicationByLabel(String applicationLabel, Authentication authentication) {
-
+        if(applicationLabel.equalsIgnoreCase(Globals.DEFAULT_APPLICATION_LABEL)) return Mono.empty();
 
         SelectQuery q = Queries.SELECT()
                 .where(varAppIri.isA(ApplicationTerms.TYPE)
                         .andHas(ApplicationTerms.HAS_KEY, varAppKey)
-                        .andHas(ApplicationTerms.HAS_LABEL, varAppLabel)
+                        .andHas(ApplicationTerms.HAS_LABEL, applicationLabel)
                         .andHas(ApplicationTerms.IS_PERSISTENT, varAppFlagPersistent)
                         .andHas(ApplicationTerms.IS_PUBLIC, varAppFlagPublic)
                 );
@@ -255,7 +267,15 @@ public class ApplicationsService {
                 .collectList()
                 .flatMap(BindingsAccessor::getUniqueBindingSet)
                 .map(BindingsAccessor::new)
-                .map(this::buildApplicationFromBindings)
+                .map(ba -> new Application(
+                        ba.asIRI(varAppIri),
+                        applicationLabel,
+                        ba.asString(varAppKey),
+                        new ApplicationFlags(
+                                ba.asBoolean(varAppFlagPersistent),
+                                ba.asBoolean(varAppFlagPublic)
+                        )
+                ))
                 .doOnSubscribe(sub -> log.debug("Requesting application with label '{}'", applicationLabel));
     }
 

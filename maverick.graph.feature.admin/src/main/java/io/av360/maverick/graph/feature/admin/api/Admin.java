@@ -47,7 +47,7 @@ public class Admin extends AbstractController {
 
         return super.getAuthentication()
                 .flatMap(auth -> adminServices.reset(auth, repositoryType))
-                .doOnError(throwable -> log.error("Error while purging repository.", throwable))
+                .doOnError(throwable -> log.error("Error while purging repository. Type '{}' with reason: {}", throwable.getClass().getSimpleName(), throwable.getMessage() ))
                 .doOnSubscribe(s -> log.debug("Request to empty the repository of type '{}'", repositoryType));
     }
 

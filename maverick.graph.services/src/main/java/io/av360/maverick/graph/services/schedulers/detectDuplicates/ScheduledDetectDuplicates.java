@@ -97,7 +97,7 @@ public class ScheduledDetectDuplicates {
     // https://github.com/spring-projects/spring-framework/issues/23533
     private boolean labelCheckRunning = false;
 
-    @Scheduled(fixedRate = 1000)
+    @Scheduled(fixedRate = 60000)
     public void checkForDuplicatesScheduled() {
         if (labelCheckRunning) return;
 

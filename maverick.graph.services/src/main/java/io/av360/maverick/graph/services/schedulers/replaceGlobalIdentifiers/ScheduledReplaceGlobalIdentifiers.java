@@ -67,15 +67,15 @@ public class ScheduledReplaceGlobalIdentifiers {
 
         this.checkForGlobalIdentifiers(authentication)
                 .collectList()
-                .doOnError(throwable -> log.error("(Scheduled) Checking for invalided identifiers failed. ", throwable))
+                .doOnError(throwable -> log.error("Checking for global identifiers failed. ", throwable))
                 .doOnSuccess(list -> {
                     Integer reduce = list.stream()
                             .map(transaction -> transaction.listModifiedResources().size())
                             .reduce(0, Integer::sum);
                     if (reduce > 0) {
-                        log.debug("(Scheduled) Checking for invalided identifiers completed, {} resources were updated.", reduce);
+                        log.info("Checking for external identifiers completed, {} resource identifiers have been converted to locally resolvable identifiers.", reduce);
                     } else {
-                        log.debug("(Scheduled) No invalided identifiers found");
+                        log.trace("No global identifiers found");
                     }
 
                 }).subscribe();

@@ -10,7 +10,8 @@ public class ReactiveApplicationContextHolder {
     public static Mono<Application> getRequestedApplication() {
         return Mono.deferContextual(Mono::just)
                 .filter(ctx -> ctx.hasKey(CONTEXT_KEY))
-                .map(ctx -> ctx.get(CONTEXT_KEY));
+                .map(ctx -> ctx.get(CONTEXT_KEY))
+                .switchIfEmpty(Mono.empty());
 
     }
 

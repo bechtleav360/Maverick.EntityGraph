@@ -10,10 +10,10 @@ application:
       enabled: false
   features:
     modules:
-      applications: false
+      applications: true
       admin: true
     schedulers:
-      detectDuplicates: true
+      detectDuplicates: false
       replaceGlobalIdentifiers: true
     transformers:
       replaceGlobalIdentifiers: true
@@ -24,7 +24,7 @@ application:
   storage:
     default:
       persistent: true
-      path: "D:/Graphen/entities"
+      path: "D:/Graphen/default"
     entities:
       persistent: true
       path: "D:/Graphen/entities"
@@ -40,30 +40,13 @@ spring:
 
 logging:
   level:
-    com:
-      bechtle: TRACE
+    graph:
+      jobs: DEBUG
+      repo: TRACE
+      srvc: TRACE
+      ctrl: TRACE
+
     org:
       springframework:
         security: INFO
 
-
-management:
-  endpoints:
-    web:
-      exposure:
-        include: "health, info, env, loggers, metrics, scheduledTasks, logfile, mappings"
-  endpoint:
-    health:
-      enabled: true
-    info:
-      enabled: true
-    env:
-      enabled: true
-    loggers:
-      enabled: true
-    metrics:
-      enabled: true
-    scheduledTasks:
-      enabled: true
-    logfile:
-      enabled: true

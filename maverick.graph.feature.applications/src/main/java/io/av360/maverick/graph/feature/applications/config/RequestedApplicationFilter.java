@@ -5,9 +5,11 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 import io.av360.maverick.graph.feature.applications.domain.ApplicationsService;
 import io.av360.maverick.graph.feature.applications.domain.events.ApplicationDeletedEvent;
 import io.av360.maverick.graph.feature.applications.domain.model.Application;
+import io.av360.maverick.graph.model.security.AdminToken;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.security.core.context.ReactiveSecurityContextHolder;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.util.Assert;
@@ -20,6 +22,8 @@ import reactor.core.publisher.Mono;
 import java.io.IOException;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+
+
 
 @Configuration
 public class RequestedApplicationFilter implements WebFilter, ApplicationListener<ApplicationDeletedEvent> {
@@ -40,14 +44,16 @@ public class RequestedApplicationFilter implements WebFilter, ApplicationListene
     public Mono<Void> filter(@NotNull ServerWebExchange exchange, WebFilterChain chain) {
         try {
 
-            Optional<String> requestedApplication = this.getRequestedApplicationFromPath(exchange.getRequest().getPath().toString());
+            Optional<String> requestedApplication = this.getRequestedApplication(exchange.getRequest());
+            //this.getRequestedApplicationFromPath(exchange.getRequest().getPath().toString());
             return requestedApplication
-                    .map(s ->
+                    .map(label ->
                        ReactiveSecurityContextHolder.getContext().map(SecurityContext::getAuthentication)
-                                .flatMap(authentication -> this.subscriptionsService.getApplication(s, authentication))
+                                .flatMap(authentication -> this.subscriptionsService.getApplicationByLabel(label, new AdminToken()))
                                 .doOnNext(application -> this.cache.put(application.label(), application))
                                 .flatMap(application -> chain.filter(exchange)
                                         .contextWrite(ctx -> ctx.put(ReactiveApplicationContextHolder.CONTEXT_KEY, application))))
+
 
                             .orElseGet(() -> chain.filter(exchange));
             /*
@@ -77,6 +83,17 @@ public class RequestedApplicationFilter implements WebFilter, ApplicationListene
 
     }
 
+
+    private Optional<String> getRequestedApplication(ServerHttpRequest request) throws IOException {
+        // header OR path (path wins)
+        Optional<String> fromHeader = request.getHeaders().containsKey(Globals.HEADER_APPLICATION_LABEL) ? request.getHeaders().get(Globals.HEADER_APPLICATION_LABEL).stream().findFirst() : Optional.empty();
+        Optional<String> fromPath = this.getRequestedApplicationFromPath(request.getPath().toString());
+
+        return fromPath
+                .or(() -> fromHeader)
+                .filter(app -> ! app.equalsIgnoreCase(Globals.DEFAULT_APPLICATION_LABEL))
+                .or(Optional::empty);
+    }
 
     /**
      * Returns the scope

@@ -24,10 +24,11 @@ import static org.springframework.web.reactive.function.server.RouterFunctions.r
 public class OpenApiConfiguration {
     @Bean
     RouterFunction<ServerResponse> routerFunction() {
-        return route(GET("/swagger"), req ->
-                ServerResponse.temporaryRedirect(URI.create("/swagger-ui.html")).build()
-        );
+        return route(GET("/swagger"), req -> ServerResponse.temporaryRedirect(URI.create("/swagger-ui.html")).build()
+        ).and(route(GET("/actuator/"), req -> ServerResponse.temporaryRedirect(URI.create("/actuator")).build()));
     }
+
+
 
 
     @Bean("EntityApiDefinition")

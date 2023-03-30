@@ -10,6 +10,7 @@ import io.av360.maverick.graph.store.rdf.LabeledRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.rdf4j.http.protocol.UnauthorizedException;
 import org.eclipse.rdf4j.repository.Repository;
+import org.eclipse.rdf4j.repository.RepositoryException;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
 import org.eclipse.rdf4j.sail.lmdb.LmdbStore;
 import org.eclipse.rdf4j.sail.lmdb.config.LmdbStoreConfig;
@@ -46,11 +47,14 @@ public class DefaultRepositoryBuilder implements RepositoryBuilder {
     @Value("${application.storage.default.path: #{null}}")
     private String defaultPath;
 
+    @Value("${application.storage.default.path: #{null}}")
+    private String schemaPath;
 
     private final Cache<String, Repository> cache;
     private Map<String, List<String>> storage;
     private String test;
     private Map<String, String> security;
+
 
 
     public DefaultRepositoryBuilder() {
@@ -99,31 +103,49 @@ public class DefaultRepositoryBuilder implements RepositoryBuilder {
             log.trace("Resolving repository of type '{}', label '{}'", repositoryType, key);
 
             if (!StringUtils.hasLength(path)) {
-                sink.success(getCache().get(key, s -> new LabeledRepository(key, this.initializeVolatileRepository())));
+                sink.success(getCache().get(key, s -> new LabeledRepository(key, this.initializeVolatileRepository(repositoryType))));
             } else {
-                Path p = Paths.get(path, repositoryType.toString(), "lmdb");
-                sink.success(getCache().get(key, s -> new LabeledRepository(key, this.initializePersistentRepository(p))));
+                Path p;
+                if(path.equalsIgnoreCase(this.defaultPath)) {
+                    p = Paths.get(path, repositoryType.toString(), "lmdb");
+                } else {
+                    p = Paths.get(path,  "lmdb");
+                }
+                sink.success(getCache().get(key, s -> new LabeledRepository(key, this.initializePersistentRepository(p, repositoryType))));
             }
         });
                 // .doOnSubscribe(StreamsLogger.trace(log, "Resolving repository of type '{}', label '{}'", repositoryType, buildRepositoryLabel(repositoryType, details)));
+    }
+
+    private String getPathForRepositoryType(RepositoryType repositoryType) {
+        return switch (repositoryType) {
+            case ENTITIES -> this.entitiesPath;
+            case TRANSACTIONS -> this.transactionsPath;
+            case APPLICATION -> this.defaultPath;
+            case SCHEMA -> this.schemaPath; 
+            default -> this.defaultPath;
+        };
     }
 
     protected Mono<Repository> getRepository3(RepositoryType repositoryType, String... details) {
 
 
         String key = buildRepositoryLabel(repositoryType, details);
-        String path = switch (repositoryType) {
-            case ENTITIES -> this.entitiesPath;
-            case TRANSACTIONS -> this.transactionsPath;
-            default -> this.defaultPath;
-        };
 
         Repository repository;
-        if (!StringUtils.hasLength(path)) {
-            repository = getCache().get(key, s -> new LabeledRepository(key, this.initializeVolatileRepository()));
+        String basePath = getPathForRepositoryType(repositoryType);
+        if (!StringUtils.hasLength(basePath)) {
+            repository = getCache().get(key, s -> new LabeledRepository(key, this.initializeVolatileRepository(repositoryType)));
         } else {
-            Path p = Paths.get(path, repositoryType.toString(), "lmdb");
-            repository = getCache().get(key, s -> new LabeledRepository(key, this.initializePersistentRepository(p)));
+
+            Path p = switch (repositoryType) {
+                case ENTITIES -> Paths.get(basePath, "lmdb");
+                case TRANSACTIONS -> Paths.get(basePath, "lmdb");
+                case APPLICATION -> Paths.get(basePath, "lmbd");
+                case SCHEMA -> Paths.get(basePath, "lmbd");
+                default -> Paths.get(basePath, repositoryType.toString(), "lmdb");
+            };
+            repository = getCache().get(key, s -> new LabeledRepository(key, this.initializePersistentRepository(p, repositoryType)));
         }
 
         return Mono.just(repository)
@@ -131,25 +153,28 @@ public class DefaultRepositoryBuilder implements RepositoryBuilder {
     }
 
 
-    protected Repository initializePersistentRepository(Path path) {
+    protected Repository initializePersistentRepository(Path path, RepositoryType repositoryType) {
         try {
-            log.debug("Initializing persistent repository in path '{}'", path);
+            log.debug("Initializing persistent repository in path '{}' for label '{}'", path, repositoryType.toString());
             Resource file = new FileSystemResource(path);
             LmdbStoreConfig config = new LmdbStoreConfig();
 
-            if(file.getFile().mkdirs()) {
-                return new SailRepository(new LmdbStore(file.getFile(), config));
-            } else throw new IOException("Failed to create path: "+ file.getFile());
+
+            if(! file.exists() && ! file.getFile().mkdirs())
+                throw new IOException("Failed to create path: "+ file.getFile());
+
+            return new SailRepository(new LmdbStore(file.getFile(), config));
 
 
-        } catch (IOException e) {
+
+        } catch (RepositoryException | IOException e) {
             log.error("Failed to initialize persistent repository in path '{}'. Falling back to in-memory.", path, e);
             return new SailRepository(new MemoryStore());
         }
     }
 
-    protected Repository initializeVolatileRepository() {
-        log.debug("Initializing in-memory repository");
+    protected Repository initializeVolatileRepository(RepositoryType repositoryType) {
+        log.debug("Initializing in-memory repository for label '{}'", repositoryType.toString());
         return new SailRepository(new MemoryStore());
     }
 

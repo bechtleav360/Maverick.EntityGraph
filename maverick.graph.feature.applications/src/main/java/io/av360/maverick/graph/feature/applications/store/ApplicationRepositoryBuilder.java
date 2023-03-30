@@ -3,6 +3,7 @@ package io.av360.maverick.graph.feature.applications.store;
 import io.av360.maverick.graph.feature.applications.config.ReactiveApplicationContextHolder;
 import io.av360.maverick.graph.feature.applications.domain.model.Application;
 import io.av360.maverick.graph.feature.applications.security.SubscriptionToken;
+import io.av360.maverick.graph.model.security.AdminToken;
 import io.av360.maverick.graph.model.security.Authorities;
 import io.av360.maverick.graph.model.security.RequestDetails;
 import io.av360.maverick.graph.store.RepositoryType;
@@ -17,6 +18,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Primary;
 import org.springframework.lang.Nullable;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
+import org.springframework.security.authentication.InsufficientAuthenticationException;
 import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
@@ -72,20 +74,37 @@ public class ApplicationRepositoryBuilder extends DefaultRepositoryBuilder {
             return Mono.just(super.getCache().get(key, s -> new LabeledRepository(key, new SailRepository(new MemoryStore()))));
         } else
         if (authentication instanceof SubscriptionToken subscriptionToken && Authorities.satisfies(Authorities.READER, authentication.getAuthorities())) {
-            return this.resolveRepositoryForApplicationAuthentication(repositoryType, requestedApplication.label(), subscriptionToken);
+            return this.resolveRepositoryForApplicationAuthentication(repositoryType, requestedApplication, subscriptionToken);
+        } else
+        if (authentication instanceof AdminToken adminToken) {
+            return this.resolveRepositoryForSystemAuthentication(repositoryType, requestedApplication, adminToken);
+        } else
+        if (authentication instanceof AnonymousAuthenticationToken anonymousAuthenticationToken) {
+            return this.resolveRepositoryForAnonymousAuthentication(repositoryType, requestedApplication);
         }
-
 
 
 
         else return Mono.empty();
     }
 
+    private Mono<Repository> resolveRepositoryForAnonymousAuthentication(RepositoryType repositoryType, Application requestedApplication) {
+        if(! requestedApplication.flags().isPublic()) return Mono.error(new InsufficientAuthenticationException("Requested application does not exist or is not public."));
+
+        log.trace("Resolving public repository for application '{}' with anonymous authentication.", requestedApplication.label());
+        return switch (repositoryType) {
+            case ENTITIES -> this.getRepository(RepositoryType.ENTITIES, requestedApplication);
+            case TRANSACTIONS -> this.getRepository(RepositoryType.TRANSACTIONS, requestedApplication);
+            case SCHEMA -> this.getDefaultRepository(RepositoryType.SCHEMA);
+            default -> Mono.error(new IOException(String.format("Invalid Repository Type '%s' for requested application '%s'", repositoryType, requestedApplication.label())));
+        };
+
+    }
 
 
-    private Mono<Repository> resolveRepositoryForApplicationAuthentication(RepositoryType repositoryType, String requestedApplication, SubscriptionToken authentication)  {
+    private Mono<Repository> resolveRepositoryForApplicationAuthentication(RepositoryType repositoryType, Application requestedApplication, SubscriptionToken authentication)  {
         Assert.isTrue(Authorities.satisfies(Authorities.READER, authentication.getAuthorities()), "Missing authorization: " + Authorities.READER.getAuthority());
-        Assert.isTrue(authentication.getApplication().label().equalsIgnoreCase(requestedApplication), "Subscription token is not configured for requested application "+requestedApplication);
+        Assert.isTrue(authentication.getApplication().label().equalsIgnoreCase(requestedApplication.label()), "Subscription token is not configured for requested application "+requestedApplication);
 
         log.trace("Resolving repository with application authentication.");
         return switch (repositoryType) {
@@ -93,11 +112,25 @@ public class ApplicationRepositoryBuilder extends DefaultRepositoryBuilder {
             case TRANSACTIONS -> this.getRepository(RepositoryType.TRANSACTIONS, authentication.getApplication());
             case SCHEMA -> this.getDefaultRepository(RepositoryType.SCHEMA);
             // application is left out.. we cannot access the applications details with a user authorization only
-            default -> Mono.error(new IOException(String.format("Invalid Repository Type '%s' for application context", repositoryType)));
+            default -> Mono.error(new IOException(String.format("Invalid Repository Type '%s' for requested application '%s'", repositoryType, requestedApplication.label())));
         };
     }
 
-    private Mono<Repository> resolveRepositoryForSystemAuthentication(RepositoryType repositoryType, Authentication authentication) {
+    private Mono<Repository> resolveRepositoryForSystemAuthentication(RepositoryType repositoryType, Application requestedApplication, Authentication authentication) {
+            if(! Authorities.satisfies(Authorities.SYSTEM, authentication.getAuthorities())) return Mono.error(new InsufficientAuthenticationException("Authorization issue while resolving repository."));
+
+            log.trace("Resolving repository with admin authentication and additional subscription key.");
+
+            return switch (repositoryType) {
+                case ENTITIES -> this.getRepository(RepositoryType.ENTITIES, requestedApplication);
+                case TRANSACTIONS -> this.getRepository(RepositoryType.TRANSACTIONS, requestedApplication);
+                case SCHEMA -> this.getDefaultRepository(RepositoryType.SCHEMA);
+                // application is left out.. we cannot access the applications details with a user authorization only
+                default -> Mono.error(new IOException(String.format("Invalid Repository Type '%s' for requested application '%s'", repositoryType, requestedApplication.label())));
+            };
+
+    }
+    private Mono<Repository> resolveRepositoryForSystemAuthenticationOld(RepositoryType repositoryType, Application requestedApplication, Authentication authentication) {
         if (Authorities.satisfies(Authorities.SYSTEM, authentication.getAuthorities()) && authentication instanceof SubscriptionToken) {
                 log.trace("Resolving repository with admin authentication and additional subscription key.");
                 Application application = ((SubscriptionToken) authentication).getApplication();
@@ -142,10 +175,10 @@ public class ApplicationRepositoryBuilder extends DefaultRepositoryBuilder {
     private Repository buildApplicationsRepository(String basePath, Application application, RepositoryType repositoryType) {
         if (!application.flags().isPersistent() || !StringUtils.hasLength(basePath)) {
             log.debug("Initializing volatile {} repository for application '{}' [{}]", repositoryType.toString(), application.label(), application.key());
-            return super.initializeVolatileRepository();
+            return super.initializeVolatileRepository(repositoryType);
         } else {
             Path path = Paths.get(basePath, application.key(), repositoryType.toString(), "lmdb");
-            return this.initializePersistentRepository(path);
+            return this.initializePersistentRepository(path, repositoryType);
         }
     }
 
