@@ -1,7 +1,7 @@
 package org.av360.maverick.graph.feature.jobs.schedulers;
 
 import lombok.extern.slf4j.Slf4j;
-import org.av360.maverick.graph.feature.jobs.services.ReplaceExternalIdentifiersServiceV2;
+import org.av360.maverick.graph.feature.jobs.services.ReplaceExternalIdentifiersService;
 import org.av360.maverick.graph.model.security.AdminToken;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -22,13 +22,13 @@ import org.springframework.stereotype.Component;
 @Slf4j(topic = "graph.jobs.identifiers")
 @Component
 @ConditionalOnProperty(name = "application.features.modules.jobs.scheduled.replaceIdentifiers", havingValue = "true")
-public class ScheduledReplaceGlobalIdentifiers {
+public class ScheduledReplaceIdentifiers {
 
     // FIXME: should not directly access the services
-    private final ReplaceExternalIdentifiersServiceV2 job;
+    private final ReplaceExternalIdentifiersService job;
 
 
-    public ScheduledReplaceGlobalIdentifiers(ReplaceExternalIdentifiersServiceV2 job) {
+    public ScheduledReplaceIdentifiers(ReplaceExternalIdentifiersService job) {
         this.job = job;
     }
 
@@ -38,8 +38,11 @@ public class ScheduledReplaceGlobalIdentifiers {
         if (this.job.isRunning()) return;
 
         AdminToken adminAuthentication = new AdminToken();
+        this.job.run(adminAuthentication).subscribe();
 
-        this.job.checkForGlobalIdentifiers(adminAuthentication)
+
+        /*
+        this.job.checkForExternalIdentifiers(adminAuthentication)
                 .collectList()
                 .doOnError(throwable -> log.error("Checking for global identifiers failed. ", throwable))
                 .doOnSuccess(list -> {
@@ -53,6 +56,7 @@ public class ScheduledReplaceGlobalIdentifiers {
                     }
 
                 }).subscribe();
+                */
     }
 
 }

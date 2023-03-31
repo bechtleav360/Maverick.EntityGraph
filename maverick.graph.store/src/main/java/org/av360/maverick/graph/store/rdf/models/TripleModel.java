@@ -11,7 +11,10 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
-public class TripleModel implements NamespaceAware, Serializable {
+public class
+
+
+TripleModel implements NamespaceAware, Serializable {
 
     private NamespacedModelBuilder modelBuilder;
 

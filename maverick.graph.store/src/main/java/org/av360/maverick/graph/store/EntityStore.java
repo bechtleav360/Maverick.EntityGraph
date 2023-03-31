@@ -16,6 +16,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
+import java.util.Set;
 
 
 public interface EntityStore extends Searchable, Resettable, ModelUpdates, Selectable, Statements {
@@ -41,11 +42,11 @@ public interface EntityStore extends Searchable, Resettable, ModelUpdates, Selec
         return this.getEntity(entityIdentifier, authentication, Authorities.READER, includeNeighborsLevel);
     }
 
-    default Mono<List<Statement>> listStatements(IRI object, IRI predicate, Value val, Authentication authentication) {
+    default Mono<Set<Statement>> listStatements(IRI object, IRI predicate, Value val, Authentication authentication) {
         return this.listStatements(object, predicate, val, authentication, Authorities.READER);
     }
 
-    default Mono<? extends List<Statement>> listStatements(Resource object, IRI predicate, Value val, Authentication authentication) {
+    default Mono<Set<Statement>> listStatements(Resource object, IRI predicate, Value val, Authentication authentication) {
         return this.listStatements(object, predicate, val, authentication, Authorities.READER);
     }
 

@@ -11,6 +11,7 @@ import reactor.core.publisher.Mono;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 
 public interface Statements extends RepositoryBehaviour {
 
@@ -30,7 +31,9 @@ public interface Statements extends RepositoryBehaviour {
     }
 
 
-    Mono<List<Statement>> listStatements(Resource value, IRI predicate, Value object, Authentication authentication, GrantedAuthority requiredAuthority);
+    Mono<Set<Statement>> listStatements(Resource subject, IRI predicate, Value object, Authentication authentication, GrantedAuthority requiredAuthority);
 
     Mono<Transaction> removeStatements(Collection<Statement> statements, Transaction transaction);
+
+    Mono<Boolean> hasStatement(Resource subject, IRI predicate, Value object, Authentication authentication, GrantedAuthority requiredAuthority);
 }

@@ -1,4 +1,4 @@
-package org.av360.maverick.graph.services.transformers.setIndividual;
+package org.av360.maverick.graph.services.transformers.types;
 
 import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.model.vocabulary.Local;
@@ -6,18 +6,15 @@ import org.av360.maverick.graph.model.vocabulary.SDO;
 import org.av360.maverick.graph.services.transformers.Transformer;
 import org.av360.maverick.graph.store.rdf.models.TripleModel;
 import org.eclipse.rdf4j.model.*;
+import org.eclipse.rdf4j.model.impl.LinkedHashModel;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.vocabulary.*;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 @Slf4j(topic = "graph.srvc.transformer.coercion")
 @Component
@@ -43,15 +40,19 @@ public class InsertLocalTypes implements Transformer {
     }
 
     @Override
-    public Mono<? extends TripleModel> handle(TripleModel model, Map<String, String> parameters, Authentication authentication) {
-        return Flux.fromIterable(model.listFragments().entrySet())
-                .filter(entry -> isNotIndividual(entry.getKey(), entry.getValue()))
-                .filter(entry -> isNotClassifier(entry.getKey(), entry.getValue()))
-                .filter(entry -> isNotEmbedded(entry.getKey(), entry.getValue()))
-                .doOnNext(fragment -> {
-                    log.warn("Fragment with the following statements could not be identified for local type: \n {}", fragment.getValue().stream().toList());
+    public Mono<? extends TripleModel> handle(TripleModel model, Map<String, String> parameters) {
+        Model result = new LinkedHashModel(model.getModel());
+
+        return Flux.fromIterable(Collections.unmodifiableSet(model.getModel().subjects()))
+                .filter(sub -> isNotIndividual(sub, model.getModel(), result))
+                .filter(sub -> isNotClassifier(sub, model.getModel(), result))
+                // .filter(sub -> isNotEmbedded(sub, model.getModel(), result))
+                .doOnNext(sub -> {
+                    log.warn("Subject with the following statements could not be identified for local type: \n {}", model.listStatements(sub, null, null));
                 })
-                .then(Mono.just(model));
+                .then(Mono.just(new TripleModel(result)))
+                .doOnSubscribe(c -> log.debug("Check if internal types have to be added."))
+                .doFinally(signalType -> log.trace("Finished checks for internal types."));
     }
 
     public Flux<Statement> getStatements(Model model) {
@@ -65,15 +66,15 @@ public class InsertLocalTypes implements Transformer {
         });
     }
 
-    private boolean isNotEmbedded(Resource subject, Model fragment) {
+    private boolean isNotEmbedded(Resource subject, Model fragment, Model model) {
         Optional<Statement> statement = this.handleEmbedded(subject, fragment);
-        return statement.map(fragment::add).isEmpty();
+        return statement.map(model::add).isEmpty();
     }
 
 
-    private boolean isNotIndividual(Resource subject, Model fragment) {
-        Optional<Statement> statement = this.handleIndividual(subject, fragment);
-        return statement.map(fragment::add).isEmpty();
+    private boolean isNotIndividual(Resource subject, Model source, Model model) {
+        Optional<Statement> statement = this.handleIndividual(subject, source);
+        return statement.map(model::add).isEmpty();
     }
 
     private Optional<Statement> handleEmbedded(Resource subject, Model fragment) {
@@ -98,9 +99,9 @@ public class InsertLocalTypes implements Transformer {
         }
     }
 
-    private boolean isNotClassifier(Resource subject, Model fragment) {
+    private boolean isNotClassifier(Resource subject, Model fragment, Model model) {
         Optional<Statement> statement = this.handleClassifier(subject, fragment);
-        return statement.map(fragment::add).isEmpty();
+        return statement.map(model::add).isEmpty();
     }
 
     private Optional<Statement>  handleClassifier(Resource subject, Model fragment) {

@@ -57,7 +57,7 @@ class CheckGlobalIdentifiersTest extends TestsBase {
         Mono<Model> readModelMono = entityServicesClient.getModel().doOnSubscribe(sub -> super.printStep());
 
 
-        Flux<Transaction> actionMono = scheduled.checkForGlobalIdentifiers(TestSecurityConfig.createAuthenticationToken()).doOnSubscribe(sub -> super.printStep());
+        Flux<Transaction> actionMono = scheduled.checkForExternalIdentifiers(TestSecurityConfig.createAuthenticationToken()).doOnSubscribe(sub -> super.printStep());
 
         StepVerifier.create(importMono.then(readModelMono))
                 .assertNext(md -> {
@@ -74,7 +74,7 @@ class CheckGlobalIdentifiersTest extends TestsBase {
 
         StepVerifier.create(readModelMono)
                 .consumeNextWith(model -> {
-                    super.printModel(model, RDFFormat.JSONLD);
+                    super.printModel(model, RDFFormat.TURTLE);
                 }).verifyComplete();
 
     }

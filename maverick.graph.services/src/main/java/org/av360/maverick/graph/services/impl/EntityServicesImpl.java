@@ -235,7 +235,7 @@ public class EntityServicesImpl implements EntityServices {
 
                 .flatMap(sts -> {
                     /* transform */
-                    return transformers.handle(sts, parameters, authentication);
+                    return transformers.handle(sts, parameters);
 
                     /* TODO: check if create of resource of given type is supported or is it delegated to connector */
 

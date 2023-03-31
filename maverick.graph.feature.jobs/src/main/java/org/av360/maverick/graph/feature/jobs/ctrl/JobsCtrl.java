@@ -23,7 +23,7 @@ public class JobsCtrl extends AbstractController {
 
 
     final DetectDuplicatesService detectDuplicatesJob;
-    final ReplaceExternalIdentifiersServiceV2 replaceExternalIdentifiersJob;
+    final ReplaceExternalIdentifiersServiceV2 replaceExternalIdentifiersService;
 
     final TypeCoercionService typeCoercionService;
 
@@ -31,7 +31,7 @@ public class JobsCtrl extends AbstractController {
 
     public JobsCtrl(DetectDuplicatesService detectDuplicatesJob, ReplaceExternalIdentifiersServiceV2 replaceExternalIdentifiersJob, TypeCoercionService typeCoercionService, SchemaServices schemaServices) {
         this.detectDuplicatesJob = detectDuplicatesJob;
-        this.replaceExternalIdentifiersJob = replaceExternalIdentifiersJob;
+        this.replaceExternalIdentifiersService = replaceExternalIdentifiersJob;
         this.typeCoercionService = typeCoercionService;
         this.schemaServices = schemaServices;
     }
@@ -55,11 +55,11 @@ public class JobsCtrl extends AbstractController {
 
     }
 
-    @PostMapping(value = "/execute/skolemization")
+    @PostMapping(value = "/execute/normalize")
     @ResponseStatus(HttpStatus.OK)
     Mono<Void> execSkolemizationJob() {
         return super.getAuthentication()
-                .flatMapMany(this.replaceExternalIdentifiersJob::checkForGlobalIdentifiers).then();
+                .flatMapMany(this.replaceExternalIdentifiersService::checkForExternalIdentifiers).then();
 
     }
 

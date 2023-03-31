@@ -31,6 +31,7 @@ public class OpenApiConfiguration {
 
 
 
+
     @Bean("EntityApiDefinition")
     public GroupedOpenApi adminApiDefinition(@Qualifier("EntityApiDefinitionBuilder") GroupedOpenApi.Builder builder) {
         return builder.build();

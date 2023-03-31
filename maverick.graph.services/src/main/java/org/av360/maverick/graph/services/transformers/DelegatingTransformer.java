@@ -5,7 +5,6 @@ import org.av360.maverick.graph.services.EntityServices;
 import org.av360.maverick.graph.services.QueryServices;
 import org.av360.maverick.graph.store.rdf.models.TripleModel;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -42,7 +41,7 @@ public class DelegatingTransformer implements Transformer {
     }
 
     @Override
-    public Mono<? extends TripleModel> handle(TripleModel triples, Map<String, String> parameters, Authentication authentication) {
+    public Mono<? extends TripleModel> handle(TripleModel triples, Map<String, String> parameters) {
         if (this.transformers == null) {
             log.trace("No transformers registered, skip.");
             return Mono.just(triples);
@@ -51,7 +50,7 @@ public class DelegatingTransformer implements Transformer {
         return Flux.fromIterable(transformers)
                 .reduce(Mono.just(triples), (modelMono, transformer) ->
                         modelMono
-                                .map(model -> transformer.handle(model, parameters, authentication))
+                                .map(model -> transformer.handle(model, parameters))
                                 .flatMap(mono -> mono))
                 .flatMap(mono -> mono);
     }

@@ -1,11 +1,13 @@
 package org.av360.maverick.graph.feature.admin.api;
 
-import org.av360.maverick.graph.feature.admin.domain.AdminServices;
-import org.av360.maverick.graph.store.RepositoryType;
-import org.av360.maverick.graph.store.rdf.helpers.RdfUtils;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.api.controller.AbstractController;
+import org.av360.maverick.graph.feature.admin.domain.AdminServices;
+import org.av360.maverick.graph.store.RepositoryType;
+import org.av360.maverick.graph.store.rdf.helpers.RdfUtils;
 import org.eclipse.rdf4j.rio.RDFParserFactory;
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.http.HttpStatus;
@@ -18,7 +20,6 @@ import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import java.util.Locale;
 import java.util.Optional;
 
 @RestController
@@ -36,14 +37,11 @@ public class Admin extends AbstractController {
     //@ApiOperation(value = "Empty repository", tags = {})
     @GetMapping(value = "/reset", produces = MediaType.TEXT_PLAIN_VALUE)
     @ResponseStatus(HttpStatus.ACCEPTED)
-    Mono<Void> queryBindings(@RequestParam(name = "name") String repositoryTypeName) {
-        RepositoryType repositoryType;
-        if (!StringUtils.hasLength(repositoryTypeName))
-            repositoryType = RepositoryType.ENTITIES;
-        else
-            repositoryType = RepositoryType.valueOf(repositoryTypeName.toUpperCase(Locale.getDefault()));
-
-        Assert.notNull(repositoryType, "Invalid value for repository type: " + repositoryTypeName);
+    Mono<Void> queryBindings(@RequestParam(name = "name")
+                             @Parameter(description = "The label of the repository", schema = @Schema(type = "string", allowableValues = {"entities", "transactions", "schema"}))
+                             String repositoryTypeName) {
+        Assert.notNull(repositoryTypeName, "Invalid value for repository type: " + repositoryTypeName);
+        RepositoryType repositoryType = RepositoryType.valueOf(repositoryTypeName.toUpperCase());
 
         return super.getAuthentication()
                 .flatMap(auth -> adminServices.reset(auth, repositoryType))
@@ -56,9 +54,13 @@ public class Admin extends AbstractController {
     @PostMapping(value = "/import/entities", consumes = MediaType.APPLICATION_OCTET_STREAM_VALUE)
     @ResponseStatus(HttpStatus.ACCEPTED)
     Mono<Void> importEntities(
-            @RequestBody Flux<DataBuffer> bytes,
+            @RequestBody @Parameter(name = "data", description = "The rdf data.") Flux<DataBuffer> bytes,
             // @ApiParam(example = "text/turtle")
-            @RequestParam String mimetype) {
+            @RequestParam @Parameter(
+                    description = "The RDF format of the file",
+                    schema = @Schema(type = "string", allowableValues = {"text/turtle", "application/rdf+xml", "application/ld+json", "application/n-quads", "application/vnd.hdt"})
+            )
+            String mimetype) {
         Assert.isTrue(StringUtils.hasLength(mimetype), "Mimetype is a required parameter");
 
         return super.getAuthentication()
@@ -71,9 +73,12 @@ public class Admin extends AbstractController {
     @PostMapping(value = "/import/file", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @ResponseStatus(HttpStatus.ACCEPTED)
     Mono<Void> importFile(
-            @RequestPart Mono<FilePart> fileMono,
+            @RequestPart @Parameter(name = "file", description = "The file with rdf data.") Mono<FilePart> fileMono,
             //@ApiParam(example = "text/turtle")
-            @RequestParam String mimetype) {
+            @RequestParam @Parameter(
+                    description = "The RDF format of the file",
+                    schema = @Schema(type = "string", allowableValues = {"text/turtle", "application/rdf+xml", "application/ld+json", "application/n-quads", "application/vnd.hdt"})
+            )String mimetype) {
         Assert.isTrue(StringUtils.hasLength(mimetype), "Mimetype is a required parameter");
 
         Optional<RDFParserFactory> parserFactory = RdfUtils.getParserFactory(MimeType.valueOf(mimetype));

@@ -1,5 +1,6 @@
 package org.av360.maverick.graph.store.rdf4j.repository.util;
 
+import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.model.enums.Activity;
 import org.av360.maverick.graph.model.rdf.NamespaceAwareStatement;
 import org.av360.maverick.graph.model.vocabulary.Transactions;
@@ -11,7 +12,6 @@ import org.av360.maverick.graph.store.behaviours.Resettable;
 import org.av360.maverick.graph.store.behaviours.Statements;
 import org.av360.maverick.graph.store.rdf.helpers.RdfUtils;
 import org.av360.maverick.graph.store.rdf.models.Transaction;
-import lombok.extern.slf4j.Slf4j;
 import org.eclipse.rdf4j.model.*;
 import org.eclipse.rdf4j.model.impl.SimpleNamespace;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
@@ -76,6 +76,8 @@ public abstract class AbstractRepository implements RepositoryBehaviour, Stateme
         return getConnection(authentication, requiredAuthority).flatMapMany(connection ->
                 Flux.create(sink -> {
                     try (connection) {
+                        log.trace("Running construct query in repository: {}", connection.getRepository());
+
                         GraphQuery q = connection.prepareGraphQuery(QueryLanguage.SPARQL, query);
                         try (GraphQueryResult result = q.evaluate()) {
                             Set<Namespace> namespaces = result.getNamespaces().entrySet().stream()
@@ -241,8 +243,10 @@ public abstract class AbstractRepository implements RepositoryBehaviour, Stateme
     @Override
     public Flux<Transaction> commit(Collection<Transaction> transactions, Authentication authentication, GrantedAuthority requiredAuthority) {
         return getConnection(authentication, requiredAuthority).flatMapMany(connection -> {
-            log.trace("Committing transaction to repository '{}'", connection.getRepository().toString());
+
             return Flux.fromIterable(transactions).map(trx -> {
+                log.trace("Committing transaction '{}' to repository '{}'", trx.getIdentifier().getLocalName(), connection.getRepository().toString());
+
                 // FIXME: the approach based on the context works only as long as the statements in the graph are all within the global context only
                 // with this approach, we cannot insert a statement to a context (since it is already in GRAPH_CREATED), every st can only be in one context
                 Model insertModel = trx.getModel().filter(null, null, null, Transactions.GRAPH_CREATED);
@@ -259,7 +263,7 @@ public abstract class AbstractRepository implements RepositoryBehaviour, Stateme
                     connection.commit();
 
                     trx.setCompleted();
-                    log.trace("Transaction completed with {} inserted statements and {} removed statements in repository '{}'.", insertModel.size(), removeModel.size(), connection.getRepository());
+                    log.trace("Transaction '{}' completed with {} inserted statements and {} removed statements in repository '{}'.", trx.getIdentifier().getLocalName(), insertStatements.size(), removeStatements.size(), connection.getRepository());
                 } catch (Exception e) {
                     log.error("Failed to complete transaction for repository '{}'.", connection.getRepository(), e);
                     log.trace("Insert Statements in this transaction: \n {}", insertModel);
@@ -296,12 +300,12 @@ public abstract class AbstractRepository implements RepositoryBehaviour, Stateme
 
 
     @Override
-    public Mono<List<Statement>> listStatements(Resource value, IRI predicate, Value object, Authentication authentication, GrantedAuthority requiredAuthority) {
+    public Mono<Set<Statement>> listStatements(Resource value, IRI predicate, Value object, Authentication authentication, GrantedAuthority requiredAuthority) {
         return getConnection(authentication, requiredAuthority).flatMap(connection -> {
             try (connection) {
                 if (log.isTraceEnabled())
                     log.trace("Listing all statements with pattern [{},{},{}] from repository '{}'", value, predicate, object, connection.getRepository().toString());
-                List<Statement> statements = connection.getStatements(value, predicate, object).stream().toList();
+                Set<Statement> statements = connection.getStatements(value, predicate, object).stream().collect(Collectors.toUnmodifiableSet());
                 return Mono.just(statements);
             } catch (Exception e) {
                 return Mono.error(e);
@@ -311,10 +315,19 @@ public abstract class AbstractRepository implements RepositoryBehaviour, Stateme
     }
 
     @Override
+    public Mono<Boolean> hasStatement(Resource value, IRI predicate, Value object, Authentication authentication, GrantedAuthority requiredAuthority) {
+        return getConnection(authentication, requiredAuthority).flatMap(connection -> {
+            try (connection) {
+                return Mono.just(connection.hasStatement(value, predicate, object, false));
+            }
+        });
+    }
+
+    @Override
     public Mono<Transaction> insert(Model model, Transaction transaction) {
         Assert.notNull(transaction, "Transaction cannot be null");
         if (log.isTraceEnabled())
-            log.trace("Marking {} statements to transaction '{}' for insert.", model.size(), transaction.getIdentifier().getLocalName());
+            log.trace("Insert planned for {} statements in transaction '{}'.", model.size(), transaction.getIdentifier().getLocalName());
 
 
         transaction = transaction
@@ -329,7 +342,7 @@ public abstract class AbstractRepository implements RepositoryBehaviour, Stateme
     public Mono<Transaction> removeStatements(Collection<Statement> statements, Transaction transaction) {
         Assert.notNull(transaction, "Transaction cannot be null");
         if (log.isTraceEnabled())
-            log.trace("Marking {} statements for removal in transaction {}", statements.size(), transaction.getIdentifier().getLocalName());
+            log.trace("Removal planned for {} statements in transaction '{}'.", statements.size(), transaction.getIdentifier().getLocalName());
 
         return transaction
                 .remove(statements, Activity.REMOVED)

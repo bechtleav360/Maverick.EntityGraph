@@ -1,5 +1,8 @@
 package org.av360.maverick.graph.services.impl;
 
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.av360.maverick.graph.model.errors.requests.EntityNotFound;
 import org.av360.maverick.graph.model.errors.requests.InvalidEntityUpdate;
 import org.av360.maverick.graph.services.EntityServices;
@@ -12,9 +15,6 @@ import org.av360.maverick.graph.services.events.ValueReplacedEvent;
 import org.av360.maverick.graph.store.SchemaStore;
 import org.av360.maverick.graph.store.rdf.models.Entity;
 import org.av360.maverick.graph.store.rdf.models.Transaction;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.tuple.Pair;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Statement;
@@ -205,7 +205,7 @@ public class ValueServicesImpl implements ValueServices {
 
                         return this.entityServices.getStore().removeStatements(statementsToRemove, transaction);
                     } else {
-                        if (statements.size() == 1 && statements.get(0).getObject().isIRI()) {
+                        if (statements.size() == 1 && statements.stream().findFirst().get().getObject().isIRI()) {
                             return Mono.error(new InvalidEntityUpdate(entityIdentifier, "Invalid to remove links via the values api."));
                         }
                         return this.entityServices.getStore().removeStatements(statements, transaction);

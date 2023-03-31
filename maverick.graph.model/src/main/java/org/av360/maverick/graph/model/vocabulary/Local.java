@@ -13,14 +13,13 @@ import org.eclipse.rdf4j.model.Namespace;
 public class Local {
 
     public static final String NAMESPACE = "http://w3id.org/av360/emav#";
-    public static final IRI ORIGINAL_IDENTIFIER = LocalIRI.from(NAMESPACE, "sourceId");
 
-    public static String URN_PREFIX = "urn:pwid:eg";
-
+    public static String URN_PREFIX = "urn:pwid:meg";
+    public static final IRI ORIGINAL_IDENTIFIER = LocalIRI.from("urn:int:", "srcid");
     public static class Entities {
 
-        public static String NAMESPACE = URN_PREFIX+":lef:";
-        public static String PREFIX = "lef";
+        public static String NAMESPACE = URN_PREFIX+":e:";
+        public static String PREFIX = "ent";
         public static Namespace NS = EntityNamespace.of(PREFIX, NAMESPACE);
 
         public static final IRI INDIVIDUAL = LocalIRI.from(NAMESPACE, "Individual");
@@ -31,19 +30,19 @@ public class Local {
 
 
     public static class Transactions {
-        public static String NAMESPACE = URN_PREFIX+":trx:";
+        public static String NAMESPACE = URN_PREFIX+":t:";
         public static String PREFIX = "trx";
         public static Namespace NS = EntityNamespace.of(PREFIX, NAMESPACE);
     }
 
     public static class Versions {
-        public static String NAMESPACE = URN_PREFIX+":vs:";
-        public static String PREFIX = "vs";
+        public static String NAMESPACE = URN_PREFIX+":v:";
+        public static String PREFIX = "vrs";
         public static Namespace NS = EntityNamespace.of(PREFIX, NAMESPACE);
     }
 
     public static class Subscriptions {
-        public static String NAMESPACE = URN_PREFIX+":app :";
+        public static String NAMESPACE = URN_PREFIX+":a :";
         public static String PREFIX = "app";
         public static Namespace NS = EntityNamespace.of(PREFIX, NAMESPACE);
     }

@@ -3,30 +3,27 @@ package org.av360.maverick.graph.feature.jobs.services;
 
 import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.model.errors.requests.InvalidConfiguration;
-import org.av360.maverick.graph.model.security.Authorities;
 import org.av360.maverick.graph.model.vocabulary.Local;
+import org.av360.maverick.graph.model.vocabulary.Transactions;
 import org.av360.maverick.graph.services.EntityServices;
 import org.av360.maverick.graph.services.QueryServices;
-import org.av360.maverick.graph.services.transformers.setIndividual.InsertLocalTypes;
-import org.eclipse.rdf4j.model.IRI;
+import org.av360.maverick.graph.services.transformers.types.InsertLocalTypes;
+import org.av360.maverick.graph.store.TransactionsStore;
+import org.av360.maverick.graph.store.rdf.models.Transaction;
 import org.eclipse.rdf4j.model.Model;
+import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.Value;
-import org.eclipse.rdf4j.model.util.ModelBuilder;
 import org.eclipse.rdf4j.model.util.ModelCollector;
-import org.eclipse.rdf4j.sparqlbuilder.core.SparqlBuilder;
-import org.eclipse.rdf4j.sparqlbuilder.core.Variable;
-import org.eclipse.rdf4j.sparqlbuilder.core.query.ConstructQuery;
-import org.eclipse.rdf4j.sparqlbuilder.core.query.Queries;
-import org.eclipse.rdf4j.sparqlbuilder.core.query.SelectQuery;
-import org.eclipse.rdf4j.sparqlbuilder.graphpattern.GraphPatterns;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
+import org.springframework.util.Assert;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import javax.annotation.Nullable;
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -48,11 +45,14 @@ public class TypeCoercionService  {
     private final QueryServices queryServices;
 
     private final InsertLocalTypes localTypesTransformer;
+    private final TransactionsStore transactionsStore;
+    private boolean labelCheckRunning;
 
-    public TypeCoercionService(EntityServices entityServices, QueryServices queryServices, @Autowired(required = false) @Nullable InsertLocalTypes localTypesTransformer) {
+    public TypeCoercionService(EntityServices entityServices, QueryServices queryServices, @Autowired(required = false) @Nullable InsertLocalTypes localTypesTransformer, TransactionsStore transactionsStore) {
         this.entityServices = entityServices;
         this.queryServices = queryServices;
         this.localTypesTransformer = localTypesTransformer;
+        this.transactionsStore = transactionsStore;
     }
 
     public Mono<Void> run(Authentication authentication) {
@@ -60,13 +60,27 @@ public class TypeCoercionService  {
 
 
         return this.findCandidates(authentication)
-                .doOnNext(value -> log.trace("Identified value with id '{}' ", value.stringValue()))
-                .flatMap(value -> this.loadFragment(authentication, value))
+                .doOnNext(res -> log.trace("Convert type of resource with id '{}'", res.stringValue()))
+                .flatMap(res -> this.loadFragment(authentication, res))
                 .flatMap(localTypesTransformer::getStatements)
                 .collect(new ModelCollector())
                 .doOnNext(model -> log.trace("Collected {} statements for new types", model.size()))
-                .flatMap(model -> this.entityServices.getStore().insert(model, authentication, Authorities.SYSTEM))
-                .then();
+                .flatMap(model -> this.entityServices.getStore().insert(model, new Transaction()))
+                .flatMapMany(trx -> this.entityServices.getStore().commit(trx, authentication))
+                .doOnNext(transaction -> {
+                    Assert.isTrue(transaction.hasStatement(null, Transactions.STATUS, Transactions.SUCCESS), "Failed transaction: \n" + transaction);
+                })
+                .flatMap(transaction -> this.transactionsStore.store(List.of(transaction), authentication))
+                .doOnError(throwable -> {
+                    log.error("Exception while finding and replacing subject identifiers: {}", throwable.getMessage());
+                })
+                .doOnSubscribe(sub -> {
+                    log.trace("Checking for external or anonymous subject identifiers.");
+                    labelCheckRunning = true;
+                })
+                .doOnComplete(() -> {
+                    labelCheckRunning = false;
+                }).then();
 
     }
 
@@ -74,46 +88,54 @@ public class TypeCoercionService  {
         return localTypesTransformer.getStatements(model);
     }
 
-    private Mono<Model> loadFragment(Authentication authentication, Value value) {
+    private Mono<Model> loadFragment(Authentication authentication, Resource value) {
+        return this.entityServices.getStore().listStatements(value, null, null, authentication)
+                .map(statements -> statements.stream().collect(new ModelCollector()));
 
-        Variable s = SparqlBuilder.var("s");
-        Variable p = SparqlBuilder.var("p");
-        Variable o = SparqlBuilder.var("o");
-        ConstructQuery q = Queries.CONSTRUCT().where(GraphPatterns.tp(s, p, o));
-
-        ModelBuilder modelBuilder = new ModelBuilder();
-
-        return this.queryServices.queryGraph(q, authentication)
-                .map(sts -> modelBuilder.add(sts.getSubject(), sts.getPredicate(), sts.getObject()))
-                .then(Mono.just(modelBuilder.build()));
 
     }
 
-    private Flux<IRI> findCandidates(Authentication authentication) {
-                /*
-        SELECT ?entity ?type
-        WHERE {
-          ?entity a ?type
-          FILTER NOT EXISTS {
-            ?entity rdf:type <http://example.com/type>
-          }
-        } LIMIT 100
-        */
+    private Flux<Resource> findCandidates(Authentication authentication) {
+        /*
+               SELECT ?entity WHERE
+                    { ?entity a ?type .
+                      FILTER NOT EXISTS { ?entity a <urn:pwid:meg:e:Individual> . }
+                      FILTER NOT EXISTS { ?entity a <urn:pwid:meg:e:Classifier> . }
+                      FILTER NOT EXISTS { ?entity a <urn:pwid:meg:e:Embedded> . } }
+               LIMIT 500
 
 
-        Variable entity = SparqlBuilder.var("entity");
-        Variable type = SparqlBuilder.var("type");
-        SelectQuery query = Queries.SELECT(entity)
-                .where(entity.isA(type)
-                        .filterNotExists(entity.isA(Local.Entities.INDIVIDUAL))
-                        .filterNotExists(entity.isA(Local.Entities.CLASSIFIER))
-                        .filterNotExists(entity.isA(Local.Entities.EMBEDDED))
+               SELECT ?entity WHERE
+                    { ?entity a ?type .
+                      FILTER NOT EXISTS {  FILTER STRSTARTS(str(?entity), "urn:pwid:meg:e")  }
+               LIMIT 500
+
+               SELECT ?entity WHERE { ?entity a ?type . FILTER NOT EXISTS {} FILTER ( STRSTARTS( ?type, "urn:pwid:meg" ) ) } LIMIT 500
+
+              Variable entity = SparqlBuilder.var("entity");
+                Variable type = SparqlBuilder.var("type");
+                Expression<?> function = Expressions.function(SparqlFunction.STRSTARTS, Expressions.str(type), Rdf.literalOf(Local.URN_PREFIX));
+                SelectQuery query = Queries.SELECT(entity)
+                .where(entity.isA(type).filter(Expressions.not(function))
                 ).limit(500);
+        */
+        String tpl = """
+                SELECT DISTINCT ?entity WHERE {
+                    ?entity a ?type .
+                    FILTER NOT EXISTS {
+                      FILTER STRSTARTS(str(?type), "%s")
+                    }
+                } LIMIT 500
+                """;
+        String query = String.format(tpl, Local.URN_PREFIX);
         return this.queryServices.queryValues(query, authentication)
-                .map(bindings -> bindings.getValue(entity.getVarName()))
-                .filter(Value::isIRI)
-                .map(value -> (IRI) value);
+                .map(bindings -> bindings.getValue("entity"))
+                .filter(Value::isResource)
+                .map(value -> (Resource) value);
     }
 
 
+    public boolean isRunning() {
+        return labelCheckRunning;
+    }
 }

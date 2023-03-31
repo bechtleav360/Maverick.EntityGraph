@@ -12,13 +12,17 @@ application:
     modules:
       applications: false
       admin: true
-    schedulers:
-      detectDuplicates: true
-      replaceGlobalIdentifiers: true
+      jobs:
+        enabled: true
+        scheduled:
+          detectDuplicates: false
+          replaceIdentifiers: false
+          typeCoercion: false
     transformers:
       replaceGlobalIdentifiers: true
       replaceAnonymousIdentifiers: true
       mergeDuplicates: true
+      typeCoercion: true
     validators:
       checkRequiredType: true
   storage:

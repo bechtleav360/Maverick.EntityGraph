@@ -22,6 +22,7 @@ import reactor.core.publisher.Mono;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 
 /**
  * If we have any global identifiers (externally set) in the repo, we have to replace them with our internal identifiers.
@@ -173,7 +174,7 @@ public class ReplaceExternalIdentifiersServiceV1 {
 
 
 
-    private record StatementsBag(List<Statement> subjectStatements, List<Statement> objectStatements,
+    private record StatementsBag(Set<Statement> subjectStatements, Set<Statement> objectStatements,
                                  Resource globalIdentifier, Transaction transaction) {
     }
 }

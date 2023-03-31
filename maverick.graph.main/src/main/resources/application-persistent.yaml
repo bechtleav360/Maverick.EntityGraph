@@ -19,6 +19,7 @@ application:
         scheduled:
           detectDuplicates: false
           replaceIdentifiers: false
+          typeCoercion: false
     transformers:
       replaceGlobalIdentifiers: true
       replaceAnonymousIdentifiers: true

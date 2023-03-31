@@ -1,10 +1,10 @@
 package org.av360.maverick.graph.tests.util;
 
+import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.model.security.Authorities;
 import org.av360.maverick.graph.store.EntityStore;
 import org.av360.maverick.graph.store.TransactionsStore;
 import org.av360.maverick.graph.tests.config.TestSecurityConfig;
-import lombok.extern.slf4j.Slf4j;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Model;
@@ -15,6 +15,7 @@ import org.eclipse.rdf4j.rio.RDFWriter;
 import org.eclipse.rdf4j.rio.Rio;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.TestingAuthenticationToken;
+import reactor.core.publisher.Hooks;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
@@ -30,6 +31,9 @@ public abstract class TestsBase {
 
     private TransactionsStore transactionsStore;
 
+    static {
+        Hooks.onOperatorDebug();
+    }
 
 
 

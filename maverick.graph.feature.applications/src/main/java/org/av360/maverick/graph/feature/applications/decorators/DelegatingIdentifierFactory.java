@@ -16,7 +16,7 @@ public class DelegatingIdentifierFactory implements IdentifierFactory {
     }
 
 
-    public IdentifierFactory inScope(String scope) {
+    public IdentifierFactory withScope(String scope) {
         this.scope = scope;
         return this;
     }

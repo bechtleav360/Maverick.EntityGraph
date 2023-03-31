@@ -61,19 +61,21 @@ public class MergeDuplicates implements Transformer {
 
 
     @Override
-    public Mono<? extends TripleModel> handle(TripleModel model, Map<String, String> parameters, Authentication authentication) {
+    public Mono<? extends TripleModel> handle(TripleModel model, Map<String, String> parameters) {
 
         return Mono.just(model)
                 .doOnSubscribe(c -> log.debug("Check if linked entities already exist and merge if required."))
                 .doFinally(signalType -> log.trace("Finished checks for unique entity constraints"))
                 .filter(this::checkForEmbeddedAnonymousEntities)
                 .flatMap(this::mergeDuplicatedWithinModel)
-                .flatMap(triples -> mergeDuplicatesInEntityGraph(triples, authentication))
+                // .flatMap(triples -> mergeDuplicatesInEntityGraph(triples, authentication))
                 .switchIfEmpty(Mono.just(model))    // reset to model parameter if no anomyous existed
                 .filter(this::checkForEmbeddedNamedEntities)
                 .flatMap(this::checkIfLinkedNamedEntityExistsInGraph)
                 .switchIfEmpty(Mono.just(model));
     }
+
+
 
 
 
@@ -203,7 +205,9 @@ public class MergeDuplicates implements Transformer {
      * which already exists in the graph, it will be removed (and the edge rerouted to the entity in the graph)
      *
      * @param model, the current model
+     * @deprecated  should be cron job
      */
+    @Deprecated
     public Mono<TripleModel> mergeDuplicatesInEntityGraph(TripleModel model, Authentication authentication) {
         return Mono.just(model)
                 .doOnSuccess(subscription -> log.trace("Checked if anonymous embedded entities already exist in graph."))

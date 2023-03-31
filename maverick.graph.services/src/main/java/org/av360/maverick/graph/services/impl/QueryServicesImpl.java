@@ -1,11 +1,11 @@
 package org.av360.maverick.graph.services.impl;
 
+import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.model.rdf.NamespaceAwareStatement;
 import org.av360.maverick.graph.services.QueryServices;
 import org.av360.maverick.graph.services.SchemaServices;
 import org.av360.maverick.graph.services.transformers.DelegatingTransformer;
 import org.av360.maverick.graph.store.EntityStore;
-import lombok.extern.slf4j.Slf4j;
 import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.query.QueryLanguage;
 import org.eclipse.rdf4j.query.parser.QueryParser;
@@ -42,7 +42,7 @@ public class QueryServicesImpl implements QueryServices {
                 .map(q -> queryParser.parseQuery(query, null))
                 .flatMapMany(ptq -> this.entityStore.query(query, authentication))
                 .doOnSubscribe(subscription -> {
-                    if (log.isTraceEnabled()) log.trace("Running select query in entity store: \n {}", query.replace('\n', ' ').trim());
+                    if (log.isTraceEnabled()) log.trace("Running select query in {}: {}", this.entityStore.getRepositoryType(), query.replace('\n', ' ').trim());
                 });
     }
 
@@ -60,7 +60,7 @@ public class QueryServicesImpl implements QueryServices {
                 .map(q -> queryParser.parseQuery(queryStr, null))
                 .flatMapMany(ptq -> this.entityStore.construct(queryStr, authentication))
                 .doOnSubscribe(subscription -> {
-                    if (log.isTraceEnabled()) log.trace("Running select query in entity store: \n {}", queryStr);
+                    if (log.isTraceEnabled()) log.trace("Running construct query in {}: {}", this.entityStore.getRepositoryType(), queryStr);
                 });
 
     }
@@ -68,7 +68,7 @@ public class QueryServicesImpl implements QueryServices {
     public Flux<NamespaceAwareStatement> queryGraph(ConstructQuery query, Authentication authentication) {
         return this.entityStore.construct(query.getQueryString(), authentication)
                 .doOnSubscribe(subscription -> {
-                    if (log.isTraceEnabled()) log.trace("Running construct query in entity store: \n {}", query.getQueryString().replace('\n', ' ').trim());
+                    if (log.isTraceEnabled()) log.trace("Running construct query in {}: {}", this.entityStore.getRepositoryType(), query.getQueryString().replace('\n', ' ').trim());
                 });
     }
 
