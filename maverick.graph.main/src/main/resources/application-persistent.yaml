@@ -45,6 +45,9 @@ spring:
       password: "xx"
 
 logging:
+  file:
+    name: "main.log"
+    path: "D:/Graphen/"
   level:
     graph:
       jobs: TRACE

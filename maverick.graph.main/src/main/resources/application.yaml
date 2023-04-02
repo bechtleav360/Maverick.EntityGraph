@@ -22,7 +22,7 @@ management:
   endpoints:
     web:
       exposure:
-        include: "health, info, git, loggers, metrics, logfile, prometheus"
+        include: "health, info, git, loggers, metrics, logfile, prometheus, env"
   endpoint:
     discovery:
       enabled: true
