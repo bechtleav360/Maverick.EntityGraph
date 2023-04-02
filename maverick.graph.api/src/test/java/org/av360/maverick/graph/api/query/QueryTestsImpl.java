@@ -1,10 +1,10 @@
 package org.av360.maverick.graph.api.query;
 
-import io.av360.maverick.graph.tests.api.v1.QueriesTest;
-import io.av360.maverick.graph.tests.config.TestSecurityConfig;
-import io.av360.maverick.graph.tests.util.CsvConsumer;
-import io.av360.maverick.graph.tests.util.TestsBase;
 import lombok.extern.slf4j.Slf4j;
+import org.av360.maverick.graph.tests.api.v1.QueriesTest;
+import org.av360.maverick.graph.tests.config.TestSecurityConfig;
+import org.av360.maverick.graph.tests.util.CsvConsumer;
+import org.av360.maverick.graph.tests.util.TestsBase;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;

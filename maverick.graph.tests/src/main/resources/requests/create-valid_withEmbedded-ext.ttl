@@ -1,0 +1,15 @@
+@base <http://example.org/videos#> .
+@prefix ns1: <https://schema.org/> .
+@prefix ns2: <http://av360.io/schema/maverick/> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix ext: <http://www.example.org/vocab#> .
+@prefix bls: <http://www.acme.org/vocab#> .
+
+ext:x a ns1:VideoObject ;
+    ns1:identifier "c" ;
+    ns1:hasDefinedTerm bls:a .
+
+
+bls:a a ns1:DefinedTerm ;
+    rdfs:label "Term 3" .

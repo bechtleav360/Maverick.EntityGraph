@@ -14,7 +14,7 @@
     </parent>
 
     <artifactId>graph-parent</artifactId>
-    <groupId>com.bechtle.maverick.graph</groupId>
+    <groupId>org.av360.maverick.graph</groupId>
     <version>${revision}</version>
     <name>Maverick.EntityGraph (Parent)</name>
     <modules>
@@ -26,12 +26,14 @@
         <module>maverick.graph.feature.rdf4j-store</module>
         <module>maverick.graph.feature.admin</module>
         <module>maverick.graph.feature.applications</module>
+        <module>maverick.graph.feature.jobs</module>
         <module>maverick.graph.tests</module>
+
     </modules>
 
     <description>Provides access to the graph through json-ld api</description>
     <properties>
-        <revision>0.2.1</revision>
+        <revision>0.2.2</revision>
         <maven.compiler.source>${java.version}</maven.compiler.source>
         <maven.compiler.target>${java.version}</maven.compiler.target>
         <java.version>17</java.version>
@@ -41,6 +43,13 @@
         <jackson.version>2.14.1</jackson.version>
     </properties>
 
+    <dependencies>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-devtools</artifactId>
+            <optional>true</optional>
+        </dependency>
+    </dependencies>
 
     <dependencyManagement>
         <dependencies>
@@ -77,47 +86,52 @@
                 <scope>import</scope>
             </dependency>
             <dependency>
-                <groupId>com.bechtle.maverick.graph</groupId>
+                <groupId>org.av360.maverick.graph</groupId>
                 <artifactId>graph-model</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.bechtle.maverick.graph</groupId>
+                <groupId>org.av360.maverick.graph</groupId>
                 <artifactId>graph-api</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.bechtle.maverick.graph</groupId>
+                <groupId>org.av360.maverick.graph</groupId>
                 <artifactId>graph-store</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.bechtle.maverick.graph</groupId>
+                <groupId>org.av360.maverick.graph</groupId>
                 <artifactId>graph-store-rdf4j</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.bechtle.maverick.graph</groupId>
+                <groupId>org.av360.maverick.graph</groupId>
                 <artifactId>graph-application</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.bechtle.maverick.graph</groupId>
+                <groupId>org.av360.maverick.graph</groupId>
                 <artifactId>graph-tests</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.bechtle.maverick.graph</groupId>
+                <groupId>org.av360.maverick.graph</groupId>
                 <artifactId>graph-feature-admin</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.bechtle.maverick.graph</groupId>
+                <groupId>org.av360.maverick.graph</groupId>
                 <artifactId>graph-feature-applications</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.bechtle.maverick.graph</groupId>
+                <groupId>org.av360.maverick.graph</groupId>
+                <artifactId>graph-feature-jobs</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.av360.maverick.graph</groupId>
                 <artifactId>graph-services</artifactId>
                 <version>${project.version}</version>
             </dependency>

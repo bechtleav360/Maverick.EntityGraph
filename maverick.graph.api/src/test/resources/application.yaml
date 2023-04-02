@@ -10,15 +10,20 @@ application:
       enabled: false
   features:
     modules:
-      applications: false
-      admin: true
-    schedulers:
-      detectDuplicates: false
-      replaceGlobalIdentifiers: false
+      applications:
+        enabled: false
+      admin:
+        enabled: false
+      jobs:
+        enabled: false
+        scheduled:
+          detectDuplicates: false
+          replaceGlobalIdentifiers: false
     transformers:
       replaceGlobalIdentifiers: true
       replaceAnonymousIdentifiers: true
       mergeDuplicates: true
+      typeCoercion: true
     validators:
       checkRequiredType: true
   storage:

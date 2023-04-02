@@ -1,0 +1,58 @@
+#spring:
+#  datasource:
+#    url: jdbc:h2:file:/data/demo
+
+application:
+  security:
+    enabled: false
+    apiKey: "test"
+    basic:
+      enabled: false
+  features:
+    modules:
+      applications: false
+      admin: true
+      jobs:
+        enabled: true
+        scheduled:
+          detectDuplicates: false
+          replaceIdentifiers: false
+          typeCoercion: false
+    transformers:
+      replaceGlobalIdentifiers: true
+      replaceAnonymousIdentifiers: true
+      mergeDuplicates: true
+      typeCoercion: true
+    validators:
+      checkRequiredType: true
+  storage:
+    default:
+      persistent: false
+      path: ~
+    entities:
+      persistent: false
+      path: ~
+    transactions:
+      persistent: false
+      path: ~
+
+spring:
+  profiles:
+    active: test
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.security.SecurityAutoConfiguration
+
+storage:
+  default:
+    path: ""
+
+
+logging:
+  level:
+    graph: TRACE
+    org:
+      av360: TRACE
+      springframework:
+        security: INFO
+

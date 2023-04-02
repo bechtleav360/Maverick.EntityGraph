@@ -1,10 +1,10 @@
 package org.av360.maverick.graph.api.entities.values;
 
-import io.av360.maverick.graph.model.enums.RdfMimeTypes;
-import io.av360.maverick.graph.model.vocabulary.SDO;
-import io.av360.maverick.graph.tests.config.TestSecurityConfig;
-import io.av360.maverick.graph.tests.util.ApiTestsBase;
-import io.av360.maverick.graph.tests.util.RdfConsumer;
+import org.av360.maverick.graph.model.enums.RdfMimeTypes;
+import org.av360.maverick.graph.model.vocabulary.SDO;
+import org.av360.maverick.graph.tests.config.TestSecurityConfig;
+import org.av360.maverick.graph.tests.util.ApiTestsBase;
+import org.av360.maverick.graph.tests.util.RdfConsumer;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Statement;

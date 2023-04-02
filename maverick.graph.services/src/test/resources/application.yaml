@@ -10,8 +10,10 @@ application:
       enabled: false
   features:
     modules:
-      applications: false
-      admin: true
+      applications:
+        enabled: false
+      admin:
+        enabled: true
     schedulers:
       detectDuplicates: true
       replaceGlobalIdentifiers: true
@@ -19,6 +21,7 @@ application:
       replaceGlobalIdentifiers: true
       replaceAnonymousIdentifiers: true
       mergeDuplicates: true
+      typeCoercion: true
     validators:
       checkRequiredType: true
   storage:

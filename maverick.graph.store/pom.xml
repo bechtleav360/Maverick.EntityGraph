@@ -4,7 +4,7 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
         <artifactId>graph-parent</artifactId>
-        <groupId>com.bechtle.maverick.graph</groupId>
+        <groupId>org.av360.maverick.graph</groupId>
         <version>${revision}</version>
 
     </parent>
@@ -27,7 +27,7 @@
             <artifactId>spring-boot-starter-security</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.bechtle.maverick.graph</groupId>
+            <groupId>org.av360.maverick.graph</groupId>
             <artifactId>graph-model</artifactId>
         </dependency>
         <dependency>
