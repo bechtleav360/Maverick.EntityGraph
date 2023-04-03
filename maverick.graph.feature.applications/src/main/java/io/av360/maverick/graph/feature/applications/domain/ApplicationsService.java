@@ -30,13 +30,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import software.amazon.awssdk.core.ResponseBytes;
-import software.amazon.awssdk.core.sync.RequestBody;
-import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.model.GetObjectRequest;
-import software.amazon.awssdk.services.s3.model.GetObjectResponse;
-import software.amazon.awssdk.services.s3.model.PutObjectRequest;
-import software.amazon.awssdk.services.s3.model.S3Exception;
+
 
 import java.net.URI;
 import java.time.ZonedDateTime;
@@ -309,162 +303,162 @@ public class ApplicationsService {
         );
     }
 
-    public Mono<Void> setApplicationConfig(String applicationIdentifier, String s3Host, String s3Bucket, String exportFrequency, Authentication authentication) {
-
-        Variable node = SparqlBuilder.var("n");
-        Variable s3HostVar = SparqlBuilder.var("d");
-        Variable s3BucketVar = SparqlBuilder.var("e");
-        Variable exportFrequencyVar = SparqlBuilder.var("f");
-
-        ModifyQuery q = Queries.MODIFY()
-                .where(node.isA(Application.TYPE)
-                        .andHas(Application.HAS_KEY, applicationIdentifier)
-                )
-                .delete(node.has(Application.HAS_S3_HOST, s3HostVar))
-                .delete(node.has(Application.HAS_S3_BUCKET_ID, s3BucketVar))
-                .delete(node.has(Application.HAS_EXPORT_FREQUENCY, exportFrequencyVar))
-                .insert(node.has(Application.HAS_S3_HOST, s3Host))
-                .insert(node.has(Application.HAS_S3_BUCKET_ID, s3Bucket))
-                .insert(node.has(Application.HAS_EXPORT_FREQUENCY, exportFrequency));
-
-        return this.applicationsStore.modify(q, authentication, Authorities.APPLICATION)
-                .then()
-                .doOnSubscribe(sub -> log.debug("Setting application config for application with key '{}'", applicationIdentifier));
-
-    }
-
-    public Mono<HashMap<String, String>> getApplicationConfig(String applicationIdentifier, Authentication authentication) {
-
-        Variable node = SparqlBuilder.var("n");
-        Variable label = SparqlBuilder.var("b");
-        Variable persistent = SparqlBuilder.var("c");
-        Variable s3Host = SparqlBuilder.var("d");
-        Variable s3Bucket = SparqlBuilder.var("e");
-        Variable exportFrequency = SparqlBuilder.var("f");
-
-        SelectQuery q = Queries.SELECT()
-                .where(node.isA(Application.TYPE)
-                        .andHas(Application.HAS_KEY, applicationIdentifier)
-                        .andHas(Application.HAS_LABEL, label)
-                        .andHas(Application.IS_PERSISTENT, persistent)
-                        .andHas(Application.HAS_S3_HOST, s3Host)
-                        .andHas(Application.HAS_S3_BUCKET_ID, s3Bucket)
-                        .andHas(Application.HAS_EXPORT_FREQUENCY, exportFrequency)
-                )
-                .limit(1);
-
-        return this.applicationsStore.query(q, authentication, Authorities.APPLICATION)
-                .collectList()
-                .flatMap(this::getUniqueBindingSet)
-                .map(BindingsAccessor::new)
-                .map(ba -> {
-                    HashMap<String, String> map = new HashMap<>();
-                    map.put("label", ba.asString(label));
-                    map.put("persistent", ba.asString(persistent));
-                    map.put("s3Host", ba.asString(s3Host));
-                    map.put("s3Bucket", ba.asString(s3Bucket));
-                    map.put("exportFrequency", ba.asString(exportFrequency));
-                    return map;
-                })
-                .doOnSubscribe(sub -> log.debug("Getting application config for application with key '{}'", applicationIdentifier));
-    }
-
-    public Mono<String> exportApplication(String applicationIdentifier, Authentication authentication) {
-
-        Variable node = SparqlBuilder.var("n");
-        Variable label = SparqlBuilder.var("b");
-        Variable persistent = SparqlBuilder.var("c");
-        Variable s3Host = SparqlBuilder.var("d");
-        Variable s3Bucket = SparqlBuilder.var("e");
-
-        SelectQuery q = Queries.SELECT()
-                .where(node.isA(Application.TYPE)
-                        .andHas(Application.HAS_KEY, applicationIdentifier)
-                        .andHas(Application.HAS_LABEL, label)
-                        .andHas(Application.IS_PERSISTENT, persistent)
-                        .andHas(Application.HAS_S3_HOST, s3Host)
-                        .andHas(Application.HAS_S3_BUCKET_ID, s3Bucket)
-                )
-                .limit(1);
-
-
-        return this.applicationsStore.query(q, authentication, Authorities.APPLICATION)
-                .collectList()
-                .flatMap(this::getUniqueBindingSet)
-                .map(BindingsAccessor::new)
-                .map(ba -> {
-                    //TODO: fix this
-                    this.queryServices.queryGraph()
-
-                    try {
-                        S3Client s3 = S3Client.builder()
-                                .endpointOverride(URI.create(ba.asString(s3Host)))
-                                .build();
-                        PutObjectRequest objectRequest = PutObjectRequest.builder()
-                                .bucket(ba.asString(s3Bucket))
-                                .key(exportIdentifier)
-                                .build();
-                        s3.putObject(objectRequest, RequestBody.fromString(ba.asString(node)));
-
-                    } catch (S3Exception e) {
-                        log.error(e.awsErrorDetails().errorMessage());
-                    }
-
-                    return exportIdentifier;
-                })
-                .doOnSubscribe(sub -> log.debug("Exporting application with key '{}'", applicationIdentifier));
-
-    }
-
-    public Mono<HashMap<String, String>> getExport(String applicationIdentifier, String exportId, Authentication authentication) {
-        log.debug("(Service) Getting export '{}' for application '{}'", exportId, applicationIdentifier);
-
-        Variable node = SparqlBuilder.var("n");
-        Variable label = SparqlBuilder.var("b");
-        Variable persistent = SparqlBuilder.var("c");
-        Variable s3Host = SparqlBuilder.var("d");
-        Variable s3Bucket = SparqlBuilder.var("e");
-
-        SelectQuery q = Queries.SELECT()
-                .where(node.isA(Application.TYPE)
-                        .andHas(Application.HAS_KEY, applicationIdentifier)
-                        .andHas(Application.HAS_LABEL, label)
-                        .andHas(Application.IS_PERSISTENT, persistent)
-                        .andHas(Application.HAS_S3_HOST, s3Host)
-                        .andHas(Application.HAS_S3_BUCKET_ID, s3Bucket)
-                )
-                .limit(1);
-
-        return this.applicationsStore.query(q, authentication, Authorities.APPLICATION)
-                .collectList()
-                .flatMap(this::getUniqueBindingSet)
-                .map(BindingsAccessor::new)
-                .mapNotNull(ba -> {
-
-                    try {
-                        S3Client s3 = S3Client.builder()
-                                .endpointOverride(URI.create(ba.asString(s3Host)))
-                                .build();
-                        GetObjectRequest objectRequest = GetObjectRequest.builder()
-                                .bucket(ba.asString(s3Bucket))
-                                .key(exportId)
-                                .build();
-                        ResponseBytes<GetObjectResponse> objectBytes = s3.getObjectAsBytes(objectRequest);
-
-                        return objectBytes.asUtf8String();
-                    } catch (S3Exception e) {
-                        log.error(e.awsErrorDetails().errorMessage());
-                    }
-
-                    return null;
-                })
-                .map(responseBody -> {
-                    HashMap<String, String> response = new HashMap<>();
-                    response.put("application", applicationIdentifier);
-                    response.put("exportId", exportId);
-                    response.put("export", responseBody);
-                    return response;
-                })
-                .doOnSubscribe(sub -> log.debug("Getting export '{}' for application '{}'", exportId, applicationIdentifier));
-    }
+//    public Mono<Void> setApplicationConfig(String applicationIdentifier, String s3Host, String s3Bucket, String exportFrequency, Authentication authentication) {
+//
+//        Variable node = SparqlBuilder.var("n");
+//        Variable s3HostVar = SparqlBuilder.var("d");
+//        Variable s3BucketVar = SparqlBuilder.var("e");
+//        Variable exportFrequencyVar = SparqlBuilder.var("f");
+//
+//        ModifyQuery q = Queries.MODIFY()
+//                .where(node.isA(Application.TYPE)
+//                        .andHas(Application.HAS_KEY, applicationIdentifier)
+//                )
+//                .delete(node.has(Application.HAS_S3_HOST, s3HostVar))
+//                .delete(node.has(Application.HAS_S3_BUCKET_ID, s3BucketVar))
+//                .delete(node.has(Application.HAS_EXPORT_FREQUENCY, exportFrequencyVar))
+//                .insert(node.has(Application.HAS_S3_HOST, s3Host))
+//                .insert(node.has(Application.HAS_S3_BUCKET_ID, s3Bucket))
+//                .insert(node.has(Application.HAS_EXPORT_FREQUENCY, exportFrequency));
+//
+//        return this.applicationsStore.modify(q, authentication, Authorities.APPLICATION)
+//                .then()
+//                .doOnSubscribe(sub -> log.debug("Setting application config for application with key '{}'", applicationIdentifier));
+//
+//    }
+//
+//    public Mono<HashMap<String, String>> getApplicationConfig(String applicationIdentifier, Authentication authentication) {
+//
+//        Variable node = SparqlBuilder.var("n");
+//        Variable label = SparqlBuilder.var("b");
+//        Variable persistent = SparqlBuilder.var("c");
+//        Variable s3Host = SparqlBuilder.var("d");
+//        Variable s3Bucket = SparqlBuilder.var("e");
+//        Variable exportFrequency = SparqlBuilder.var("f");
+//
+//        SelectQuery q = Queries.SELECT()
+//                .where(node.isA(Application.TYPE)
+//                        .andHas(Application.HAS_KEY, applicationIdentifier)
+//                        .andHas(Application.HAS_LABEL, label)
+//                        .andHas(Application.IS_PERSISTENT, persistent)
+//                        .andHas(Application.HAS_S3_HOST, s3Host)
+//                        .andHas(Application.HAS_S3_BUCKET_ID, s3Bucket)
+//                        .andHas(Application.HAS_EXPORT_FREQUENCY, exportFrequency)
+//                )
+//                .limit(1);
+//
+//        return this.applicationsStore.query(q, authentication, Authorities.APPLICATION)
+//                .collectList()
+//                .flatMap(this::getUniqueBindingSet)
+//                .map(BindingsAccessor::new)
+//                .map(ba -> {
+//                    HashMap<String, String> map = new HashMap<>();
+//                    map.put("label", ba.asString(label));
+//                    map.put("persistent", ba.asString(persistent));
+//                    map.put("s3Host", ba.asString(s3Host));
+//                    map.put("s3Bucket", ba.asString(s3Bucket));
+//                    map.put("exportFrequency", ba.asString(exportFrequency));
+//                    return map;
+//                })
+//                .doOnSubscribe(sub -> log.debug("Getting application config for application with key '{}'", applicationIdentifier));
+//    }
+//
+//    public Mono<String> exportApplication(String applicationIdentifier, Authentication authentication) {
+//
+//        Variable node = SparqlBuilder.var("n");
+//        Variable label = SparqlBuilder.var("b");
+//        Variable persistent = SparqlBuilder.var("c");
+//        Variable s3Host = SparqlBuilder.var("d");
+//        Variable s3Bucket = SparqlBuilder.var("e");
+//
+//        SelectQuery q = Queries.SELECT()
+//                .where(node.isA(Application.TYPE)
+//                        .andHas(Application.HAS_KEY, applicationIdentifier)
+//                        .andHas(Application.HAS_LABEL, label)
+//                        .andHas(Application.IS_PERSISTENT, persistent)
+//                        .andHas(Application.HAS_S3_HOST, s3Host)
+//                        .andHas(Application.HAS_S3_BUCKET_ID, s3Bucket)
+//                )
+//                .limit(1);
+//
+//
+//        return this.applicationsStore.query(q, authentication, Authorities.APPLICATION)
+//                .collectList()
+//                .flatMap(this::getUniqueBindingSet)
+//                .map(BindingsAccessor::new)
+//                .map(ba -> {
+//                    //TODO: fix this
+//                    this.queryServices.queryGraph()
+//
+//                    try {
+//                        S3Client s3 = S3Client.builder()
+//                                .endpointOverride(URI.create(ba.asString(s3Host)))
+//                                .build();
+//                        PutObjectRequest objectRequest = PutObjectRequest.builder()
+//                                .bucket(ba.asString(s3Bucket))
+//                                .key(exportIdentifier)
+//                                .build();
+//                        s3.putObject(objectRequest, RequestBody.fromString(ba.asString(node)));
+//
+//                    } catch (S3Exception e) {
+//                        log.error(e.awsErrorDetails().errorMessage());
+//                    }
+//
+//                    return exportIdentifier;
+//                })
+//                .doOnSubscribe(sub -> log.debug("Exporting application with key '{}'", applicationIdentifier));
+//
+//    }
+//
+//    public Mono<HashMap<String, String>> getExport(String applicationIdentifier, String exportId, Authentication authentication) {
+//        log.debug("(Service) Getting export '{}' for application '{}'", exportId, applicationIdentifier);
+//
+//        Variable node = SparqlBuilder.var("n");
+//        Variable label = SparqlBuilder.var("b");
+//        Variable persistent = SparqlBuilder.var("c");
+//        Variable s3Host = SparqlBuilder.var("d");
+//        Variable s3Bucket = SparqlBuilder.var("e");
+//
+//        SelectQuery q = Queries.SELECT()
+//                .where(node.isA(Application.TYPE)
+//                        .andHas(Application.HAS_KEY, applicationIdentifier)
+//                        .andHas(Application.HAS_LABEL, label)
+//                        .andHas(Application.IS_PERSISTENT, persistent)
+//                        .andHas(Application.HAS_S3_HOST, s3Host)
+//                        .andHas(Application.HAS_S3_BUCKET_ID, s3Bucket)
+//                )
+//                .limit(1);
+//
+//        return this.applicationsStore.query(q, authentication, Authorities.APPLICATION)
+//                .collectList()
+//                .flatMap(this::getUniqueBindingSet)
+//                .map(BindingsAccessor::new)
+//                .mapNotNull(ba -> {
+//
+//                    try {
+//                        S3Client s3 = S3Client.builder()
+//                                .endpointOverride(URI.create(ba.asString(s3Host)))
+//                                .build();
+//                        GetObjectRequest objectRequest = GetObjectRequest.builder()
+//                                .bucket(ba.asString(s3Bucket))
+//                                .key(exportId)
+//                                .build();
+//                        ResponseBytes<GetObjectResponse> objectBytes = s3.getObjectAsBytes(objectRequest);
+//
+//                        return objectBytes.asUtf8String();
+//                    } catch (S3Exception e) {
+//                        log.error(e.awsErrorDetails().errorMessage());
+//                    }
+//
+//                    return null;
+//                })
+//                .map(responseBody -> {
+//                    HashMap<String, String> response = new HashMap<>();
+//                    response.put("application", applicationIdentifier);
+//                    response.put("exportId", exportId);
+//                    response.put("export", responseBody);
+//                    return response;
+//                })
+//                .doOnSubscribe(sub -> log.debug("Getting export '{}' for application '{}'", exportId, applicationIdentifier));
+//    }
 }

@@ -100,22 +100,22 @@ public abstract class AbstractRepository implements RepositoryBehaviour, Stateme
 
     }
 
-    //TODO: This is a bit of a hack, but it works for now. We should probably use a proper RDF parser
-    public Mono<Void> modify(String query, Authentication authentication, GrantedAuthority requiredAuthority) {
-        return Mono.create(c -> {
-            try (RepositoryConnection connection = getConnection(authentication, requiredAuthority)) {
-                Update update = connection.prepareUpdate(QueryLanguage.SPARQL, query);
-                update.execute();
-                c.success();
-            } catch (MalformedQueryException e) {
-                log.warn("Error while parsing query", e);
-                c.error(new HttpClientErrorException(HttpStatus.BAD_REQUEST, "Invalid query"));
-            } catch (Exception e) {
-                log.error("Unknown error while running query", e);
-                c.error(e);
-            }
-        });
-    }
+//    //TODO: This is a bit of a hack, but it works for now. We should probably use a proper RDF parser
+//    public Mono<Void> modify(String query, Authentication authentication, GrantedAuthority requiredAuthority) {
+//        return Mono.create(c -> {
+//            try (RepositoryConnection connection = getConnection(authentication, requiredAuthority)) {
+//                Update update = connection.prepareUpdate(QueryLanguage.SPARQL, query);
+//                update.execute();
+//                c.success();
+//            } catch (MalformedQueryException e) {
+//                log.warn("Error while parsing query", e);
+//                c.error(new HttpClientErrorException(HttpStatus.BAD_REQUEST, "Invalid query"));
+//            } catch (Exception e) {
+//                log.error("Unknown error while running query", e);
+//                c.error(e);
+//            }
+//        });
+//    }
 
     public Flux<BindingSet> query(String query, Authentication authentication, GrantedAuthority requiredAuthority) {
         return getConnection(authentication, requiredAuthority).flatMapMany(connection ->
