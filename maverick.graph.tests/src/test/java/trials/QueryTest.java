@@ -1,7 +1,7 @@
 package trials;
 
 import com.apicatalog.jsonld.JsonLdError;
-import io.av360.maverick.graph.store.rdf4j.repository.TestRepository;
+import org.av360.maverick.graph.store.rdf4j.repository.TestRepository;
 import org.eclipse.rdf4j.query.QueryLanguage;
 import org.eclipse.rdf4j.query.TupleQuery;
 import org.eclipse.rdf4j.query.TupleQueryResult;

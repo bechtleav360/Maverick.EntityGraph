@@ -1,24 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
     <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
-    <property name="LOG_FILE" value="logs.json"/>
+    <include resource="org/springframework/boot/logging/logback/file-appender.xml"/>
+    <include resource="org/springframework/boot/logging/logback/console-appender.xml" />
 
-    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
-        <encoder>
-            <pattern>${CONSOLE_LOG_PATTERN}</pattern>
-            <charset>utf8</charset>
-        </encoder>
-    </appender>
-
-    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <encoder>
-            <pattern>${FILE_LOG_PATTERN}</pattern>
-        </encoder>
-        <file>${LOG_FILE}</file>
-        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <fileNamePattern>${LOG_FILE}.%d</fileNamePattern>
-        </rollingPolicy>
-    </appender>
 
     <appender name="JSON_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <encoder class="ch.qos.logback.core.encoder.LayoutWrappingEncoder">
@@ -29,9 +14,9 @@
                     <prettyPrint>true</prettyPrint>
                 </jsonFormatter>
             </layout>
-            <file>${LOG_FILE}</file>
+            <file>${LOG_FILE}.json</file>
             <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-                <fileNamePattern>${LOG_FILE}.%d</fileNamePattern>
+                <fileNamePattern>${LOG_FILE}}.json.%d</fileNamePattern>
             </rollingPolicy>
         </encoder>
     </appender>
@@ -51,15 +36,19 @@
     <springProfile name="prod">
         <root level="INFO">
             <appender-ref ref="JSON_FILE"/>
+            <appender-ref ref="CONSOLE"/>
         </root>
     </springProfile>
+
     <springProfile name="stage">
         <root level="DEBUG">
-            <appender-ref ref="JSON_CONSOLE"/>
+            <appender-ref ref="FILE"/>
+            <appender-ref ref="CONSOLE"/>
         </root>
     </springProfile>
     <springProfile name="persistent | dev">
         <root level="INFO">
+            <appender-ref ref="FILE"/>
             <appender-ref ref="CONSOLE"/>
         </root>
     </springProfile>

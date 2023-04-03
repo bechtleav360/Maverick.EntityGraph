@@ -1,10 +1,10 @@
 package org.av360.maverick.graph.api.entities.values;
 
-import io.av360.maverick.graph.model.enums.RdfMimeTypes;
-import io.av360.maverick.graph.model.vocabulary.SDO;
-import io.av360.maverick.graph.tests.config.TestSecurityConfig;
-import io.av360.maverick.graph.tests.util.ApiTestsBase;
-import io.av360.maverick.graph.tests.util.RdfConsumer;
+import org.av360.maverick.graph.model.enums.RdfMimeTypes;
+import org.av360.maverick.graph.model.vocabulary.SDO;
+import org.av360.maverick.graph.tests.config.TestSecurityConfig;
+import org.av360.maverick.graph.tests.util.ApiTestsBase;
+import org.av360.maverick.graph.tests.util.RdfConsumer;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Statement;
@@ -40,11 +40,14 @@ public class CreateValuesTest extends ApiTestsBase {
 
     @Test
     public void setDescription() {
+        super.printStart("setDescription");
+
         RdfConsumer rdfConsumer = super.upload("requests/create-valid.ttl");
         Statement video = rdfConsumer.findStatement(null, RDF.TYPE, SDO.VIDEO_OBJECT);
 
         String description = "This is a description";
 
+        super.printStep();
         webClient.post()
                 .uri(uriBuilder -> uriBuilder.path("/api/entities/{id}/values/dc.description")
                         .build(
@@ -61,7 +64,7 @@ public class CreateValuesTest extends ApiTestsBase {
 
         Assertions.assertTrue(rdfConsumer.hasStatement(video.getSubject(), video.getPredicate(), video.getObject()));
 
-
+        super.printStep();
         rdfConsumer = new RdfConsumer(RDFFormat.TURTLE);
         webClient.get()
                 .uri(uriBuilder -> uriBuilder.path("/api/entities/{id}")
@@ -81,11 +84,14 @@ public class CreateValuesTest extends ApiTestsBase {
 
     @Test
     public void setValueWithUnknownPrefix() {
+        super.printStart("setValueWithUnknownPrefix");
+
         RdfConsumer rdfConsumer = super.upload("requests/create-valid.ttl");
         Statement video = rdfConsumer.findStatement(null, RDF.TYPE, vf.createIRI("https://schema.org/", "VideoObject"));
 
         String description = "This is a description";
 
+        super.printStep();
         webClient.post()
                 .uri(uriBuilder -> uriBuilder.path("/api/entities/{id}/values/xxx.myPred")
                         .build(
@@ -102,11 +108,14 @@ public class CreateValuesTest extends ApiTestsBase {
 
     @Test
     public void replaceTitle() {
+        super.printStart("replaceTitle");
+
         RdfConsumer rdfConsumer = super.upload("requests/create-valid.ttl");
         Statement video = rdfConsumer.findStatement(null, RDF.TYPE, vf.createIRI("https://schema.org/", "VideoObject"));
 
         String title = "A new title";
 
+        super.printStep();
         webClient.post()
                 .uri(uriBuilder -> uriBuilder.path("/api/entities/{id}/values/sdo.title")
                         .build(
@@ -122,11 +131,14 @@ public class CreateValuesTest extends ApiTestsBase {
 
     @Test
     public void addTitleWithMissingTag() {
+        super.printStart("addTitleWithMissingTag");
+
         RdfConsumer rdfConsumer = super.upload("requests/create-valid_with_tags.ttl");
         Statement video = rdfConsumer.findStatement(null, RDF.TYPE, SDO.VIDEO_OBJECT);
 
         String title = "A new title";
 
+        super.printStep();
         webClient.post()
                 .uri(uriBuilder -> uriBuilder.path("/api/entities/{id}/values/sdo.title")
                         .build(
@@ -141,14 +153,19 @@ public class CreateValuesTest extends ApiTestsBase {
     }
 
 
+    @Test
     public void addTitleWithExplicitLanguageTag() {
+        super.printStart("addTitleWithExplicitLanguageTag");
+
         RdfConsumer rdfConsumer = super.upload("requests/create-valid_with_tags.ttl");
-        Statement video = rdfConsumer.findStatement(null, RDF.TYPE, vf.createIRI("https://schema.org/", "video"));
+        Statement video = rdfConsumer.findStatement(null, RDF.TYPE, vf.createIRI("https://schema.org/", "VideoObject"));
 
         String title = "A new title@en";
 
+        super.printStep();
         webClient.post()
-                .uri(uriBuilder -> uriBuilder.path("/api/entities/{id}/values/sdo.title/de")
+                .uri(uriBuilder -> uriBuilder.path("/api/entities/{id}/values/sdo.title")
+                        .queryParam("lang", "en")
                         .build(
                                 vf.createIRI(video.getSubject().stringValue()).getLocalName()
                         )
@@ -159,17 +176,22 @@ public class CreateValuesTest extends ApiTestsBase {
                 .exchange()
                 .expectStatus().isOk();
 
+        super.printStep();
         RdfConsumer resultConsumer = super.loadEntity((IRI) video.getSubject());
         Assert.equals(3, resultConsumer.countValues(video.getSubject(), SDO.TITLE));
     }
 
     @Test
     public void addTitleWithLanguageTag() {
+        super.printStart("addTitleWithLanguageTag");
+
         RdfConsumer rdfConsumer = super.upload("requests/create-valid_with_tags.ttl");
         Statement video = rdfConsumer.findStatement(null, RDF.TYPE, SDO.VIDEO_OBJECT);
 
         String title = "A new title@en";
 
+
+        super.printStep();
         webClient.post()
                 .uri(uriBuilder -> uriBuilder.path("/api/entities/{id}/values/sdo.title")
                         .build(
@@ -182,6 +204,7 @@ public class CreateValuesTest extends ApiTestsBase {
                 .exchange()
                 .expectStatus().isOk();
 
+        super.printStep();
         RdfConsumer resultConsumer = super.loadEntity((IRI) video.getSubject());
         resultConsumer.print();
         Assert.equals(3, resultConsumer.countValues(video.getSubject(), vf.createIRI("https://schema.org/", "title")));
@@ -189,11 +212,17 @@ public class CreateValuesTest extends ApiTestsBase {
 
     @Test
     public void addTitleWithUnknownLanguageTag() {
+        super.printStart("addTitleWithUnknownLanguageTag");
+
+
         RdfConsumer rdfConsumer = super.upload("requests/create-valid_with_tags.ttl");
+        rdfConsumer.dump(RDFFormat.TURTLE);
+
         Statement video = rdfConsumer.findStatement(null, RDF.TYPE, SDO.VIDEO_OBJECT);
 
         String title = "A new title@this-is-.invalid";
 
+        super.printStep();
         webClient.post()
                 .uri(uriBuilder -> uriBuilder.path("/api/entities/{id}/values/sdo.title")
                         .build(
@@ -207,6 +236,7 @@ public class CreateValuesTest extends ApiTestsBase {
                 .expectStatus().isOk();
 
         // value must include fallback as language tag
+        super.printStep();
         rdfConsumer = new RdfConsumer(RDFFormat.TURTLE);
         webClient.get()
                 .uri(uriBuilder -> uriBuilder.path("/api/entities/{id}")
@@ -223,6 +253,7 @@ public class CreateValuesTest extends ApiTestsBase {
 
         System.out.println(rdfConsumer.dump(RDFFormat.TURTLE));
 
+        super.printStep();
         AtomicBoolean found = new AtomicBoolean(false);
         rdfConsumer.getStatements().forEach(statement -> {
             if(statement.getPredicate().equals(SDO.TITLE)) {

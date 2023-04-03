@@ -1,6 +1,6 @@
 package trials;
 
-import io.av360.maverick.graph.store.rdf4j.repository.TestRepository;
+import org.av360.maverick.graph.store.rdf4j.repository.TestRepository;
 import org.eclipse.rdf4j.rio.RDFFormat;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.SpringBootConfiguration;
