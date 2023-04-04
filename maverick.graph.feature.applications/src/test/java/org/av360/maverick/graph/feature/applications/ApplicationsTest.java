@@ -37,7 +37,7 @@ class ApplicationsTest extends ApplicationsTestsBase {
     public void createPublicApplication() {
         super.printStep();
 
-        this.client.createApplication("test-public", new ApplicationFlags(false, true))
+        this.client.createApplication("test-public", new ApplicationFlags(false, true, null, null, null))
                 .expectStatus().isCreated()
                 .expectBody()
                 .jsonPath("$.key").isNotEmpty();
@@ -50,17 +50,17 @@ class ApplicationsTest extends ApplicationsTestsBase {
 
         super.printStep();
 
-        this.client.createApplication("a", new ApplicationFlags(false, true))
+        this.client.createApplication("a", new ApplicationFlags(false, true, null, null, null))
                 .expectStatus().isCreated().expectBody().jsonPath("$.key").isNotEmpty();
 
         super.printStep();
 
-        this.client.createApplication("b", new ApplicationFlags(true, true))
+        this.client.createApplication("b", new ApplicationFlags(true, true, null, null, null))
                 .expectStatus().isCreated().expectBody().jsonPath("$.key").isNotEmpty();
 
         super.printStep();
 
-        this.client.createApplication("c", new ApplicationFlags(false, false))
+        this.client.createApplication("c", new ApplicationFlags(false, false, null, null, null))
                 .expectStatus().isCreated().expectBody().jsonPath("$.key").isNotEmpty();
 
         super.printStep();
@@ -79,7 +79,7 @@ class ApplicationsTest extends ApplicationsTestsBase {
     public void getApplication() {
 
 
-        Responses.ApplicationResponse app = this.client.createApplication("test", new ApplicationFlags(false, true))
+        Responses.ApplicationResponse app = this.client.createApplication("test", new ApplicationFlags(false, true, null, null, null))
                 .expectStatus().isCreated()
                 .expectBody(Responses.ApplicationResponse.class)
                 .returnResult()
@@ -94,7 +94,7 @@ class ApplicationsTest extends ApplicationsTestsBase {
 
     @Test
     public void createSubscription() {
-        Responses.ApplicationResponse re = this.client.createApplication("test-public", new ApplicationFlags(false, false))
+        Responses.ApplicationResponse re = this.client.createApplication("test-public", new ApplicationFlags(false, false, null, null, null))
                 .expectStatus().isCreated()
                 .expectBody(Responses.ApplicationResponse.class)
                 .returnResult()
@@ -112,7 +112,7 @@ class ApplicationsTest extends ApplicationsTestsBase {
 
     @Test
     public void listSubscriptions() {
-        Responses.ApplicationResponse re = this.client.createApplication("test-public", new ApplicationFlags(false, false))
+        Responses.ApplicationResponse re = this.client.createApplication("test-public", new ApplicationFlags(false, false, null, null, null))
                 .expectStatus().isCreated()
                 .expectBody(Responses.ApplicationResponse.class)
                 .returnResult()

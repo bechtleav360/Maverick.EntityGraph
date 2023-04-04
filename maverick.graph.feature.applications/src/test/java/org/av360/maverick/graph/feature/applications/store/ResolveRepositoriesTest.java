@@ -54,7 +54,7 @@ public class ResolveRepositoriesTest {
 
     @Test
     public void buildAppEntityRepoWithTestAuthentication() {
-        Application application = new Application(SimpleValueFactory.getInstance().createIRI("http://example.org/app"), "app", "123213", new ApplicationFlags(false, false));
+        Application application = new Application(SimpleValueFactory.getInstance().createIRI("http://example.org/app"), "app", "123213", new ApplicationFlags(false, false, null, null, null));
         Mono<Repository> mono = builder.buildRepository(RepositoryType.ENTITIES, TestSecurityConfig.createAuthenticationToken(), application);
 
 
@@ -63,7 +63,7 @@ public class ResolveRepositoriesTest {
 
     @Test
     public void buildAppEntityRepoWithTestAuthenticatio2n() {
-        Application application = new Application(SimpleValueFactory.getInstance().createIRI("http://example.org/app"), "app", "123213", new ApplicationFlags(false, false));
+        Application application = new Application(SimpleValueFactory.getInstance().createIRI("http://example.org/app"), "app", "123213", new ApplicationFlags(false, false, null, null, null));
 
 
         Mono<Repository> mono = builder.buildRepository(RepositoryType.ENTITIES, TestSecurityConfig.createAdminToken())

@@ -245,7 +245,10 @@ public class ApplicationsService {
                         applicationKey,
                         new ApplicationFlags(
                                 ba.asBoolean(varAppFlagPersistent),
-                                ba.asBoolean(varAppFlagPublic)
+                                ba.asBoolean(varAppFlagPublic),
+                                null,
+                                null,
+                                null
                         )
                 ))
                 .doOnSubscribe(StreamsLogger.debug(log, "Requesting application with identifier '{}'", applicationKey));
@@ -280,7 +283,11 @@ public class ApplicationsService {
                         ba.asString(varAppKey),
                         new ApplicationFlags(
                                 ba.asBoolean(varAppFlagPersistent),
-                                ba.asBoolean(varAppFlagPublic)
+                                ba.asBoolean(varAppFlagPublic),
+                                null,
+                                null,
+                                null
+
                         )
                 ))
                 .doOnSubscribe(sub -> log.debug("Requesting application with label '{}'", applicationLabel));
