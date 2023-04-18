@@ -46,7 +46,6 @@ public class TypeCoercionService  {
 
     private final InsertLocalTypes localTypesTransformer;
     private final TransactionsStore transactionsStore;
-    private boolean labelCheckRunning;
 
     public TypeCoercionService(EntityServices entityServices, QueryServices queryServices, @Autowired(required = false) @Nullable InsertLocalTypes localTypesTransformer, TransactionsStore transactionsStore) {
         this.entityServices = entityServices;
@@ -76,11 +75,8 @@ public class TypeCoercionService  {
                 })
                 .doOnSubscribe(sub -> {
                     log.trace("Checking for external or anonymous subject identifiers.");
-                    labelCheckRunning = true;
                 })
-                .doOnComplete(() -> {
-                    labelCheckRunning = false;
-                }).then();
+                .then();
 
     }
 
@@ -135,7 +131,4 @@ public class TypeCoercionService  {
     }
 
 
-    public boolean isRunning() {
-        return labelCheckRunning;
-    }
 }

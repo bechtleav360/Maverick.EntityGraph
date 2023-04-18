@@ -6,6 +6,7 @@ import org.av360.maverick.graph.model.security.AdminToken;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import reactor.core.publisher.Mono;
 
 /**
  * If we have any global identifiers (externally set) in the repo, we have to replace them with our internal identifiers.
@@ -22,24 +23,21 @@ import org.springframework.stereotype.Component;
 @Slf4j(topic = "graph.jobs.identifiers")
 @Component
 @ConditionalOnProperty(name = "application.features.modules.jobs.scheduled.typeCoercion", havingValue = "true")
-public class ScheduledTypeCoercion {
+public class ScheduledTypeCoercion extends ScheduledJob {
 
-    // FIXME: should not directly access the services
     private final TypeCoercionService job;
-
 
     public ScheduledTypeCoercion(TypeCoercionService job) {
         this.job = job;
     }
 
-
-    @Scheduled(fixedDelay = 20000)
+    @Scheduled(initialDelay = 10000, fixedDelay = 30000)
     public void scheduled() {
-        if (this.job.isRunning()) return;
 
         AdminToken adminAuthentication = new AdminToken();
+        Mono<Void> job = this.job.run(adminAuthentication);
+        super.schedule(job, "type coercion");
 
-        this.job.run(adminAuthentication).subscribe();
     }
 
 }

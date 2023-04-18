@@ -12,7 +12,7 @@ import org.eclipse.rdf4j.model.vocabulary.SKOS;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
-import reactor.core.scheduler.Schedulers;
+import reactor.core.publisher.Mono;
 
 /**
  * Regular check for duplicates in the entity stores.
@@ -48,7 +48,7 @@ import reactor.core.scheduler.Schedulers;
 @Component
 @Slf4j(topic = "graph.jobs.duplicates")
 @ConditionalOnProperty(name = "application.features.modules.jobs.scheduled.detectDuplicates", havingValue = "true")
-public class ScheduledDetectDuplicates {
+public class ScheduledDetectDuplicates extends  ScheduledJob {
 
     private final DetectDuplicatesService detectDuplicates;
 
@@ -59,18 +59,15 @@ public class ScheduledDetectDuplicates {
 
     // https://github.com/spring-projects/spring-framework/issues/23533
 
-    @Scheduled(fixedRate = 60000)
+    @Scheduled(initialDelay = 60000, fixedRate = 120000)
     public void checkForDuplicatesScheduled() {
-        if(this.detectDuplicates.isRunning()) return;
-
         AdminToken adminAuthentication = new AdminToken();
-
-        this.detectDuplicates.checkForDuplicates(RDFS.LABEL, adminAuthentication)
+        Mono<Void> job = this.detectDuplicates.checkForDuplicates(RDFS.LABEL, adminAuthentication)
                 .then(this.detectDuplicates.checkForDuplicates(SDO.IDENTIFIER, adminAuthentication))
                 .then(this.detectDuplicates.checkForDuplicates(SKOS.PREF_LABEL, adminAuthentication))
                 .then(this.detectDuplicates.checkForDuplicates(DCTERMS.IDENTIFIER, adminAuthentication))
-                .then(this.detectDuplicates.checkForDuplicates(DC.IDENTIFIER, adminAuthentication))
-                .publishOn(Schedulers.single()).subscribe();
+                .then(this.detectDuplicates.checkForDuplicates(DC.IDENTIFIER, adminAuthentication));
+        super.schedule(job, "detect duplicates");
 
     }
 }

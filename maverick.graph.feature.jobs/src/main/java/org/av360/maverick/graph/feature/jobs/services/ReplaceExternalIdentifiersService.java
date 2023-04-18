@@ -82,11 +82,7 @@ public class ReplaceExternalIdentifiersService {
         this.replaceAnonymousIdentifiers = replaceAnonymousIdentifiers;
     }
 
-    private boolean labelCheckRunning = false;
 
-    public boolean isRunning() {
-        return labelCheckRunning;
-    }
 
 
     public Mono<Void> run(Authentication authentication) {
@@ -119,10 +115,8 @@ public class ReplaceExternalIdentifiersService {
                 })
                 .doOnSubscribe(sub -> {
                     log.trace("Checking for external or anonymous subject identifiers.");
-                    labelCheckRunning = true;
                 })
                 .doOnComplete(() -> {
-                    labelCheckRunning = false;
                 });
     }
 
@@ -162,10 +156,8 @@ public class ReplaceExternalIdentifiersService {
                 })
                 .doOnSubscribe(sub -> {
                     log.trace("Checking for external or anonymous identifiers in objects.");
-                    labelCheckRunning = true;
                 })
                 .doOnComplete(() -> {
-                    labelCheckRunning = false;
                 });
     }
 

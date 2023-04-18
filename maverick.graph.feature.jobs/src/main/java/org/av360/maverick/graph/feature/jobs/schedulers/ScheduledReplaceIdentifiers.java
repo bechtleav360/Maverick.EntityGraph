@@ -6,6 +6,7 @@ import org.av360.maverick.graph.model.security.AdminToken;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import reactor.core.publisher.Mono;
 
 /**
  * If we have any global identifiers (externally set) in the repo, we have to replace them with our internal identifiers.
@@ -22,7 +23,7 @@ import org.springframework.stereotype.Component;
 @Slf4j(topic = "graph.jobs.identifiers")
 @Component
 @ConditionalOnProperty(name = "application.features.modules.jobs.scheduled.replaceIdentifiers", havingValue = "true")
-public class ScheduledReplaceIdentifiers {
+public class ScheduledReplaceIdentifiers extends ScheduledJob {
 
     // FIXME: should not directly access the services
     private final ReplaceExternalIdentifiersService job;
@@ -33,30 +34,12 @@ public class ScheduledReplaceIdentifiers {
     }
 
 
-    @Scheduled(fixedDelay = 30000)
+    @Scheduled(initialDelay = 20000, fixedRate = 60000)
     public void checkForGlobalIdentifiersScheduled() {
-        if (this.job.isRunning()) return;
 
         AdminToken adminAuthentication = new AdminToken();
-        this.job.run(adminAuthentication).subscribe();
-
-
-        /*
-        this.job.checkForExternalIdentifiers(adminAuthentication)
-                .collectList()
-                .doOnError(throwable -> log.error("Checking for global identifiers failed. ", throwable))
-                .doOnSuccess(list -> {
-                    Integer reduce = list.stream()
-                            .map(transaction -> transaction.listModifiedResources().size())
-                            .reduce(0, Integer::sum);
-                    if (reduce > 0) {
-                        log.info("Checking for external identifiers completed, {} resource identifiers have been converted to locally resolvable identifiers.", reduce);
-                    } else {
-                        log.trace("No global identifiers found");
-                    }
-
-                }).subscribe();
-                */
+        Mono<Void> job = this.job.run(adminAuthentication);
+        super.schedule(job, "replace identifiers");
     }
 
 }

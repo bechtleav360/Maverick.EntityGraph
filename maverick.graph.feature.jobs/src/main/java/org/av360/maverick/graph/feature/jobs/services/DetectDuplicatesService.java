@@ -84,14 +84,6 @@ public class DetectDuplicatesService {
     }
 
 
-    // https://github.com/spring-projects/spring-framework/issues/23533
-    private boolean labelCheckRunning = false;
-
-    public boolean isRunning() {
-        return labelCheckRunning;
-    }
-
-
 
     public Mono<Void> checkForDuplicates(IRI characteristicProperty, Authentication authentication) {
         return this.findCandidates(characteristicProperty, authentication)
@@ -106,11 +98,9 @@ public class DetectDuplicatesService {
                                 .flatMap(duplicates -> this.mergeDuplicates(duplicates, authentication)))
                 .doOnSubscribe(sub -> {
                     log.trace("Checking duplicates sharing the same label");
-                    labelCheckRunning = true;
 
                 })
                 .doOnComplete(() -> {
-                    labelCheckRunning = false;
                 }).thenEmpty(Mono.empty());
 
     }
