@@ -10,8 +10,8 @@ import org.av360.maverick.graph.store.behaviours.ModelUpdates;
 import org.av360.maverick.graph.store.behaviours.RepositoryBehaviour;
 import org.av360.maverick.graph.store.behaviours.Resettable;
 import org.av360.maverick.graph.store.behaviours.Statements;
+import org.av360.maverick.graph.store.rdf.fragments.RdfTransaction;
 import org.av360.maverick.graph.store.rdf.helpers.RdfUtils;
-import org.av360.maverick.graph.store.rdf.models.Transaction;
 import org.eclipse.rdf4j.model.*;
 import org.eclipse.rdf4j.model.impl.SimpleNamespace;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
@@ -241,7 +241,7 @@ public abstract class AbstractRepository implements RepositoryBehaviour, Stateme
     }
 
     @Override
-    public Flux<Transaction> commit(Collection<Transaction> transactions, Authentication authentication, GrantedAuthority requiredAuthority) {
+    public Flux<RdfTransaction> commit(Collection<RdfTransaction> transactions, Authentication authentication, GrantedAuthority requiredAuthority) {
         return getConnection(authentication, requiredAuthority).flatMapMany(connection -> {
 
             return Flux.fromIterable(transactions).map(trx -> {
@@ -324,7 +324,7 @@ public abstract class AbstractRepository implements RepositoryBehaviour, Stateme
     }
 
     @Override
-    public Mono<Transaction> insert(Model model, Transaction transaction) {
+    public Mono<RdfTransaction> insert(Model model, RdfTransaction transaction) {
         Assert.notNull(transaction, "Transaction cannot be null");
         if (log.isTraceEnabled())
             log.trace("Insert planned for {} statements in transaction '{}'.", model.size(), transaction.getIdentifier().getLocalName());
@@ -339,7 +339,7 @@ public abstract class AbstractRepository implements RepositoryBehaviour, Stateme
 
 
     @Override
-    public Mono<Transaction> removeStatements(Collection<Statement> statements, Transaction transaction) {
+    public Mono<RdfTransaction> removeStatements(Collection<Statement> statements, RdfTransaction transaction) {
         Assert.notNull(transaction, "Transaction cannot be null");
         if (log.isTraceEnabled())
             log.trace("Removal planned for {} statements in transaction '{}'.", statements.size(), transaction.getIdentifier().getLocalName());
@@ -350,7 +350,7 @@ public abstract class AbstractRepository implements RepositoryBehaviour, Stateme
     }
 
     @Override
-    public Mono<Transaction> addStatement(Resource subject, IRI predicate, Value literal, Transaction transaction) {
+    public Mono<RdfTransaction> addStatement(Resource subject, IRI predicate, Value literal, RdfTransaction transaction) {
         Assert.notNull(transaction, "Transaction cannot be null");
         if (log.isTraceEnabled())
             log.trace("Marking statement for insert in transaction {}: {} - {} - {}", transaction.getIdentifier().getLocalName(), subject, predicate, literal);

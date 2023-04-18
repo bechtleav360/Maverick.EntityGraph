@@ -1,9 +1,9 @@
 package org.av360.maverick.graph.services.validators;
 
+import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.model.errors.runtime.MissingType;
 import org.av360.maverick.graph.services.EntityServices;
-import org.av360.maverick.graph.store.rdf.models.TripleModel;
-import lombok.extern.slf4j.Slf4j;
+import org.av360.maverick.graph.store.rdf.fragments.TripleModel;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;

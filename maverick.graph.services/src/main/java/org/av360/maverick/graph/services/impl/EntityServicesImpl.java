@@ -3,20 +3,20 @@ package org.av360.maverick.graph.services.impl;
 import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.model.enums.Activity;
 import org.av360.maverick.graph.model.errors.requests.EntityNotFound;
+import org.av360.maverick.graph.model.events.EntityCreatedEvent;
+import org.av360.maverick.graph.model.events.EntityDeletedEvent;
 import org.av360.maverick.graph.model.rdf.LocalIRI;
 import org.av360.maverick.graph.model.vocabulary.Local;
 import org.av360.maverick.graph.services.EntityServices;
 import org.av360.maverick.graph.services.QueryServices;
 import org.av360.maverick.graph.services.SchemaServices;
-import org.av360.maverick.graph.services.events.EntityCreatedEvent;
-import org.av360.maverick.graph.services.events.EntityDeletedEvent;
 import org.av360.maverick.graph.services.transformers.DelegatingTransformer;
 import org.av360.maverick.graph.services.validators.DelegatingValidator;
 import org.av360.maverick.graph.store.EntityStore;
 import org.av360.maverick.graph.store.TransactionsStore;
-import org.av360.maverick.graph.store.rdf.models.Entity;
-import org.av360.maverick.graph.store.rdf.models.Transaction;
-import org.av360.maverick.graph.store.rdf.models.TripleBag;
+import org.av360.maverick.graph.store.rdf.fragments.RdfEntity;
+import org.av360.maverick.graph.store.rdf.fragments.RdfTransaction;
+import org.av360.maverick.graph.store.rdf.fragments.TripleBag;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Resource;
@@ -69,13 +69,13 @@ public class EntityServicesImpl implements EntityServices {
 
 
     @Override
-    public Mono<Entity> get(IRI entityIri, Authentication authentication, int includeNeighboursLevel) {
+    public Mono<RdfEntity> get(IRI entityIri, Authentication authentication, int includeNeighboursLevel) {
         return entityStore.getEntity(entityIri, authentication, includeNeighboursLevel)
                 .switchIfEmpty(Mono.error(new EntityNotFound(entityIri)));
     }
 
     @Override
-    public Flux<Entity> list(Authentication authentication, int limit, int offset) {
+    public Flux<RdfEntity> list(Authentication authentication, int limit, int offset) {
         Variable idVariable = SparqlBuilder.var("id");
 
         SelectQuery query = Queries.SELECT(idVariable).where(
@@ -86,13 +86,13 @@ public class EntityServicesImpl implements EntityServices {
                 .flatMap(id -> this.entityStore.getEntity(id, authentication, 0));
     }
     @Override
-    public Mono<Entity> findByKey(String entityKey, Authentication authentication) {
+    public Mono<RdfEntity> findByKey(String entityKey, Authentication authentication) {
         return schemaServices.resolveLocalName(entityKey)
                 .flatMap(entityIdentifier -> this.get(entityIdentifier, authentication, 1));
     }
 
     @Override
-    public Mono<Entity> findByProperty(String identifier, IRI predicate, Authentication authentication) {
+    public Mono<RdfEntity> findByProperty(String identifier, IRI predicate, Authentication authentication) {
         Literal identifierLit = entityStore.getValueFactory().createLiteral(identifier);
 
         Variable idVariable = SparqlBuilder.var("id");
@@ -108,7 +108,7 @@ public class EntityServicesImpl implements EntityServices {
     }
 
     @Override
-    public Mono<Entity> find(String identifier, String property, Authentication authentication) {
+    public Mono<RdfEntity> find(String identifier, String property, Authentication authentication) {
         if(StringUtils.hasLength(property)) {
             return schemaServices.resolvePrefixedName(property)
                     .flatMap(propertyIri -> this.findByProperty(identifier, propertyIri, authentication));
@@ -143,9 +143,9 @@ public class EntityServicesImpl implements EntityServices {
 
 
     @Override
-    public Mono<Transaction> remove(IRI entityIri, Authentication authentication) {
+    public Mono<RdfTransaction> remove(IRI entityIri, Authentication authentication) {
         return this.entityStore.listStatements(entityIri, null, null, authentication)
-                .flatMap(statements -> this.entityStore.removeStatements(statements, new Transaction()))
+                .flatMap(statements -> this.entityStore.removeStatements(statements, new RdfTransaction()))
                 .flatMap(trx -> this.entityStore.commit(trx, authentication))
                 .doOnSuccess(transaction -> {
                     eventPublisher.publishEvent(new EntityDeletedEvent(transaction));
@@ -154,13 +154,13 @@ public class EntityServicesImpl implements EntityServices {
 
 
     @Override
-    public Mono<Transaction> remove(String entityKey, Authentication authentication) {
+    public Mono<RdfTransaction> remove(String entityKey, Authentication authentication) {
         return this.remove(LocalIRI.withDefaultNamespace(entityKey), authentication);
     }
 
     @Override
-    public Mono<Transaction> create(TripleBag triples, Map<String, String> parameters, Authentication authentication) {
-        return this.prepareEntity(triples, parameters, new Transaction(), authentication)
+    public Mono<RdfTransaction> create(TripleBag triples, Map<String, String> parameters, Authentication authentication) {
+        return this.prepareEntity(triples, parameters, new RdfTransaction(), authentication)
                 .flatMap(transaction -> entityStore.commit(transaction, authentication))
                 .doOnSuccess(transaction -> {
                     eventPublisher.publishEvent(new EntityCreatedEvent(transaction));
@@ -182,7 +182,7 @@ public class EntityServicesImpl implements EntityServices {
      */
     @Override
     @Deprecated
-    public Mono<Transaction> linkEntityTo(String id, IRI predicate, TripleBag linkedEntities, Authentication authentication) {
+    public Mono<RdfTransaction> linkEntityTo(String id, IRI predicate, TripleBag linkedEntities, Authentication authentication) {
 
         LocalIRI entityIdentifier = LocalIRI.withDefaultNamespace(id);
 
@@ -195,7 +195,7 @@ public class EntityServicesImpl implements EntityServices {
                 .switchIfEmpty(Mono.error(new EntityNotFound(id)))
 
                 /* store the new entities */
-                .map(entity -> new Transaction().affected(entity))
+                .map(entity -> new RdfTransaction().affected(entity))
                 .flatMap(transaction -> this.prepareEntity(linkedEntities, new HashMap<>(), transaction, authentication))
 
                 /* store the links */
@@ -220,7 +220,7 @@ public class EntityServicesImpl implements EntityServices {
     /**
      * Make sure you store the transaction once you are finished
      */
-    protected Mono<Transaction> prepareEntity(TripleBag triples, Map<String, String> parameters, Transaction transaction, Authentication authentication) {
+    protected Mono<RdfTransaction> prepareEntity(TripleBag triples, Map<String, String> parameters, RdfTransaction transaction, Authentication authentication) {
         if (log.isTraceEnabled())
             log.trace("Validating and transforming {} statements for new entity. Parameters: {}", triples.streamStatements().count(), parameters.size() > 0 ? parameters : "none");
 

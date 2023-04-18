@@ -1,6 +1,7 @@
-package org.av360.maverick.graph.feature.jobs.services;
+package org.av360.maverick.graph.feature.jobs;
 
 import lombok.extern.slf4j.Slf4j;
+import org.av360.maverick.graph.model.entities.Job;
 import org.av360.maverick.graph.model.errors.requests.InvalidConfiguration;
 import org.av360.maverick.graph.model.identifier.LocalIdentifier;
 import org.av360.maverick.graph.model.security.Authorities;
@@ -11,7 +12,7 @@ import org.av360.maverick.graph.services.transformers.replaceIdentifiers.Replace
 import org.av360.maverick.graph.services.transformers.replaceIdentifiers.ReplaceExternalIdentifiers;
 import org.av360.maverick.graph.store.EntityStore;
 import org.av360.maverick.graph.store.TransactionsStore;
-import org.av360.maverick.graph.store.rdf.models.Transaction;
+import org.av360.maverick.graph.store.rdf.fragments.RdfTransaction;
 import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Statement;
@@ -53,7 +54,7 @@ import java.util.stream.Collectors;
 
 @Slf4j(topic = "graph.jobs.identifiers")
 @Component
-public class ReplaceExternalIdentifiersService {
+public class ReplaceExternalIdentifiersJob implements Job {
 
     private final QueryServices queryServices;
 
@@ -64,17 +65,18 @@ public class ReplaceExternalIdentifiersService {
     private final ReplaceExternalIdentifiers replaceExternalIdentifiers;
     private final ReplaceAnonymousIdentifiers replaceAnonymousIdentifiers;
 
+
+
     private record StatementsBag(
             Resource candidateIdentifier,
             Set<Statement> removableStatements,
             Model convertedStatements,
             @Nullable Statement originalIdentifierStatement,
-            Transaction transaction
+            RdfTransaction transaction
     ) {
     }
 
-
-    public ReplaceExternalIdentifiersService(QueryServices queryServices, EntityStore store, TransactionsStore trxStore, ReplaceExternalIdentifiers transformer, ReplaceAnonymousIdentifiers replaceAnonymousIdentifiers) {
+    public ReplaceExternalIdentifiersJob(QueryServices queryServices, EntityStore store, TransactionsStore trxStore, ReplaceExternalIdentifiers transformer, ReplaceAnonymousIdentifiers replaceAnonymousIdentifiers) {
         this.queryServices = queryServices;
         this.entityStore = store;
         this.trxStore = trxStore;
@@ -82,9 +84,12 @@ public class ReplaceExternalIdentifiersService {
         this.replaceAnonymousIdentifiers = replaceAnonymousIdentifiers;
     }
 
+    @Override
+    public String getName() {
+        return "replace identifiers";
+    }
 
-
-
+    @Override
     public Mono<Void> run(Authentication authentication) {
         if (Objects.isNull(this.replaceExternalIdentifiers))
             return Mono.error(new InvalidConfiguration("External identity transformer is disabled"));
@@ -99,7 +104,7 @@ public class ReplaceExternalIdentifiersService {
     /**
      * First run: replace only subject identifiers, move old identifier in temporary property
      */
-    private Flux<Transaction> checkForExternalSubjectIdentifiers(Authentication authentication) {
+    public Flux<RdfTransaction> checkForExternalSubjectIdentifiers(Authentication authentication) {
         return findSubjectCandidates(authentication)
                 .flatMap(value -> this.loadSubjectStatements(value, authentication))
                 .flatMap(this::convertSubjectStatements)
@@ -141,7 +146,7 @@ public class ReplaceExternalIdentifiersService {
      * c) replace all removableStatements ?s ?p candidate with `?s ?p localIdentifier
      * d) remove all removableStatements ?s <urn:int:srcid> candidate
      */
-    private Flux<Transaction> checkForLinkedObjectIdentifiers(Authentication authentication) {
+    private Flux<RdfTransaction> checkForLinkedObjectIdentifiers(Authentication authentication) {
         return this.loadObjectStatements(authentication)
                 .flatMap(this::convertObjectStatements)
                 .flatMap(this::insertStatements)
@@ -194,17 +199,17 @@ public class ReplaceExternalIdentifiersService {
     }
 
 
-    private Flux<Transaction> commit(Transaction transaction, Authentication authentication) {
+    private Flux<RdfTransaction> commit(RdfTransaction transaction, Authentication authentication) {
         // log.trace("Committing {} transactions", transactions.size());
         return this.entityStore.commit(List.of(transaction), authentication);
     }
 
-    private Flux<Transaction> storeTransactions(Collection<Transaction> transactions, Authentication authentication) {
+    private Flux<RdfTransaction> storeTransactions(Collection<RdfTransaction> transactions, Authentication authentication) {
         //FIXME: through event
         return this.trxStore.store(transactions, authentication);
     }
 
-    private Mono<Transaction> deleteStatements(StatementsBag statementsBag) {
+    private Mono<RdfTransaction> deleteStatements(StatementsBag statementsBag) {
         ArrayList<Statement> statements = new ArrayList<>(statementsBag.removableStatements());
         return entityStore.removeStatements(statements, statementsBag.transaction());
     }
@@ -266,7 +271,7 @@ public class ReplaceExternalIdentifiersService {
 
     public Mono<StatementsBag> loadSubjectStatements(Resource candidate, Authentication authentication) {
         return this.entityStore.listStatements(candidate, null, null, authentication)
-                .map(statements -> new StatementsBag(candidate, Collections.synchronizedSet(statements), new LinkedHashModel(), null, new Transaction()));
+                .map(statements -> new StatementsBag(candidate, Collections.synchronizedSet(statements), new LinkedHashModel(), null, new RdfTransaction()));
     }
 
     public Flux<StatementsBag> loadObjectStatements(Authentication authentication) {
@@ -277,7 +282,7 @@ public class ReplaceExternalIdentifiersService {
                 .flatMap(st ->
                         this.entityStore.listStatements(null, null, st.getObject(), authentication)
                                 .map(statements -> statements.stream().filter(s -> ! s.getPredicate().equals(Local.ORIGINAL_IDENTIFIER)).collect(Collectors.toSet()))
-                                .map(statements -> new StatementsBag((Resource) st.getObject(), new HashSet<>(statements), new LinkedHashModel(), st, new Transaction()))
+                                .map(statements -> new StatementsBag((Resource) st.getObject(), new HashSet<>(statements), new LinkedHashModel(), st, new RdfTransaction()))
                 );
     }
 

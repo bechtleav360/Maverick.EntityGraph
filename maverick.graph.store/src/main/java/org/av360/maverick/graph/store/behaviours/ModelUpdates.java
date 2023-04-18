@@ -1,6 +1,6 @@
 package org.av360.maverick.graph.store.behaviours;
 
-import org.av360.maverick.graph.store.rdf.models.Transaction;
+import org.av360.maverick.graph.store.rdf.fragments.RdfTransaction;
 import org.eclipse.rdf4j.model.Model;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
@@ -30,6 +30,6 @@ public interface ModelUpdates extends RepositoryBehaviour {
      * @param transaction
      * @return Returns the transaction statements
      */
-    Mono<Transaction> insert(Model model, Transaction transaction);
+    Mono<RdfTransaction> insert(Model model, RdfTransaction transaction);
 
 }

@@ -8,7 +8,7 @@ import org.av360.maverick.graph.model.enums.RdfMimeTypes;
 import org.av360.maverick.graph.model.identifier.LocalIdentifier;
 import org.av360.maverick.graph.model.rdf.NamespaceAwareStatement;
 import org.av360.maverick.graph.services.TransactionsService;
-import org.av360.maverick.graph.store.rdf.models.TripleModel;
+import org.av360.maverick.graph.store.rdf.fragments.TripleModel;
 import org.springframework.http.HttpStatus;
 import org.springframework.util.Assert;
 import org.springframework.web.bind.annotation.*;

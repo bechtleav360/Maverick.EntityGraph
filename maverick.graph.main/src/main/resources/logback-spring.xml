@@ -41,7 +41,7 @@
     </springProfile>
 
     <springProfile name="stage">
-        <root level="DEBUG">
+        <root level="INFO">
             <appender-ref ref="FILE"/>
             <appender-ref ref="CONSOLE"/>
         </root>

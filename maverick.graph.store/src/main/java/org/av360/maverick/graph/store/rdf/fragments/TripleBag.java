@@ -1,4 +1,4 @@
-package org.av360.maverick.graph.store.rdf.models;
+package org.av360.maverick.graph.store.rdf.fragments;
 
 import org.av360.maverick.graph.model.vocabulary.Local;
 import org.eclipse.rdf4j.model.Resource;

@@ -1,6 +1,7 @@
-package org.av360.maverick.graph.store.rdf.models;
+package org.av360.maverick.graph.store.rdf.fragments;
 
 import org.apache.commons.lang3.NotImplementedException;
+import org.av360.maverick.graph.model.entities.Entity;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.repository.RepositoryResult;
@@ -14,17 +15,17 @@ import java.util.stream.Collectors;
  * <p>
  * Stores all items for one particular entity.
  */
-public class Entity extends TripleModel {
+public class RdfEntity extends TripleModel implements Entity {
 
 
     private final Resource identifier;
 
-    public Entity(Resource id) {
+    public RdfEntity(Resource id) {
         super();
         identifier = id;
     }
 
-    public Entity withResult(RepositoryResult<Statement> statements) {
+    public RdfEntity withResult(RepositoryResult<Statement> statements) {
         statements.stream().parallel().forEach(statement -> this.getBuilder().add(statement.getSubject(), statement.getPredicate(), statement.getObject()));
         return this;
     }

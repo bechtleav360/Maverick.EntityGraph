@@ -1,5 +1,6 @@
-package org.av360.maverick.graph.model.rdf;
+package org.av360.maverick.graph.store.rdf.helpers;
 
+import org.av360.maverick.graph.model.rdf.MutableStatement;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Statement;

@@ -5,16 +5,16 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.av360.maverick.graph.model.errors.requests.EntityNotFound;
 import org.av360.maverick.graph.model.errors.requests.InvalidEntityUpdate;
+import org.av360.maverick.graph.model.events.LinkRemovedEvent;
+import org.av360.maverick.graph.model.events.ValueInsertedEvent;
+import org.av360.maverick.graph.model.events.ValueRemovedEvent;
+import org.av360.maverick.graph.model.events.ValueReplacedEvent;
 import org.av360.maverick.graph.services.EntityServices;
 import org.av360.maverick.graph.services.SchemaServices;
 import org.av360.maverick.graph.services.ValueServices;
-import org.av360.maverick.graph.services.events.LinkRemovedEvent;
-import org.av360.maverick.graph.services.events.ValueInsertedEvent;
-import org.av360.maverick.graph.services.events.ValueRemovedEvent;
-import org.av360.maverick.graph.services.events.ValueReplacedEvent;
 import org.av360.maverick.graph.store.SchemaStore;
-import org.av360.maverick.graph.store.rdf.models.Entity;
-import org.av360.maverick.graph.store.rdf.models.Transaction;
+import org.av360.maverick.graph.store.rdf.fragments.RdfEntity;
+import org.av360.maverick.graph.store.rdf.fragments.RdfTransaction;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Statement;
@@ -54,7 +54,7 @@ public class ValueServicesImpl implements ValueServices {
 
 
     @Override
-    public Mono<Transaction> insertLiteral(String entityKey, String prefixedPoperty, String value, String languageTag, Authentication authentication) {
+    public Mono<RdfTransaction> insertLiteral(String entityKey, String prefixedPoperty, String value, String languageTag, Authentication authentication) {
 
         return Mono.zip(
                         this.entityServices.resolveAndVerify(entityKey, authentication),
@@ -70,7 +70,7 @@ public class ValueServicesImpl implements ValueServices {
      * Deletes a value with a new transaction.  Fails if no entity exists with the given subject
      */
     @Override
-    public Mono<Transaction> removeLiteral(String entityKey, String predicate, String lang, Authentication authentication) {
+    public Mono<RdfTransaction> removeLiteral(String entityKey, String predicate, String lang, Authentication authentication) {
         return Mono.zip(
                         this.entityServices.resolveAndVerify(entityKey, authentication),
                         this.schemaServices.resolvePrefixedName(predicate)
@@ -80,7 +80,7 @@ public class ValueServicesImpl implements ValueServices {
     }
 
     @Override
-    public Mono<Transaction> insertLink(String entityKey, String prefixedKey, String targetKey, Authentication authentication) {
+    public Mono<RdfTransaction> insertLink(String entityKey, String prefixedKey, String targetKey, Authentication authentication) {
         return Mono.zip(
                         entityServices.resolveAndVerify(entityKey, authentication),
                         entityServices.resolveAndVerify(targetKey, authentication),
@@ -95,16 +95,16 @@ public class ValueServicesImpl implements ValueServices {
 
 
     @Override
-    public Mono<Transaction> insertValue(IRI entityIdentifier, IRI predicate, Value value, Authentication authentication) {
-        return this.insertStatements(entityIdentifier, predicate, value, new Transaction(), authentication)
+    public Mono<RdfTransaction> insertValue(IRI entityIdentifier, IRI predicate, Value value, Authentication authentication) {
+        return this.insertStatements(entityIdentifier, predicate, value, new RdfTransaction(), authentication)
                 .doOnSuccess(trx -> {
                     eventPublisher.publishEvent(new ValueInsertedEvent(trx));
                 });
     }
 
     @Override
-    public Mono<Transaction> removeValue(IRI entityIdentifier, IRI predicate, String lang, Authentication authentication) {
-        return this.removeValueStatement(entityIdentifier, predicate, lang, new Transaction(), authentication)
+    public Mono<RdfTransaction> removeValue(IRI entityIdentifier, IRI predicate, String lang, Authentication authentication) {
+        return this.removeValueStatement(entityIdentifier, predicate, lang, new RdfTransaction(), authentication)
                 .doOnSuccess(trx -> {
                     eventPublisher.publishEvent(new ValueRemovedEvent(trx));
                 });
@@ -112,14 +112,14 @@ public class ValueServicesImpl implements ValueServices {
 
 
     @Override
-    public Mono<Transaction> removeLink(String entityKey, String prefixedProperty, String targetKey, Authentication authentication) {
+    public Mono<RdfTransaction> removeLink(String entityKey, String prefixedProperty, String targetKey, Authentication authentication) {
         return Mono.zip(
                 entityServices.resolveAndVerify(entityKey, authentication),
                 entityServices.resolveAndVerify(targetKey, authentication),
                 this.schemaServices.resolvePrefixedName(prefixedProperty)
 
         ).flatMap(triple ->
-                this.removeLinkStatement(triple.getT1(), triple.getT3(), triple.getT2(), new Transaction(), authentication)
+                this.removeLinkStatement(triple.getT1(), triple.getT3(), triple.getT2(), new RdfTransaction(), authentication)
         ).doOnSuccess(trx -> {
             eventPublisher.publishEvent(new LinkRemovedEvent(trx));
         });
@@ -136,8 +136,8 @@ public class ValueServicesImpl implements ValueServices {
      * Has to be part of one transaction (one commit call)
      */
     @Override
-    public Mono<Transaction> replace(IRI entityIdentifier, IRI predicate, Value oldValue, Value newValue, Authentication authentication) {
-        return this.entityServices.getStore().removeStatement(entityIdentifier, predicate, oldValue, new Transaction())
+    public Mono<RdfTransaction> replace(IRI entityIdentifier, IRI predicate, Value oldValue, Value newValue, Authentication authentication) {
+        return this.entityServices.getStore().removeStatement(entityIdentifier, predicate, oldValue, new RdfTransaction())
                 .flatMap(trx -> this.entityServices.getStore().addStatement(entityIdentifier, predicate, newValue, trx))
                 .flatMap(trx -> this.entityServices.getStore().commit(trx, authentication))
                 .doOnSuccess(trx -> {
@@ -146,13 +146,13 @@ public class ValueServicesImpl implements ValueServices {
     }
 
     @Override
-    public Mono<Entity> listLinks(String entityKey, String prefixedPoperty, Authentication authentication) {
+    public Mono<RdfEntity> listLinks(String entityKey, String prefixedPoperty, Authentication authentication) {
         return Mono.zip(
                 this.schemaServices.resolveLocalName(entityKey)
                         .flatMap(entityIdentifier -> this.entityServices.get(entityIdentifier, authentication, 0)),
                 this.schemaServices.resolvePrefixedName(prefixedPoperty)
         ).map(pair -> {
-            Entity entity = pair.getT1();
+            RdfEntity entity = pair.getT1();
             IRI property = pair.getT2();
 
             entity.filter((st) -> {
@@ -166,7 +166,7 @@ public class ValueServicesImpl implements ValueServices {
     }
 
 
-    private Mono<Transaction> removeLinkStatement(IRI entityIdentifier, IRI predicate, IRI targetIdentifier, Transaction transaction, Authentication authentication) {
+    private Mono<RdfTransaction> removeLinkStatement(IRI entityIdentifier, IRI predicate, IRI targetIdentifier, RdfTransaction transaction, Authentication authentication) {
         return this.entityServices.getStore().listStatements(entityIdentifier, predicate, targetIdentifier, authentication)
                 .flatMap(statements -> this.entityServices.getStore().removeStatements(statements, transaction))
                 .flatMap(trx -> this.entityServices.getStore().commit(trx, authentication));
@@ -177,7 +177,7 @@ public class ValueServicesImpl implements ValueServices {
     /**
      * Deletes a value with a new transaction. Fails if no entity exists with the given subject
      */
-    private Mono<Transaction> removeValueStatement(IRI entityIdentifier, IRI predicate, @Nullable String languageTag, Transaction transaction, Authentication authentication) {
+    private Mono<RdfTransaction> removeValueStatement(IRI entityIdentifier, IRI predicate, @Nullable String languageTag, RdfTransaction transaction, Authentication authentication) {
         return this.entityServices.getStore().listStatements(entityIdentifier, predicate, null, authentication)
                 .flatMap(statements -> {
                     if (statements.size() > 1) {
@@ -214,7 +214,7 @@ public class ValueServicesImpl implements ValueServices {
                 })
                 .flatMap(trx -> this.entityServices.getStore().commit(trx, authentication));
     }
-    private Mono<Transaction> insertStatements(IRI entityIdentifier, IRI predicate, Value value, Transaction transaction, Authentication authentication) {
+    private Mono<RdfTransaction> insertStatements(IRI entityIdentifier, IRI predicate, Value value, RdfTransaction transaction, Authentication authentication) {
 
         return this.entityServices.get(entityIdentifier, authentication)
                 .switchIfEmpty(Mono.error(new EntityNotFound(entityIdentifier.stringValue())))

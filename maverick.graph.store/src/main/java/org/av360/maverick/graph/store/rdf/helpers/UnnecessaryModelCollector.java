@@ -1,4 +1,4 @@
-package org.av360.maverick.graph.model.rdf;
+package org.av360.maverick.graph.store.rdf.helpers;
 
 import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.Statement;

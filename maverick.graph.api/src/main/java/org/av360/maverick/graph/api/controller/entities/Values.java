@@ -1,17 +1,17 @@
 package org.av360.maverick.graph.api.controller.entities;
 
-import org.av360.maverick.graph.model.enums.RdfMimeTypes;
-import org.av360.maverick.graph.model.rdf.NamespaceAwareStatement;
-import org.av360.maverick.graph.services.EntityServices;
-import org.av360.maverick.graph.services.SchemaServices;
-import org.av360.maverick.graph.services.ValueServices;
-import org.av360.maverick.graph.store.rdf.models.TripleModel;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.NotImplementedException;
 import org.av360.maverick.graph.api.controller.AbstractController;
+import org.av360.maverick.graph.model.enums.RdfMimeTypes;
+import org.av360.maverick.graph.model.rdf.NamespaceAwareStatement;
+import org.av360.maverick.graph.services.EntityServices;
+import org.av360.maverick.graph.services.SchemaServices;
+import org.av360.maverick.graph.services.ValueServices;
+import org.av360.maverick.graph.store.rdf.fragments.TripleModel;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.util.Assert;

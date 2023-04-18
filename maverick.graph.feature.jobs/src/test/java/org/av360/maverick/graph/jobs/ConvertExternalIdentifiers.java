@@ -1,7 +1,7 @@
 package org.av360.maverick.graph.jobs;
 
 import lombok.extern.slf4j.Slf4j;
-import org.av360.maverick.graph.feature.jobs.services.ReplaceExternalIdentifiersService;
+import org.av360.maverick.graph.feature.jobs.ReplaceExternalIdentifiersJob;
 import org.av360.maverick.graph.model.vocabulary.Local;
 import org.av360.maverick.graph.tests.config.TestRepositoryConfig;
 import org.av360.maverick.graph.tests.config.TestSecurityConfig;
@@ -34,7 +34,7 @@ import java.io.IOException;
 class ConvertExternalIdentifiers extends TestsBase {
 
     @Autowired
-    private ReplaceExternalIdentifiersService scheduled;
+    private ReplaceExternalIdentifiersJob scheduled;
 
 
     @Autowired

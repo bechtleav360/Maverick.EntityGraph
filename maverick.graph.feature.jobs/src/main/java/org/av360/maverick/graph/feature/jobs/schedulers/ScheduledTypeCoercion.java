@@ -1,12 +1,13 @@
 package org.av360.maverick.graph.feature.jobs.schedulers;
 
 import lombok.extern.slf4j.Slf4j;
-import org.av360.maverick.graph.feature.jobs.services.TypeCoercionService;
+import org.av360.maverick.graph.feature.jobs.TypeCoercionJob;
+import org.av360.maverick.graph.model.events.JobScheduledEvent;
 import org.av360.maverick.graph.model.security.AdminToken;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
-import reactor.core.publisher.Mono;
 
 /**
  * If we have any global identifiers (externally set) in the repo, we have to replace them with our internal identifiers.
@@ -23,20 +24,20 @@ import reactor.core.publisher.Mono;
 @Slf4j(topic = "graph.jobs.identifiers")
 @Component
 @ConditionalOnProperty(name = "application.features.modules.jobs.scheduled.typeCoercion", havingValue = "true")
-public class ScheduledTypeCoercion extends ScheduledJob {
+public class ScheduledTypeCoercion  {
 
-    private final TypeCoercionService job;
-
-    public ScheduledTypeCoercion(TypeCoercionService job) {
+    private final TypeCoercionJob job;
+    private final ApplicationEventPublisher eventPublisher;
+    public ScheduledTypeCoercion(TypeCoercionJob job, ApplicationEventPublisher eventPublisher) {
         this.job = job;
+        this.eventPublisher = eventPublisher;
     }
 
     @Scheduled(initialDelay = 10000, fixedDelay = 30000)
     public void scheduled() {
-
-        AdminToken adminAuthentication = new AdminToken();
-        Mono<Void> job = this.job.run(adminAuthentication);
-        super.schedule(job, "type coercion");
+        JobScheduledEvent event = new JobScheduledEvent(this.job);
+        event.setAuthentication(new AdminToken());
+        eventPublisher.publishEvent(event);
 
     }
 

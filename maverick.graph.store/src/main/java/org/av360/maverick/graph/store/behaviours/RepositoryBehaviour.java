@@ -5,7 +5,7 @@ import org.av360.maverick.graph.model.security.Authorities;
 import org.av360.maverick.graph.store.RepositoryBuilder;
 import org.av360.maverick.graph.store.RepositoryType;
 import org.av360.maverick.graph.store.rdf.LabeledConnectionWrapper;
-import org.av360.maverick.graph.store.rdf.models.Transaction;
+import org.av360.maverick.graph.store.rdf.fragments.RdfTransaction;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.ValueFactory;
@@ -43,9 +43,9 @@ public interface RepositoryBehaviour {
 
     Flux<IRI> types(Resource subj, Authentication authentication, GrantedAuthority requiredAuthority);
 
-    Flux<Transaction> commit(Collection<Transaction> transactions, Authentication authentication, GrantedAuthority requiredAuthority);
+    Flux<RdfTransaction> commit(Collection<RdfTransaction> transactions, Authentication authentication, GrantedAuthority requiredAuthority);
 
-    default Mono<Transaction> commit(Transaction transaction, Authentication authentication, GrantedAuthority requiredAuthority) {
+    default Mono<RdfTransaction> commit(RdfTransaction transaction, Authentication authentication, GrantedAuthority requiredAuthority) {
         return this.commit(List.of(transaction), authentication, requiredAuthority).singleOrEmpty();
     }
 
