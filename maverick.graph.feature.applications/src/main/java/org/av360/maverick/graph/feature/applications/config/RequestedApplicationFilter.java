@@ -53,8 +53,6 @@ public class RequestedApplicationFilter implements WebFilter, ApplicationListene
                                 .doOnNext(application -> this.cache.put(application.label(), application))
                                 .flatMap(application -> chain.filter(exchange)
                                         .contextWrite(ctx -> ctx.put(ReactiveApplicationContextHolder.CONTEXT_KEY, application))))
-
-
                             .orElseGet(() -> chain.filter(exchange));
             /*
             return requestedApplication

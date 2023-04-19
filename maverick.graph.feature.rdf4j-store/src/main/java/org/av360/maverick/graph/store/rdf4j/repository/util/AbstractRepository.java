@@ -112,8 +112,6 @@ public abstract class AbstractRepository implements RepositoryBehaviour, Stateme
                             log.trace("Querying repository '{}'", connection.getRepository());
                         try (TupleQueryResult result = q.evaluate()) {
                             result.stream().forEach(emitter::next);
-                        } finally {
-                            emitter.complete();
                         }
 
                     } catch (MalformedQueryException e) {
@@ -122,6 +120,8 @@ public abstract class AbstractRepository implements RepositoryBehaviour, Stateme
                     } catch (Exception e) {
                         log.error("Unknown error while running query", e);
                         emitter.error(e);
+                    } finally {
+                        emitter.complete();
                     }
                 })
         );

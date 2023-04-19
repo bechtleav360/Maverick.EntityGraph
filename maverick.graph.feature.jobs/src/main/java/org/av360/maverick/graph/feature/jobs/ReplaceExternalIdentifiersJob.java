@@ -3,7 +3,6 @@ package org.av360.maverick.graph.feature.jobs;
 import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.model.entities.Job;
 import org.av360.maverick.graph.model.errors.requests.InvalidConfiguration;
-import org.av360.maverick.graph.model.identifier.LocalIdentifier;
 import org.av360.maverick.graph.model.security.Authorities;
 import org.av360.maverick.graph.model.vocabulary.Local;
 import org.av360.maverick.graph.model.vocabulary.Transactions;
@@ -13,14 +12,10 @@ import org.av360.maverick.graph.services.transformers.replaceIdentifiers.Replace
 import org.av360.maverick.graph.store.EntityStore;
 import org.av360.maverick.graph.store.TransactionsStore;
 import org.av360.maverick.graph.store.rdf.fragments.RdfTransaction;
-import org.eclipse.rdf4j.model.Model;
-import org.eclipse.rdf4j.model.Resource;
-import org.eclipse.rdf4j.model.Statement;
-import org.eclipse.rdf4j.model.Value;
+import org.eclipse.rdf4j.model.*;
 import org.eclipse.rdf4j.model.impl.LinkedHashModel;
 import org.eclipse.rdf4j.model.util.ModelBuilder;
 import org.eclipse.rdf4j.model.vocabulary.OWL;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
@@ -55,7 +50,6 @@ import java.util.stream.Collectors;
 
 @Slf4j(topic = "graph.jobs.identifiers")
 @Component
-@ConditionalOnProperty(name = "application.features.modules.jobs.scheduled.replaceIdentifiers", havingValue = "true")
 public class ReplaceExternalIdentifiersJob implements Job {
 
     private final QueryServices queryServices;
@@ -251,7 +245,7 @@ public class ReplaceExternalIdentifiersJob implements Job {
                 this.replaceExternalIdentifiers.buildIdentifierMappings(model).collectList(),
                 this.replaceAnonymousIdentifiers.buildIdentifierMappings(model).collectList()
         ).map(pair -> {
-            Map<Resource, LocalIdentifier> map = new HashMap<>();
+            Map<Resource, IRI> map = new HashMap<>();
             pair.getT1().forEach(mapping -> map.put(mapping.oldIdentifier(), mapping.newIdentifier()));
             pair.getT2().forEach(mapping -> map.put(mapping.oldIdentifier(), mapping.newIdentifier()));
             return map;

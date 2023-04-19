@@ -48,13 +48,13 @@ public class ScopedReadOperations extends AbstractController {
             produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE})
     @ResponseStatus(HttpStatus.OK)
     Flux<AnnotatedStatement> getDetails(
-            @PathVariable String scope,
+            @PathVariable String label,
             @PathVariable @Parameter(name = "entity identifier") String id,
             @PathVariable(required = true, value = "values") @Parameter(name = "property type") Details.PropertyType type,
             @PathVariable String prefixedValueKey,
             @RequestParam(required = false) boolean hash
     ) {
-        return this.detailsCtrl.getDetails(id, type, prefixedValueKey, hash);
+        return this.detailsCtrl.getDetails(scopeId(label, id), type, prefixedValueKey, hash);
     }
 
 
@@ -62,7 +62,13 @@ public class ScopedReadOperations extends AbstractController {
             produces = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.N3_VALUE})
     @ResponseStatus(HttpStatus.OK)
     Flux<AnnotatedStatement> read(@PathVariable String label, @PathVariable String id, @RequestParam(required = false) @Nullable String property) {
-        return entitiesCtrl.read(id, property);
+        /* since we encode the scope (identified by label) also in the id (e.g. urn:pwi:meg:e:{label}:{id}, we add the scope as prefix
+         */
+        return entitiesCtrl.read(scopeId(label, id), property);
+    }
+
+    private String scopeId(String label, String id) {
+        return String.format("%s.%s", label, id);
     }
 
     @GetMapping(value = "/s/{label}/entities", produces = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.N3_VALUE})
@@ -80,7 +86,7 @@ public class ScopedReadOperations extends AbstractController {
             produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE, MediaType.APPLICATION_JSON_VALUE})
     @ResponseStatus(HttpStatus.OK)
     Flux<AnnotatedStatement> listEntityValues(@PathVariable String label, @PathVariable String id) {
-        return this.valuesCtrl.listEntityValues(id);
+        return this.valuesCtrl.listEntityValues(scopeId(label, id));
     }
 
     @Operation(summary = "Returns all links of an entity.")
@@ -88,7 +94,7 @@ public class ScopedReadOperations extends AbstractController {
             produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE})
     @ResponseStatus(HttpStatus.OK)
     Flux<AnnotatedStatement> getLinks(@PathVariable String label, @PathVariable String id) {
-        return this.linksCtrl.getLinks(id);
+        return this.linksCtrl.getLinks(scopeId(label, id));
     }
 
     @Operation(summary = "Returns all links of the given type.")
@@ -96,7 +102,7 @@ public class ScopedReadOperations extends AbstractController {
             produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE})
     @ResponseStatus(HttpStatus.OK)
     Flux<AnnotatedStatement> getLinksByType(@PathVariable String label, @PathVariable String id, @PathVariable String prefixedKey) {
-        return this.linksCtrl.getLinksByType(id, prefixedKey);
+        return this.linksCtrl.getLinksByType(scopeId(label, id), prefixedKey);
     }
 
 

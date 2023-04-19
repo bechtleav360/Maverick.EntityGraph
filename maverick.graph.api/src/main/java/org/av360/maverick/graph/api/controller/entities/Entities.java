@@ -10,11 +10,8 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
 import org.av360.maverick.graph.api.controller.AbstractController;
 import org.av360.maverick.graph.model.enums.RdfMimeTypes;
-import org.av360.maverick.graph.model.identifier.LocalIdentifier;
-import org.av360.maverick.graph.model.identifier.RandomIdentifier;
 import org.av360.maverick.graph.model.rdf.AnnotatedStatement;
 import org.av360.maverick.graph.services.EntityServices;
 import org.av360.maverick.graph.services.QueryServices;
@@ -65,10 +62,6 @@ public class Entities extends AbstractController {
             produces = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.N3_VALUE})
     @ResponseStatus(HttpStatus.OK)
     public Flux<AnnotatedStatement> read(@PathVariable String id, @RequestParam(required = false) @Nullable String property) {
-        if (StringUtils.isBlank(property)) {
-            Assert.isTrue(id.length() == LocalIdentifier.LENGTH, "Incorrect length for identifier.");
-        }
-
 
         return super.getAuthentication()
                 .flatMap(authentication -> entityServices.find(id, property, authentication))
@@ -134,8 +127,6 @@ public class Entities extends AbstractController {
             produces = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.N3_VALUE})
     @ResponseStatus(HttpStatus.OK)
     public Flux<AnnotatedStatement> delete(@PathVariable String id) {
-        Assert.isTrue(id.length() == RandomIdentifier.LENGTH, "Incorrect length for identifier.");
-
         return super.getAuthentication()
                 .flatMap(authentication -> entityServices.remove(id, authentication))
                 .flatMapIterable(TripleModel::asStatements)

@@ -1,12 +1,12 @@
 package org.av360.maverick.graph.api.config;
 
 
-import org.av360.maverick.graph.services.SchemaServices;
 import org.av360.maverick.graph.api.converter.decoder.StatementsDecoder;
 import org.av360.maverick.graph.api.converter.encoder.BindingSetEncoder;
 import org.av360.maverick.graph.api.converter.encoder.BufferedStatementsEncoder;
 import org.av360.maverick.graph.api.converter.encoder.StatementsEncoder;
 import org.av360.maverick.graph.api.converter.encoder.TupleQueryResultsEncoder;
+import org.av360.maverick.graph.services.SchemaServices;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -52,7 +52,11 @@ public class WebFluxConfiguration implements WebFluxConfigurer {
         return (exchange,  chain) -> {
             ServerHttpRequest request = exchange.getRequest();
             return chain.filter(exchange)
-                    .contextWrite(ctx -> ctx.put(ReactiveRequestContextHolder.CONTEXT_KEY, request));
+                    .contextWrite(ctx -> {
+                        ctx = ctx.put(ReactiveRequestUriContextHolder.CONTEXT_URI_KEY, request.getURI());
+                        ctx = ctx.put(ReactiveRequestUriContextHolder.CONTEXT_HEADERS_KEY, request.getHeaders());
+                        return ctx;
+                    });
         };
     }
 

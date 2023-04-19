@@ -74,7 +74,7 @@ public class ReplaceAnonymousIdentifiers extends AbstractIdentifierReplace imple
                 );
     }
 
-    protected Mono<LocalIdentifier> createLocalIdentifierFrom(BNode subj, Model model) {
+    protected Mono<IRI> createLocalIdentifierFrom(BNode subj, Model model) {
 
         Optional<Value> charProp = this.findCharacteristicProperty(subj, model);
         Optional<Value> entityType = model.filter(subj, RDF.TYPE, null).stream().map(Statement::getObject).findFirst();
