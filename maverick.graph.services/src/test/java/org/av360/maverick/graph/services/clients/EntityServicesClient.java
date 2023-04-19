@@ -1,17 +1,17 @@
 package org.av360.maverick.graph.services.clients;
 
+import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.model.rdf.NamespaceAwareStatement;
 import org.av360.maverick.graph.model.security.Authorities;
 import org.av360.maverick.graph.services.EntityServices;
 import org.av360.maverick.graph.services.QueryServices;
 import org.av360.maverick.graph.store.EntityStore;
+import org.av360.maverick.graph.store.rdf.fragments.RdfEntity;
+import org.av360.maverick.graph.store.rdf.fragments.RdfTransaction;
+import org.av360.maverick.graph.store.rdf.fragments.TripleBag;
 import org.av360.maverick.graph.store.rdf.helpers.RdfUtils;
 import org.av360.maverick.graph.store.rdf.helpers.TriplesCollector;
-import org.av360.maverick.graph.store.rdf.models.Entity;
-import org.av360.maverick.graph.store.rdf.models.Transaction;
-import org.av360.maverick.graph.store.rdf.models.TripleBag;
 import org.av360.maverick.graph.tests.config.TestSecurityConfig;
-import lombok.extern.slf4j.Slf4j;
 import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.util.ModelBuilder;
 import org.eclipse.rdf4j.rio.RDFFormat;
@@ -76,7 +76,7 @@ public class EntityServicesClient {
         importFileMono(resource).block();
     }
 
-    public Mono<Transaction> importFileMono(Resource resource) throws IOException {
+    public Mono<RdfTransaction> importFileMono(Resource resource) throws IOException {
         Flux<DataBuffer> read = DataBufferUtils.read(resource, new DefaultDataBufferFactory(), 1024);
         return this.parse(read, getFormat(resource))
                 .flatMap(triples -> this.entityServices.create(triples, Map.of(), TestSecurityConfig.createAuthenticationToken()))
@@ -109,11 +109,11 @@ public class EntityServicesClient {
 
 
 
-    public List<Entity> listAllEntities() {
+    public List<RdfEntity> listAllEntities() {
         return listAllEntitiesMono().block();
     }
 
-    public Mono<List<Entity>> listAllEntitiesMono() {
+    public Mono<List<RdfEntity>> listAllEntitiesMono() {
         return this.entityServices.list(TestSecurityConfig.createAuthenticationToken(), 100, 0).collectList();
     }
 

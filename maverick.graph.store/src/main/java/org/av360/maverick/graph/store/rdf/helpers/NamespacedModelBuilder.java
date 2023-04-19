@@ -1,4 +1,4 @@
-package org.av360.maverick.graph.model.rdf;
+package org.av360.maverick.graph.store.rdf.helpers;
 
 import org.av360.maverick.graph.model.vocabulary.ICAL;
 import org.av360.maverick.graph.model.vocabulary.Local;

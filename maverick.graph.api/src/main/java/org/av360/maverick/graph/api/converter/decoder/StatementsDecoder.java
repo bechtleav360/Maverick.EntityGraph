@@ -1,10 +1,10 @@
 package org.av360.maverick.graph.api.converter.decoder;
 
+import lombok.extern.slf4j.Slf4j;
+import org.av360.maverick.graph.store.rdf.fragments.TripleBag;
+import org.av360.maverick.graph.store.rdf.fragments.TripleModel;
 import org.av360.maverick.graph.store.rdf.helpers.RdfUtils;
 import org.av360.maverick.graph.store.rdf.helpers.TriplesCollector;
-import org.av360.maverick.graph.store.rdf.models.TripleBag;
-import org.av360.maverick.graph.store.rdf.models.TripleModel;
-import lombok.extern.slf4j.Slf4j;
 import org.eclipse.rdf4j.rio.RDFFormat;
 import org.eclipse.rdf4j.rio.RDFParser;
 import org.reactivestreams.Publisher;

@@ -4,7 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.model.vocabulary.Local;
 import org.av360.maverick.graph.model.vocabulary.SDO;
 import org.av360.maverick.graph.services.transformers.Transformer;
-import org.av360.maverick.graph.store.rdf.models.TripleModel;
+import org.av360.maverick.graph.store.rdf.fragments.TripleModel;
 import org.eclipse.rdf4j.model.*;
 import org.eclipse.rdf4j.model.impl.LinkedHashModel;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;

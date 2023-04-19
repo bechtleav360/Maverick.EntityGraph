@@ -1,4 +1,4 @@
-package org.av360.maverick.graph.services.events;
+package org.av360.maverick.graph.model.events;
 
 import org.springframework.context.ApplicationEvent;
 

@@ -1,9 +1,9 @@
 package org.av360.maverick.graph.jobs;
 
 import lombok.extern.slf4j.Slf4j;
-import org.av360.maverick.graph.feature.jobs.services.DetectDuplicatesService;
+import org.av360.maverick.graph.feature.jobs.DetectDuplicatesJob;
 import org.av360.maverick.graph.model.vocabulary.SDO;
-import org.av360.maverick.graph.store.rdf.models.Transaction;
+import org.av360.maverick.graph.store.rdf.fragments.RdfTransaction;
 import org.av360.maverick.graph.tests.config.TestSecurityConfig;
 import org.av360.maverick.graph.tests.util.TestsBase;
 import org.eclipse.rdf4j.model.Model;
@@ -36,7 +36,7 @@ public class MergeDuplicateTests extends TestsBase  {
 
 
     @Autowired
-    private DetectDuplicatesService scheduledDetectDuplicates;
+    private DetectDuplicatesJob scheduledDetectDuplicates;
 
     @Autowired
     EntityServicesClient entityServicesClient;
@@ -88,8 +88,8 @@ public class MergeDuplicateTests extends TestsBase  {
     @Test
     public void createEmbeddedEntitiesWithSharedItemsInSeparateRequests() throws InterruptedException, IOException {
         log.info("---------- Running test: Create embedded with shared items in separate requests ---------- ");
-        Mono<Transaction> tx1 = entityServicesClient.importFileMono(new ClassPathResource("requests/create-valid_multipleWithEmbedded.ttl")).doOnSubscribe(sub -> log.trace("-------- 1"));
-        Mono<Transaction> tx2 = entityServicesClient.importFileMono(new ClassPathResource("requests/create-valid_withEmbedded.ttl")).doOnSubscribe(sub -> log.trace("-------- 2"));
+        Mono<RdfTransaction> tx1 = entityServicesClient.importFileMono(new ClassPathResource("requests/create-valid_multipleWithEmbedded.ttl")).doOnSubscribe(sub -> log.trace("-------- 1"));
+        Mono<RdfTransaction> tx2 = entityServicesClient.importFileMono(new ClassPathResource("requests/create-valid_withEmbedded.ttl")).doOnSubscribe(sub -> log.trace("-------- 2"));
         Mono<Void> scheduler = this.scheduledDetectDuplicates.checkForDuplicates(RDFS.LABEL, TestSecurityConfig.createAuthenticationToken()).doOnSubscribe(sub -> log.trace("-------- 3"));
         Mono<Model> getAll = entityServicesClient.getModel();
 

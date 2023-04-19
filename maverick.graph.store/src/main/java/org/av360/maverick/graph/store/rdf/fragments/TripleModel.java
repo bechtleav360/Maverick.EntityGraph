@@ -1,7 +1,7 @@
-package org.av360.maverick.graph.store.rdf.models;
+package org.av360.maverick.graph.store.rdf.fragments;
 
 import org.av360.maverick.graph.model.rdf.NamespaceAwareStatement;
-import org.av360.maverick.graph.model.rdf.NamespacedModelBuilder;
+import org.av360.maverick.graph.store.rdf.helpers.NamespacedModelBuilder;
 import org.eclipse.rdf4j.model.*;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 
@@ -11,10 +11,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
-public class
-
-
-TripleModel implements NamespaceAware, Serializable {
+public class TripleModel implements NamespaceAware, Serializable {
 
     private NamespacedModelBuilder modelBuilder;
 

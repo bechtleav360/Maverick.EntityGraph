@@ -1,10 +1,10 @@
 package org.av360.maverick.graph.store.rdf4j.repository;
 
+import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.store.RepositoryType;
 import org.av360.maverick.graph.store.TransactionsStore;
-import org.av360.maverick.graph.store.rdf.models.Transaction;
+import org.av360.maverick.graph.store.rdf.fragments.RdfTransaction;
 import org.av360.maverick.graph.store.rdf4j.repository.util.AbstractRepository;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.stereotype.Component;
@@ -24,13 +24,13 @@ public class TransactionsRepository extends AbstractRepository implements Transa
     }
 
     @Override
-    public Mono<Transaction> store(Transaction transaction, Authentication authentication, GrantedAuthority requiredAuthority) {
+    public Mono<RdfTransaction> store(RdfTransaction transaction, Authentication authentication, GrantedAuthority requiredAuthority) {
         return this.store(List.of(transaction), authentication, requiredAuthority).singleOrEmpty();
     }
 
 
     @Override
-    public Flux<Transaction> store(Collection<Transaction> transactions, Authentication authentication, GrantedAuthority requiredAuthority) {
+    public Flux<RdfTransaction> store(Collection<RdfTransaction> transactions, Authentication authentication, GrantedAuthority requiredAuthority) {
         return getConnection(authentication, requiredAuthority).flatMapMany(connection -> Flux.fromIterable(transactions).flatMap(trx -> {
                     try {
                         connection.begin();

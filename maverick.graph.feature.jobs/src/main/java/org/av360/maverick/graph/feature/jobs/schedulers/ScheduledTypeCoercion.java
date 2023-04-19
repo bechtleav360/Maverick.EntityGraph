@@ -1,9 +1,11 @@
 package org.av360.maverick.graph.feature.jobs.schedulers;
 
 import lombok.extern.slf4j.Slf4j;
-import org.av360.maverick.graph.feature.jobs.services.TypeCoercionService;
+import org.av360.maverick.graph.feature.jobs.TypeCoercionJob;
+import org.av360.maverick.graph.model.events.JobScheduledEvent;
 import org.av360.maverick.graph.model.security.AdminToken;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -22,24 +24,21 @@ import org.springframework.stereotype.Component;
 @Slf4j(topic = "graph.jobs.identifiers")
 @Component
 @ConditionalOnProperty(name = "application.features.modules.jobs.scheduled.typeCoercion", havingValue = "true")
-public class ScheduledTypeCoercion {
+public class ScheduledTypeCoercion  {
 
-    // FIXME: should not directly access the services
-    private final TypeCoercionService job;
-
-
-    public ScheduledTypeCoercion(TypeCoercionService job) {
+    private final TypeCoercionJob job;
+    private final ApplicationEventPublisher eventPublisher;
+    public ScheduledTypeCoercion(TypeCoercionJob job, ApplicationEventPublisher eventPublisher) {
         this.job = job;
+        this.eventPublisher = eventPublisher;
     }
 
-
-    @Scheduled(fixedDelay = 20000)
+    @Scheduled(initialDelay = 10000, fixedDelay = 30000)
     public void scheduled() {
-        if (this.job.isRunning()) return;
+        JobScheduledEvent event = new JobScheduledEvent(this.job);
+        event.setAuthentication(new AdminToken());
+        eventPublisher.publishEvent(event);
 
-        AdminToken adminAuthentication = new AdminToken();
-
-        this.job.run(adminAuthentication).subscribe();
     }
 
 }

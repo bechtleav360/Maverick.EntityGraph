@@ -2,17 +2,13 @@ package org.av360.maverick.graph.feature.jobs.schedulers;
 
 
 import lombok.extern.slf4j.Slf4j;
-import org.av360.maverick.graph.feature.jobs.services.DetectDuplicatesService;
+import org.av360.maverick.graph.feature.jobs.DetectDuplicatesJob;
+import org.av360.maverick.graph.model.events.JobScheduledEvent;
 import org.av360.maverick.graph.model.security.AdminToken;
-import org.av360.maverick.graph.model.vocabulary.SDO;
-import org.eclipse.rdf4j.model.vocabulary.DC;
-import org.eclipse.rdf4j.model.vocabulary.DCTERMS;
-import org.eclipse.rdf4j.model.vocabulary.RDFS;
-import org.eclipse.rdf4j.model.vocabulary.SKOS;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
-import reactor.core.scheduler.Schedulers;
 
 /**
  * Regular check for duplicates in the entity stores.
@@ -48,29 +44,26 @@ import reactor.core.scheduler.Schedulers;
 @Component
 @Slf4j(topic = "graph.jobs.duplicates")
 @ConditionalOnProperty(name = "application.features.modules.jobs.scheduled.detectDuplicates", havingValue = "true")
-public class ScheduledDetectDuplicates {
+public class ScheduledDetectDuplicates  {
 
-    private final DetectDuplicatesService detectDuplicates;
+    private final DetectDuplicatesJob detectDuplicates;
+    private final ApplicationEventPublisher eventPublisher;
 
-    public ScheduledDetectDuplicates(DetectDuplicatesService detectDuplicates) {
+    public ScheduledDetectDuplicates(DetectDuplicatesJob detectDuplicates, ApplicationEventPublisher eventPublisher) {
         this.detectDuplicates = detectDuplicates;
+
+        this.eventPublisher = eventPublisher;
     }
 
 
     // https://github.com/spring-projects/spring-framework/issues/23533
 
-    @Scheduled(fixedRate = 60000)
+    @Scheduled(initialDelay = 60000, fixedRate = 120000)
     public void checkForDuplicatesScheduled() {
-        if(this.detectDuplicates.isRunning()) return;
 
-        AdminToken adminAuthentication = new AdminToken();
-
-        this.detectDuplicates.checkForDuplicates(RDFS.LABEL, adminAuthentication)
-                .then(this.detectDuplicates.checkForDuplicates(SDO.IDENTIFIER, adminAuthentication))
-                .then(this.detectDuplicates.checkForDuplicates(SKOS.PREF_LABEL, adminAuthentication))
-                .then(this.detectDuplicates.checkForDuplicates(DCTERMS.IDENTIFIER, adminAuthentication))
-                .then(this.detectDuplicates.checkForDuplicates(DC.IDENTIFIER, adminAuthentication))
-                .publishOn(Schedulers.single()).subscribe();
+        JobScheduledEvent event = new JobScheduledEvent(this.detectDuplicates);
+        event.setAuthentication(new AdminToken());
+        eventPublisher.publishEvent(event);
 
     }
 }

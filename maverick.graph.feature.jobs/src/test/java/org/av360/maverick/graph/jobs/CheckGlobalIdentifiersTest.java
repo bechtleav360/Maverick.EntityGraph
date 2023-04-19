@@ -1,8 +1,8 @@
 package org.av360.maverick.graph.jobs;
 
 import lombok.extern.slf4j.Slf4j;
-import org.av360.maverick.graph.feature.jobs.services.ReplaceExternalIdentifiersServiceV2;
-import org.av360.maverick.graph.store.rdf.models.Transaction;
+import org.av360.maverick.graph.feature.jobs.ReplaceExternalIdentifiersJob;
+import org.av360.maverick.graph.store.rdf.fragments.RdfTransaction;
 import org.av360.maverick.graph.tests.config.TestRepositoryConfig;
 import org.av360.maverick.graph.tests.config.TestSecurityConfig;
 import org.av360.maverick.graph.tests.util.TestsBase;
@@ -34,7 +34,7 @@ import java.time.temporal.ChronoUnit;
 class CheckGlobalIdentifiersTest extends TestsBase {
 
     @Autowired
-    private ReplaceExternalIdentifiersServiceV2 scheduled;
+    private ReplaceExternalIdentifiersJob scheduled;
 
 
     @Autowired
@@ -57,7 +57,7 @@ class CheckGlobalIdentifiersTest extends TestsBase {
         Mono<Model> readModelMono = entityServicesClient.getModel().doOnSubscribe(sub -> super.printStep());
 
 
-        Flux<Transaction> actionMono = scheduled.checkForExternalIdentifiers(TestSecurityConfig.createAuthenticationToken()).doOnSubscribe(sub -> super.printStep());
+        Flux<RdfTransaction> actionMono = scheduled.checkForExternalSubjectIdentifiers(TestSecurityConfig.createAuthenticationToken()).doOnSubscribe(sub -> super.printStep());
 
         StepVerifier.create(importMono.then(readModelMono))
                 .assertNext(md -> {

@@ -1,14 +1,20 @@
-package org.av360.maverick.graph.feature.jobs.services;
+package org.av360.maverick.graph.feature.jobs;
 
 
 import lombok.extern.slf4j.Slf4j;
+import org.av360.maverick.graph.model.entities.Job;
+import org.av360.maverick.graph.model.vocabulary.SDO;
 import org.av360.maverick.graph.services.EntityServices;
 import org.av360.maverick.graph.services.QueryServices;
 import org.av360.maverick.graph.services.ValueServices;
-import org.av360.maverick.graph.store.rdf.models.Transaction;
+import org.av360.maverick.graph.store.rdf.fragments.RdfTransaction;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
+import org.eclipse.rdf4j.model.vocabulary.DC;
+import org.eclipse.rdf4j.model.vocabulary.DCTERMS;
+import org.eclipse.rdf4j.model.vocabulary.RDFS;
+import org.eclipse.rdf4j.model.vocabulary.SKOS;
 import org.eclipse.rdf4j.sparqlbuilder.constraint.Expressions;
 import org.eclipse.rdf4j.sparqlbuilder.core.SparqlBuilder;
 import org.eclipse.rdf4j.sparqlbuilder.core.Variable;
@@ -56,12 +62,19 @@ import java.util.TreeSet;
  */
 @Service
 @Slf4j(topic = "graph.jobs.duplicates")
-public class DetectDuplicatesService {
+public class DetectDuplicatesJob implements Job {
 
 
-    private record DuplicateCandidate(IRI sharedProperty, String type, String sharedValue) {    }
+    @Override
+    public String getName() {
+        return "detect duplicates";
+    }
 
-    private record MislinkedStatement(IRI subject, IRI predicate, IRI object) {     }
+    private record DuplicateCandidate(IRI sharedProperty, String type, String sharedValue) {
+    }
+
+    private record MislinkedStatement(IRI subject, IRI predicate, IRI object) {
+    }
 
     private record Duplicate(IRI id) implements Comparable<Duplicate> {
         @Override
@@ -76,22 +89,21 @@ public class DetectDuplicatesService {
     private final ValueServices valueServices;
     private final SimpleValueFactory valueFactory;
 
-    public DetectDuplicatesService(EntityServices service, QueryServices queryServices, ValueServices valueServices) {
+    public DetectDuplicatesJob(EntityServices service, QueryServices queryServices, ValueServices valueServices) {
         this.entityServices = service;
         this.queryServices = queryServices;
         this.valueServices = valueServices;
         this.valueFactory = SimpleValueFactory.getInstance();
     }
 
+    public Mono<Void> run(Authentication authentication) {
+        return this.checkForDuplicates(RDFS.LABEL, authentication)
+                .then(this.checkForDuplicates(SDO.IDENTIFIER, authentication))
+                .then(this.checkForDuplicates(SKOS.PREF_LABEL, authentication))
+                .then(this.checkForDuplicates(DCTERMS.IDENTIFIER, authentication))
+                .then(this.checkForDuplicates(DC.IDENTIFIER, authentication));
 
-    // https://github.com/spring-projects/spring-framework/issues/23533
-    private boolean labelCheckRunning = false;
-
-    public boolean isRunning() {
-        return labelCheckRunning;
     }
-
-
 
     public Mono<Void> checkForDuplicates(IRI characteristicProperty, Authentication authentication) {
         return this.findCandidates(characteristicProperty, authentication)
@@ -106,11 +118,9 @@ public class DetectDuplicatesService {
                                 .flatMap(duplicates -> this.mergeDuplicates(duplicates, authentication)))
                 .doOnSubscribe(sub -> {
                     log.trace("Checking duplicates sharing the same label");
-                    labelCheckRunning = true;
 
                 })
                 .doOnComplete(() -> {
-                    labelCheckRunning = false;
                 }).thenEmpty(Mono.empty());
 
     }
@@ -187,11 +197,11 @@ public class DetectDuplicatesService {
     }
 
 
-    private Mono<Transaction> removeDuplicate(IRI object, Authentication authentication) {
+    private Mono<RdfTransaction> removeDuplicate(IRI object, Authentication authentication) {
         return this.entityServices.remove(object, authentication);
     }
 
-    private Mono<Transaction> relinkEntity(IRI subject, IRI predicate, Value object, Value id, Authentication authentication) {
+    private Mono<RdfTransaction> relinkEntity(IRI subject, IRI predicate, Value object, Value id, Authentication authentication) {
         return this.valueServices.replace(subject, predicate, object, id, authentication);
     }
 
@@ -254,7 +264,6 @@ public class DetectDuplicatesService {
                 });
 
     }
-
 
 
 }

@@ -1,6 +1,6 @@
-package org.av360.maverick.graph.services.events;
+package org.av360.maverick.graph.model.events;
 
-import org.av360.maverick.graph.store.rdf.models.Transaction;
+import org.av360.maverick.graph.model.entities.Transaction;
 
 public class ValueInsertedEvent extends EntityEvent {
 

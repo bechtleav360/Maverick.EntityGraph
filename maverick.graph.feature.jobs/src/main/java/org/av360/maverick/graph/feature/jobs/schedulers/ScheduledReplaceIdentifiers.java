@@ -1,9 +1,11 @@
 package org.av360.maverick.graph.feature.jobs.schedulers;
 
 import lombok.extern.slf4j.Slf4j;
-import org.av360.maverick.graph.feature.jobs.services.ReplaceExternalIdentifiersService;
+import org.av360.maverick.graph.feature.jobs.ReplaceExternalIdentifiersJob;
+import org.av360.maverick.graph.model.events.JobScheduledEvent;
 import org.av360.maverick.graph.model.security.AdminToken;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -22,41 +24,23 @@ import org.springframework.stereotype.Component;
 @Slf4j(topic = "graph.jobs.identifiers")
 @Component
 @ConditionalOnProperty(name = "application.features.modules.jobs.scheduled.replaceIdentifiers", havingValue = "true")
-public class ScheduledReplaceIdentifiers {
+public class ScheduledReplaceIdentifiers  {
 
     // FIXME: should not directly access the services
-    private final ReplaceExternalIdentifiersService job;
+    private final ReplaceExternalIdentifiersJob job;
+    private final ApplicationEventPublisher eventPublisher;
 
-
-    public ScheduledReplaceIdentifiers(ReplaceExternalIdentifiersService job) {
+    public ScheduledReplaceIdentifiers(ReplaceExternalIdentifiersJob job, ApplicationEventPublisher eventPublisher) {
         this.job = job;
+        this.eventPublisher = eventPublisher;
     }
 
 
-    @Scheduled(fixedDelay = 30000)
+    @Scheduled(initialDelay = 20000, fixedRate = 60000)
     public void checkForGlobalIdentifiersScheduled() {
-        if (this.job.isRunning()) return;
-
-        AdminToken adminAuthentication = new AdminToken();
-        this.job.run(adminAuthentication).subscribe();
-
-
-        /*
-        this.job.checkForExternalIdentifiers(adminAuthentication)
-                .collectList()
-                .doOnError(throwable -> log.error("Checking for global identifiers failed. ", throwable))
-                .doOnSuccess(list -> {
-                    Integer reduce = list.stream()
-                            .map(transaction -> transaction.listModifiedResources().size())
-                            .reduce(0, Integer::sum);
-                    if (reduce > 0) {
-                        log.info("Checking for external identifiers completed, {} resource identifiers have been converted to locally resolvable identifiers.", reduce);
-                    } else {
-                        log.trace("No global identifiers found");
-                    }
-
-                }).subscribe();
-                */
+        JobScheduledEvent event = new JobScheduledEvent(this.job);
+        event.setAuthentication(new AdminToken());
+        eventPublisher.publishEvent(event);
     }
 
 }

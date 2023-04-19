@@ -1,6 +1,6 @@
 package org.av360.maverick.graph.store.rdf.helpers;
 
-import org.av360.maverick.graph.store.rdf.models.TripleBag;
+import org.av360.maverick.graph.store.rdf.fragments.TripleBag;
 import org.eclipse.rdf4j.common.exception.RDF4JException;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;

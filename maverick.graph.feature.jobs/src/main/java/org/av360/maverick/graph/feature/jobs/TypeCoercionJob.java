@@ -1,7 +1,8 @@
-package org.av360.maverick.graph.feature.jobs.services;
+package org.av360.maverick.graph.feature.jobs;
 
 
 import lombok.extern.slf4j.Slf4j;
+import org.av360.maverick.graph.model.entities.Job;
 import org.av360.maverick.graph.model.errors.requests.InvalidConfiguration;
 import org.av360.maverick.graph.model.vocabulary.Local;
 import org.av360.maverick.graph.model.vocabulary.Transactions;
@@ -9,7 +10,7 @@ import org.av360.maverick.graph.services.EntityServices;
 import org.av360.maverick.graph.services.QueryServices;
 import org.av360.maverick.graph.services.transformers.types.InsertLocalTypes;
 import org.av360.maverick.graph.store.TransactionsStore;
-import org.av360.maverick.graph.store.rdf.models.Transaction;
+import org.av360.maverick.graph.store.rdf.fragments.RdfTransaction;
 import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Statement;
@@ -40,19 +41,23 @@ import java.util.Objects;
  */
 @Service
 @Slf4j(topic = "graph.jobs.coercion")
-public class TypeCoercionService  {
+public class TypeCoercionJob implements Job {
     private final EntityServices entityServices;
     private final QueryServices queryServices;
 
     private final InsertLocalTypes localTypesTransformer;
     private final TransactionsStore transactionsStore;
-    private boolean labelCheckRunning;
 
-    public TypeCoercionService(EntityServices entityServices, QueryServices queryServices, @Autowired(required = false) @Nullable InsertLocalTypes localTypesTransformer, TransactionsStore transactionsStore) {
+    public TypeCoercionJob(EntityServices entityServices, QueryServices queryServices, @Autowired(required = false) @Nullable InsertLocalTypes localTypesTransformer, TransactionsStore transactionsStore) {
         this.entityServices = entityServices;
         this.queryServices = queryServices;
         this.localTypesTransformer = localTypesTransformer;
         this.transactionsStore = transactionsStore;
+    }
+
+    @Override
+    public String getName() {
+        return "type coercion";
     }
 
     public Mono<Void> run(Authentication authentication) {
@@ -65,7 +70,7 @@ public class TypeCoercionService  {
                 .flatMap(localTypesTransformer::getStatements)
                 .collect(new ModelCollector())
                 .doOnNext(model -> log.trace("Collected {} statements for new types", model.size()))
-                .flatMap(model -> this.entityServices.getStore().insert(model, new Transaction()))
+                .flatMap(model -> this.entityServices.getStore().insert(model, new RdfTransaction()))
                 .flatMapMany(trx -> this.entityServices.getStore().commit(trx, authentication))
                 .doOnNext(transaction -> {
                     Assert.isTrue(transaction.hasStatement(null, Transactions.STATUS, Transactions.SUCCESS), "Failed transaction: \n" + transaction);
@@ -75,12 +80,9 @@ public class TypeCoercionService  {
                     log.error("Exception while finding and replacing subject identifiers: {}", throwable.getMessage());
                 })
                 .doOnSubscribe(sub -> {
-                    log.trace("Checking for external or anonymous subject identifiers.");
-                    labelCheckRunning = true;
+                    log.debug("Checking for external or anonymous subject identifiers.");
                 })
-                .doOnComplete(() -> {
-                    labelCheckRunning = false;
-                }).then();
+                .then();
 
     }
 
@@ -135,7 +137,4 @@ public class TypeCoercionService  {
     }
 
 
-    public boolean isRunning() {
-        return labelCheckRunning;
-    }
 }

@@ -1,6 +1,7 @@
-package org.av360.maverick.graph.store.rdf.models;
+package org.av360.maverick.graph.store.rdf.fragments;
 
 import lombok.extern.slf4j.Slf4j;
+import org.av360.maverick.graph.model.entities.Transaction;
 import org.av360.maverick.graph.model.enums.Activity;
 import org.av360.maverick.graph.model.identifier.DefaultIdentifierFactory;
 import org.av360.maverick.graph.model.rdf.NamespaceAwareStatement;
@@ -27,11 +28,11 @@ import java.util.stream.Stream;
 
 
 @Slf4j
-public class Transaction extends TripleModel {
+public class RdfTransaction extends TripleModel implements Transaction {
     private final IRI transactionIdentifier;
 
 
-    public Transaction() {
+    public RdfTransaction() {
         super();
         transactionIdentifier = DefaultIdentifierFactory.getInstance().createRandomIdentifier(Local.Transactions.NAMESPACE);
 
@@ -46,7 +47,7 @@ public class Transaction extends TripleModel {
     }
 
 
-    public Transaction remove(Collection<Statement> statements, Activity activity) {
+    public RdfTransaction remove(Collection<Statement> statements, Activity activity) {
         super.getBuilder().add(statements, Transactions.GRAPH_DELETED);
 
         statements.stream().map(Statement::getSubject).distinct().forEach(resource -> {
@@ -55,15 +56,15 @@ public class Transaction extends TripleModel {
         return this;
     }
 
-    public Transaction remove(Statement sts, Activity activity) {
+    public RdfTransaction remove(Statement sts, Activity activity) {
         return this.remove(List.of(sts), activity);
     }
 
-    public Transaction remove(Resource subject, IRI predicate, Value value, Activity activity) {
+    public RdfTransaction remove(Resource subject, IRI predicate, Value value, Activity activity) {
         return this.remove(SimpleValueFactory.getInstance().createStatement(subject, predicate, value), activity);
     }
 
-    public Transaction insert(Collection<Statement> statements, Activity activity) {
+    public RdfTransaction insert(Collection<Statement> statements, Activity activity) {
         super.getBuilder().add(statements, Transactions.GRAPH_CREATED, Transactions.GRAPH_AFFECTED);
 
         statements.stream().map(Statement::getSubject).distinct().forEach(resource -> {
@@ -73,20 +74,20 @@ public class Transaction extends TripleModel {
         return this;
     }
 
-    public Transaction insert(Statement sts, Activity activity) {
+    public RdfTransaction insert(Statement sts, Activity activity) {
         return this.insert(List.of(sts), activity);
     }
 
-    public Transaction insert(Resource subject, IRI predicate, Value value, Activity activity) {
+    public RdfTransaction insert(Resource subject, IRI predicate, Value value, Activity activity) {
         return this.insert(SimpleValueFactory.getInstance().createStatement(subject, predicate, value), activity);
     }
 
 
-    public Transaction affected(TripleModel wrappedModel) {
+    public RdfTransaction affected(TripleModel wrappedModel) {
         return this.affected(wrappedModel.getModel());
     }
 
-    public Transaction affected(Statement statement) {
+    public RdfTransaction affected(Statement statement) {
         return this.affected(List.of(statement));
     }
 
@@ -96,16 +97,16 @@ public class Transaction extends TripleModel {
      * @param statements
      * @return
      */
-    public Transaction affected(Collection<Statement> statements) {
+    public RdfTransaction affected(Collection<Statement> statements) {
         super.getBuilder().add(statements, Transactions.GRAPH_AFFECTED);
         return this;
     }
 
-    public Transaction affected(Stream<Statement> statements) {
+    public RdfTransaction affected(Stream<Statement> statements) {
         return this.affected(statements.toList());
     }
 
-    public Transaction affected(Resource subject, IRI predicate, Value value) {
+    public RdfTransaction affected(Resource subject, IRI predicate, Value value) {
         return this.affected(SimpleValueFactory.getInstance().createStatement(subject, predicate, value));
     }
 
@@ -146,7 +147,7 @@ public class Transaction extends TripleModel {
 
     }
 
-    public Mono<Transaction> asMono() {
+    public Mono<RdfTransaction> asMono() {
         return Mono.just(this);
     }
 

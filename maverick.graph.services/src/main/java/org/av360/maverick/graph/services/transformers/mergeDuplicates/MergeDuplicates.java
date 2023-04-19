@@ -5,7 +5,7 @@ import org.apache.commons.lang3.tuple.Triple;
 import org.av360.maverick.graph.model.identifier.ChecksumIdentifier;
 import org.av360.maverick.graph.services.QueryServices;
 import org.av360.maverick.graph.services.transformers.Transformer;
-import org.av360.maverick.graph.store.rdf.models.TripleModel;
+import org.av360.maverick.graph.store.rdf.fragments.TripleModel;
 import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Statement;

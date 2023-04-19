@@ -1,7 +1,7 @@
 package org.av360.maverick.graph.services;
 
-import org.av360.maverick.graph.store.rdf.models.TripleBag;
-import org.av360.maverick.graph.store.rdf.models.Transaction;
+import org.av360.maverick.graph.store.rdf.fragments.RdfTransaction;
+import org.av360.maverick.graph.store.rdf.fragments.TripleBag;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
 import org.springframework.security.core.Authentication;
@@ -9,16 +9,16 @@ import reactor.core.publisher.Mono;
 
 public interface RelationServices {
 
-    Mono<Transaction> link(String entityIdentifier, String predicatePrefix, String predicateKey, TripleBag linkedEntities, Authentication authentication);
+    Mono<RdfTransaction> link(String entityIdentifier, String predicatePrefix, String predicateKey, TripleBag linkedEntities, Authentication authentication);
 
-    Mono<Transaction> link(Resource entityIdentifier, IRI predicate, TripleBag linkedEntities, Authentication authentication);
+    Mono<RdfTransaction> link(Resource entityIdentifier, IRI predicate, TripleBag linkedEntities, Authentication authentication);
 
 
-    Mono<Transaction> unlink(String entityIdentifier, String predicatePrefix, String predicateKey, TripleBag linkedEntities, Authentication authentication);
+    Mono<RdfTransaction> unlink(String entityIdentifier, String predicatePrefix, String predicateKey, TripleBag linkedEntities, Authentication authentication);
 
-    Mono<Transaction> unlink(Resource entityIdentifier, IRI predicate, TripleBag linkedEntities, Authentication authentication);
+    Mono<RdfTransaction> unlink(Resource entityIdentifier, IRI predicate, TripleBag linkedEntities, Authentication authentication);
 
-    Mono<Transaction> embed(Resource entityIdentifier, IRI predicate, TripleBag embeddedEntities, Authentication authentication);
+    Mono<RdfTransaction> embed(Resource entityIdentifier, IRI predicate, TripleBag embeddedEntities, Authentication authentication);
 
 
 }

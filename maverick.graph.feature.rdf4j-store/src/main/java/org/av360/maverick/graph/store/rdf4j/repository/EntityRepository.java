@@ -1,10 +1,10 @@
 package org.av360.maverick.graph.store.rdf4j.repository;
 
+import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.store.EntityStore;
 import org.av360.maverick.graph.store.RepositoryType;
-import org.av360.maverick.graph.store.rdf.models.Entity;
+import org.av360.maverick.graph.store.rdf.fragments.RdfEntity;
 import org.av360.maverick.graph.store.rdf4j.repository.util.AbstractRepository;
-import lombok.extern.slf4j.Slf4j;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Statement;
@@ -28,11 +28,11 @@ public class EntityRepository extends AbstractRepository implements EntityStore 
     }
 
 
-    public Mono<Entity> getEntity(Resource id, Authentication authentication, GrantedAuthority requiredAuthority) {
+    public Mono<RdfEntity> getEntity(Resource id, Authentication authentication, GrantedAuthority requiredAuthority) {
         return this.getEntity(id, authentication, requiredAuthority, 1);
     }
 
-    public Mono<Entity> getEntity(Resource id, Authentication authentication, GrantedAuthority requiredAuthority, int includeNeighborsLevel) {
+    public Mono<RdfEntity> getEntity(Resource id, Authentication authentication, GrantedAuthority requiredAuthority, int includeNeighborsLevel) {
         return getConnection(authentication, requiredAuthority).flatMap(connection -> {
             log.trace("Loading entity with id '{}' from repository {}", id, connection.getRepository().toString());
 
@@ -43,7 +43,7 @@ public class EntityRepository extends AbstractRepository implements EntityStore 
                     return Mono.empty();
                 }
 
-                Entity entity = new Entity(id).withResult(statements);
+                RdfEntity entity = new RdfEntity(id).withResult(statements);
 
                 if(includeNeighborsLevel >= 1) {
                     Stream<Value> stream = entity.getModel().objects().stream();

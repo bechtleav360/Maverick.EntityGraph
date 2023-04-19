@@ -1,7 +1,7 @@
 package org.av360.maverick.graph.services;
 
-import org.av360.maverick.graph.store.rdf.models.Entity;
-import org.av360.maverick.graph.store.rdf.models.Transaction;
+import org.av360.maverick.graph.store.rdf.fragments.RdfEntity;
+import org.av360.maverick.graph.store.rdf.fragments.RdfTransaction;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Value;
 import org.springframework.security.core.Authentication;
@@ -20,7 +20,7 @@ public interface ValueServices {
      * @param authentication    The current authentication
      * @return The transaction information.
      */
-    Mono<Transaction> insertLiteral(String entityKey, String property, String value, @Nullable String languageTag, Authentication authentication);
+    Mono<RdfTransaction> insertLiteral(String entityKey, String property, String value, @Nullable String languageTag, Authentication authentication);
 
     /**
      * Sets the value. Replaces an existing value with the same predicate, except a different @-tag has been set
@@ -31,7 +31,7 @@ public interface ValueServices {
      * @param authentication   The current authentication
      * @return The transaction information.
      */
-    Mono<Transaction> insertLink(String entityKey, String property, String targetKey, Authentication authentication);
+    Mono<RdfTransaction> insertLink(String entityKey, String property, String targetKey, Authentication authentication);
 
     /**
      * @param entityIdentifier The unique local identifier of the entity
@@ -40,7 +40,7 @@ public interface ValueServices {
      * @param authentication   The current authentication
      * @return The transaction information.
      */
-    Mono<Transaction> insertValue(IRI entityIdentifier, IRI predicate, Value value, Authentication authentication);
+    Mono<RdfTransaction> insertValue(IRI entityIdentifier, IRI predicate, Value value, Authentication authentication);
 
     /**
      * @param entityKey         The unique local identifier of the entity
@@ -49,7 +49,7 @@ public interface ValueServices {
      * @param authentication    The current authentication
      * @return The transaction information.
      */
-    Mono<Transaction> removeLiteral(String entityKey, String prefixedProperty, String lang, Authentication authentication);
+    Mono<RdfTransaction> removeLiteral(String entityKey, String prefixedProperty, String lang, Authentication authentication);
 
     /**
      * @param entityIdentifier The unique and qualified local identifier of the entity
@@ -58,7 +58,7 @@ public interface ValueServices {
      * @param authentication   The current authentication
      * @return The transaction information.
      */
-    Mono<Transaction> removeValue(IRI entityIdentifier, IRI predicate, @Nullable String lang, Authentication authentication);
+    Mono<RdfTransaction> removeValue(IRI entityIdentifier, IRI predicate, @Nullable String lang, Authentication authentication);
 
 
     /**
@@ -68,7 +68,7 @@ public interface ValueServices {
      * @param authentication    The current authentication
      * @return The transaction information.
      */
-    Mono<Transaction> removeLink(String entityKey, String prefixedProperty, String targetKey, Authentication authentication);
+    Mono<RdfTransaction> removeLink(String entityKey, String prefixedProperty, String targetKey, Authentication authentication);
 
 
     /**
@@ -79,7 +79,7 @@ public interface ValueServices {
      * @param authentication   The current authentication
      * @return The transaction information.
      */
-    Mono<Transaction> replace(IRI entityIdentifier, IRI predicate, Value oldValue, Value newValue, Authentication authentication);
+    Mono<RdfTransaction> replace(IRI entityIdentifier, IRI predicate, Value oldValue, Value newValue, Authentication authentication);
 
-    Mono<Entity> listLinks(String id, String prefixedKey, Authentication authentication);
+    Mono<RdfEntity> listLinks(String id, String prefixedKey, Authentication authentication);
 }

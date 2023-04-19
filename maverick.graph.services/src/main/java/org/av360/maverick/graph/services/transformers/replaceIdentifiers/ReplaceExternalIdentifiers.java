@@ -5,7 +5,7 @@ import org.av360.maverick.graph.model.identifier.IdentifierFactory;
 import org.av360.maverick.graph.model.identifier.LocalIdentifier;
 import org.av360.maverick.graph.model.vocabulary.Local;
 import org.av360.maverick.graph.services.transformers.Transformer;
-import org.av360.maverick.graph.store.rdf.models.TripleModel;
+import org.av360.maverick.graph.store.rdf.fragments.TripleModel;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.Value;

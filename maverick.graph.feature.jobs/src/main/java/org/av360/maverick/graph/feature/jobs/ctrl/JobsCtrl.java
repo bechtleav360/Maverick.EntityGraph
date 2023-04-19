@@ -5,9 +5,9 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.api.controller.AbstractController;
-import org.av360.maverick.graph.feature.jobs.services.DetectDuplicatesService;
-import org.av360.maverick.graph.feature.jobs.services.ReplaceExternalIdentifiersServiceV2;
-import org.av360.maverick.graph.feature.jobs.services.TypeCoercionService;
+import org.av360.maverick.graph.feature.jobs.DetectDuplicatesJob;
+import org.av360.maverick.graph.feature.jobs.ReplaceExternalIdentifiersJob;
+import org.av360.maverick.graph.feature.jobs.TypeCoercionJob;
 import org.av360.maverick.graph.services.SchemaServices;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -22,14 +22,14 @@ public class JobsCtrl extends AbstractController {
 
 
 
-    final DetectDuplicatesService detectDuplicatesJob;
-    final ReplaceExternalIdentifiersServiceV2 replaceExternalIdentifiersService;
+    final DetectDuplicatesJob detectDuplicatesJob;
+    final ReplaceExternalIdentifiersJob replaceExternalIdentifiersService;
 
-    final TypeCoercionService typeCoercionService;
+    final TypeCoercionJob typeCoercionService;
 
     final SchemaServices schemaServices;
 
-    public JobsCtrl(DetectDuplicatesService detectDuplicatesJob, ReplaceExternalIdentifiersServiceV2 replaceExternalIdentifiersJob, TypeCoercionService typeCoercionService, SchemaServices schemaServices) {
+    public JobsCtrl(DetectDuplicatesJob detectDuplicatesJob, ReplaceExternalIdentifiersJob replaceExternalIdentifiersJob, TypeCoercionJob typeCoercionService, SchemaServices schemaServices) {
         this.detectDuplicatesJob = detectDuplicatesJob;
         this.replaceExternalIdentifiersService = replaceExternalIdentifiersJob;
         this.typeCoercionService = typeCoercionService;
@@ -59,7 +59,7 @@ public class JobsCtrl extends AbstractController {
     @ResponseStatus(HttpStatus.OK)
     Mono<Void> execSkolemizationJob() {
         return super.getAuthentication()
-                .flatMapMany(this.replaceExternalIdentifiersService::checkForExternalIdentifiers).then();
+                .flatMap(this.replaceExternalIdentifiersService::run);
 
     }
 
