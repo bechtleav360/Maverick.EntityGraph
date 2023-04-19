@@ -2,12 +2,12 @@ package org.av360.maverick.graph.store.rdf4j.config;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
+import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.model.security.ApiKeyAuthenticationToken;
 import org.av360.maverick.graph.model.util.StreamsLogger;
 import org.av360.maverick.graph.store.RepositoryBuilder;
 import org.av360.maverick.graph.store.RepositoryType;
 import org.av360.maverick.graph.store.rdf.LabeledRepository;
-import lombok.extern.slf4j.Slf4j;
 import org.eclipse.rdf4j.http.protocol.UnauthorizedException;
 import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryException;

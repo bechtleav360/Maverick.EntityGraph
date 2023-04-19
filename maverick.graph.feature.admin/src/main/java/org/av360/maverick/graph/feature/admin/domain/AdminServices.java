@@ -15,6 +15,11 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import software.amazon.awssdk.core.async.AsyncRequestBody;
+import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.s3.S3AsyncClient;
+import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.services.s3.model.PutObjectResponse;
 //import software.amazon.awssdk.core.ResponseBytes;
 //import software.amazon.awssdk.core.sync.RequestBody;
 //import software.amazon.awssdk.services.s3.S3Client;
@@ -23,6 +28,7 @@ import reactor.core.publisher.Mono;
 //import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 //import software.amazon.awssdk.services.s3.model.S3Exception;
 import java.io.StringWriter;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 
 
@@ -47,42 +53,35 @@ public class AdminServices {
                 .doOnSubscribe(sub -> log.info("Importing statements of type '{}' through admin services", mimetype));
     }
 
-    public Flux<Statement> exportEntities(Authentication authentication) {
-        return this.graph.listStatements(null, null, null, authentication).map(statements -> {
-            StringWriter stringWriter = new StringWriter();
-            RDFWriter writer = RDFWriterRegistry.getInstance().get(RDFFormat.TURTLE).get().getWriter(stringWriter);
-            writer.startRDF();
-            statements.forEach(writer::handleStatement);
-            writer.endRDF();
+    public Mono<PutObjectResponse> exportEntitiesToS3(Authentication authentication) {
+        S3AsyncClient s3Client = S3AsyncClient.builder()
+                .endpointOverride(URI.create("http://127.0.0.1:9000"))
+                .region(Region.US_EAST_1)
+                .build();
 
-            return statements;
-        })
-                .flatMapMany(Flux::fromIterable)
+        return this.graph.listStatements(null, null, null, authentication)
+                .map(statements -> {
+                    StringWriter stringWriter = new StringWriter();
+                    RDFWriter writer = RDFWriterRegistry.getInstance().get(RDFFormat.TURTLE).get().getWriter(stringWriter);
+                    writer.startRDF();
+                    statements.forEach(writer::handleStatement);
+                    writer.endRDF();
+
+                    return stringWriter.toString();
+                })
+                .flatMap(rdfString -> {
+                    PutObjectRequest putObjectRequest = PutObjectRequest.builder()
+                            .bucket("test")
+                            .key("test")
+                            .build();
+                    return Mono.fromCompletionStage(s3Client.putObject(
+                            putObjectRequest,
+                            AsyncRequestBody.fromBytes(rdfString.getBytes(StandardCharsets.UTF_8))
+                    ));
+                })
                 .doOnSubscribe(sub -> log.info("Exporting statements through admin services"));
     }
 
-    public Mono<Void> exportToS3(Authentication authentication) {
-        return exportEntities(authentication)
-                .collectList()
-                .flatMap(statements -> {
-                    System.out.println(statements.size());
-//                    try {
-//                        S3Client s3 = S3Client.builder()
-//                                .endpointOverride(URI.create(ba.asString(s3Host)))
-//                                .build();
-//                        PutObjectRequest objectRequest = PutObjectRequest.builder()
-//                                .bucket(ba.asString(s3Bucket))
-//                                .key(exportIdentifier)
-//                                .build();
-//                        s3.putObject(objectRequest, RequestBody.fromString(ba.asString(node)));
-//
-//                    } catch (S3Exception e) {
-//                        log.error(e.awsErrorDetails().errorMessage());
-//                    }
-//
-                    return Mono.empty();
-                })
-                .doOnSubscribe(sub -> log.info("Exporting statements to S3 through admin services"))
-                .then();
-    }
+
+
 }

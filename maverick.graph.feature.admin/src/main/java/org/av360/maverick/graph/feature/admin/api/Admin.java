@@ -95,19 +95,9 @@ public class Admin extends AbstractController {
     @ResponseStatus(HttpStatus.ACCEPTED)
     Mono<Void> exportToS3() {
         return super.getAuthentication()
-                .flatMap(authentication -> adminServices.exportToS3(authentication))
+                .flatMap(authentication -> adminServices.exportEntitiesToS3(authentication))
                 .doOnError(throwable -> log.error("Error while exporting to S3.", throwable))
-                .doOnSubscribe(s -> log.debug("Request to export to S3"));
-    }
-
-    //@ApiOperation(value = "Trigger Export RDF to S3", tags = {})
-    @GetMapping(value = "/export/file", produces = MediaType.TEXT_PLAIN_VALUE)
-    @ResponseStatus(HttpStatus.ACCEPTED)
-    Mono<Void> exportToFile() {
-        return super.getAuthentication()
-                .flatMap(authentication -> adminServices.exportToS3(authentication))
-                .doOnError(throwable -> log.error("Error while exporting to S3.", throwable))
-                .doOnSubscribe(s -> log.debug("Request to export to S3"));
+                .doOnSubscribe(s -> log.debug("Request to export to S3")).then();
     }
 
 }

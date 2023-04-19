@@ -11,7 +11,8 @@ application:
   features:
     modules:
       applications: true
-      admin: true
+      admin:
+        enabled: true
     schedulers:
       detectDuplicates: false
       replaceGlobalIdentifiers: false
