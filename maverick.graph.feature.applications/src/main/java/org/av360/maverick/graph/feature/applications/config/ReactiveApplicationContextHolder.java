@@ -2,6 +2,7 @@ package org.av360.maverick.graph.feature.applications.config;
 
 import org.av360.maverick.graph.feature.applications.domain.model.Application;
 import reactor.core.publisher.Mono;
+import reactor.util.context.Context;
 
 public class ReactiveApplicationContextHolder {
 
@@ -15,4 +16,7 @@ public class ReactiveApplicationContextHolder {
 
     }
 
+    public static Context withApplication(Application requestedApplication) {
+        return Context.of(CONTEXT_KEY, requestedApplication);
+    }
 }

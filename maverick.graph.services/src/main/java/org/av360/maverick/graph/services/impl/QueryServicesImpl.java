@@ -1,7 +1,7 @@
 package org.av360.maverick.graph.services.impl;
 
 import lombok.extern.slf4j.Slf4j;
-import org.av360.maverick.graph.model.rdf.NamespaceAwareStatement;
+import org.av360.maverick.graph.model.rdf.AnnotatedStatement;
 import org.av360.maverick.graph.services.QueryServices;
 import org.av360.maverick.graph.services.SchemaServices;
 import org.av360.maverick.graph.services.transformers.DelegatingTransformer;
@@ -55,7 +55,7 @@ public class QueryServicesImpl implements QueryServices {
     }
 
     @Override
-    public Flux<NamespaceAwareStatement> queryGraph(String queryStr, Authentication authentication) {
+    public Flux<AnnotatedStatement> queryGraph(String queryStr, Authentication authentication) {
         return Mono.just(queryStr)
                 .map(q -> queryParser.parseQuery(queryStr, null))
                 .flatMapMany(ptq -> this.entityStore.construct(queryStr, authentication))
@@ -65,7 +65,7 @@ public class QueryServicesImpl implements QueryServices {
 
     }
 
-    public Flux<NamespaceAwareStatement> queryGraph(ConstructQuery query, Authentication authentication) {
+    public Flux<AnnotatedStatement> queryGraph(ConstructQuery query, Authentication authentication) {
         return this.entityStore.construct(query.getQueryString(), authentication)
                 .doOnSubscribe(subscription -> {
                     if (log.isTraceEnabled()) log.trace("Running construct query in {}: {}", this.entityStore.getRepositoryType(), query.getQueryString().replace('\n', ' ').trim());

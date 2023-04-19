@@ -1,14 +1,18 @@
-package org.av360.maverick.graph.feature.jobs.schedulers;
+package org.av360.maverick.graph.feature.applications.schedulers;
 
 
 import lombok.extern.slf4j.Slf4j;
-import org.av360.maverick.graph.feature.jobs.DetectDuplicatesJob;
+import org.av360.maverick.graph.feature.applications.domain.ApplicationsService;
+import org.av360.maverick.graph.feature.applications.events.ApplicationJobScheduledEvent;
 import org.av360.maverick.graph.model.events.JobScheduledEvent;
 import org.av360.maverick.graph.model.security.AdminToken;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 
 /**
  * Regular check for duplicates in the entity stores.
@@ -44,22 +48,25 @@ import org.springframework.stereotype.Component;
 @Component
 @Slf4j(topic = "graph.jobs.duplicates")
 @ConditionalOnProperty(name = "application.features.modules.jobs.scheduled.detectDuplicates", havingValue = "true")
-public class ScheduledDetectDuplicates  {
+public class ScopedScheduledDetectDuplicates {
 
     private final ApplicationEventPublisher eventPublisher;
 
-    public ScheduledDetectDuplicates(DetectDuplicatesJob detectDuplicates, ApplicationEventPublisher eventPublisher) {
+    private final ApplicationsService applicationsService;
+
+    public ScopedScheduledDetectDuplicates(ApplicationEventPublisher eventPublisher, ApplicationsService applicationsService) {
         this.eventPublisher = eventPublisher;
+        this.applicationsService = applicationsService;
     }
 
-
-    // https://github.com/spring-projects/spring-framework/issues/23533
-
-    @Scheduled(initialDelay = 60000, fixedRate = 120000)
+    @Scheduled(initialDelay = 10000, fixedRate = 120000)
     public void checkForDuplicatesScheduled() {
-
-        JobScheduledEvent event = new JobScheduledEvent("detectDuplicates", new AdminToken());
-        eventPublisher.publishEvent(event);
+        applicationsService.listApplications(new AdminToken())
+                .delayElements(Duration.of(2, ChronoUnit.SECONDS))
+                .doOnNext(application -> {
+                    JobScheduledEvent event = new ApplicationJobScheduledEvent("detectDuplicates", new AdminToken(), application);
+                    eventPublisher.publishEvent(event);
+                }).subscribe();
 
     }
 }

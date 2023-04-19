@@ -2,7 +2,7 @@ package org.av360.maverick.graph.store.rdf4j.repository.util;
 
 import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.model.enums.Activity;
-import org.av360.maverick.graph.model.rdf.NamespaceAwareStatement;
+import org.av360.maverick.graph.model.rdf.AnnotatedStatement;
 import org.av360.maverick.graph.model.vocabulary.Transactions;
 import org.av360.maverick.graph.store.RepositoryBuilder;
 import org.av360.maverick.graph.store.RepositoryType;
@@ -72,7 +72,7 @@ public abstract class AbstractRepository implements RepositoryBehaviour, Stateme
     }
 
 
-    public Flux<NamespaceAwareStatement> construct(String query, Authentication authentication, GrantedAuthority requiredAuthority) {
+    public Flux<AnnotatedStatement> construct(String query, Authentication authentication, GrantedAuthority requiredAuthority) {
         return getConnection(authentication, requiredAuthority).flatMapMany(connection ->
                 Flux.create(sink -> {
                     try (connection) {
@@ -84,7 +84,7 @@ public abstract class AbstractRepository implements RepositoryBehaviour, Stateme
                                     .map(entry -> new SimpleNamespace(entry.getKey(), entry.getValue()))
                                     .collect(Collectors.toSet());
 
-                            result.forEach(statement -> sink.next(NamespaceAwareStatement.wrap(statement, namespaces)));
+                            result.forEach(statement -> sink.next(AnnotatedStatement.wrap(statement, namespaces)));
                         } catch (Exception e) {
                             log.warn("Error while running value query.", e);
                             sink.error(e);

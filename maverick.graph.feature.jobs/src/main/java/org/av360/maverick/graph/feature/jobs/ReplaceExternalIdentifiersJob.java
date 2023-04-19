@@ -20,6 +20,7 @@ import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.impl.LinkedHashModel;
 import org.eclipse.rdf4j.model.util.ModelBuilder;
 import org.eclipse.rdf4j.model.vocabulary.OWL;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
@@ -54,6 +55,7 @@ import java.util.stream.Collectors;
 
 @Slf4j(topic = "graph.jobs.identifiers")
 @Component
+@ConditionalOnProperty(name = "application.features.modules.jobs.scheduled.replaceIdentifiers", havingValue = "true")
 public class ReplaceExternalIdentifiersJob implements Job {
 
     private final QueryServices queryServices;
@@ -86,7 +88,7 @@ public class ReplaceExternalIdentifiersJob implements Job {
 
     @Override
     public String getName() {
-        return "replace identifiers";
+        return "replaceIdentifiers";
     }
 
     @Override

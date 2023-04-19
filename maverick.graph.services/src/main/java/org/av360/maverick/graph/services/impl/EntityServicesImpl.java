@@ -7,6 +7,7 @@ import org.av360.maverick.graph.model.events.EntityCreatedEvent;
 import org.av360.maverick.graph.model.events.EntityDeletedEvent;
 import org.av360.maverick.graph.model.rdf.LocalIRI;
 import org.av360.maverick.graph.model.vocabulary.Local;
+import org.av360.maverick.graph.model.vocabulary.SDO;
 import org.av360.maverick.graph.services.EntityServices;
 import org.av360.maverick.graph.services.QueryServices;
 import org.av360.maverick.graph.services.SchemaServices;
@@ -20,10 +21,16 @@ import org.av360.maverick.graph.store.rdf.fragments.TripleBag;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Resource;
+import org.eclipse.rdf4j.model.vocabulary.DCTERMS;
+import org.eclipse.rdf4j.model.vocabulary.RDFS;
+import org.eclipse.rdf4j.model.vocabulary.SKOS;
 import org.eclipse.rdf4j.sparqlbuilder.core.SparqlBuilder;
 import org.eclipse.rdf4j.sparqlbuilder.core.Variable;
+import org.eclipse.rdf4j.sparqlbuilder.core.query.ConstructQuery;
 import org.eclipse.rdf4j.sparqlbuilder.core.query.Queries;
 import org.eclipse.rdf4j.sparqlbuilder.core.query.SelectQuery;
+import org.eclipse.rdf4j.sparqlbuilder.graphpattern.GraphPattern;
+import org.eclipse.rdf4j.sparqlbuilder.graphpattern.TriplePattern;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.core.Authentication;
@@ -76,14 +83,67 @@ public class EntityServicesImpl implements EntityServices {
 
     @Override
     public Flux<RdfEntity> list(Authentication authentication, int limit, int offset) {
+        /*
+        PREFIX sdo:    <https://schema.org/>
+        PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+            CONSTRUCT   {
+              ?x a ?type ;
+                 sdo:title ?title ;
+                 skos:prefLabel ?label.
+            } WHERE {
+              ?x a <urn:pwid:meg:e:Individual> ;
+                 a ?type .
+              OPTIONAL {
+                ?x sdo:title ?title .
+              }
+            }
+         */
+
         Variable idVariable = SparqlBuilder.var("id");
+        Variable typeVariable = SparqlBuilder.var("type");
+        Variable l1 = SparqlBuilder.var("l1");
+        Variable l2 = SparqlBuilder.var("l2");
+        Variable l3 = SparqlBuilder.var("l3");
+        Variable l4 = SparqlBuilder.var("l4");
 
-        SelectQuery query = Queries.SELECT(idVariable).where(
-                idVariable.isA(Local.Entities.INDIVIDUAL)).limit(limit).offset(offset);
+        TriplePattern resPattern = idVariable.isA(typeVariable).andHas(SDO.TITLE, l1).andHas(RDFS.LABEL, l2).andHas(DCTERMS.TITLE, l3).andHas(SKOS.PREF_LABEL, l4);
+        GraphPattern wherePattern = idVariable.isA(Local.Entities.INDIVIDUAL).andIsA(typeVariable).and(idVariable.has(RDFS.LABEL, l1).optional())
+                .and(idVariable.has(DCTERMS.TITLE, l2).optional())
+                .and(idVariable.has(SDO.TITLE, l3).optional())
+                .and(idVariable.has(SKOS.PREF_LABEL, l4).optional());
 
+        ConstructQuery q = Queries.CONSTRUCT(resPattern).where(wherePattern).limit(limit).offset(offset);
+
+
+        final Resource[] current = {null};
+        return this.queryServices.queryGraph(q, authentication)
+                .bufferUntil(annotatedStatement -> {
+                    if(annotatedStatement.getSubject() == current[0]) return true;
+                    else {
+                        current[0] = annotatedStatement.getSubject();
+                        return false;
+                    }
+                })
+                .map(statements -> {
+                    RdfEntity rdfEntity = new RdfEntity(current[0]);
+                    rdfEntity.getModel().addAll(statements);
+                    return rdfEntity;
+                });
+        /*
         return this.queryServices.queryValues(query.getQueryString(), authentication)
-                .map(bindings -> (IRI) bindings.getValue(idVariable.getVarName()))
+                .map(bindings -> {
+                    Value value = bindings.getValue(idVariable.getVarName());
+                    if(! value.isIRI()) return;
+
+                    RdfEntity rdfEntity = new RdfEntity((IRI) value);
+                    rdfEntity.getBuilder().subject()
+
+
+                })
+                .filter(Value::isIRI)
+                .map(value -> (IRI) value)
                 .flatMap(id -> this.entityStore.getEntity(id, authentication, 0));
+         */
     }
     @Override
     public Mono<RdfEntity> findByKey(String entityKey, Authentication authentication) {

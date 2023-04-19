@@ -4,19 +4,22 @@ package org.av360.maverick.graph.store.behaviours;
 import org.av360.maverick.graph.model.security.Authorities;
 import org.av360.maverick.graph.store.RepositoryBuilder;
 import org.av360.maverick.graph.store.RepositoryType;
-import org.av360.maverick.graph.store.rdf.LabeledConnectionWrapper;
 import org.av360.maverick.graph.store.rdf.fragments.RdfTransaction;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
+import org.eclipse.rdf4j.repository.RepositoryLockedException;
+import org.eclipse.rdf4j.repository.base.RepositoryConnectionWrapper;
 import org.springframework.security.authentication.InsufficientAuthenticationException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.util.retry.Retry;
 
+import java.time.Duration;
 import java.util.Collection;
 import java.util.List;
 
@@ -60,7 +63,9 @@ public interface RepositoryBehaviour {
             return Mono.error(new InsufficientAuthenticationException(msg));
         }
         return getBuilder().buildRepository(repositoryType, authentication)
-                .map(repository -> new LabeledConnectionWrapper(repository, repository.getConnection()));
+                .map(repository -> new RepositoryConnectionWrapper(repository, repository.getConnection()))
+                .retryWhen(Retry.backoff(5, Duration.ofSeconds(1)).filter(throwable -> throwable instanceof RepositoryLockedException))
+                .map(repositoryConnectionWrapper -> repositoryConnectionWrapper);
     }
 
     RepositoryType getRepositoryType();

@@ -1,6 +1,8 @@
-package org.av360.maverick.graph.feature.jobs.schedulers;
+package org.av360.maverick.graph.feature.applications.schedulers;
 
 import lombok.extern.slf4j.Slf4j;
+import org.av360.maverick.graph.feature.applications.domain.ApplicationsService;
+import org.av360.maverick.graph.feature.applications.events.ApplicationJobScheduledEvent;
 import org.av360.maverick.graph.model.events.JobScheduledEvent;
 import org.av360.maverick.graph.model.security.AdminToken;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -23,20 +25,29 @@ import org.springframework.stereotype.Component;
 @Slf4j(topic = "graph.jobs.identifiers")
 @Component
 @ConditionalOnProperty(name = "application.features.modules.jobs.scheduled.replaceIdentifiers", havingValue = "true")
-public class ScheduledReplaceIdentifiers  {
+public class ScopedScheduledReplaceIdentifiers {
 
     // FIXME: should not directly access the services
     private final ApplicationEventPublisher eventPublisher;
 
-    public ScheduledReplaceIdentifiers(ApplicationEventPublisher eventPublisher) {
+    private final ApplicationsService applicationsService;
+
+    public ScopedScheduledReplaceIdentifiers(ApplicationEventPublisher eventPublisher, ApplicationsService applicationsService) {
         this.eventPublisher = eventPublisher;
+        this.applicationsService = applicationsService;
     }
 
 
     @Scheduled(initialDelay = 20000, fixedRate = 60000)
     public void checkForGlobalIdentifiersScheduled() {
-        JobScheduledEvent event = new JobScheduledEvent("replaceIdentifiers", new AdminToken());
-        eventPublisher.publishEvent(event);
+
+
+        applicationsService.listApplications(new AdminToken())
+                .doOnNext(application -> {
+                    JobScheduledEvent event = new ApplicationJobScheduledEvent("replaceIdentifiers", new AdminToken(), application);
+                    eventPublisher.publishEvent(event);
+                }).subscribe();
+
     }
 
 }

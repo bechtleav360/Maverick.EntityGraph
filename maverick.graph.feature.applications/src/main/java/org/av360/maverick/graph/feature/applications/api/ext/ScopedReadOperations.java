@@ -11,7 +11,7 @@ import org.av360.maverick.graph.api.controller.entities.Entities;
 import org.av360.maverick.graph.api.controller.entities.Links;
 import org.av360.maverick.graph.api.controller.entities.Values;
 import org.av360.maverick.graph.model.enums.RdfMimeTypes;
-import org.av360.maverick.graph.model.rdf.NamespaceAwareStatement;
+import org.av360.maverick.graph.model.rdf.AnnotatedStatement;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
@@ -47,7 +47,7 @@ public class ScopedReadOperations extends AbstractController {
             consumes = MediaType.TEXT_PLAIN_VALUE,
             produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE})
     @ResponseStatus(HttpStatus.OK)
-    Flux<NamespaceAwareStatement> getDetails(
+    Flux<AnnotatedStatement> getDetails(
             @PathVariable String scope,
             @PathVariable @Parameter(name = "entity identifier") String id,
             @PathVariable(required = true, value = "values") @Parameter(name = "property type") Details.PropertyType type,
@@ -61,13 +61,13 @@ public class ScopedReadOperations extends AbstractController {
     @GetMapping(value = "/s/{label}/entities/{id:[\\w|\\d|\\-|\\_]+}",
             produces = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.N3_VALUE})
     @ResponseStatus(HttpStatus.OK)
-    Flux<NamespaceAwareStatement> read(@PathVariable String label, @PathVariable String id, @RequestParam(required = false) @Nullable String property) {
+    Flux<AnnotatedStatement> read(@PathVariable String label, @PathVariable String id, @RequestParam(required = false) @Nullable String property) {
         return entitiesCtrl.read(id, property);
     }
 
     @GetMapping(value = "/s/{label}/entities", produces = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.N3_VALUE})
     @ResponseStatus(HttpStatus.OK)
-    Flux<NamespaceAwareStatement> list(
+    Flux<AnnotatedStatement> list(
             @PathVariable String label,
             @RequestParam(value = "limit", defaultValue = "100") Integer limit,
             @RequestParam(value = "offset", defaultValue = "0") Integer offset) {
@@ -79,7 +79,7 @@ public class ScopedReadOperations extends AbstractController {
     @GetMapping(value = "/s/{label}/entities/{id:[\\w|\\d|\\-|\\_]+}/values",
             produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE, MediaType.APPLICATION_JSON_VALUE})
     @ResponseStatus(HttpStatus.OK)
-    Flux<NamespaceAwareStatement> listEntityValues(@PathVariable String label, @PathVariable String id) {
+    Flux<AnnotatedStatement> listEntityValues(@PathVariable String label, @PathVariable String id) {
         return this.valuesCtrl.listEntityValues(id);
     }
 
@@ -87,7 +87,7 @@ public class ScopedReadOperations extends AbstractController {
     @GetMapping(value = "/s/{label}/entities/{id:[\\w|\\d|-|_]+}/links",
             produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE})
     @ResponseStatus(HttpStatus.OK)
-    Flux<NamespaceAwareStatement> getLinks(@PathVariable String label, @PathVariable String id) {
+    Flux<AnnotatedStatement> getLinks(@PathVariable String label, @PathVariable String id) {
         return this.linksCtrl.getLinks(id);
     }
 
@@ -95,7 +95,7 @@ public class ScopedReadOperations extends AbstractController {
     @GetMapping(value = "/s/{label}/entities/{id:[\\w|\\d|\\-|\\_]+}/links/{prefixedKey:[\\w|\\d]+\\.[\\w|\\d]+}",
             produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE})
     @ResponseStatus(HttpStatus.OK)
-    Flux<NamespaceAwareStatement> getLinksByType(@PathVariable String label, @PathVariable String id, @PathVariable String prefixedKey) {
+    Flux<AnnotatedStatement> getLinksByType(@PathVariable String label, @PathVariable String id, @PathVariable String prefixedKey) {
         return this.linksCtrl.getLinksByType(id, prefixedKey);
     }
 

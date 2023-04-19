@@ -8,18 +8,18 @@ import java.util.Set;
  * Simple Statement Wrapper which also keeps a pointer to the model (which gives access to the namespaces, these
  * are needed to write the correct headers in a response)
  */
-public class NamespaceAwareStatement implements Statement, NamespaceAware {
+public class AnnotatedStatement implements Statement, NamespaceAware {
 
     private final Statement statement;
     private final Set<Namespace> namespaces;
 
-    private NamespaceAwareStatement(Statement statement, Set<Namespace> namespaces) {
+    private AnnotatedStatement(Statement statement, Set<Namespace> namespaces) {
         this.statement = statement;
         this.namespaces = namespaces;
     }
 
-    public static NamespaceAwareStatement wrap(Statement statement, Set<Namespace> namespaces) {
-        return new NamespaceAwareStatement(statement, namespaces);
+    public static AnnotatedStatement wrap(Statement statement, Set<Namespace> namespaces) {
+        return new AnnotatedStatement(statement, namespaces);
     }
 
     @Override

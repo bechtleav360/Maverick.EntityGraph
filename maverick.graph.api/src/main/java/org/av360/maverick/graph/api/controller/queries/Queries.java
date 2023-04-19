@@ -1,12 +1,12 @@
 package org.av360.maverick.graph.api.controller.queries;
 
-import org.av360.maverick.graph.model.rdf.NamespaceAwareStatement;
-import org.av360.maverick.graph.services.QueryServices;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.api.controller.AbstractController;
+import org.av360.maverick.graph.model.rdf.AnnotatedStatement;
+import org.av360.maverick.graph.services.QueryServices;
 import org.eclipse.rdf4j.query.BindingSet;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -50,7 +50,7 @@ public class Queries extends AbstractController {
                     @ExampleObject(name = "Query everything", value = "CONSTRUCT WHERE { ?s ?p ?o . } LIMIT 100")
             })
     )
-    public Flux<NamespaceAwareStatement> queryStatements(@RequestBody String query) {
+    public Flux<AnnotatedStatement> queryStatements(@RequestBody String query) {
 
         return getAuthentication()
                 .flatMapMany(authentication -> queryServices.queryGraph(query, authentication))

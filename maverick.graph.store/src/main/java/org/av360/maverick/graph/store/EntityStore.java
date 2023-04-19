@@ -1,6 +1,6 @@
 package org.av360.maverick.graph.store;
 
-import org.av360.maverick.graph.model.rdf.NamespaceAwareStatement;
+import org.av360.maverick.graph.model.rdf.AnnotatedStatement;
 import org.av360.maverick.graph.model.security.Authorities;
 import org.av360.maverick.graph.store.behaviours.*;
 import org.av360.maverick.graph.store.rdf.fragments.RdfEntity;
@@ -50,7 +50,7 @@ public interface EntityStore extends Searchable, Resettable, ModelUpdates, Selec
         return this.listStatements(object, predicate, val, authentication, Authorities.READER);
     }
 
-    default Flux<NamespaceAwareStatement> construct(String query, Authentication authentication) {
+    default Flux<AnnotatedStatement> construct(String query, Authentication authentication) {
         return this.construct(query, authentication, Authorities.READER);
     }
 

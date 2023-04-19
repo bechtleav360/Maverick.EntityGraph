@@ -6,7 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.api.controller.AbstractController;
 import org.av360.maverick.graph.model.enums.RdfMimeTypes;
 import org.av360.maverick.graph.model.identifier.LocalIdentifier;
-import org.av360.maverick.graph.model.rdf.NamespaceAwareStatement;
+import org.av360.maverick.graph.model.rdf.AnnotatedStatement;
 import org.av360.maverick.graph.services.TransactionsService;
 import org.av360.maverick.graph.store.rdf.fragments.TripleModel;
 import org.springframework.http.HttpStatus;
@@ -36,7 +36,7 @@ public class Transactions extends AbstractController {
     //@ApiOperation(value = "Read transaction")
     @GetMapping(value = "/{id:[\\w|\\d|\\-|\\_]+}", produces = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.NQUADS_VALUE, RdfMimeTypes.N3_VALUE})
     @ResponseStatus(HttpStatus.OK)
-    Flux<NamespaceAwareStatement> read(@PathVariable String id) {
+    Flux<AnnotatedStatement> read(@PathVariable String id) {
         Assert.isTrue(id.length() == LocalIdentifier.LENGTH, "Incorrect length for identifier.");
 
         // FIXME: marker to use transactions repository
@@ -50,8 +50,8 @@ public class Transactions extends AbstractController {
 
     @GetMapping(value = "", produces = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.NQUADS_VALUE, RdfMimeTypes.N3_VALUE})
     @ResponseStatus(HttpStatus.OK)
-    Flux<NamespaceAwareStatement> list(@RequestParam(value = "limit", defaultValue = "100") Integer limit,
-                                       @RequestParam(value = "offset", defaultValue = "0") Integer offset) {
+    Flux<AnnotatedStatement> list(@RequestParam(value = "limit", defaultValue = "100") Integer limit,
+                                  @RequestParam(value = "offset", defaultValue = "0") Integer offset) {
 
         // FIXME: marker to use transactions repository
         return super.getAuthentication()

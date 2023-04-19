@@ -141,8 +141,6 @@ public class BufferedStatementsEncoder implements Encoder<Statement> {
                 String path = iri.getLocalName();
 
                 if(iri.getNamespace().startsWith(Local.Entities.NAMESPACE)) {
-
-
                     path = "/api/entities/"+path;
                 }
 
@@ -154,7 +152,7 @@ public class BufferedStatementsEncoder implements Encoder<Statement> {
                     path = "/api/applications/"+path;
                 }
 
-                String uri = UriComponentsBuilder.fromUri(request.getURI()).replacePath(path).build().toUriString();
+                String uri = UriComponentsBuilder.fromUri(request.getURI()).replacePath(path).replaceQuery("").build().toUriString();
                 return (T) vf.createIRI(uri);
             }
         }

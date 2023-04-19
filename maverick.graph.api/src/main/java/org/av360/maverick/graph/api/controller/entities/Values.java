@@ -7,7 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.NotImplementedException;
 import org.av360.maverick.graph.api.controller.AbstractController;
 import org.av360.maverick.graph.model.enums.RdfMimeTypes;
-import org.av360.maverick.graph.model.rdf.NamespaceAwareStatement;
+import org.av360.maverick.graph.model.rdf.AnnotatedStatement;
 import org.av360.maverick.graph.services.EntityServices;
 import org.av360.maverick.graph.services.SchemaServices;
 import org.av360.maverick.graph.services.ValueServices;
@@ -44,7 +44,7 @@ public class Values extends AbstractController {
     @GetMapping(value = "/entities/{id:[\\w|\\d|\\-|\\_]+}/values",
             produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE, MediaType.APPLICATION_JSON_VALUE})
     @ResponseStatus(HttpStatus.OK)
-    public Flux<NamespaceAwareStatement> listEntityValues(@PathVariable String id) {
+    public Flux<AnnotatedStatement> listEntityValues(@PathVariable String id) {
       return Flux.error(new NotImplementedException("Listing the values has not been implemented yet."));
     }
 
@@ -55,7 +55,7 @@ public class Values extends AbstractController {
             consumes = MediaType.TEXT_PLAIN_VALUE,
             produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE})
     @ResponseStatus(HttpStatus.OK)
-    public Flux<NamespaceAwareStatement> create(@PathVariable String id, @PathVariable String prefixedKey, @RequestBody String value, @Nullable @RequestParam(required = false) String lang) {
+    public Flux<AnnotatedStatement> create(@PathVariable String id, @PathVariable String prefixedKey, @RequestBody String value, @Nullable @RequestParam(required = false) String lang) {
         Assert.isTrue(!value.matches("(?s).*[\\n\\r].*"), "Newlines in request body are not supported");
 
 
@@ -73,7 +73,7 @@ public class Values extends AbstractController {
     @PostMapping(value = "/entities/{id:[\\w|\\d|\\-|\\_]+}/values",
             produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE, MediaType.APPLICATION_JSON_VALUE})
     @ResponseStatus(HttpStatus.OK)
-    public Flux<NamespaceAwareStatement> listEntityValues(@PathVariable String id, @RequestBody String value) {
+    public Flux<AnnotatedStatement> listEntityValues(@PathVariable String id, @RequestBody String value) {
         return Flux.error(new NotImplementedException("Updating multiple values has not been implemented yet."));
     }
 
@@ -81,7 +81,7 @@ public class Values extends AbstractController {
     @DeleteMapping(value = "/entities/{id:[\\w|\\d|\\-|\\_]+}/values/{prefixedKey:[\\w|\\d]+\\.[\\w|\\d]+}",
             produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE})
     @ResponseStatus(HttpStatus.OK)
-    public Flux<NamespaceAwareStatement> delete(@PathVariable String id, @PathVariable String prefixedKey, @RequestParam(required = false) String lang) {
+    public Flux<AnnotatedStatement> delete(@PathVariable String id, @PathVariable String prefixedKey, @RequestParam(required = false) String lang) {
 
 
         return super.getAuthentication()

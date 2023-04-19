@@ -17,6 +17,7 @@ import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.util.ModelCollector;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
@@ -41,6 +42,7 @@ import java.util.Objects;
  */
 @Service
 @Slf4j(topic = "graph.jobs.coercion")
+@ConditionalOnProperty(name = "application.features.modules.jobs.scheduled.typeCoercion", havingValue = "true")
 public class TypeCoercionJob implements Job {
     private final EntityServices entityServices;
     private final QueryServices queryServices;
@@ -57,7 +59,7 @@ public class TypeCoercionJob implements Job {
 
     @Override
     public String getName() {
-        return "type coercion";
+        return "typeCoercion";
     }
 
     public Mono<Void> run(Authentication authentication) {

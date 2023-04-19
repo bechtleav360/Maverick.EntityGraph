@@ -8,7 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.NotImplementedException;
 import org.av360.maverick.graph.api.controller.AbstractController;
 import org.av360.maverick.graph.model.enums.RdfMimeTypes;
-import org.av360.maverick.graph.model.rdf.NamespaceAwareStatement;
+import org.av360.maverick.graph.model.rdf.AnnotatedStatement;
 import org.av360.maverick.graph.services.EntityServices;
 import org.av360.maverick.graph.services.ValueServices;
 import org.av360.maverick.graph.store.rdf.fragments.TripleBag;
@@ -49,7 +49,7 @@ public class Details extends AbstractController {
             consumes = MediaType.TEXT_PLAIN_VALUE,
             produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE})
     @ResponseStatus(HttpStatus.OK)
-    public Flux<NamespaceAwareStatement> getDetails(
+    public Flux<AnnotatedStatement> getDetails(
             @PathVariable @Parameter(name = "entity identifier") String id,
             @PathVariable(required = true, value = "values") @Parameter(name = "property type") PropertyType type,
             @PathVariable String prefixedValueKey,
@@ -63,7 +63,7 @@ public class Details extends AbstractController {
             consumes = MediaType.TEXT_PLAIN_VALUE,
             produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE})
     @ResponseStatus(HttpStatus.OK)
-    public Flux<NamespaceAwareStatement> purgeDetails(
+    public Flux<AnnotatedStatement> purgeDetails(
             @PathVariable @Parameter(name = "entity identifier") String id,
             @PathVariable String prefixedValueKey
     ) {
@@ -75,7 +75,7 @@ public class Details extends AbstractController {
             consumes = MediaType.TEXT_PLAIN_VALUE,
             produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE})
     @ResponseStatus(HttpStatus.OK)
-    public Flux<NamespaceAwareStatement> deleteDetail(
+    public Flux<AnnotatedStatement> deleteDetail(
             @PathVariable @Parameter(name = "entity identifier") String id,
             @PathVariable String prefixedValueKey,
             @PathVariable String prefixedDetailKey,
@@ -90,7 +90,7 @@ public class Details extends AbstractController {
             consumes = MediaType.TEXT_PLAIN_VALUE,
             produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE})
     @ResponseStatus(HttpStatus.OK)
-    public Flux<NamespaceAwareStatement> createDetail(
+    public Flux<AnnotatedStatement> createDetail(
             @PathVariable @Parameter(name = "entity identifier") String id,
             @PathVariable(required = true, value = "values") @Parameter(name = "property type") PropertyType type,
             @PathVariable String prefixedValueKey,
@@ -106,7 +106,7 @@ public class Details extends AbstractController {
             consumes = RdfMimeTypes.TURTLESTAR_VALUE,
             produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE})
     @ResponseStatus(HttpStatus.OK)
-    public Flux<NamespaceAwareStatement> createLinkDetail(
+    public Flux<AnnotatedStatement> createLinkDetail(
             @PathVariable @Parameter(name = "entity identifier") String id,
             @PathVariable(required = true, value = "values") @Parameter(name = "property type") PropertyType type,
             @PathVariable String prefixedValueKey,

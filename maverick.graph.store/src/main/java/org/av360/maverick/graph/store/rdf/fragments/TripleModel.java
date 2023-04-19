@@ -1,6 +1,6 @@
 package org.av360.maverick.graph.store.rdf.fragments;
 
-import org.av360.maverick.graph.model.rdf.NamespaceAwareStatement;
+import org.av360.maverick.graph.model.rdf.AnnotatedStatement;
 import org.av360.maverick.graph.store.rdf.helpers.NamespacedModelBuilder;
 import org.eclipse.rdf4j.model.*;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
@@ -80,8 +80,8 @@ public class TripleModel implements NamespaceAware, Serializable {
         return result;
     }
 
-    public Stream<NamespaceAwareStatement> streamNamespaceAwareStatements() {
-        return this.getModel().stream().map(sts -> NamespaceAwareStatement.wrap(sts, getNamespaces()));
+    public Stream<AnnotatedStatement> streamNamespaceAwareStatements() {
+        return this.getModel().stream().map(sts -> AnnotatedStatement.wrap(sts, getNamespaces()));
     }
 
     public Stream<Statement> streamStatements(Resource subject, IRI predicate, Value object) {
@@ -106,12 +106,12 @@ public class TripleModel implements NamespaceAware, Serializable {
         return this.streamStatements(null, null, null, contexts);
     }
 
-    public Iterable<NamespaceAwareStatement> asStatements() {
-        return this.streamStatements().map(statement -> NamespaceAwareStatement.wrap(statement, this.getNamespaces())).toList();
+    public Iterable<AnnotatedStatement> asStatements() {
+        return this.streamStatements().map(statement -> AnnotatedStatement.wrap(statement, this.getNamespaces())).toList();
     }
 
-    public Iterable<NamespaceAwareStatement> asStatements(Resource... context) {
-        return this.streamStatements(context).map(statement -> NamespaceAwareStatement.wrap(statement, this.getNamespaces())).toList();
+    public Iterable<AnnotatedStatement> asStatements(Resource... context) {
+        return this.streamStatements(context).map(statement -> AnnotatedStatement.wrap(statement, this.getNamespaces())).toList();
     }
 
 

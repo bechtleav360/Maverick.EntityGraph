@@ -19,6 +19,6 @@ public class ApplicationsConfig {
 
     @PostConstruct
     public void logActivation() {
-        log.info("Activated Feature: Multi-tenancy through Applications and Subscriptions");
+        log.info("Activated Feature: Applications and Subscriptions");
     }
 }

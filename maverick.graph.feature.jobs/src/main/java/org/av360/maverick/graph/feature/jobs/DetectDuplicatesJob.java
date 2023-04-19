@@ -20,6 +20,7 @@ import org.eclipse.rdf4j.sparqlbuilder.core.SparqlBuilder;
 import org.eclipse.rdf4j.sparqlbuilder.core.Variable;
 import org.eclipse.rdf4j.sparqlbuilder.core.query.Queries;
 import org.eclipse.rdf4j.sparqlbuilder.core.query.SelectQuery;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
@@ -62,12 +63,13 @@ import java.util.TreeSet;
  */
 @Service
 @Slf4j(topic = "graph.jobs.duplicates")
+@ConditionalOnProperty(name = "application.features.modules.jobs.scheduled.detectDuplicates", havingValue = "true")
 public class DetectDuplicatesJob implements Job {
 
 
     @Override
     public String getName() {
-        return "detect duplicates";
+        return "detectDuplicates";
     }
 
     private record DuplicateCandidate(IRI sharedProperty, String type, String sharedValue) {

@@ -15,7 +15,7 @@ import org.av360.maverick.graph.api.controller.AbstractController;
 import org.av360.maverick.graph.model.enums.RdfMimeTypes;
 import org.av360.maverick.graph.model.identifier.LocalIdentifier;
 import org.av360.maverick.graph.model.identifier.RandomIdentifier;
-import org.av360.maverick.graph.model.rdf.NamespaceAwareStatement;
+import org.av360.maverick.graph.model.rdf.AnnotatedStatement;
 import org.av360.maverick.graph.services.EntityServices;
 import org.av360.maverick.graph.services.QueryServices;
 import org.av360.maverick.graph.services.SchemaServices;
@@ -64,7 +64,7 @@ public class Entities extends AbstractController {
     @GetMapping(value = "/entities/{id}",
             produces = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.N3_VALUE})
     @ResponseStatus(HttpStatus.OK)
-    public Flux<NamespaceAwareStatement> read(@PathVariable String id, @RequestParam(required = false) @Nullable String property) {
+    public Flux<AnnotatedStatement> read(@PathVariable String id, @RequestParam(required = false) @Nullable String property) {
         if (StringUtils.isBlank(property)) {
             Assert.isTrue(id.length() == LocalIdentifier.LENGTH, "Incorrect length for identifier.");
         }
@@ -82,7 +82,7 @@ public class Entities extends AbstractController {
 
     @GetMapping(value = "/entities", produces = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.N3_VALUE})
     @ResponseStatus(HttpStatus.OK)
-    public Flux<NamespaceAwareStatement> list(
+    public Flux<AnnotatedStatement> list(
             @RequestParam(value = "limit", defaultValue = "100") Integer limit,
             @RequestParam(value = "offset", defaultValue = "0") Integer offset) {
 
@@ -99,7 +99,7 @@ public class Entities extends AbstractController {
             consumes = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.N3_VALUE},
             produces = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.N3_VALUE})
     @ResponseStatus(HttpStatus.ACCEPTED)
-    public Flux<NamespaceAwareStatement> create(@RequestBody TripleBag request) {
+    public Flux<AnnotatedStatement> create(@RequestBody TripleBag request) {
         Assert.isTrue(request.getModel().size() > 0, "No statements in request detected.");
 
         return super.getAuthentication()
@@ -115,7 +115,7 @@ public class Entities extends AbstractController {
             consumes = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE},
             produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE})
     @ResponseStatus(HttpStatus.CREATED)
-    public Flux<NamespaceAwareStatement> embed(@PathVariable String id, @PathVariable String prefixedKey, @RequestBody TripleBag value) {
+    public Flux<AnnotatedStatement> embed(@PathVariable String id, @PathVariable String prefixedKey, @RequestBody TripleBag value) {
 
         return super.getAuthentication()
                 .flatMap(authentication ->
@@ -133,7 +133,7 @@ public class Entities extends AbstractController {
     @DeleteMapping(value = "/entities/{id:[\\w|\\d|\\-|\\_]+}",
             produces = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.N3_VALUE})
     @ResponseStatus(HttpStatus.OK)
-    public Flux<NamespaceAwareStatement> delete(@PathVariable String id) {
+    public Flux<AnnotatedStatement> delete(@PathVariable String id) {
         Assert.isTrue(id.length() == RandomIdentifier.LENGTH, "Incorrect length for identifier.");
 
         return super.getAuthentication()
