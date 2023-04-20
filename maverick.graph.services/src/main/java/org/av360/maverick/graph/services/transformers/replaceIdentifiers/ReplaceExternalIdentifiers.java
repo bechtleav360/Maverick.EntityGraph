@@ -2,7 +2,6 @@ package org.av360.maverick.graph.services.transformers.replaceIdentifiers;
 
 import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.model.identifier.IdentifierFactory;
-import org.av360.maverick.graph.model.identifier.LocalIdentifier;
 import org.av360.maverick.graph.model.vocabulary.Local;
 import org.av360.maverick.graph.services.transformers.Transformer;
 import org.av360.maverick.graph.store.rdf.fragments.TripleModel;
@@ -93,7 +92,7 @@ public class ReplaceExternalIdentifiers extends AbstractIdentifierReplace implem
 
     }
 
-    protected Mono<LocalIdentifier> createLocalIdentifierFrom(IRI iri, Model model) {
+    protected Mono<IRI> createLocalIdentifierFrom(IRI iri, Model model) {
         return Mono.just(identifierFactory.createReproducibleIdentifier(Local.Entities.NS, iri));
     }
 

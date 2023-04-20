@@ -42,6 +42,8 @@ import java.util.Objects;
 @Service
 @Slf4j(topic = "graph.jobs.coercion")
 public class TypeCoercionJob implements Job {
+
+    public static String NAME = "typeCoercion";
     private final EntityServices entityServices;
     private final QueryServices queryServices;
 
@@ -57,7 +59,7 @@ public class TypeCoercionJob implements Job {
 
     @Override
     public String getName() {
-        return "typeCoercion";
+        return NAME;
     }
 
     public Mono<Void> run(Authentication authentication) {
@@ -103,33 +105,27 @@ public class TypeCoercionJob implements Job {
                     { ?entity a ?type .
                       FILTER NOT EXISTS { ?entity a <urn:pwid:meg:e:Individual> . }
                       FILTER NOT EXISTS { ?entity a <urn:pwid:meg:e:Classifier> . }
-                      FILTER NOT EXISTS { ?entity a <urn:pwid:meg:e:Embedded> . } }
+                      FILTER NOT EXISTS { ?entity a <urn:pwid:meg:e:Embedded> . }
+                      }
                LIMIT 500
 
 
                SELECT ?entity WHERE
                     { ?entity a ?type .
                       FILTER NOT EXISTS {  FILTER STRSTARTS(str(?entity), "urn:pwid:meg:e")  }
+                      }
                LIMIT 500
 
-               SELECT ?entity WHERE { ?entity a ?type . FILTER NOT EXISTS {} FILTER ( STRSTARTS( ?type, "urn:pwid:meg" ) ) } LIMIT 500
-
-              Variable entity = SparqlBuilder.var("entity");
-                Variable type = SparqlBuilder.var("type");
-                Expression<?> function = Expressions.function(SparqlFunction.STRSTARTS, Expressions.str(type), Rdf.literalOf(Local.URN_PREFIX));
-                SelectQuery query = Queries.SELECT(entity)
-                .where(entity.isA(type).filter(Expressions.not(function))
-                ).limit(500);
         */
         String tpl = """
                 SELECT DISTINCT ?entity WHERE {
                     ?entity a ?type .
-                    FILTER NOT EXISTS {
-                      FILTER STRSTARTS(str(?type), "%s")
-                    }
-                } LIMIT 500
+                    FILTER NOT EXISTS { ?entity a <%s> . }
+                    FILTER NOT EXISTS { ?entity a <%s> . }
+                    FILTER NOT EXISTS { ?entity a <%s> . }
+                } LIMIT 1000
                 """;
-        String query = String.format(tpl, Local.URN_PREFIX);
+        String query = String.format(tpl, Local.Entities.INDIVIDUAL, Local.Entities.CLASSIFIER, Local.Entities.EMBEDDED);
         return this.queryServices.queryValues(query, authentication)
                 .map(bindings -> bindings.getValue("entity"))
                 .filter(Value::isResource)

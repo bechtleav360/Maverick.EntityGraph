@@ -1,6 +1,7 @@
 package org.av360.maverick.graph.feature.jobs.schedulers;
 
 import lombok.extern.slf4j.Slf4j;
+import org.av360.maverick.graph.feature.jobs.TypeCoercionJob;
 import org.av360.maverick.graph.model.events.JobScheduledEvent;
 import org.av360.maverick.graph.model.security.AdminToken;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -34,7 +35,7 @@ public class ScheduledTypeCoercion  {
 
     @Scheduled(initialDelay = 30, fixedRate = 600, timeUnit = TimeUnit.SECONDS)
     public void scheduled() {
-        JobScheduledEvent event = new JobScheduledEvent("typeCoercion", new AdminToken());
+        JobScheduledEvent event = new JobScheduledEvent(TypeCoercionJob.NAME, new AdminToken());
         eventPublisher.publishEvent(event);
     }
 

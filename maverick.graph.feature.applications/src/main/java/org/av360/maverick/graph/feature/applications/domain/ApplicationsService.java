@@ -80,6 +80,8 @@ public class ApplicationsService {
      */
     public Mono<Application> createApplication(String label, ApplicationFlags flags, Authentication authentication) {
 
+
+
         LocalIdentifier subject = identifierFactory.createRandomIdentifier(Local.Subscriptions.NAMESPACE);
 
         Application application = new Application(
@@ -99,13 +101,17 @@ public class ApplicationsService {
         modelBuilder.add(ApplicationTerms.IS_PERSISTENT, flags.isPersistent());
         modelBuilder.add(ApplicationTerms.IS_PUBLIC, flags.isPublic());
 
-
-        return this.applicationsStore.insert(modelBuilder.build(), authentication, Authorities.SYSTEM)
+        Mono<Application> applicationMono = this.applicationsStore.insert(modelBuilder.build(), authentication, Authorities.SYSTEM)
                 .then(Mono.just(application))
                 .doOnSuccess(app -> {
                     this.eventPublisher.publishEvent(new ApplicationCreatedEvent(app));
                 })
                 .doOnSubscribe(StreamsLogger.debug(log, "Creating a new application with label '{}' and persistence set to '{}' ", label, flags.isPersistent()));
+
+        return this.getApplicationByLabel(label, authentication)
+                .onErrorResume(throwable -> throwable instanceof InvalidApplication, throwable -> applicationMono);
+
+
     }
 
 

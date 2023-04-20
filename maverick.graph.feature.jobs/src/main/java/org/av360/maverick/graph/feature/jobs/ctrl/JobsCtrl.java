@@ -9,6 +9,7 @@ import org.av360.maverick.graph.feature.jobs.DetectDuplicatesJob;
 import org.av360.maverick.graph.feature.jobs.ReplaceExternalIdentifiersJob;
 import org.av360.maverick.graph.feature.jobs.TypeCoercionJob;
 import org.av360.maverick.graph.services.SchemaServices;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
@@ -21,7 +22,7 @@ import reactor.core.publisher.Mono;
 public class JobsCtrl extends AbstractController {
 
 
-
+    private final ApplicationEventPublisher eventPublisher;
     final DetectDuplicatesJob detectDuplicatesJob;
     final ReplaceExternalIdentifiersJob replaceExternalIdentifiersService;
 
@@ -29,7 +30,9 @@ public class JobsCtrl extends AbstractController {
 
     final SchemaServices schemaServices;
 
-    public JobsCtrl(DetectDuplicatesJob detectDuplicatesJob, ReplaceExternalIdentifiersJob replaceExternalIdentifiersJob, TypeCoercionJob typeCoercionService, SchemaServices schemaServices) {
+    public JobsCtrl(ApplicationEventPublisher eventPublisher, DetectDuplicatesJob detectDuplicatesJob, ReplaceExternalIdentifiersJob replaceExternalIdentifiersJob, TypeCoercionJob typeCoercionService, SchemaServices schemaServices) {
+        this.eventPublisher = eventPublisher;
+
         this.detectDuplicatesJob = detectDuplicatesJob;
         this.replaceExternalIdentifiersService = replaceExternalIdentifiersJob;
         this.typeCoercionService = typeCoercionService;
@@ -48,6 +51,7 @@ public class JobsCtrl extends AbstractController {
                     )
             String property) {
 
+
         return Mono.zip(
                 super.getAuthentication(),
                 schemaServices.resolvePrefixedName(property)
@@ -56,8 +60,10 @@ public class JobsCtrl extends AbstractController {
     }
 
     @PostMapping(value = "/execute/normalize")
-    @ResponseStatus(HttpStatus.OK)
+    @ResponseStatus(HttpStatus.ACCEPTED)
     Mono<Void> execSkolemizationJob() {
+
+
         return super.getAuthentication()
                 .flatMap(this.replaceExternalIdentifiersService::run);
 

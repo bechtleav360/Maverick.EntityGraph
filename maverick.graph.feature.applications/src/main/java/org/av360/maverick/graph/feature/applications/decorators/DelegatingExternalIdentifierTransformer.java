@@ -24,11 +24,14 @@ public class DelegatingExternalIdentifierTransformer extends ReplaceExternalIden
     }
 
     @Override
-    protected Mono<LocalIdentifier> createLocalIdentifierFrom(IRI iri, Model model) {
+    protected Mono<IRI> createLocalIdentifierFrom(IRI iri, Model model) {
         return ReactiveApplicationContextHolder.getRequestedApplication()
                 .map(application -> {
-                    String namespace = String.format("%s:%s", Local.Entities.NAMESPACE, application.label());
-                    return super.getIdentifierFactory().createReproducibleIdentifier(namespace, iri);
+
+                    LocalIdentifier identifier = super.getIdentifierFactory().createReproducibleIdentifier(Local.Entities.NAMESPACE, iri);
+                    String scopedIdentifier = String.format("%s.%s", application.label(), identifier.getLocalName());
+
+                    return valueFactory.createIRI(Local.Entities.NAMESPACE, scopedIdentifier);
                 });
     }
 }

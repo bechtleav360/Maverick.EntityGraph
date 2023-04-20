@@ -17,7 +17,6 @@ import org.eclipse.rdf4j.model.impl.SimpleNamespace;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.query.*;
 import org.eclipse.rdf4j.repository.RepositoryException;
-import org.eclipse.rdf4j.repository.RepositoryResult;
 import org.eclipse.rdf4j.repository.util.RDFInserter;
 import org.eclipse.rdf4j.rio.RDFParser;
 import org.eclipse.rdf4j.rio.RDFParserFactory;
@@ -132,9 +131,13 @@ public abstract class AbstractRepository implements RepositoryBehaviour, Stateme
     public Mono<Void> reset(Authentication authentication, RepositoryType repositoryType, GrantedAuthority requiredAuthority) {
         return getConnection(authentication, requiredAuthority).flatMap(connection -> {
             try (connection) {
-                RepositoryResult<Statement> statements = connection.getStatements(null, null, null);
-                if (log.isTraceEnabled())
-                    log.trace("Removing {} statements from repository '{}'", statements.stream().count(), connection.getRepository());
+                if(!connection.isOpen() || connection.isActive()) return Mono.empty();
+
+                if (log.isTraceEnabled()) {
+                    // RepositoryResult<Statement> statements = connection.getStatements(null, null, null);
+                    log.trace("Removing {} statements from repository '{}'", connection.size(), connection.getRepository());
+                }
+
                 connection.clear();
 
                 if(! connection.isEmpty())

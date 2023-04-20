@@ -66,6 +66,7 @@ public class JobWorker {
 
                     }
                 })
+                .doOnError(error -> log.error("Failed to consume event.", error))
                 .onBackpressureBuffer(10)
                 .delayElements(Duration.of(10, ChronoUnit.SECONDS));
 

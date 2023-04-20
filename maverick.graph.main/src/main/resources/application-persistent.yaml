@@ -12,14 +12,16 @@ application:
     modules:
       applications:
         enabled: true
+        config:
+          base: "D:/Graphen/applications"
       admin:
         enabled: true
       jobs:
         enabled: true
         scheduled:
-          detectDuplicates: true
-          replaceIdentifiers: true
-          typeCoercion: true
+          detectDuplicates: false
+          replaceIdentifiers: false
+          typeCoercion: false
     transformers:
       replaceGlobalIdentifiers: true
       replaceAnonymousIdentifiers: true
@@ -51,9 +53,9 @@ logging:
   level:
     graph:
       jobs: TRACE
-      repo: INFO
-      srvc: INFO
-      ctrl: INFO
+      repo: TRACE
+      srvc: TRACE
+      ctrl: TRACE
 
 
     org:

@@ -52,6 +52,8 @@ import java.util.stream.Collectors;
 @Component
 public class ReplaceExternalIdentifiersJob implements Job {
 
+    public static String NAME = "replaceIdentifiers";
+
     private final QueryServices queryServices;
 
     private final EntityStore entityStore;
@@ -82,7 +84,7 @@ public class ReplaceExternalIdentifiersJob implements Job {
 
     @Override
     public String getName() {
-        return "replaceIdentifiers";
+        return NAME;
     }
 
     @Override

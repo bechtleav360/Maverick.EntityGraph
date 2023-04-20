@@ -64,10 +64,11 @@ import java.util.TreeSet;
 @Slf4j(topic = "graph.jobs.duplicates")
 public class DetectDuplicatesJob implements Job {
 
+    public static String NAME = "detectDuplicates";
 
     @Override
     public String getName() {
-        return "detectDuplicates";
+        return NAME;
     }
 
     private record DuplicateCandidate(IRI sharedProperty, String type, String sharedValue) {
