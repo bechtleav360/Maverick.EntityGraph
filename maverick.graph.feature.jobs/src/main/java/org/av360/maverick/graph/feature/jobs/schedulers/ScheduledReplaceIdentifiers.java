@@ -8,6 +8,8 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+import java.util.concurrent.TimeUnit;
+
 /**
  * If we have any global identifiers (externally set) in the repo, we have to replace them with our internal identifiers.
  * Otherwise we cannot address the entities through our API.
@@ -33,7 +35,7 @@ public class ScheduledReplaceIdentifiers  {
     }
 
 
-    @Scheduled(initialDelay = 20000, fixedRate = 60000)
+    @Scheduled(initialDelay = 90, fixedRate = 600, timeUnit = TimeUnit.SECONDS)
     public void checkForGlobalIdentifiersScheduled() {
         JobScheduledEvent event = new JobScheduledEvent("replaceIdentifiers", new AdminToken());
         eventPublisher.publishEvent(event);

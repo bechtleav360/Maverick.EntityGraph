@@ -50,10 +50,10 @@ logging:
     path: "D:/Graphen/"
   level:
     graph:
-      jobs: INFO
-      repo: TRACE
-      srvc: TRACE
-      ctrl: TRACE
+      jobs: TRACE
+      repo: INFO
+      srvc: INFO
+      ctrl: INFO
 
 
     org:

@@ -13,6 +13,7 @@ import org.springframework.stereotype.Component;
 
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Regular check for duplicates in the entity stores.
@@ -59,7 +60,7 @@ public class ScopedScheduledDetectDuplicates {
         this.applicationsService = applicationsService;
     }
 
-    @Scheduled(initialDelay = 10000, fixedRate = 120000)
+    @Scheduled(initialDelay = 120, fixedRate = 600, timeUnit = TimeUnit.SECONDS)
     public void checkForDuplicatesScheduled() {
         applicationsService.listApplications(new AdminToken())
                 .delayElements(Duration.of(2, ChronoUnit.SECONDS))

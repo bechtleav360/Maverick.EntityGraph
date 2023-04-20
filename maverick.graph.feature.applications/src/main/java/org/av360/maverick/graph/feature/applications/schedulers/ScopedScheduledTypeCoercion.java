@@ -10,6 +10,8 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+import java.util.concurrent.TimeUnit;
+
 /**
  * @see Sch
  */
@@ -25,7 +27,7 @@ public class ScopedScheduledTypeCoercion {
         this.applicationsService = applicationsService;
     }
 
-    @Scheduled(initialDelay = 10000, fixedDelay = 30000)
+    @Scheduled(initialDelay = 180, fixedRate = 600, timeUnit = TimeUnit.SECONDS)
     public void scheduled() {
         applicationsService.listApplications(new AdminToken())
                 .doOnNext(application -> {

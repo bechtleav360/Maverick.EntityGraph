@@ -8,6 +8,8 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+import java.util.concurrent.TimeUnit;
+
 /**
  * If we have any global identifiers (externally set) in the repo, we have to replace them with our internal identifiers.
  * Otherwise we cannot address the entities through our API.
@@ -30,7 +32,7 @@ public class ScheduledTypeCoercion  {
         this.eventPublisher = eventPublisher;
     }
 
-    @Scheduled(initialDelay = 10000, fixedDelay = 30000)
+    @Scheduled(initialDelay = 30, fixedRate = 600, timeUnit = TimeUnit.SECONDS)
     public void scheduled() {
         JobScheduledEvent event = new JobScheduledEvent("typeCoercion", new AdminToken());
         eventPublisher.publishEvent(event);
