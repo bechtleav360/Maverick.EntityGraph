@@ -36,8 +36,8 @@ public class ScheduledReplaceIdentifiers  {
     }
 
 
-    // @Scheduled(initialDelay = 90, fixedRate = 600, timeUnit = TimeUnit.SECONDS)
-    @Scheduled(initialDelay = 7, fixedRate = 20, timeUnit = TimeUnit.SECONDS)
+    @Scheduled(initialDelay = 90, fixedRate = 600, timeUnit = TimeUnit.SECONDS)
+    // @Scheduled(initialDelay = 7, fixedRate = 20, timeUnit = TimeUnit.SECONDS)
     public void checkForGlobalIdentifiersScheduled() {
         JobScheduledEvent event = new JobScheduledEvent(ReplaceExternalIdentifiersJob.NAME, new AdminToken());
         eventPublisher.publishEvent(event);

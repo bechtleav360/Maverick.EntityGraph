@@ -60,8 +60,8 @@ public class ScopedScheduledDetectDuplicates {
         this.applicationsService = applicationsService;
     }
 
-    // @Scheduled(initialDelay = 120, fixedRate = 600, timeUnit = TimeUnit.SECONDS)
-    @Scheduled(initialDelay = 11, fixedRate = 20, timeUnit = TimeUnit.SECONDS)
+    @Scheduled(initialDelay = 120, fixedRate = 600, timeUnit = TimeUnit.SECONDS)
+    // @Scheduled(initialDelay = 11, fixedRate = 20, timeUnit = TimeUnit.SECONDS)
     public void checkForDuplicatesScheduled() {
         applicationsService.listApplications(new AdminToken())
                 .delayElements(Duration.of(2, ChronoUnit.SECONDS))

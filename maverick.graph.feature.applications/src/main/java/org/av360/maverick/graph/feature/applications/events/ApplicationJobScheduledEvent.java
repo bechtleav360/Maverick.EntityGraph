@@ -16,7 +16,7 @@ public class ApplicationJobScheduledEvent extends JobScheduledEvent {
 
     @Override
     public Context buildContext(Context ctx) {
-        ctx.putAll(ReactiveApplicationContextHolder.withApplication(this.requestedApplication).readOnly());
+        ctx = ctx.putAll(ReactiveApplicationContextHolder.withApplication(this.requestedApplication).readOnly());
         return super.buildContext(ctx);
     }
 

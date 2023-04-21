@@ -40,8 +40,8 @@ public class ScopedScheduledReplaceIdentifiers {
     }
 
 
-    // @Scheduled(initialDelay = 150, fixedRate = 600, timeUnit = TimeUnit.SECONDS)
-    @Scheduled(initialDelay = 13, fixedRate = 20, timeUnit = TimeUnit.SECONDS)
+    @Scheduled(initialDelay = 150, fixedRate = 600, timeUnit = TimeUnit.SECONDS)
+    // @Scheduled(initialDelay = 13, fixedRate = 20, timeUnit = TimeUnit.SECONDS)
     public void checkForGlobalIdentifiersScheduled() {
 
 
