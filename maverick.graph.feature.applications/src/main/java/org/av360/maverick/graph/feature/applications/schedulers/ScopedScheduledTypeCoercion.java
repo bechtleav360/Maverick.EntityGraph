@@ -7,10 +7,7 @@ import org.av360.maverick.graph.model.events.JobScheduledEvent;
 import org.av360.maverick.graph.model.security.AdminToken;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
-
-import java.util.concurrent.TimeUnit;
 
 /**
  * @see Sch
@@ -27,7 +24,7 @@ public class ScopedScheduledTypeCoercion {
         this.applicationsService = applicationsService;
     }
 
-    @Scheduled(initialDelay = 180, fixedRate = 600, timeUnit = TimeUnit.SECONDS)
+    // @Scheduled(initialDelay = 180, fixedRate = 600, timeUnit = TimeUnit.SECONDS)
     // @Scheduled(initialDelay = 15, fixedRate = 20, timeUnit = TimeUnit.SECONDS)
     public void scheduled() {
         applicationsService.listApplications(new AdminToken())

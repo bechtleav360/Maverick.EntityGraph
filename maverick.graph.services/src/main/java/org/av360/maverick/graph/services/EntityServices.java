@@ -74,7 +74,7 @@ public interface EntityServices {
      */
     Mono<RdfTransaction> create(TripleBag triples, Map<String, String> parameters, Authentication authentication);
 
-    Mono<RdfTransaction> linkEntityTo(String entityIdentifier, IRI predicate, TripleBag linkedEntities, Authentication authentication);
+    Mono<RdfTransaction> linkEntityTo(String entityKey, IRI predicate, TripleBag linkedEntities, Authentication authentication);
 
     /**
      * Retrieves a complete entity representation (identifier, values and relations) from store.
@@ -89,11 +89,11 @@ public interface EntityServices {
 
     Mono<RdfEntity> findByProperty(String identifier, IRI predicate, Authentication authentication);
 
-    Mono<RdfEntity> find(String identifier, @Nullable String property, Authentication authentication);
+    Mono<RdfEntity> find(String entityKey, @Nullable String property, Authentication authentication);
 
     Mono<Boolean> contains(IRI entityIri, Authentication authentication);
 
-    Mono<IRI> resolveAndVerify(String key, Authentication authentication);
+    Mono<IRI> resolveAndVerify(String entityKey, Authentication authentication);
 
     EntityStore getStore();
 

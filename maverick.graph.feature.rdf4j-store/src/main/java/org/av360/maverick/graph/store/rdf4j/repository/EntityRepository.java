@@ -10,6 +10,7 @@ import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.repository.RepositoryResult;
+import org.slf4j.Logger;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.stereotype.Component;
@@ -26,6 +27,7 @@ public class EntityRepository extends AbstractRepository implements EntityStore 
     public EntityRepository() {
         super(RepositoryType.ENTITIES);
     }
+
 
 
     public Mono<RdfEntity> getEntity(Resource id, Authentication authentication, GrantedAuthority requiredAuthority) {
@@ -64,4 +66,8 @@ public class EntityRepository extends AbstractRepository implements EntityStore 
         });
     }
 
+    @Override
+    public Logger getLogger() {
+        return log;
+    }
 }

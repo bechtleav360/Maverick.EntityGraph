@@ -1,5 +1,6 @@
 package org.av360.maverick.graph.store.rdf4j.repository;
 
+import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.model.vocabulary.Local;
 import org.av360.maverick.graph.model.vocabulary.SDO;
 import org.av360.maverick.graph.model.vocabulary.Transactions;
@@ -10,12 +11,14 @@ import org.eclipse.rdf4j.model.Namespace;
 import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.util.Namespaces;
+import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 
 import java.util.HashSet;
 import java.util.Set;
 
+@Slf4j(topic = "graph.repo.schema")
 @Component
 public class SchemaRepository extends AbstractRepository implements SchemaStore {
 
@@ -47,4 +50,8 @@ public class SchemaRepository extends AbstractRepository implements SchemaStore 
         return Flux.fromIterable(namespaces);
     }
 
+    @Override
+    public Logger getLogger() {
+        return log;
+    }
 }

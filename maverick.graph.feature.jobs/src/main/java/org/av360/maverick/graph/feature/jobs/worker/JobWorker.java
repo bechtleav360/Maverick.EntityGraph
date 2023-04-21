@@ -49,7 +49,10 @@ public class JobWorker {
                         log.warn("Job with label '{}' requested, but not active.", event.getJobName());
                         return Mono.empty();
                     } else {
-
+                        if(this.active.contains(event.getJobIdentifier())) {
+                            log.debug("Job '{}' still running, skipping this scheduled run.", event.getJobIdentifier());
+                            return Mono.empty();
+                        }
                         return requestedJob.get().run(event.getToken()).contextWrite(event::buildContext)
                                 .doOnSubscribe(subscription -> {
                                     log.debug("Starting job '{}'. Currently active: {}", event.getJobIdentifier(), this.active);

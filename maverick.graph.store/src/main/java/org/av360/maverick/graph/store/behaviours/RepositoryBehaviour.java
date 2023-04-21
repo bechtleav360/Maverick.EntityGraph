@@ -10,6 +10,7 @@ import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
+import org.slf4j.Logger;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import reactor.core.publisher.Flux;
@@ -20,6 +21,7 @@ import java.util.List;
 
 public interface RepositoryBehaviour {
 
+    Logger getLogger();
 
     default ValueFactory getValueFactory() {
         return SimpleValueFactory.getInstance();

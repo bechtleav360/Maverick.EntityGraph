@@ -23,6 +23,8 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import javax.annotation.Nullable;
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -94,6 +96,7 @@ public class ReplaceExternalIdentifiersJob implements Job {
 
         return this.checkForExternalSubjectIdentifiers(authentication)
                 .thenMany(this.checkForLinkedObjectIdentifiers(authentication))
+
                 .then();
 
     }
@@ -104,6 +107,7 @@ public class ReplaceExternalIdentifiersJob implements Job {
      */
     public Flux<RdfTransaction> checkForExternalSubjectIdentifiers(Authentication authentication) {
         return findSubjectCandidates(authentication)
+                .delayElements(Duration.of(1, ChronoUnit.SECONDS))
                 .flatMap(value -> this.loadSubjectStatements(value, authentication))
                 .flatMap(this::convertSubjectStatements)
                 .flatMap(this::insertStatements)
@@ -146,10 +150,12 @@ public class ReplaceExternalIdentifiersJob implements Job {
      */
     private Flux<RdfTransaction> checkForLinkedObjectIdentifiers(Authentication authentication) {
         return this.loadObjectStatements(authentication)
+                .delayElements(Duration.of(1, ChronoUnit.SECONDS))
                 .flatMap(this::convertObjectStatements)
                 .flatMap(this::insertStatements)
                 .flatMap(this::deleteStatements)
                 .flatMap(transactions -> this.commit(transactions, authentication))
+
                 .doOnNext(transaction -> {
                     Assert.isTrue(transaction.hasStatement(null, Transactions.STATUS, Transactions.SUCCESS), "Failed transaction: \n" + transaction);
                 })
@@ -180,21 +186,6 @@ public class ReplaceExternalIdentifiersJob implements Job {
                 .map(value -> (Resource) value);
     }
 
-    private Flux<Resource> findObjectCandidates(Authentication authentication) {
-        String tpl = """
-                SELECT DISTINCT ?c WHERE {
-                  ?a a ?c .
-                  FILTER NOT EXISTS {
-                    FILTER STRSTARTS(str(?c), "%s").
-                    }
-                  }
-                """;
-        String query = String.format(tpl, Local.Entities.NAMESPACE);
-        return queryServices.queryValues(query, authentication)
-                .map(bindings -> bindings.getValue("c"))
-                .filter(Value::isResource)
-                .map(value -> (Resource) value);
-    }
 
 
     private Flux<RdfTransaction> commit(RdfTransaction transaction, Authentication authentication) {
@@ -276,10 +267,12 @@ public class ReplaceExternalIdentifiersJob implements Job {
         return this.entityStore.listStatements(null, Local.ORIGINAL_IDENTIFIER, null, authentication, Authorities.READER)
                 .flatMapMany(Flux::fromIterable)
                 .filter(statement -> statement.getObject().isResource())
-
                 .flatMap(st ->
                         this.entityStore.listStatements(null, null, st.getObject(), authentication)
-                                .map(statements -> statements.stream().filter(s -> ! s.getPredicate().equals(Local.ORIGINAL_IDENTIFIER)).collect(Collectors.toSet()))
+                                .map(statements -> statements.stream()
+                                        .filter(s -> ! s.getPredicate().equals(Local.ORIGINAL_IDENTIFIER))
+                                        .filter(s -> ! s.getPredicate().equals(OWL.SAMEAS))
+                                        .collect(Collectors.toSet()))
                                 .map(statements -> new StatementsBag((Resource) st.getObject(), new HashSet<>(statements), new LinkedHashModel(), st, new RdfTransaction()))
                 );
     }
