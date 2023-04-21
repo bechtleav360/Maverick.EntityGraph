@@ -20,10 +20,8 @@ import org.av360.maverick.graph.model.security.Authorities;
 import org.av360.maverick.graph.model.util.StreamsLogger;
 import org.av360.maverick.graph.model.vocabulary.Local;
 import org.av360.maverick.graph.store.rdf.helpers.BindingsAccessor;
-import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.util.ModelBuilder;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
-import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.sparqlbuilder.core.SparqlBuilder;
 import org.eclipse.rdf4j.sparqlbuilder.core.Variable;
 import org.eclipse.rdf4j.sparqlbuilder.core.query.Queries;
@@ -105,7 +103,9 @@ public class ApplicationsService {
                 .then(Mono.just(application))
                 .doOnSuccess(app -> {
                     this.eventPublisher.publishEvent(new ApplicationCreatedEvent(app));
+                    log.debug("Created application with key '{}' and label '{}'", app.key(), app.label());
                 })
+
                 .doOnSubscribe(StreamsLogger.debug(log, "Creating a new application with label '{}' and persistence set to '{}' ", label, flags.isPersistent()));
 
         return this.getApplicationByLabel(label, authentication)
@@ -116,7 +116,6 @@ public class ApplicationsService {
 
 
     public Mono<Subscription> getSubscription(String subscriptionIdentifier, Authentication authentication) {
-
 
 
         SelectQuery q = Queries.SELECT()
@@ -143,9 +142,6 @@ public class ApplicationsService {
 
     }
 
-    private IRI asIRI(BindingSet bindings, Variable var) {
-        return (IRI) bindings.getValue(var.getVarName());
-    }
 
     public Flux<Subscription> listSubscriptionsForApplication(String applicationIdentifier, Authentication authentication) {
 
@@ -192,9 +188,9 @@ public class ApplicationsService {
         return Mono.error(new UnsupportedOperationException());
     }
 
-    public Mono<Subscription> createSubscription(String applicationIdentifier, String subscriptionLabel, Authentication authentication) {
+    public Mono<Subscription> createSubscription(String applicationKey, String subscriptionLabel, Authentication authentication) {
 
-        return this.getApplication(applicationIdentifier, authentication)
+        return this.getApplication(applicationKey, authentication)
                 .map(application ->
                         new Subscription(
                                 identifierFactory.createRandomIdentifier(Local.Subscriptions.NAMESPACE),
@@ -221,13 +217,11 @@ public class ApplicationsService {
                 .doOnSuccess(token -> {
                     this.eventPublisher.publishEvent(new TokenCreatedEvent(token));
                 })
-                .doOnSubscribe(StreamsLogger.debug(log, "Generating new subscription key for application '{}'", applicationIdentifier));
+                .doOnSubscribe(StreamsLogger.debug(log, "Generating new subscription key for application '{}'", applicationKey));
     }
 
 
     public Mono<Application> getApplication(String applicationKey, Authentication authentication) {
-
-
 
         SelectQuery q = Queries.SELECT().distinct()
                 .where(varAppIri.isA(ApplicationTerms.TYPE)
@@ -250,7 +244,7 @@ public class ApplicationsService {
                                 ba.asBoolean(varAppFlagPublic)
                         )
                 ))
-                .doOnSubscribe(StreamsLogger.debug(log, "Requesting application with identifier '{}'", applicationKey));
+                .doOnSubscribe(StreamsLogger.debug(log, "Loading application with identifier '{}'", applicationKey));
     }
 
 

@@ -1,13 +1,13 @@
 package org.av360.maverick.graph.feature.applications.api;
 
-import org.av360.maverick.graph.feature.applications.api.dto.Requests;
-import org.av360.maverick.graph.feature.applications.api.dto.Responses;
-import org.av360.maverick.graph.feature.applications.domain.ApplicationsService;
-import org.av360.maverick.graph.feature.applications.domain.errors.InvalidApplication;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.api.controller.AbstractController;
+import org.av360.maverick.graph.feature.applications.api.dto.Requests;
+import org.av360.maverick.graph.feature.applications.api.dto.Responses;
+import org.av360.maverick.graph.feature.applications.domain.ApplicationsService;
+import org.av360.maverick.graph.feature.applications.domain.errors.InvalidApplication;
 import org.springframework.http.HttpStatus;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
@@ -98,7 +98,7 @@ public class Applications extends AbstractController {
                                         apiKey.application().flags()
                                 )
                         )
-                ).doOnSubscribe(subscription -> log.info("Generating a new api key for an application"));
+                ).doOnSubscribe(subscription -> log.info("Request to generate a new api key for an application"));
 
     }
 

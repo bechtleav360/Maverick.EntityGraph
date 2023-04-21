@@ -42,7 +42,7 @@ public class Local {
     }
 
     public static class Subscriptions {
-        public static String NAMESPACE = URN_PREFIX+":a :";
+        public static String NAMESPACE = URN_PREFIX+":a:";
         public static String PREFIX = "app";
         public static Namespace NS = EntityNamespace.of(PREFIX, NAMESPACE);
     }

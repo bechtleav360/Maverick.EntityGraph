@@ -27,7 +27,8 @@ public class ScopedScheduledTypeCoercion {
         this.applicationsService = applicationsService;
     }
 
-    @Scheduled(initialDelay = 180, fixedRate = 600, timeUnit = TimeUnit.SECONDS)
+    // @Scheduled(initialDelay = 180, fixedRate = 600, timeUnit = TimeUnit.SECONDS)
+    @Scheduled(initialDelay = 15, fixedRate = 20, timeUnit = TimeUnit.SECONDS)
     public void scheduled() {
         applicationsService.listApplications(new AdminToken())
                 .doOnNext(application -> {

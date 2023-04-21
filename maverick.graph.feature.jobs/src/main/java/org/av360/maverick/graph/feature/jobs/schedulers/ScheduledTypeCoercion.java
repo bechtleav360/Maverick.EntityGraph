@@ -33,7 +33,8 @@ public class ScheduledTypeCoercion  {
         this.eventPublisher = eventPublisher;
     }
 
-    @Scheduled(initialDelay = 30, fixedRate = 600, timeUnit = TimeUnit.SECONDS)
+    // @Scheduled(initialDelay = 30, fixedRate = 600, timeUnit = TimeUnit.SECONDS)
+    @Scheduled(initialDelay = 9, fixedRate = 20, timeUnit = TimeUnit.SECONDS)
     public void scheduled() {
         JobScheduledEvent event = new JobScheduledEvent(TypeCoercionJob.NAME, new AdminToken());
         eventPublisher.publishEvent(event);
