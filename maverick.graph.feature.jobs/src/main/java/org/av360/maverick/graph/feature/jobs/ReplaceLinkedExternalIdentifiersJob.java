@@ -54,7 +54,7 @@ import java.util.stream.Collectors;
 @Component
 public class ReplaceLinkedExternalIdentifiersJob implements Job {
 
-    public static String NAME = "replaceIdentifiers";
+    public static String NAME = "replaceLinkedIdentifiers";
 
     private final QueryServices queryServices;
 

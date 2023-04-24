@@ -27,27 +27,27 @@ import java.util.concurrent.TimeUnit;
 @Slf4j(topic = "graph.jobs.identifiers")
 @Component
 @ConditionalOnProperty(name = "application.features.modules.jobs.scheduled.replaceIdentifiers", havingValue = "true")
-public class ScopedScheduledReplaceIdentifiers {
+public class ScopedScheduledReplaceLinkedIdentifiers {
 
     // FIXME: should not directly access the services
     private final ApplicationEventPublisher eventPublisher;
 
     private final ApplicationsService applicationsService;
 
-    public ScopedScheduledReplaceIdentifiers(ApplicationEventPublisher eventPublisher, ApplicationsService applicationsService) {
+    public ScopedScheduledReplaceLinkedIdentifiers(ApplicationEventPublisher eventPublisher, ApplicationsService applicationsService) {
         this.eventPublisher = eventPublisher;
         this.applicationsService = applicationsService;
     }
 
 
-    @Scheduled(initialDelay = 300, fixedRate = 600, timeUnit = TimeUnit.SECONDS)
-    //@Scheduled(initialDelay = 13, fixedRate = 20, timeUnit = TimeUnit.SECONDS)
+    // @Scheduled(initialDelay = 150, fixedRate = 600, timeUnit = TimeUnit.SECONDS)
+    @Scheduled(initialDelay = 350, fixedRate = 600, timeUnit = TimeUnit.SECONDS)
     public void checkForGlobalIdentifiersScheduled() {
 
 
         applicationsService.listApplications(new AdminToken())
                 .doOnNext(application -> {
-                    JobScheduledEvent event = new ApplicationJobScheduledEvent("replaceIdentifiers", new AdminToken(), application);
+                    JobScheduledEvent event = new ApplicationJobScheduledEvent("replaceLinkedIdentifiers", new AdminToken(), application);
                     eventPublisher.publishEvent(event);
                 }).subscribe();
 
