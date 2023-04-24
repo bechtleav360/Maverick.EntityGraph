@@ -258,12 +258,12 @@ public abstract class AbstractRepository implements RepositoryBehaviour, Stateme
 
                     try {
                         connection.begin();
-                        connection.add(insertStatements);
-                        connection.remove(removeStatements);
+                        connection.add(insertModel);
+                        connection.remove(removeModel);
                         connection.commit();
 
                         trx.setCompleted();
-                        getLogger().trace("Transaction '{}' completed with {} inserted statements and {} removed statements in repository '{}'.", trx.getIdentifier().getLocalName(), insertStatements.size(), removeStatements.size(), connection.getRepository());
+                        getLogger().debug("Transaction '{}' completed with {} inserted statements and {} removed statements in repository '{}'.", trx.getIdentifier().getLocalName(), insertStatements.size(), removeStatements.size(), connection.getRepository());
                     } catch (Exception e) {
                         getLogger().error("Failed to complete transaction for repository '{}'.", connection.getRepository(), e);
                         getLogger().trace("Insert Statements in this transaction: \n {}", insertModel);
@@ -361,6 +361,7 @@ public abstract class AbstractRepository implements RepositoryBehaviour, Stateme
 
     }
 
+    @Deprecated
     public Mono<RepositoryConnection> getConnection(Authentication authentication, RepositoryType repositoryType, GrantedAuthority requiredAuthority) {
         if (!Authorities.satisfies(requiredAuthority, authentication.getAuthorities())) {
             String msg = String.format("Required authority '%s' for repository '%s' not met in authentication with authorities '%s'", requiredAuthority.getAuthority(), repositoryType.name(), authentication.getAuthorities());
@@ -378,7 +379,9 @@ public abstract class AbstractRepository implements RepositoryBehaviour, Stateme
             String msg = String.format("Required authority '%s' for repository '%s' not met in authentication with authorities '%s'", requiredAuthority.getAuthority(), repositoryType.name(), authentication.getAuthorities());
             return Mono.error(new InsufficientAuthenticationException(msg));
         }
+
         return getBuilder().buildRepository(repositoryType, authentication)
+
                 .flatMap(repository ->
                         transactionsMonoTimer.record(() -> {
                             try (RepositoryConnection connection = repository.getConnection()) {
@@ -409,12 +412,14 @@ public abstract class AbstractRepository implements RepositoryBehaviour, Stateme
                             try (RepositoryConnection connection = repository.getConnection()) {
                                 T result = fun.apply(connection);
                                 return Flux.fromIterable(result);
-                            } catch (Exception e) {
+                            }
+                             catch (Exception e) {
                                 return Flux.error(e);
                             } finally {
                                 transactionsFluxCounter.increment();
                             }
-                        }));
+                        }))
+                .retryWhen(Retry.backoff(5, Duration.ofSeconds(1)).filter(throwable -> throwable instanceof RepositoryLockedException));
     }
 
 

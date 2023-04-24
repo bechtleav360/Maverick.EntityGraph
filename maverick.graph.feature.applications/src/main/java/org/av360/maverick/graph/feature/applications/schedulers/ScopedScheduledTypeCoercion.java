@@ -2,7 +2,7 @@ package org.av360.maverick.graph.feature.applications.schedulers;
 
 import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.feature.applications.domain.ApplicationsService;
-import org.av360.maverick.graph.feature.applications.events.ApplicationJobScheduledEvent;
+import org.av360.maverick.graph.feature.applications.domain.events.ApplicationJobScheduledEvent;
 import org.av360.maverick.graph.model.events.JobScheduledEvent;
 import org.av360.maverick.graph.model.security.AdminToken;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;

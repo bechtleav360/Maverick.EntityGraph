@@ -124,6 +124,7 @@ public class ReplaceExternalIdentifiersJob implements Job {
                     log.trace("Checking for external or anonymous subject identifiers.");
                 })
                 .doOnComplete(() -> {
+                    log.debug("Completed checking for external or anonymous identifiers in subjects.");
                 });
     }
 
@@ -167,6 +168,7 @@ public class ReplaceExternalIdentifiersJob implements Job {
                     log.trace("Checking for external or anonymous identifiers in objects.");
                 })
                 .doOnComplete(() -> {
+                    log.debug("Completed checking for external or anonymous identifiers in objects.");
                 });
     }
 

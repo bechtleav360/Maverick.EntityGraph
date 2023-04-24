@@ -1,11 +1,16 @@
 package org.av360.maverick.graph.feature.applications.domain;
 
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
+import io.micrometer.core.instrument.Gauge;
+import io.micrometer.core.instrument.MeterRegistry;
 import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.api.security.errors.RevokedApiKeyUsed;
 import org.av360.maverick.graph.api.security.errors.UnknownApiKey;
 import org.av360.maverick.graph.feature.applications.config.Globals;
 import org.av360.maverick.graph.feature.applications.domain.errors.InvalidApplication;
 import org.av360.maverick.graph.feature.applications.domain.events.ApplicationCreatedEvent;
+import org.av360.maverick.graph.feature.applications.domain.events.ApplicationUpdatedEvent;
 import org.av360.maverick.graph.feature.applications.domain.events.TokenCreatedEvent;
 import org.av360.maverick.graph.feature.applications.domain.model.Application;
 import org.av360.maverick.graph.feature.applications.domain.model.ApplicationFlags;
@@ -26,13 +31,18 @@ import org.eclipse.rdf4j.sparqlbuilder.core.SparqlBuilder;
 import org.eclipse.rdf4j.sparqlbuilder.core.Variable;
 import org.eclipse.rdf4j.sparqlbuilder.core.query.Queries;
 import org.eclipse.rdf4j.sparqlbuilder.core.query.SelectQuery;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.context.ApplicationListener;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.time.ZonedDateTime;
+import java.util.Objects;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Applications separate tenants. Each application has its own separate stores.
@@ -40,7 +50,7 @@ import java.time.ZonedDateTime;
  */
 @Service
 @Slf4j(topic = "graph.feat.apps.svc")
-public class ApplicationsService {
+public class ApplicationsService implements ApplicationListener<ApplicationUpdatedEvent> {
 
     private static final Variable varAppIri = SparqlBuilder.var("appNode");
     private static final Variable varAppKey = SparqlBuilder.var("appId");
@@ -54,18 +64,22 @@ public class ApplicationsService {
     private static final Variable varSubActive = SparqlBuilder.var("subActive");
     private static final Variable varSubLabel = SparqlBuilder.var("subLabel");
 
+    private final Cache<String, Application> cache;
 
     private final ApplicationsStore applicationsStore;
 
     private final ApplicationEventPublisher eventPublisher;
 
     private final IdentifierFactory identifierFactory;
+    private MeterRegistry meterRegistry;
+    private Gauge cacheGauge;
 
 
     public ApplicationsService(ApplicationsStore applicationsStore, ApplicationEventPublisher eventPublisher, IdentifierFactory identifierFactory) {
         this.applicationsStore = applicationsStore;
         this.eventPublisher = eventPublisher;
         this.identifierFactory = identifierFactory;
+        this.cache = Caffeine.newBuilder().recordStats().expireAfterAccess(60, TimeUnit.MINUTES).build();
     }
 
     /**
@@ -143,9 +157,9 @@ public class ApplicationsService {
     }
 
 
-    public Flux<Subscription> listSubscriptionsForApplication(String applicationIdentifier, Authentication authentication) {
+    public Flux<Subscription> listSubscriptionsForApplication(String applicationKey, Authentication authentication) {
 
-        return this.getApplication(applicationIdentifier, authentication)
+        return this.getApplication(applicationKey, authentication)
                 .flatMapMany(app -> {
                     SelectQuery q = Queries.SELECT()
                             .where(varSubIri.has(SubscriptionTerms.HAS_KEY, varSubKey)
@@ -159,27 +173,30 @@ public class ApplicationsService {
                             .map(BindingsAccessor::new)
                             .map(ba -> this.buildSubscriptionFromBindings(ba, app));
                 })
-                .doOnSubscribe(StreamsLogger.debug(log, "Requesting all API Keys for application with key '{}'", applicationIdentifier));
+                .doOnSubscribe(StreamsLogger.debug(log, "Requesting all API Keys for application with key '{}'", applicationKey));
     }
 
 
     public Flux<Application> listApplications(Authentication authentication) {
+        ConcurrentMap<String, Application> allApplications = this.cache.asMap();
+        if(allApplications.isEmpty()) {
+            SelectQuery q = Queries.SELECT()
+                    .where(varAppIri.isA(ApplicationTerms.TYPE)
+                            .andHas(ApplicationTerms.HAS_KEY, varAppKey)
+                            .andHas(ApplicationTerms.HAS_LABEL, varAppLabel)
+                            .andHas(ApplicationTerms.IS_PERSISTENT, varAppFlagPersistent)
+                            .andHas(ApplicationTerms.IS_PUBLIC, varAppFlagPublic)
+                    )
+                    .limit(100);
 
-
-        SelectQuery q = Queries.SELECT()
-                .where(varAppIri.isA(ApplicationTerms.TYPE)
-                        .andHas(ApplicationTerms.HAS_KEY, varAppKey)
-                        .andHas(ApplicationTerms.HAS_LABEL, varAppLabel)
-                        .andHas(ApplicationTerms.IS_PERSISTENT, varAppFlagPersistent)
-                        .andHas(ApplicationTerms.IS_PUBLIC, varAppFlagPublic)
-                )
-                .limit(100);
-
-        return this.applicationsStore.query(q, authentication, Authorities.SYSTEM)
-                .map(BindingsAccessor::new)
-                .map(this::buildApplicationFromBindings)
-                .doOnSubscribe(StreamsLogger.debug(log, "Loading all applications from repository."));
-
+            return this.applicationsStore.query(q, authentication, Authorities.SYSTEM)
+                    .map(BindingsAccessor::new)
+                    .map(this::buildApplicationFromBindings)
+                    .doOnNext(application -> this.cache.put(application.key(), application))
+                    .doOnSubscribe(StreamsLogger.debug(log, "Loading all applications from repository."));
+        } else {
+            return Flux.fromIterable(allApplications.values());
+        }
     }
 
     public Mono<Void> revokeToken(String subscriptionId, String name, Authentication authentication) {
@@ -223,28 +240,16 @@ public class ApplicationsService {
 
     public Mono<Application> getApplication(String applicationKey, Authentication authentication) {
 
-        SelectQuery q = Queries.SELECT().distinct()
-                .where(varAppIri.isA(ApplicationTerms.TYPE)
-                        .andHas(ApplicationTerms.HAS_KEY, applicationKey)
-                        .andHas(ApplicationTerms.HAS_LABEL, varAppLabel)
-                        .andHas(ApplicationTerms.IS_PERSISTENT, varAppFlagPersistent)
-                        .andHas(ApplicationTerms.IS_PUBLIC, varAppFlagPublic)
-                );
-        String queryString = q.getQueryString();
-        return this.applicationsStore.query(q, authentication, Authorities.READER)
-                .singleOrEmpty()
-                .switchIfEmpty(Mono.error(new InvalidApplication(applicationKey)))
-                .map(BindingsAccessor::new)
-                .map(ba -> new Application(
-                        ba.asIRI(varAppIri),
-                        ba.asString(varAppLabel),
-                        applicationKey,
-                        new ApplicationFlags(
-                                ba.asBoolean(varAppFlagPersistent),
-                                ba.asBoolean(varAppFlagPublic)
-                        )
-                ))
-                .doOnSubscribe(StreamsLogger.debug(log, "Loading application with identifier '{}'", applicationKey));
+        Application cached = this.cache.getIfPresent(applicationKey);
+        if(Objects.isNull(cached)) {
+            // rebuild cache
+            return this.listApplications(authentication)
+                    .filter(application -> application.key().equalsIgnoreCase(applicationKey))
+                    .switchIfEmpty(Mono.error(new InvalidApplication(applicationKey)))
+                    .single();
+        } else {
+            return Mono.just(cached);
+        }
     }
 
 
@@ -253,33 +258,10 @@ public class ApplicationsService {
     public Mono<Application> getApplicationByLabel(String applicationLabel, Authentication authentication) {
         if(applicationLabel.equalsIgnoreCase(Globals.DEFAULT_APPLICATION_LABEL)) return Mono.empty();
 
-        SelectQuery q = Queries.SELECT()
-                .where(varAppIri.isA(ApplicationTerms.TYPE)
-                        .andHas(ApplicationTerms.HAS_KEY, varAppKey)
-                        .andHas(ApplicationTerms.HAS_LABEL, applicationLabel)
-                        .andHas(ApplicationTerms.IS_PERSISTENT, varAppFlagPersistent)
-                        .andHas(ApplicationTerms.IS_PUBLIC, varAppFlagPublic)
-                );
-
-
-        return this.applicationsStore.query(q, authentication, Authorities.APPLICATION)
+        return this.listApplications(authentication)
+                .filter(application -> application.label().equalsIgnoreCase(applicationLabel))
                 .switchIfEmpty(Mono.error(new InvalidApplication(applicationLabel)))
-                .doOnNext(bindings -> {
-                    log.trace("Found application: {}", bindings.getValue(varAppLabel.getVarName()));
-                })
-                .collectList()
-                .flatMap(BindingsAccessor::getUniqueBindingSet)
-                .map(BindingsAccessor::new)
-                .map(ba -> new Application(
-                        ba.asIRI(varAppIri),
-                        applicationLabel,
-                        ba.asString(varAppKey),
-                        new ApplicationFlags(
-                                ba.asBoolean(varAppFlagPersistent),
-                                ba.asBoolean(varAppFlagPublic)
-                        )
-                ))
-                .doOnSubscribe(sub -> log.debug("Requesting application with label '{}'", applicationLabel));
+                .single();
     }
 
     private Application buildApplicationFromBindings(BindingsAccessor ba) {
@@ -316,5 +298,18 @@ public class ApplicationsService {
                 ba.asString(varSubIssued),
                 this.buildApplicationFromBindings(ba)
         );
+    }
+
+
+
+    @Override
+    public void onApplicationEvent(ApplicationUpdatedEvent event) {
+        this.cache.invalidateAll();
+    }
+
+
+    @Autowired
+    private void setMeterRegistry(MeterRegistry meterRegistry) {
+        this.meterRegistry = meterRegistry;
     }
 }
