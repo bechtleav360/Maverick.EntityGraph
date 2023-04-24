@@ -1,7 +1,7 @@
 package org.av360.maverick.graph.jobs;
 
 import lombok.extern.slf4j.Slf4j;
-import org.av360.maverick.graph.model.rdf.NamespaceAwareStatement;
+import org.av360.maverick.graph.model.rdf.AnnotatedStatement;
 import org.av360.maverick.graph.model.security.Authorities;
 import org.av360.maverick.graph.services.EntityServices;
 import org.av360.maverick.graph.services.QueryServices;
@@ -95,7 +95,7 @@ public class EntityServicesClient {
                 .doOnSuccess(sub -> log.info("Read complete model for assertions"));
     }
 
-    public Flux<NamespaceAwareStatement> statements() {
+    public Flux<AnnotatedStatement> statements() {
         Variable s = SparqlBuilder.var("s");
         Variable p = SparqlBuilder.var("p");
         Variable o = SparqlBuilder.var("o");
@@ -105,7 +105,7 @@ public class EntityServicesClient {
                 .doOnSubscribe(sub -> log.info("Querying with: {}", q.getQueryString()));
     }
 
-    public Mono<List<NamespaceAwareStatement>> listAllStatements() {
+    public Mono<List<AnnotatedStatement>> listAllStatements() {
        return this.statements().collectList();
     }
 

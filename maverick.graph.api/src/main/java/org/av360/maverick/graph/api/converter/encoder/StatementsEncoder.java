@@ -1,8 +1,8 @@
 package org.av360.maverick.graph.api.converter.encoder;
 
-import org.av360.maverick.graph.model.rdf.NamespaceAwareStatement;
-import org.av360.maverick.graph.store.rdf.helpers.RdfUtils;
 import lombok.extern.slf4j.Slf4j;
+import org.av360.maverick.graph.model.rdf.AnnotatedStatement;
+import org.av360.maverick.graph.store.rdf.helpers.RdfUtils;
 import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.rio.RDFFormat;
 import org.eclipse.rdf4j.rio.RDFWriter;
@@ -27,7 +27,7 @@ import java.util.Map;
  * we need to collect all statements to print a completed document. For n-quads or similar formats, we simply dump the statements.
  */
 @Slf4j(topic = "graph.ctrl.io.encoder.streaming")
-public class StatementsEncoder implements Encoder<NamespaceAwareStatement> {
+public class StatementsEncoder implements Encoder<AnnotatedStatement> {
     private static final List<MimeType> mimeTypes;
 
 
@@ -47,7 +47,7 @@ public class StatementsEncoder implements Encoder<NamespaceAwareStatement> {
     }
 
     @Override
-    public Flux<DataBuffer> encode(Publisher<? extends NamespaceAwareStatement> inputStream, DataBufferFactory bufferFactory, ResolvableType elementType, MimeType mimeType, Map<String, Object> hints) {
+    public Flux<DataBuffer> encode(Publisher<? extends AnnotatedStatement> inputStream, DataBufferFactory bufferFactory, ResolvableType elementType, MimeType mimeType, Map<String, Object> hints) {
 
 
         return Flux

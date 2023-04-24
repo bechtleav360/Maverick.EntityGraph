@@ -4,7 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.model.entities.Transaction;
 import org.av360.maverick.graph.model.enums.Activity;
 import org.av360.maverick.graph.model.identifier.DefaultIdentifierFactory;
-import org.av360.maverick.graph.model.rdf.NamespaceAwareStatement;
+import org.av360.maverick.graph.model.rdf.AnnotatedStatement;
 import org.av360.maverick.graph.model.vocabulary.Local;
 import org.av360.maverick.graph.model.vocabulary.Transactions;
 import org.eclipse.rdf4j.model.*;
@@ -130,7 +130,7 @@ public class RdfTransaction extends TripleModel implements Transaction {
      * @return
      */
     @Override
-    public Iterable<NamespaceAwareStatement> asStatements() {
+    public Iterable<AnnotatedStatement> asStatements() {
         return super.asStatements(Transactions.GRAPH_PROVENANCE, Transactions.GRAPH_AFFECTED);
     }
 

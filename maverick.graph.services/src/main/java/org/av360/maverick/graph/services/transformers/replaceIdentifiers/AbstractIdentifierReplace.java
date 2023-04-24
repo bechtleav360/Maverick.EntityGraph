@@ -1,6 +1,6 @@
 package org.av360.maverick.graph.services.transformers.replaceIdentifiers;
 
-import org.av360.maverick.graph.model.identifier.LocalIdentifier;
+import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.impl.LinkedHashModel;
@@ -14,7 +14,7 @@ public class AbstractIdentifierReplace {
 
     protected final SimpleValueFactory valueFactory = SimpleValueFactory.getInstance();
 
-    public record IdentifierMapping(Resource oldIdentifier, LocalIdentifier newIdentifier) {}
+    public record IdentifierMapping(Resource oldIdentifier, IRI newIdentifier) {}
 
     protected Mono<Set<IdentifierMapping>> replaceIdentifiers(Set<IdentifierMapping> mappings, Model model) {
         Model res = new LinkedHashModel(model);

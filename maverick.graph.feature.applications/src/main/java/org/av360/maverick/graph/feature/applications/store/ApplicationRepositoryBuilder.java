@@ -1,5 +1,6 @@
 package org.av360.maverick.graph.feature.applications.store;
 
+import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.feature.applications.config.ReactiveApplicationContextHolder;
 import org.av360.maverick.graph.feature.applications.domain.model.Application;
 import org.av360.maverick.graph.feature.applications.security.SubscriptionToken;
@@ -9,7 +10,6 @@ import org.av360.maverick.graph.model.security.RequestDetails;
 import org.av360.maverick.graph.store.RepositoryType;
 import org.av360.maverick.graph.store.rdf.LabeledRepository;
 import org.av360.maverick.graph.store.rdf4j.config.DefaultRepositoryBuilder;
-import lombok.extern.slf4j.Slf4j;
 import org.eclipse.rdf4j.http.protocol.UnauthorizedException;
 import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
@@ -38,9 +38,11 @@ import java.util.Objects;
 @Slf4j(topic = "graph.feat.app.repo.cfg.builder")
 @Primary
 public class ApplicationRepositoryBuilder extends DefaultRepositoryBuilder {
-    @Value("${application.storage.default.path: #{null}}")
-    private String applicationsPath;
+    @Value("${application.storage.default.path:}")
+    private String defaultPath;
 
+    @Value("${application.features.modules.applications.config.base:}")
+    private String applicationsPath;
 
 
     public ApplicationRepositoryBuilder() {
@@ -159,8 +161,10 @@ public class ApplicationRepositoryBuilder extends DefaultRepositoryBuilder {
     private Mono<Repository> getRepository(RepositoryType repositoryType, @Nullable Application application) {
         if(Objects.isNull(application)) return getRepository(repositoryType, "default");
         else {
+            String base = StringUtils.hasLength(this.applicationsPath) ? this.applicationsPath : this.defaultPath;
+
             String key = buildRepositoryLabel(repositoryType, application.key());
-            return Mono.just(super.getCache().get(key, s -> new LabeledRepository(key, this.buildApplicationsRepository(this.applicationsPath, application, repositoryType))));
+            return Mono.just(super.getCache().get(key, s -> new LabeledRepository(key, this.buildApplicationsRepository(base, application, repositoryType))));
         }
 
     }

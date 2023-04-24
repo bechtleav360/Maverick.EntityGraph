@@ -4,15 +4,26 @@ import org.av360.maverick.graph.feature.applications.api.dto.Responses;
 import org.av360.maverick.graph.feature.applications.client.ApplicationsTestClient;
 import org.av360.maverick.graph.feature.applications.config.ApplicationsTestsBase;
 import org.av360.maverick.graph.feature.applications.domain.model.ApplicationFlags;
+import org.av360.maverick.graph.model.security.AdminToken;
+import org.av360.maverick.graph.services.QueryServices;
+import org.av360.maverick.graph.store.RepositoryType;
 import org.av360.maverick.graph.tests.config.TestSecurityConfig;
+import org.eclipse.rdf4j.query.BindingSet;
+import org.eclipse.rdf4j.sparqlbuilder.core.SparqlBuilder;
+import org.eclipse.rdf4j.sparqlbuilder.core.Variable;
+import org.eclipse.rdf4j.sparqlbuilder.core.query.Queries;
+import org.eclipse.rdf4j.sparqlbuilder.core.query.SelectQuery;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.event.RecordApplicationEvents;
+
+import java.util.List;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ContextConfiguration(classes = TestSecurityConfig.class)
@@ -21,6 +32,10 @@ import org.springframework.test.context.event.RecordApplicationEvents;
 class ApplicationsTest extends ApplicationsTestsBase {
 
     private ApplicationsTestClient client;
+
+    @Autowired
+    private QueryServices queryServices;
+
 
     @BeforeEach
     public void setup() {
@@ -78,13 +93,22 @@ class ApplicationsTest extends ApplicationsTestsBase {
     @Test
     public void getApplication() {
 
+        super.printStart("Read application");
 
-        Responses.ApplicationResponse app = this.client.createApplication("test", new ApplicationFlags(false, true, null, null, null))
+        Responses.ApplicationResponse app = this.client.createApplication("test", new ApplicationFlags(false, true))
                 .expectStatus().isCreated()
                 .expectBody(Responses.ApplicationResponse.class)
                 .returnResult()
                 .getResponseBody();
 
+
+        Variable s = SparqlBuilder.var("s");
+        Variable p = SparqlBuilder.var("p");
+        Variable o = SparqlBuilder.var("o");
+        SelectQuery q = Queries.SELECT(s, p, o).all().where(s.has(p, o));
+        List<BindingSet> block = this.queryServices.queryValues(q, new AdminToken(), RepositoryType.APPLICATION).collectList().block();
+
+        super.printStep();
         this.client.getApplication(app.key())
                 .expectStatus().isOk()
                 .expectBody()
@@ -94,6 +118,7 @@ class ApplicationsTest extends ApplicationsTestsBase {
 
     @Test
     public void createSubscription() {
+        super.printStart("Create Subscription");
         Responses.ApplicationResponse re = this.client.createApplication("test-public", new ApplicationFlags(false, false, null, null, null))
                 .expectStatus().isCreated()
                 .expectBody(Responses.ApplicationResponse.class)
@@ -103,6 +128,7 @@ class ApplicationsTest extends ApplicationsTestsBase {
         Assertions.assertNotNull(re);
         Assertions.assertNotNull(re.key());
 
+        super.printStep();
 
         this.client.createSubscription("test-subscription", re.key())
                 .expectStatus().isCreated()

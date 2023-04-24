@@ -7,7 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.NotImplementedException;
 import org.av360.maverick.graph.api.controller.AbstractController;
 import org.av360.maverick.graph.model.enums.RdfMimeTypes;
-import org.av360.maverick.graph.model.rdf.NamespaceAwareStatement;
+import org.av360.maverick.graph.model.rdf.AnnotatedStatement;
 import org.av360.maverick.graph.services.EntityServices;
 import org.av360.maverick.graph.services.SchemaServices;
 import org.av360.maverick.graph.services.ValueServices;
@@ -44,7 +44,7 @@ public class Links extends AbstractController {
     @GetMapping(value = "/entities/{id:[\\w|\\d|\\-|\\_]+}/links",
             produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE})
     @ResponseStatus(HttpStatus.OK)
-    public Flux<NamespaceAwareStatement> getLinks(@PathVariable String id) {
+    public Flux<AnnotatedStatement> getLinks(@PathVariable String id) {
         return Flux.error(new NotImplementedException("Method has not been implemented yet."));
     }
 
@@ -52,7 +52,7 @@ public class Links extends AbstractController {
     @GetMapping(value = "/entities/{id:[\\w|\\d|\\-|\\_]+}/links/{prefixedKey:[\\w|\\d]+\\.[\\w|\\d]+}",
             produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE})
     @ResponseStatus(HttpStatus.OK)
-    public Flux<NamespaceAwareStatement> getLinksByType(@PathVariable String id, @PathVariable String prefixedKey) {
+    public Flux<AnnotatedStatement> getLinksByType(@PathVariable String id, @PathVariable String prefixedKey) {
         return super.getAuthentication()
                 .flatMap(authentication -> this.values.listLinks(id, prefixedKey, authentication))
                 .flatMapIterable(TripleModel::asStatements)
@@ -78,7 +78,7 @@ public class Links extends AbstractController {
     @PutMapping(value = "/entities/{source_id:[\\w|\\d|\\-|\\_]+}/links/{prefixedKey:[\\w|\\d]+\\.[\\w|\\d]+}/{target_id:[\\w|\\d|\\-|\\_]+}",
             produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE, MediaType.APPLICATION_JSON_VALUE})
     @ResponseStatus(HttpStatus.CREATED)
-    public Flux<NamespaceAwareStatement> createLink(@PathVariable String source_id, @PathVariable String prefixedKey, @PathVariable String target_id) {
+    public Flux<AnnotatedStatement> createLink(@PathVariable String source_id, @PathVariable String prefixedKey, @PathVariable String target_id) {
 
         return super.getAuthentication()
                 .flatMap(authentication -> this.values.insertLink(source_id, prefixedKey, target_id, authentication))
@@ -94,7 +94,7 @@ public class Links extends AbstractController {
     @Operation(summary = "Deletes edge to existing entity identified by target id.")
     @DeleteMapping(value = "/entities/{source_id:[\\w|\\d|\\-|\\_]+}/links/{prefixedKey:[\\w|\\d]+\\.[\\w|\\d]+}/{target_id:[\\w|\\d|-|_]+}")
     @ResponseStatus(HttpStatus.OK)
-    public Flux<NamespaceAwareStatement> deleteLink(@PathVariable String source_id, @PathVariable String prefixedKey, @PathVariable String target_id) {
+    public Flux<AnnotatedStatement> deleteLink(@PathVariable String source_id, @PathVariable String prefixedKey, @PathVariable String target_id) {
         return super.getAuthentication()
                 .flatMap(authentication -> this.values.removeLink(source_id, prefixedKey, target_id, authentication))
                 .flatMap(trx -> {
@@ -118,7 +118,7 @@ public class Links extends AbstractController {
     @PutMapping(value = "/entities/{id:[\\w|\\d|\\-|\\_]+}/links/{prefixedKey:[\\w|\\d]+\\.[\\w|\\d]+}",
             produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE, MediaType.APPLICATION_JSON_VALUE})
     @ResponseStatus(HttpStatus.OK)
-    public Flux<NamespaceAwareStatement> batchCreateLinks(@PathVariable String id, @PathVariable String prefixedKey) {
+    public Flux<AnnotatedStatement> batchCreateLinks(@PathVariable String id, @PathVariable String prefixedKey) {
         return Flux.error(new NotImplementedException("Method has not been implemented yet."));
     }
 }

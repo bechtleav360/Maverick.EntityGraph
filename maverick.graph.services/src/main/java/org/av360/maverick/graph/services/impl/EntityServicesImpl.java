@@ -7,7 +7,9 @@ import org.av360.maverick.graph.model.events.EntityCreatedEvent;
 import org.av360.maverick.graph.model.events.EntityDeletedEvent;
 import org.av360.maverick.graph.model.rdf.LocalIRI;
 import org.av360.maverick.graph.model.vocabulary.Local;
+import org.av360.maverick.graph.model.vocabulary.SDO;
 import org.av360.maverick.graph.services.EntityServices;
+import org.av360.maverick.graph.services.IdentifierServices;
 import org.av360.maverick.graph.services.QueryServices;
 import org.av360.maverick.graph.services.SchemaServices;
 import org.av360.maverick.graph.services.transformers.DelegatingTransformer;
@@ -20,10 +22,16 @@ import org.av360.maverick.graph.store.rdf.fragments.TripleBag;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Resource;
+import org.eclipse.rdf4j.model.vocabulary.DCTERMS;
+import org.eclipse.rdf4j.model.vocabulary.RDFS;
+import org.eclipse.rdf4j.model.vocabulary.SKOS;
 import org.eclipse.rdf4j.sparqlbuilder.core.SparqlBuilder;
 import org.eclipse.rdf4j.sparqlbuilder.core.Variable;
+import org.eclipse.rdf4j.sparqlbuilder.core.query.ConstructQuery;
 import org.eclipse.rdf4j.sparqlbuilder.core.query.Queries;
 import org.eclipse.rdf4j.sparqlbuilder.core.query.SelectQuery;
+import org.eclipse.rdf4j.sparqlbuilder.graphpattern.GraphPattern;
+import org.eclipse.rdf4j.sparqlbuilder.graphpattern.TriplePattern;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.core.Authentication;
@@ -46,26 +54,24 @@ public class EntityServicesImpl implements EntityServices {
     private final SchemaServices schemaServices;
     private final QueryServices queryServices;
 
+    private final IdentifierServices identifierServices;
+
     private final ApplicationEventPublisher eventPublisher;
 
     private DelegatingValidator validators;
     private DelegatingTransformer transformers;
 
 
-
-
-
     public EntityServicesImpl(EntityStore graph,
                               TransactionsStore trxStore,
-                              SchemaServices schemaServices, QueryServices queryServices, ApplicationEventPublisher eventPublisher) {
+                              SchemaServices schemaServices, QueryServices queryServices, IdentifierServices identifierServices, ApplicationEventPublisher eventPublisher) {
         this.entityStore = graph;
         this.trxStore = trxStore;
         this.schemaServices = schemaServices;
         this.queryServices = queryServices;
+        this.identifierServices = identifierServices;
         this.eventPublisher = eventPublisher;
     }
-
-
 
 
     @Override
@@ -76,18 +82,73 @@ public class EntityServicesImpl implements EntityServices {
 
     @Override
     public Flux<RdfEntity> list(Authentication authentication, int limit, int offset) {
+        /*
+        PREFIX sdo:    <https://schema.org/>
+        PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+            CONSTRUCT   {
+              ?x a ?type ;
+                 sdo:title ?title ;
+                 skos:prefLabel ?label.
+            } WHERE {
+              ?x a <urn:pwid:meg:e:Individual> ;
+                 a ?type .
+              OPTIONAL {
+                ?x sdo:title ?title .
+              }
+            }
+         */
+
         Variable idVariable = SparqlBuilder.var("id");
+        Variable typeVariable = SparqlBuilder.var("type");
+        Variable l1 = SparqlBuilder.var("l1");
+        Variable l2 = SparqlBuilder.var("l2");
+        Variable l3 = SparqlBuilder.var("l3");
+        Variable l4 = SparqlBuilder.var("l4");
 
-        SelectQuery query = Queries.SELECT(idVariable).where(
-                idVariable.isA(Local.Entities.INDIVIDUAL)).limit(limit).offset(offset);
+        TriplePattern resPattern = idVariable.isA(typeVariable).andHas(SDO.TITLE, l1).andHas(RDFS.LABEL, l2).andHas(DCTERMS.TITLE, l3).andHas(SKOS.PREF_LABEL, l4);
+        GraphPattern wherePattern = idVariable.isA(Local.Entities.INDIVIDUAL).andIsA(typeVariable).and(idVariable.has(RDFS.LABEL, l1).optional())
+                .and(idVariable.has(DCTERMS.TITLE, l2).optional())
+                .and(idVariable.has(SDO.TITLE, l3).optional())
+                .and(idVariable.has(SKOS.PREF_LABEL, l4).optional());
 
+        ConstructQuery q = Queries.CONSTRUCT(resPattern).where(wherePattern).limit(limit).offset(offset);
+
+
+        final Resource[] current = {null};
+        return this.queryServices.queryGraph(q, authentication)
+                .bufferUntil(annotatedStatement -> {
+                    if (annotatedStatement.getSubject() == current[0]) return true;
+                    else {
+                        current[0] = annotatedStatement.getSubject();
+                        return false;
+                    }
+                })
+                .map(statements -> {
+                    RdfEntity rdfEntity = new RdfEntity(current[0]);
+                    rdfEntity.getModel().addAll(statements);
+                    return rdfEntity;
+                });
+        /*
         return this.queryServices.queryValues(query.getQueryString(), authentication)
-                .map(bindings -> (IRI) bindings.getValue(idVariable.getVarName()))
+                .map(bindings -> {
+                    Value value = bindings.getValue(idVariable.getVarName());
+                    if(! value.isIRI()) return;
+
+                    RdfEntity rdfEntity = new RdfEntity((IRI) value);
+                    rdfEntity.getBuilder().subject()
+
+
+                })
+                .filter(Value::isIRI)
+                .map(value -> (IRI) value)
                 .flatMap(id -> this.entityStore.getEntity(id, authentication, 0));
+         */
     }
+
     @Override
     public Mono<RdfEntity> findByKey(String entityKey, Authentication authentication) {
-        return schemaServices.resolveLocalName(entityKey)
+        return identifierServices.validate(entityKey)
+                .flatMap(schemaServices::resolveLocalName)
                 .flatMap(entityIdentifier -> this.get(entityIdentifier, authentication, 1));
     }
 
@@ -109,7 +170,7 @@ public class EntityServicesImpl implements EntityServices {
 
     @Override
     public Mono<RdfEntity> find(String identifier, String property, Authentication authentication) {
-        if(StringUtils.hasLength(property)) {
+        if (StringUtils.hasLength(property)) {
             return schemaServices.resolvePrefixedName(property)
                     .flatMap(propertyIri -> this.findByProperty(identifier, propertyIri, authentication));
         } else {
@@ -123,17 +184,14 @@ public class EntityServicesImpl implements EntityServices {
     }
 
 
-
-
-
-
     public Mono<IRI> resolveAndVerify(String key, Authentication authentication) {
-        LocalIRI targetIri = LocalIRI.withDefaultNamespace(key);
-        return this.contains(targetIri, authentication)
-                .flatMap(exists -> {
-                    if(! exists) return Mono.error(new EntityNotFound(key));
-                    else return Mono.just(targetIri);
-                });
+        return this.identifierServices.asIRI(key)
+                .flatMap(targetIri ->
+                        this.contains(targetIri, authentication)
+                                .flatMap(exists -> {
+                                    if (!exists) return Mono.error(new EntityNotFound(key));
+                                    else return Mono.just(targetIri);
+                                }));
     }
 
     @Override
@@ -155,7 +213,7 @@ public class EntityServicesImpl implements EntityServices {
 
     @Override
     public Mono<RdfTransaction> remove(String entityKey, Authentication authentication) {
-        return this.remove(LocalIRI.withDefaultNamespace(entityKey), authentication);
+        return this.identifierServices.asIRI(entityKey).flatMap(iri -> this.remove(iri, authentication));
     }
 
     @Override
@@ -175,47 +233,46 @@ public class EntityServicesImpl implements EntityServices {
      * <p>
      * If the relation is bidirectional, we should also create the inverse edge
      *
-     * @param id              entity id
-     * @param predicate       the qualified predicate
-     * @param linkedEntities  value
+     * @param id             entity id
+     * @param predicate      the qualified predicate
+     * @param linkedEntities value
      * @return transaction model
      */
     @Override
     @Deprecated
     public Mono<RdfTransaction> linkEntityTo(String id, IRI predicate, TripleBag linkedEntities, Authentication authentication) {
 
-        LocalIRI entityIdentifier = LocalIRI.withDefaultNamespace(id);
 
         /*
             Constraints to check:
                 the incoming model can contain multiple entities, all will be linked to
                 the model cannot contain the link statements itself (we are creating them)
          */
-        return this.entityStore.getEntity(entityIdentifier, authentication, 0)
-                .switchIfEmpty(Mono.error(new EntityNotFound(id)))
+        return this.identifierServices.asIRI(id)
+                .flatMap(iri -> {
+                    return this.entityStore.getEntity(iri, authentication, 0)
+                            .switchIfEmpty(Mono.error(new EntityNotFound(id)))
 
-                /* store the new entities */
-                .map(entity -> new RdfTransaction().affected(entity))
-                .flatMap(transaction -> this.prepareEntity(linkedEntities, new HashMap<>(), transaction, authentication))
+                            /* store the new entities */
+                            .map(entity -> new RdfTransaction().affected(entity))
+                            .flatMap(transaction -> this.prepareEntity(linkedEntities, new HashMap<>(), transaction, authentication))
 
-                /* store the links */
-                .map(transaction -> {
-                    transaction.listModifiedResources(Activity.INSERTED, Activity.UPDATED)
-                            .forEach(value -> {
-                                transaction.insert(entityIdentifier, predicate, value, Activity.UPDATED);
-                            });
+                            /* store the links */
+                            .map(transaction -> {
+                                transaction.listModifiedResources(Activity.INSERTED, Activity.UPDATED)
+                                        .forEach(value -> {
+                                            transaction.insert(iri, predicate, value, Activity.UPDATED);
+                                        });
 
-                    return transaction;
+                                return transaction;
 
-                })
-                .flatMap(trx -> this.entityStore.commit(trx, authentication));
+                            })
+                            .flatMap(trx -> this.entityStore.commit(trx, authentication));
 
 
-        // FIXME: we should separate by entities (and have them as individual transactions)
+                    // FIXME: we should separate by entities (and have them as individual transactions)
+                });
     }
-
-
-
 
     /**
      * Make sure you store the transaction once you are finished
@@ -267,16 +324,14 @@ public class EntityServicesImpl implements EntityServices {
     public Mono<Boolean> valueIsSet(String id, String predicatePrefix, String predicateKey, Authentication authentication) {
         LocalIRI entityIdentifier = LocalIRI.withDefaultNamespace(id);
 
-        return schemaServices.getNamespaceFor(predicatePrefix)
-                .map(ns -> LocalIRI.withDefinedNamespace(ns, predicateKey))
-                .flatMap(predicate -> this.valueIsSet(entityIdentifier, predicate, authentication));
+        return this.identifierServices.asIRI(id)
+                .flatMap(iri ->
+                        schemaServices.getNamespaceFor(predicatePrefix)
+                                .map(ns -> LocalIRI.withDefinedNamespace(ns, predicateKey))
+                                .flatMap(predicate -> this.valueIsSet(entityIdentifier, predicate, authentication))
+                );
+
     }
 
-    /* for testing only */
-    public Mono<Boolean> entityExists(String id, Authentication authentication) {
-        LocalIRI identifier = LocalIRI.withDefaultNamespace(id);
 
-        return this.entityStore.listStatements(identifier, null, null, authentication)
-                .hasElement();
-    }
 }

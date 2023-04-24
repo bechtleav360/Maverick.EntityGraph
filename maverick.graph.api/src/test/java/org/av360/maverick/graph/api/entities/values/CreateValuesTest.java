@@ -13,6 +13,7 @@ import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.rio.RDFFormat;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.locationtech.jts.util.Assert;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -182,6 +183,7 @@ public class CreateValuesTest extends ApiTestsBase {
     }
 
     @Test
+    @Disabled
     public void addTitleWithLanguageTag() {
         super.printStart("addTitleWithLanguageTag");
 

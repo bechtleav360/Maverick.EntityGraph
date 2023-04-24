@@ -5,6 +5,7 @@ import org.av360.maverick.graph.store.RepositoryType;
 import org.av360.maverick.graph.store.TransactionsStore;
 import org.av360.maverick.graph.store.rdf.fragments.RdfTransaction;
 import org.av360.maverick.graph.store.rdf4j.repository.util.AbstractRepository;
+import org.slf4j.Logger;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.stereotype.Component;
@@ -14,7 +15,7 @@ import reactor.core.publisher.Mono;
 import java.util.Collection;
 import java.util.List;
 
-@Slf4j
+@Slf4j(topic = "graph.repo.transactions")
 @Component
 public class TransactionsRepository extends AbstractRepository implements TransactionsStore {
 
@@ -46,4 +47,8 @@ public class TransactionsRepository extends AbstractRepository implements Transa
     }
 
 
+    @Override
+    public Logger getLogger() {
+        return log;
+    }
 }

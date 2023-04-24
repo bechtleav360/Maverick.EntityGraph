@@ -9,6 +9,8 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+import java.util.concurrent.TimeUnit;
+
 /**
  * If we have any global identifiers (externally set) in the repo, we have to replace them with our internal identifiers.
  * Otherwise we cannot address the entities through our API.
@@ -26,19 +28,16 @@ import org.springframework.stereotype.Component;
 @ConditionalOnProperty(name = "application.features.modules.jobs.scheduled.typeCoercion", havingValue = "true")
 public class ScheduledTypeCoercion  {
 
-    private final TypeCoercionJob job;
     private final ApplicationEventPublisher eventPublisher;
-    public ScheduledTypeCoercion(TypeCoercionJob job, ApplicationEventPublisher eventPublisher) {
-        this.job = job;
+    public ScheduledTypeCoercion(ApplicationEventPublisher eventPublisher) {
         this.eventPublisher = eventPublisher;
     }
 
-    @Scheduled(initialDelay = 10000, fixedDelay = 30000)
+    @Scheduled(initialDelay = 30, fixedRate = 600, timeUnit = TimeUnit.SECONDS)
+    // @Scheduled(initialDelay = 9, fixedRate = 20, timeUnit = TimeUnit.SECONDS)
     public void scheduled() {
-        JobScheduledEvent event = new JobScheduledEvent(this.job);
-        event.setAuthentication(new AdminToken());
+        JobScheduledEvent event = new JobScheduledEvent(TypeCoercionJob.NAME, new AdminToken());
         eventPublisher.publishEvent(event);
-
     }
 
 }

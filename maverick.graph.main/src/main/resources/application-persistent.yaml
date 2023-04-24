@@ -12,6 +12,8 @@ application:
     modules:
       applications:
         enabled: true
+        config:
+          base: "D:/Graphen/applications"
       admin:
         enabled: true
       jobs:
@@ -50,10 +52,10 @@ logging:
     path: "D:/Graphen/"
   level:
     graph:
-      jobs: TRACE
-      repo: TRACE
-      srvc: TRACE
-      ctrl: TRACE
+      jobs: DEBUG
+      repo: DEBUG
+      srvc: DEBUG
+      ctrl: DEBUG
 
 
     org:

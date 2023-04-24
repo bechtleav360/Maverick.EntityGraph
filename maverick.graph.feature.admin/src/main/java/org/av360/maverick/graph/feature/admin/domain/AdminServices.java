@@ -1,9 +1,9 @@
 package org.av360.maverick.graph.feature.admin.domain;
 
+import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.model.security.Authorities;
 import org.av360.maverick.graph.store.EntityStore;
 import org.av360.maverick.graph.store.RepositoryType;
-import lombok.extern.slf4j.Slf4j;
 import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.rio.RDFFormat;
 import org.eclipse.rdf4j.rio.RDFWriter;
@@ -45,12 +45,12 @@ public class AdminServices {
 
     public Mono<Void> reset(Authentication authentication, RepositoryType repositoryType) {
         return this.graph.reset(authentication, repositoryType, Authorities.SYSTEM)
-                .doOnSubscribe(sub -> log.info("Purging repository through admin services"));
+                .doOnSubscribe(sub -> log.debug("Purging repository through admin services"));
     }
 
     public Mono<Void> importEntities(Publisher<DataBuffer> bytes, String mimetype, Authentication authentication) {
         return this.graph.importStatements(bytes, mimetype, authentication, Authorities.APPLICATION)
-                .doOnSubscribe(sub -> log.info("Importing statements of type '{}' through admin services", mimetype));
+                .doOnSubscribe(sub -> log.debug("Importing statements of type '{}' through admin services", mimetype));
     }
 
     public Mono<PutObjectResponse> exportEntitiesToS3(Authentication authentication) {

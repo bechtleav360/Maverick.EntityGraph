@@ -1,7 +1,7 @@
 package org.av360.maverick.graph.api.converter.encoder;
 
 import lombok.extern.slf4j.Slf4j;
-import org.av360.maverick.graph.api.config.ReactiveRequestContextHolder;
+import org.av360.maverick.graph.api.config.ReactiveRequestUriContextHolder;
 import org.av360.maverick.graph.model.enums.RdfMimeTypes;
 import org.av360.maverick.graph.model.vocabulary.Local;
 import org.av360.maverick.graph.services.SchemaServices;
@@ -20,7 +20,6 @@ import org.springframework.core.codec.Encoder;
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.core.io.buffer.DataBufferFactory;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.util.MimeType;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -30,6 +29,7 @@ import reactor.core.publisher.Mono;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -86,10 +86,10 @@ public class BufferedStatementsEncoder implements Encoder<Statement> {
                 // we filter out any internal statements
                 .filter(statement -> !statement.getObject().equals(Local.Entities.INDIVIDUAL))
                 .collectList()
-                .flatMap(list ->  Mono.zip(Mono.just(list), ReactiveRequestContextHolder.getRequest()))
+                .flatMap(list ->  Mono.zip(Mono.just(list), ReactiveRequestUriContextHolder.getURI()))
                 .flatMapMany(tuple -> {
                     List<Statement> statements = tuple.getT1();
-                    ServerHttpRequest request = tuple.getT2(); // we need the request to resolve the current request url
+                    URI requestURI = tuple.getT2(); // we need the request to resolve the current request url
 
                     try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
 
@@ -102,7 +102,7 @@ public class BufferedStatementsEncoder implements Encoder<Statement> {
                         }
 
                         for (Statement st : statements) {
-                            this.handleStatement(st, writer, request);
+                            this.handleStatement(st, writer, requestURI);
 
                         }
                         writer.endRDF();
@@ -119,42 +119,53 @@ public class BufferedStatementsEncoder implements Encoder<Statement> {
                 });
     }
 
-    private void handleStatement(Statement st, RDFWriter writer, ServerHttpRequest request) {
+    private void handleStatement(Statement st, RDFWriter writer, URI requestURI) {
         SimpleValueFactory vf = SimpleValueFactory.getInstance();
 
-        Resource subject = convertLocalIRI(st.getSubject(), request, vf);
-        IRI predicate = convertLocalIRI(st.getPredicate(), request, vf);
-        Value object = convertLocalIRI(st.getObject(), request, vf);
+        Resource subject = convertLocalIRI(st.getSubject(), requestURI, vf);
+        IRI predicate = convertLocalIRI(st.getPredicate(), requestURI, vf);
+        Value object = convertLocalIRI(st.getObject(), requestURI, vf);
 
         Statement convertedStatement = vf.createStatement(subject, predicate, object);
         writer.handleStatement(convertedStatement);
     }
 
-    private <T extends Value> T convertLocalIRI(T value, ServerHttpRequest request, SimpleValueFactory vf) {
+    private <T extends Value> T convertLocalIRI(T value, URI requestURI, SimpleValueFactory vf) {
         if(value instanceof IRI iri) {
 
             if(iri.getNamespace().startsWith(Local.URN_PREFIX)) {
 
                 /* ok, here the application module is leaking into the default implementation. If the IRI namespace includes a qualifier,
-                   we inject it as scope
+                   we inject it as scope. To make it reproducible, we assume: if namespace is not default namespace, we take the (URL decoded) string
+                   attached and place it under scope ("s").
+
+                   Examples:
+                    urn:pwid:meg:e:,213 -> /api/entities/213
+                    urn:pwid:meg:e:, f33.213 -> /api/entities/s/f33/213
+
+
                  */
-                String path = iri.getLocalName();
+                String[] parts = iri.getLocalName().split("\\.");
+                String ns = iri.getNamespace();
+                String path = "/api";
+                if(ns.startsWith(Local.Entities.NAMESPACE)) {
+                    if(parts.length == 1) {
+                        path += "/entities/"+parts[0];
+                    } else {
+                        path += "/s/"+parts[0]+"/entities/"+parts[1];
+                    }
 
-                if(iri.getNamespace().startsWith(Local.Entities.NAMESPACE)) {
-
-
-                    path = "/api/entities/"+path;
-                }
+                } else
 
                 if(iri.getNamespace().startsWith(Local.Transactions.NAMESPACE)) {
-                    path = "/api/transactions/"+path;
-                }
+                    path = "/transactions/"+path;
+                } else
 
                 if(iri.getNamespace().startsWith(Local.Subscriptions.NAMESPACE)) {
-                    path = "/api/applications/"+path;
+                    path = "/applications/"+path;
                 }
 
-                String uri = UriComponentsBuilder.fromUri(request.getURI()).replacePath(path).build().toUriString();
+                String uri = UriComponentsBuilder.fromUri(requestURI).replacePath(path).replaceQuery("").build().toUriString();
                 return (T) vf.createIRI(uri);
             }
         }

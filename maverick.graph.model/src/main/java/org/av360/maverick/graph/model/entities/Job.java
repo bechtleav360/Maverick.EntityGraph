@@ -7,5 +7,6 @@ public interface Job {
     String getName();
 
     Mono<Void> run(Authentication authentication);
+
 }
 
