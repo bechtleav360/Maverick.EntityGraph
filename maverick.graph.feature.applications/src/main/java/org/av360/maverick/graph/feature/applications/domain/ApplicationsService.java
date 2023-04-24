@@ -94,7 +94,7 @@ public class ApplicationsService implements ApplicationListener<ApplicationUpdat
 
 
 
-        LocalIdentifier subject = identifierFactory.createRandomIdentifier(Local.Subscriptions.NAMESPACE);
+        LocalIdentifier subject = identifierFactory.createRandomIdentifier(Local.Applications.NAMESPACE);
 
         Application application = new Application(
                 subject,
@@ -191,7 +191,7 @@ public class ApplicationsService implements ApplicationListener<ApplicationUpdat
                     )
                     .limit(100);
 
-            return this.applicationsStore.query(q, authentication, Authorities.SYSTEM)
+            return this.applicationsStore.query(q, authentication, Authorities.GUEST)
                     .map(BindingsAccessor::new)
                     .map(this::buildApplicationFromBindings)
                     .doOnNext(application -> this.cache.put(application.key(), application))
@@ -212,7 +212,7 @@ public class ApplicationsService implements ApplicationListener<ApplicationUpdat
         return this.getApplication(applicationKey, authentication)
                 .map(application ->
                         new Subscription(
-                                identifierFactory.createRandomIdentifier(Local.Subscriptions.NAMESPACE),
+                                identifierFactory.createRandomIdentifier(Local.Applications.NAMESPACE),
                                 subscriptionLabel,
                                 RandomIdentifier.generateRandomKey(16),
                                 true,
