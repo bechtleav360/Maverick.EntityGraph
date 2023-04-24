@@ -83,7 +83,9 @@ public class EntityServicesClient {
 
         return this.entityStore
                 .importStatements(read, getFormat(resource).getDefaultMIMEType(), TestSecurityConfig.createAuthenticationToken(), Authorities.SYSTEM)
-                .doOnSuccess(subscription -> log.info("Imported file '{}'", resource.getFilename()));
+                .doOnSuccess(subscription -> log.info("Imported file '{}'", resource.getFilename()))
+                .doOnError(throwable -> log.warn("Failed to import file"))
+                .onErrorStop();
     }
 
     public Mono<Model> getModel() {

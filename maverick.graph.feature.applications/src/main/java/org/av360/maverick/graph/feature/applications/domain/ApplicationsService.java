@@ -178,6 +178,8 @@ public class ApplicationsService implements ApplicationListener<ApplicationUpdat
 
 
     public Flux<Application> listApplications(Authentication authentication) {
+
+
         ConcurrentMap<String, Application> allApplications = this.cache.asMap();
         if(allApplications.isEmpty()) {
             SelectQuery q = Queries.SELECT()

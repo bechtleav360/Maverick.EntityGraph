@@ -36,6 +36,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.util.Assert;
 import org.springframework.util.MimeType;
+import org.springframework.util.function.ThrowingConsumer;
+import org.springframework.util.function.ThrowingFunction;
 import org.springframework.web.client.HttpClientErrorException;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -47,8 +49,10 @@ import java.io.InputStream;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
 import java.time.Duration;
-import java.util.*;
-import java.util.function.Function;
+import java.util.Collection;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public abstract class AbstractRepository implements RepositoryBehaviour, Statements, ModelUpdates, Resettable {
@@ -91,7 +95,7 @@ public abstract class AbstractRepository implements RepositoryBehaviour, Stateme
 
 
     public Flux<AnnotatedStatement> construct(String query, Authentication authentication, GrantedAuthority requiredAuthority, RepositoryType repositoryType) {
-        return this.executeMany(authentication, requiredAuthority, repositoryType, connection -> {
+        return this.applyManyWithConnection(authentication, requiredAuthority, repositoryType, connection -> {
             try {
                 getLogger().trace("Running construct query in repository: {}", connection.getRepository());
 
@@ -117,14 +121,17 @@ public abstract class AbstractRepository implements RepositoryBehaviour, Stateme
     }
 
     public Flux<BindingSet> query(String query, Authentication authentication, GrantedAuthority requiredAuthority, RepositoryType repositoryType) {
-        return this.executeMany(authentication, requiredAuthority, repositoryType, connection -> {
+        return this.applyManyWithConnection(authentication, requiredAuthority, repositoryType, connection -> {
             try {
 
                 TupleQuery q = connection.prepareTupleQuery(QueryLanguage.SPARQL, query);
                 if (getLogger().isTraceEnabled())
                     getLogger().trace("Querying repository '{}'", connection.getRepository());
                 try (TupleQueryResult result = q.evaluate()) {
-                    return result.stream().collect(Collectors.toSet());
+                    Set<BindingSet> collect = result.stream().collect(Collectors.toSet());
+                    return collect;
+                } finally {
+                    connection.close();
                 }
 
             } catch (MalformedQueryException e) {
@@ -141,9 +148,9 @@ public abstract class AbstractRepository implements RepositoryBehaviour, Stateme
 
     @Override
     public Mono<Void> reset(Authentication authentication, RepositoryType repositoryType, GrantedAuthority requiredAuthority) {
-        return this.execute(authentication, requiredAuthority, connection -> {
+        return this.consumeWithConnection(authentication, requiredAuthority, connection -> {
             try {
-                if (!connection.isOpen() || connection.isActive()) return null;
+                if (!connection.isOpen() || connection.isActive()) return;
 
                 if (getLogger().isTraceEnabled()) {
                     // RepositoryResult<Statement> statements = connection.getStatements(null, null, null);
@@ -155,7 +162,6 @@ public abstract class AbstractRepository implements RepositoryBehaviour, Stateme
                 if (!connection.isEmpty())
                     throw new RepositoryException("Repository not empty after clearing");
 
-                return null;
             } catch (Exception e) {
                 getLogger().error("Failed to clear repository: {}", connection.getRepository());
                 throw e;
@@ -166,12 +172,11 @@ public abstract class AbstractRepository implements RepositoryBehaviour, Stateme
 
     @Override
     public Mono<Void> delete(Model model, Authentication authentication, GrantedAuthority requiredAuthority) {
-        return this.execute(authentication, requiredAuthority, connection -> {
+        return this.consumeWithConnection(authentication, requiredAuthority, connection -> {
             try {
                 Resource[] contexts = model.contexts().toArray(new Resource[0]);
                 connection.add(model, contexts);
                 connection.commit();
-                return null;
             } catch (Exception e) {
                 connection.rollback();
                 throw e;
@@ -189,8 +194,10 @@ public abstract class AbstractRepository implements RepositoryBehaviour, Stateme
                 .doOnComplete(() -> {
                     try {
                         getLogger().trace("Finished reading data buffers from publisher during import of data.");
-                        osPipe.close();
+                        osPipe.close();   // the piped input stream has to be closed by its consumer
+
                     } catch (IOException ignored) {
+                        getLogger().error("Failed to close output stream");
                     }
                 })
                 .doOnSubscribe(subscription -> getLogger().trace("Starting reading data buffers from publisher during import of data."))
@@ -206,7 +213,7 @@ public abstract class AbstractRepository implements RepositoryBehaviour, Stateme
 
         RDFParser parser = parserFactory.orElseThrow().getParser();
 
-        return this.execute(authentication, requiredAuthority, connection -> {
+        return this.consumeWithConnection(authentication, requiredAuthority, connection -> {
             try {
                 // example: https://www.baeldung.com/spring-reactive-read-flux-into-inputstream
                 // solution: https://manhtai.github.io/posts/flux-databuffer-to-inputstream/
@@ -215,24 +222,24 @@ public abstract class AbstractRepository implements RepositoryBehaviour, Stateme
                 RDFInserter rdfInserter = new RDFInserter(connection);
                 parser.setRDFHandler(rdfInserter);
 
-                InputStream stream = getInputStreamFromFluxDataBuffer(bytesPublisher);
-                parser.parse(stream);
+                try (InputStream stream = getInputStreamFromFluxDataBuffer(bytesPublisher)) {
+                    parser.parse(stream);
+                }
 
-                getLogger().trace("Stored imported rdf into repository '{}'", connection.getRepository().toString());
-                return null;
+                getLogger().trace("Parsing completed into repository '{}'", connection.getRepository().toString());
 
-            } catch (IOException ex) {
-                throw new RuntimeException(ex);
+
             } catch (Exception exception) {
                 getLogger().error("Failed to import statements with mimetype {} with reason: ", mimetype, exception);
                 throw exception;
+            } finally {
             }
         });
 
     }
 
     public Flux<IRI> types(Resource subj, Authentication authentication, GrantedAuthority requiredAuthority) {
-        return this.executeMany(authentication, requiredAuthority, connection ->
+        return this.applyManyWithConnection(authentication, requiredAuthority, connection ->
                 connection.getStatements(subj, RDF.TYPE, null, false).stream()
                         .map(Statement::getObject)
                         .filter(Value::isIRI)
@@ -243,43 +250,43 @@ public abstract class AbstractRepository implements RepositoryBehaviour, Stateme
 
     @Override
     public Flux<RdfTransaction> commit(Collection<RdfTransaction> transactions, Authentication authentication, GrantedAuthority requiredAuthority) {
-        return this.executeMany(authentication, requiredAuthority, connection ->
-                transactions.stream().peek(trx -> {
-                    getLogger().trace("Committing transaction '{}' to repository '{}'", trx.getIdentifier().getLocalName(), connection.getRepository().toString());
+        return this.applyManyWithConnection(authentication, requiredAuthority, connection -> {
+            connection.begin();
+            Set<RdfTransaction> result = transactions.stream().peek(trx -> {
+                getLogger().trace("Committing transaction '{}' to repository '{}'", trx.getIdentifier().getLocalName(), connection.getRepository().toString());
 
-                    // FIXME: the approach based on the context works only as long as the statements in the graph are all within the global context only
-                    // with this approach, we cannot insert a statement to a context (since it is already in GRAPH_CREATED), every st can only be in one context
-                    Model insertModel = trx.getModel().filter(null, null, null, Transactions.GRAPH_CREATED);
-                    Model removeModel = trx.getModel().filter(null, null, null, Transactions.GRAPH_DELETED);
+                // FIXME: the approach based on the context works only as long as the statements in the graph are all within the global context only
+                // with this approach, we cannot insert a statement to a context (since it is already in GRAPH_CREATED), every st can only be in one context
+                ValueFactory vf = connection.getValueFactory();
+                Set<Statement> insertStatements = trx.getModel().filter(null, null, null, Transactions.GRAPH_CREATED).stream().map(s -> vf.createStatement(s.getSubject(), s.getPredicate(), s.getObject())).collect(Collectors.toSet());
+                Set<Statement> removeStatements = trx.getModel().filter(null, null, null, Transactions.GRAPH_DELETED).stream().map(s -> vf.createStatement(s.getSubject(), s.getPredicate(), s.getObject())).collect(Collectors.toSet());
 
-                    ValueFactory vf = connection.getValueFactory();
-                    List<Statement> insertStatements = insertModel.stream().map(s -> vf.createStatement(s.getSubject(), s.getPredicate(), s.getObject())).toList();
-                    List<Statement> removeStatements = removeModel.stream().map(s -> vf.createStatement(s.getSubject(), s.getPredicate(), s.getObject())).toList();
+                try {
 
-                    try {
-                        connection.begin();
-                        connection.add(insertModel);
-                        connection.remove(removeModel);
-                        connection.commit();
+                    connection.add(insertStatements);
+                    connection.remove(removeStatements);
+                    connection.commit();
+                    trx.setCompleted();
+                    getLogger().debug("Transaction '{}' completed with {} inserted statements and {} removed statements in repository '{}'.", trx.getIdentifier().getLocalName(), insertStatements.size(), removeStatements.size(), connection.getRepository());
+                } catch (Exception e) {
+                    getLogger().error("Failed to complete transaction for repository '{}'.", connection.getRepository(), e);
+                    getLogger().trace("Insert Statements in this transaction: \n {}", insertStatements);
+                    getLogger().trace("Remove Statements in this transaction: \n {}", removeStatements);
+                    connection.rollback();
+                    trx.setFailed(e.getMessage());
+                }
+            }).collect(Collectors.toSet());
+            connection.close();
+            return result;
+        });
 
-                        trx.setCompleted();
-                        getLogger().debug("Transaction '{}' completed with {} inserted statements and {} removed statements in repository '{}'.", trx.getIdentifier().getLocalName(), insertStatements.size(), removeStatements.size(), connection.getRepository());
-                    } catch (Exception e) {
-                        getLogger().error("Failed to complete transaction for repository '{}'.", connection.getRepository(), e);
-                        getLogger().trace("Insert Statements in this transaction: \n {}", insertModel);
-                        getLogger().trace("Remove Statements in this transaction: \n {}", removeModel);
-                        connection.rollback();
-                        trx.setFailed(e.getMessage());
-                    } finally {
-                        connection.close();
-                    }
-                }).collect(Collectors.toSet()));
+
     }
 
 
     @Override
     public Mono<Void> insert(Model model, Authentication authentication, GrantedAuthority requiredAuthority) {
-        return this.execute(authentication, requiredAuthority, connection -> {
+        return this.consumeWithConnection(authentication, requiredAuthority, connection -> {
             try {
                 if (getLogger().isTraceEnabled())
                     getLogger().trace("Inserting model without transaction to repository '{}'", connection.getRepository().toString());
@@ -287,7 +294,6 @@ public abstract class AbstractRepository implements RepositoryBehaviour, Stateme
                 Resource[] contexts = model.contexts().toArray(new Resource[0]);
                 connection.add(model, contexts);
                 connection.commit();
-                return null;
             } catch (Exception e) {
                 connection.rollback();
                 throw e;
@@ -299,7 +305,7 @@ public abstract class AbstractRepository implements RepositoryBehaviour, Stateme
 
     @Override
     public Mono<Set<Statement>> listStatements(Resource value, IRI predicate, Value object, Authentication authentication, GrantedAuthority requiredAuthority) {
-        return this.execute(authentication, requiredAuthority, connection -> {
+        return this.applyWithConnection(authentication, requiredAuthority, connection -> {
             if (getLogger().isTraceEnabled()) {
                 getLogger().trace("Listing all statements with pattern [{},{},{}] from repository '{}'", value, predicate, object, connection.getRepository().toString());
             }
@@ -312,14 +318,14 @@ public abstract class AbstractRepository implements RepositoryBehaviour, Stateme
 
     @Override
     public Mono<Boolean> hasStatement(Resource value, IRI predicate, Value object, Authentication authentication, GrantedAuthority requiredAuthority) {
-        return this.execute(authentication, requiredAuthority, connection -> connection.hasStatement(value, predicate, object, false));
+        return this.applyWithConnection(authentication, requiredAuthority, connection -> connection.hasStatement(value, predicate, object, false));
 
     }
 
 
     @Override
     public Mono<Boolean> exists(Resource subj, Authentication authentication, GrantedAuthority requiredAuthority) {
-        return this.execute(authentication, requiredAuthority, connection -> connection.hasStatement(subj, RDF.TYPE, null, false));
+        return this.applyWithConnection(authentication, requiredAuthority, connection -> connection.hasStatement(subj, RDF.TYPE, null, false));
     }
 
     @Override
@@ -374,19 +380,18 @@ public abstract class AbstractRepository implements RepositoryBehaviour, Stateme
     }
 
 
-    protected <T> Mono<T> execute(Authentication authentication, GrantedAuthority requiredAuthority, RepositoryType repositoryType, Function<RepositoryConnection, T> fun) {
+    protected <T> Mono<T> applyWithConnection(Authentication authentication, GrantedAuthority requiredAuthority, RepositoryType repositoryType, ThrowingFunction<RepositoryConnection, T> fun) {
         if (!Authorities.satisfies(requiredAuthority, authentication.getAuthorities())) {
             String msg = String.format("Required authority '%s' for repository '%s' not met in authentication with authorities '%s'", requiredAuthority.getAuthority(), repositoryType.name(), authentication.getAuthorities());
             return Mono.error(new InsufficientAuthenticationException(msg));
         }
 
         return getBuilder().buildRepository(repositoryType, authentication)
-
                 .flatMap(repository ->
                         transactionsMonoTimer.record(() -> {
                             try (RepositoryConnection connection = repository.getConnection()) {
 
-                                T result = fun.apply(new RepositoryConnectionWrapper(repository, connection));
+                                T result = fun.applyWithException(new RepositoryConnectionWrapper(repository, connection));
                                 if (Objects.isNull(result)) return Mono.empty();
                                 else return Mono.just(result);
                             } catch (Exception e) {
@@ -397,11 +402,36 @@ public abstract class AbstractRepository implements RepositoryBehaviour, Stateme
                         }));
     }
 
-    protected <T> Mono<T> execute(Authentication authentication, GrantedAuthority requiredAuthority, Function<RepositoryConnection, T> fun) {
-        return this.execute(authentication, requiredAuthority, this.getRepositoryType(), fun);
+    protected <T> Mono<T> applyWithConnection(Authentication authentication, GrantedAuthority requiredAuthority, ThrowingFunction<RepositoryConnection, T> fun) {
+        return this.applyWithConnection(authentication, requiredAuthority, this.getRepositoryType(), fun);
     }
 
-    protected <E, T extends Iterable<E>> Flux<E> executeMany(Authentication authentication, GrantedAuthority requiredAuthority, RepositoryType repositoryType, Function<RepositoryConnection, T> fun) {
+    protected Mono<Void> consumeWithConnection(Authentication authentication, GrantedAuthority requiredAuthority, ThrowingConsumer<RepositoryConnection> fun) {
+        return this.consumeWithConnection(authentication, requiredAuthority, this.getRepositoryType(), fun);
+    }
+
+    protected Mono<Void> consumeWithConnection(Authentication authentication, GrantedAuthority requiredAuthority, RepositoryType repositoryType, ThrowingConsumer<RepositoryConnection> fun) {
+        if (!Authorities.satisfies(requiredAuthority, authentication.getAuthorities())) {
+            String msg = String.format("Required authority '%s' for repository '%s' not met in authentication with authorities '%s'", requiredAuthority.getAuthority(), repositoryType.name(), authentication.getAuthorities());
+            return Mono.error(new InsufficientAuthenticationException(msg));
+        }
+
+        return getBuilder().buildRepository(repositoryType, authentication)
+                .flatMap(repository ->
+                        transactionsMonoTimer.record(() -> {
+                            try (RepositoryConnection connection = repository.getConnection()) {
+
+                                fun.acceptWithException(new RepositoryConnectionWrapper(repository, connection));
+                                return Mono.empty();
+                            } catch (Exception e) {
+                                return Mono.error(e);
+                            } finally {
+                                transactionsMonoCounter.increment();
+                            }
+                        }));
+    }
+
+    protected <E, T extends Iterable<E>> Flux<E> applyManyWithConnection(Authentication authentication, GrantedAuthority requiredAuthority, RepositoryType repositoryType, ThrowingFunction<RepositoryConnection, T> fun) {
         if (!Authorities.satisfies(requiredAuthority, authentication.getAuthorities())) {
             String msg = String.format("Required authority '%s' for repository '%s' not met in authentication with authorities '%s'", requiredAuthority.getAuthority(), repositoryType.name(), authentication.getAuthorities());
             return Flux.error(new InsufficientAuthenticationException(msg));
@@ -412,8 +442,7 @@ public abstract class AbstractRepository implements RepositoryBehaviour, Stateme
                             try (RepositoryConnection connection = repository.getConnection()) {
                                 T result = fun.apply(connection);
                                 return Flux.fromIterable(result);
-                            }
-                             catch (Exception e) {
+                            } catch (Exception e) {
                                 return Flux.error(e);
                             } finally {
                                 transactionsFluxCounter.increment();
@@ -423,7 +452,7 @@ public abstract class AbstractRepository implements RepositoryBehaviour, Stateme
     }
 
 
-    protected <E, T extends Iterable<E>> Flux<E> executeMany(Authentication authentication, GrantedAuthority requiredAuthority, Function<RepositoryConnection, T> fun) {
-        return this.executeMany(authentication, requiredAuthority, this.getRepositoryType(), fun);
+    protected <E, T extends Iterable<E>> Flux<E> applyManyWithConnection(Authentication authentication, GrantedAuthority requiredAuthority, ThrowingFunction<RepositoryConnection, T> fun) {
+        return this.applyManyWithConnection(authentication, requiredAuthority, this.getRepositoryType(), fun);
     }
 }

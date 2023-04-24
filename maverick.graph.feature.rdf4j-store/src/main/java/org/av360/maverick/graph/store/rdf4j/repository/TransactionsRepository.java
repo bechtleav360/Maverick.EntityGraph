@@ -32,7 +32,7 @@ public class TransactionsRepository extends AbstractRepository implements Transa
 
     @Override
     public Flux<RdfTransaction> store(Collection<RdfTransaction> transactions, Authentication authentication, GrantedAuthority requiredAuthority) {
-        return this.executeMany(authentication, requiredAuthority, connection -> {
+        return this.applyManyWithConnection(authentication, requiredAuthority, connection -> {
             transactions.forEach(trx -> {
                 try {
                     connection.begin();
