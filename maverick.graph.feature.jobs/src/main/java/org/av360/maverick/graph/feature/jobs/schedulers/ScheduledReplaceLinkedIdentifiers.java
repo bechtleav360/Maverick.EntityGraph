@@ -1,8 +1,7 @@
-package org.av360.maverick.graph.feature.applications.schedulers;
+package org.av360.maverick.graph.feature.jobs.schedulers;
 
 import lombok.extern.slf4j.Slf4j;
-import org.av360.maverick.graph.feature.applications.domain.ApplicationsService;
-import org.av360.maverick.graph.feature.applications.domain.events.ApplicationJobScheduledEvent;
+import org.av360.maverick.graph.feature.jobs.ReplaceLinkedExternalIdentifiersJob;
 import org.av360.maverick.graph.model.events.JobScheduledEvent;
 import org.av360.maverick.graph.model.security.AdminToken;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -27,30 +26,21 @@ import java.util.concurrent.TimeUnit;
 @Slf4j(topic = "graph.jobs.identifiers")
 @Component
 @ConditionalOnProperty(name = "application.features.modules.jobs.scheduled.replaceIdentifiers", havingValue = "true")
-public class ScopedScheduledReplaceIdentifiers {
+public class ScheduledReplaceLinkedIdentifiers {
 
     // FIXME: should not directly access the services
     private final ApplicationEventPublisher eventPublisher;
 
-    private final ApplicationsService applicationsService;
-
-    public ScopedScheduledReplaceIdentifiers(ApplicationEventPublisher eventPublisher, ApplicationsService applicationsService) {
+    public ScheduledReplaceLinkedIdentifiers(ApplicationEventPublisher eventPublisher) {
         this.eventPublisher = eventPublisher;
-        this.applicationsService = applicationsService;
     }
 
 
-    @Scheduled(initialDelay = 300, fixedRate = 600, timeUnit = TimeUnit.SECONDS)
-    //@Scheduled(initialDelay = 13, fixedRate = 20, timeUnit = TimeUnit.SECONDS)
+    @Scheduled(initialDelay = 120, fixedRate = 600, timeUnit = TimeUnit.SECONDS)
+    // @Scheduled(initialDelay = 7, fixedRate = 20, timeUnit = TimeUnit.SECONDS)
     public void checkForGlobalIdentifiersScheduled() {
-
-
-        applicationsService.listApplications(new AdminToken())
-                .doOnNext(application -> {
-                    JobScheduledEvent event = new ApplicationJobScheduledEvent("replaceIdentifiers", new AdminToken(), application);
-                    eventPublisher.publishEvent(event);
-                }).subscribe();
-
+        JobScheduledEvent event = new JobScheduledEvent(ReplaceLinkedExternalIdentifiersJob.NAME, new AdminToken());
+        eventPublisher.publishEvent(event);
     }
 
 }

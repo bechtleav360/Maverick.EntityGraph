@@ -4,6 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.api.security.ext.ChainingAuthenticationManager;
 import org.av360.maverick.graph.model.security.ApiKeyAuthenticationToken;
 import org.av360.maverick.graph.model.security.Authorities;
+import org.av360.maverick.graph.model.security.GuestToken;
 import org.av360.maverick.graph.model.security.RequestDetails;
 import org.springframework.boot.actuate.autoconfigure.security.reactive.EndpointRequest;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -84,8 +85,7 @@ public class SecurityConfiguration {
 
                 if(exchange.getRequest().getPath().value().startsWith("/api")) {
                     log.trace("API Request to path '{}' without an API Key Header", exchange.getRequest().getPath().value());
-                    AnonymousAuthenticationToken anonymous = new AnonymousAuthenticationToken("key", "anonymous", List.of(Authorities.GUEST));
-                    anonymous.setDetails(details);
+                    AnonymousAuthenticationToken anonymous = new GuestToken(details);
                     return Mono.just(anonymous);
                 } else {
                     // lets fallback to the standard authentication (basic) (for actuators and others)

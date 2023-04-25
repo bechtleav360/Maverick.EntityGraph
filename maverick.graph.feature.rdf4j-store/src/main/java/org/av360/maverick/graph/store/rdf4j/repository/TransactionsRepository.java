@@ -32,18 +32,20 @@ public class TransactionsRepository extends AbstractRepository implements Transa
 
     @Override
     public Flux<RdfTransaction> store(Collection<RdfTransaction> transactions, Authentication authentication, GrantedAuthority requiredAuthority) {
-        return getConnection(authentication, requiredAuthority).flatMapMany(connection -> Flux.fromIterable(transactions).flatMap(trx -> {
-                    try {
-                        connection.begin();
-                        connection.add(trx.getModel());
-                        connection.commit();
-                    } catch (Exception e) {
-                        log.error("Error while storing transaction, performing rollback.", e);
-                        connection.rollback();
-                    }
-                    return Mono.just(trx);
-        }));
+        return this.applyManyWithConnection(authentication, requiredAuthority, connection -> {
+            transactions.forEach(trx -> {
+                try {
+                    connection.begin();
+                    connection.add(trx.getModel());
+                    connection.commit();
+                } catch (Exception e) {
+                    log.error("Error while storing transaction, performing rollback.", e);
+                    connection.rollback();
+                }
+            });
 
+            return transactions;
+        });
     }
 
 

@@ -84,7 +84,10 @@ public class BufferedStatementsEncoder implements Encoder<Statement> {
                 })
                 .map(statement -> (Statement) statement)
                 // we filter out any internal statements
-                .filter(statement -> !statement.getObject().equals(Local.Entities.INDIVIDUAL))
+                .filter(statement -> ! statement.getObject().equals(Local.Entities.INDIVIDUAL))
+                .filter(statement -> ! statement.getObject().equals(Local.Entities.EMBEDDED))
+                .filter(statement -> ! statement.getObject().equals(Local.Entities.CLASSIFIER))
+                .filter(statement -> ! statement.getPredicate().equals(Local.ORIGINAL_IDENTIFIER))
                 .collectList()
                 .flatMap(list ->  Mono.zip(Mono.just(list), ReactiveRequestUriContextHolder.getURI()))
                 .flatMapMany(tuple -> {
@@ -102,6 +105,7 @@ public class BufferedStatementsEncoder implements Encoder<Statement> {
                         }
 
                         for (Statement st : statements) {
+
                             this.handleStatement(st, writer, requestURI);
 
                         }
@@ -132,7 +136,6 @@ public class BufferedStatementsEncoder implements Encoder<Statement> {
 
     private <T extends Value> T convertLocalIRI(T value, URI requestURI, SimpleValueFactory vf) {
         if(value instanceof IRI iri) {
-
             if(iri.getNamespace().startsWith(Local.URN_PREFIX)) {
 
                 /* ok, here the application module is leaking into the default implementation. If the IRI namespace includes a qualifier,
@@ -142,30 +145,42 @@ public class BufferedStatementsEncoder implements Encoder<Statement> {
                    Examples:
                     urn:pwid:meg:e:,213 -> /api/entities/213
                     urn:pwid:meg:e:, f33.213 -> /api/entities/s/f33/213
+                    urn:pwid:meg:, 123 -> /
 
 
                  */
                 String[] parts = iri.getLocalName().split("\\.");
                 String ns = iri.getNamespace();
-                String path = "/api";
+                String path = "";
+
                 if(ns.startsWith(Local.Entities.NAMESPACE)) {
                     if(parts.length == 1) {
-                        path += "/entities/"+parts[0];
+                        path += "/api/entities/"+parts[0];
                     } else {
-                        path += "/s/"+parts[0]+"/entities/"+parts[1];
+                        path += "/api/s/"+parts[0]+"/entities/"+parts[1];
                     }
 
-                } else
+                }
 
-                if(iri.getNamespace().startsWith(Local.Transactions.NAMESPACE)) {
-                    path = "/transactions/"+path;
-                } else
+                else if(iri.getNamespace().startsWith(Local.Transactions.NAMESPACE)) {
+                    path = "/api/transactions/"+parts[0];
+                }
 
-                if(iri.getNamespace().startsWith(Local.Subscriptions.NAMESPACE)) {
-                    path = "/applications/"+path;
+                else if(iri.getNamespace().startsWith(Local.Applications.NAMESPACE)) {
+                    path = "/api/applications/"+parts[0];
+                }
+
+                else {
+                    path = parts[0];
                 }
 
                 String uri = UriComponentsBuilder.fromUri(requestURI).replacePath(path).replaceQuery("").build().toUriString();
+                return (T) vf.createIRI(uri);
+            }
+        } else if(value instanceof Literal) {
+            if(value.stringValue().startsWith("?/")) {
+                String p = value.stringValue().substring(2);
+                String uri = UriComponentsBuilder.fromUri(requestURI).replacePath(p).replaceQuery("").build().toUriString();
                 return (T) vf.createIRI(uri);
             }
         }
@@ -183,6 +198,8 @@ public class BufferedStatementsEncoder implements Encoder<Statement> {
             writer.set(JSONLDSettings.OPTIMIZE, true);
             writer.set(JSONLDSettings.USE_NATIVE_TYPES, true);
             writer.set(JSONLDSettings.JSONLD_MODE, JSONLDMode.COMPACT);
+
+
         }
 
         return writer;

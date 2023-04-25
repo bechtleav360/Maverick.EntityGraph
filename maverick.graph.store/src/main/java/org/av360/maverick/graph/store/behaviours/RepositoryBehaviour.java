@@ -58,6 +58,7 @@ public interface RepositoryBehaviour {
     }
 
 
+    @Deprecated
     default Mono<RepositoryConnection> getConnection(Authentication authentication, GrantedAuthority requiredAuthority) {
         return this.getConnection(authentication, getRepositoryType(), requiredAuthority);
     }

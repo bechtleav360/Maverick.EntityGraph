@@ -1,11 +1,12 @@
 package org.av360.maverick.graph.api.security.ext;
 
-import org.av360.maverick.graph.model.security.AdminToken;
-import org.av360.maverick.graph.model.security.ApiKeyAuthenticationToken;
-import org.av360.maverick.graph.model.security.Authorities;
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.text.RandomStringGenerator;
+import org.av360.maverick.graph.model.security.AdminToken;
+import org.av360.maverick.graph.model.security.ApiKeyAuthenticationToken;
+import org.av360.maverick.graph.model.security.Authorities;
+import org.av360.maverick.graph.model.security.GuestToken;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Primary;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
@@ -17,7 +18,6 @@ import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 import reactor.core.publisher.Mono;
 
-import java.util.List;
 import java.util.Set;
 
 @Component
@@ -75,7 +75,7 @@ public class DefaultAuthenticationManager implements ReactiveAuthenticationManag
     private Mono<? extends Authentication> handleAnonymousAuthentication(AnonymousAuthenticationToken authentication) {
         log.info("Handling request with no authentication, granting read-only access in default authentication manager.");
 
-        AnonymousAuthenticationToken auth = new AnonymousAuthenticationToken(authentication.getName(), authentication.getPrincipal(), List.of(Authorities.READER));
+        AnonymousAuthenticationToken auth = new GuestToken();
         auth.setAuthenticated(true);
         auth.setDetails(authentication.getDetails());
         return Mono.just(auth);

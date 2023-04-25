@@ -35,7 +35,7 @@ public class EntityRepository extends AbstractRepository implements EntityStore 
     }
 
     public Mono<RdfEntity> getEntity(Resource id, Authentication authentication, GrantedAuthority requiredAuthority, int includeNeighborsLevel) {
-        return this.execute(authentication, requiredAuthority, connection -> {
+        return this.applyWithConnection(authentication, requiredAuthority, connection -> {
             log.trace("Loading entity with id '{}' from repository {}", id, connection.getRepository().toString());
 
             try {

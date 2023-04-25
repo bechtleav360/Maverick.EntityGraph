@@ -24,7 +24,6 @@ import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 
-
 @Configuration
 public class RequestedApplicationFilter implements WebFilter, ApplicationListener<ApplicationDeletedEvent> {
 
@@ -48,12 +47,12 @@ public class RequestedApplicationFilter implements WebFilter, ApplicationListene
             //this.getRequestedApplicationFromPath(exchange.getRequest().getPath().toString());
             return requestedApplication
                     .map(label ->
-                       ReactiveSecurityContextHolder.getContext().map(SecurityContext::getAuthentication)
-                                .flatMap(authentication -> this.subscriptionsService.getApplicationByLabel(label, new AdminToken()))
-                                .doOnNext(application -> this.cache.put(application.label(), application))
-                                .flatMap(application -> chain.filter(exchange)
-                                        .contextWrite(ctx -> ctx.put(ReactiveApplicationContextHolder.CONTEXT_KEY, application))))
-                            .orElseGet(() -> chain.filter(exchange));
+                            ReactiveSecurityContextHolder.getContext().map(SecurityContext::getAuthentication)
+                                    .flatMap(authentication -> this.subscriptionsService.getApplicationByLabel(label, new AdminToken()))
+                                    .doOnNext(application -> this.cache.put(application.label(), application))
+                                    .flatMap(application -> chain.filter(exchange)
+                                            .contextWrite(ctx -> ctx.put(ReactiveApplicationContextHolder.CONTEXT_KEY, application))))
+                    .orElseGet(() -> chain.filter(exchange));
             /*
             return requestedApplication
                     .map(this.cache::getIfPresent)
@@ -89,7 +88,7 @@ public class RequestedApplicationFilter implements WebFilter, ApplicationListene
 
         return fromPath
                 .or(() -> fromHeader)
-                .filter(app -> ! app.equalsIgnoreCase(Globals.DEFAULT_APPLICATION_LABEL))
+                .filter(app -> !app.equalsIgnoreCase(Globals.DEFAULT_APPLICATION_LABEL))
                 .or(Optional::empty);
     }
 

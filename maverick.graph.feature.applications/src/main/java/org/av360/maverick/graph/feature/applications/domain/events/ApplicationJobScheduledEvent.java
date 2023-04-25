@@ -1,4 +1,4 @@
-package org.av360.maverick.graph.feature.applications.events;
+package org.av360.maverick.graph.feature.applications.domain.events;
 
 import org.av360.maverick.graph.feature.applications.config.ReactiveApplicationContextHolder;
 import org.av360.maverick.graph.feature.applications.domain.model.Application;

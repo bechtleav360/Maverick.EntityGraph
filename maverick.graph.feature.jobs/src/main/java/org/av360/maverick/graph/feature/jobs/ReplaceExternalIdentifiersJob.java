@@ -3,7 +3,6 @@ package org.av360.maverick.graph.feature.jobs;
 import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.model.entities.Job;
 import org.av360.maverick.graph.model.errors.requests.InvalidConfiguration;
-import org.av360.maverick.graph.model.security.Authorities;
 import org.av360.maverick.graph.model.vocabulary.Local;
 import org.av360.maverick.graph.model.vocabulary.Transactions;
 import org.av360.maverick.graph.services.QueryServices;
@@ -15,7 +14,6 @@ import org.av360.maverick.graph.store.rdf.fragments.RdfTransaction;
 import org.eclipse.rdf4j.model.*;
 import org.eclipse.rdf4j.model.impl.LinkedHashModel;
 import org.eclipse.rdf4j.model.util.ModelBuilder;
-import org.eclipse.rdf4j.model.vocabulary.OWL;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
@@ -23,31 +21,34 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import javax.annotation.Nullable;
-import java.time.Duration;
-import java.time.temporal.ChronoUnit;
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * Checks for subjects which don't conform to our internal identifier schema, e.g
  * - _:fefa62849b5844b4a2dff3f2747619632 for anonymous nodes
  * - http://example.com/data/sds for external identifiers
+ *
+ *
  * <p>
  * This job will replace these identifiers with internal urns both in subjects in objects
  * <p>
  * Example:
- * <p>
- * [] a ns1:LearningResource,
- * ns1:hasCategoryCode [ a ns1:CategoryCode ;
- * ns1:codeValue "27" ]
- * <p>
+ * <pre>
+ * _:anon1 a ns1:LearningResource,
+ *      ns1:hasCategoryCode [ a ns1:CategoryCode ;
+ *      ns1:codeValue "27" ]
+ * </pre>
  * is transformed to
- * <p>
- * urn:pwid:meg:e:2121312 a ns1:LearningResource
- * ns1:hasCategoryCode
- * <p>
- * urn:pwid:meg:e:6423412 a ns1:DefinedTerm
- * ns1:termCode "23"
+ * <pre>
+ *  urn:pwid:meg:e:2121312 a ns1:LearningResource
+ *      urn:int:srcid _:anon1
+ *      ns1:hasCategoryCode []
+ *
+ *  urn:pwid:meg:e:6423412 a ns1:DefinedTerm
+ *      urn:int:srcid _:anon2
+ *      ns1:codeValue "27"
+ * </pre>
+ *
  */
 
 @Slf4j(topic = "graph.jobs.identifiers")
@@ -94,10 +95,7 @@ public class ReplaceExternalIdentifiersJob implements Job {
         if (Objects.isNull(this.replaceExternalIdentifiers))
             return Mono.error(new InvalidConfiguration("External identity transformer is disabled"));
 
-        return this.checkForExternalSubjectIdentifiers(authentication)
-                .thenMany(this.checkForLinkedObjectIdentifiers(authentication))
-
-                .then();
+        return this.checkForExternalSubjectIdentifiers(authentication).then();
 
     }
 
@@ -107,16 +105,17 @@ public class ReplaceExternalIdentifiersJob implements Job {
      */
     public Flux<RdfTransaction> checkForExternalSubjectIdentifiers(Authentication authentication) {
         return findSubjectCandidates(authentication)
-                .delayElements(Duration.of(1, ChronoUnit.SECONDS))
                 .flatMap(value -> this.loadSubjectStatements(value, authentication))
                 .flatMap(this::convertSubjectStatements)
                 .flatMap(this::insertStatements)
                 .flatMap(this::deleteStatements)
+                .buffer(100)
                 .flatMap(transactions -> this.commit(transactions, authentication))
                 .doOnNext(transaction -> {
                     Assert.isTrue(transaction.hasStatement(null, Transactions.STATUS, Transactions.SUCCESS), "Failed transaction: \n" + transaction);
                 })
-                .flatMap(transaction -> this.storeTransactions(List.of(transaction), authentication))
+                .buffer(100)
+                .flatMap(transactions -> this.storeTransactions(transactions, authentication))
                 .doOnError(throwable -> {
                     log.error("Exception while finding and replacing subject identifiers: {}", throwable.getMessage());
                 })
@@ -124,51 +123,11 @@ public class ReplaceExternalIdentifiersJob implements Job {
                     log.trace("Checking for external or anonymous subject identifiers.");
                 })
                 .doOnComplete(() -> {
+                    log.debug("Completed checking for external or anonymous identifiers in subjects.");
                 });
     }
 
 
-    /**
-     * Result of the first run
-     *
-     * <pre>
-     * <urn:pwid:meg:e:_ii64uxx> a <https://schema.org/VideoObject>;
-     *   <https://schema.org/identifier> "c";
-     *   <urn:int:srcid> _:2c7bc378441944efadb5210464450a1d2;
-     *   <https://schema.org/hasDefinedTerm> _:2c7bc378441944efadb5210464450a1d3 .
-     *
-     * <urn:pwid:meg:e:b9wnybnx> a <https://schema.org/DefinedTerm>;
-     *   <http://www.w3.org/2000/01/rdf-schema#label> "Term 3";
-     *   <urn:int:srcid> _:2c7bc378441944efadb5210464450a1d3 .
-     * </pre>
-     * <p>
-     * In the next phase, we have to
-     * a) find object candidates (all removableStatements with bnode or external iri identifier)
-     * b) check if we have a statement ?s <urn:int:srcid> candidate, if yes, get its local identifier
-     * c) replace all removableStatements ?s ?p candidate with `?s ?p localIdentifier
-     * d) remove all removableStatements ?s <urn:int:srcid> candidate
-     */
-    private Flux<RdfTransaction> checkForLinkedObjectIdentifiers(Authentication authentication) {
-        return this.loadObjectStatements(authentication)
-                .delayElements(Duration.of(1, ChronoUnit.SECONDS))
-                .flatMap(this::convertObjectStatements)
-                .flatMap(this::insertStatements)
-                .flatMap(this::deleteStatements)
-                .flatMap(transactions -> this.commit(transactions, authentication))
-
-                .doOnNext(transaction -> {
-                    Assert.isTrue(transaction.hasStatement(null, Transactions.STATUS, Transactions.SUCCESS), "Failed transaction: \n" + transaction);
-                })
-                .flatMap(transaction -> this.storeTransactions(List.of(transaction), authentication))
-                .doOnError(throwable -> {
-                    log.error("Exception while relinking objects to new subject identifiers: {}", throwable.getMessage());
-                })
-                .doOnSubscribe(sub -> {
-                    log.trace("Checking for external or anonymous identifiers in objects.");
-                })
-                .doOnComplete(() -> {
-                });
-    }
 
     private Flux<Resource> findSubjectCandidates(Authentication authentication) {
         String tpl = """
@@ -188,9 +147,9 @@ public class ReplaceExternalIdentifiersJob implements Job {
 
 
 
-    private Flux<RdfTransaction> commit(RdfTransaction transaction, Authentication authentication) {
+    private Flux<RdfTransaction> commit(List<RdfTransaction> transactions, Authentication authentication) {
         // log.trace("Committing {} transactions", transactions.size());
-        return this.entityStore.commit(List.of(transaction), authentication);
+        return this.entityStore.commit(transactions, authentication);
     }
 
     private Flux<RdfTransaction> storeTransactions(Collection<RdfTransaction> transactions, Authentication authentication) {
@@ -207,28 +166,6 @@ public class ReplaceExternalIdentifiersJob implements Job {
         return this.entityStore.insert(bag.convertedStatements(), bag.transaction()).then(Mono.just(bag));
     }
 
-    private Mono<StatementsBag> convertObjectStatements(StatementsBag bag) {
-        Objects.requireNonNull(bag.originalIdentifierStatement());
-
-        ModelBuilder modelBuilder = new ModelBuilder();
-        bag.removableStatements().forEach(statement -> {
-            modelBuilder.add(statement.getSubject(), statement.getPredicate(), bag.originalIdentifierStatement().getSubject());
-        });
-        bag.convertedStatements().addAll(modelBuilder.build());
-
-        if(bag.originalIdentifierStatement().getObject().isBNode()) {
-            // we remove old identifiers if they were anonymous
-            bag.removableStatements().add(bag.originalIdentifierStatement());
-        }
-
-        if(bag.originalIdentifierStatement().getObject().isIRI()) {
-            // in other cases we replace it with owl:sameAs
-            bag.removableStatements().add(bag.originalIdentifierStatement());
-            bag.convertedStatements().add(bag.originalIdentifierStatement().getSubject(), OWL.SAMEAS, bag.originalIdentifierStatement().getObject());
-        }
-
-        return Mono.just(bag).doOnSubscribe(sub -> log.trace("Converting object removableStatements for resource '{}' with {} removableStatements", bag.candidateIdentifier(), bag.removableStatements().size()));
-    }
 
     private Mono<StatementsBag> convertSubjectStatements(StatementsBag bag) {
         LinkedHashModel model = new LinkedHashModel();
@@ -263,19 +200,6 @@ public class ReplaceExternalIdentifiersJob implements Job {
                 .map(statements -> new StatementsBag(candidate, Collections.synchronizedSet(statements), new LinkedHashModel(), null, new RdfTransaction()));
     }
 
-    public Flux<StatementsBag> loadObjectStatements(Authentication authentication) {
-        return this.entityStore.listStatements(null, Local.ORIGINAL_IDENTIFIER, null, authentication, Authorities.READER)
-                .flatMapMany(Flux::fromIterable)
-                .filter(statement -> statement.getObject().isResource())
-                .flatMap(st ->
-                        this.entityStore.listStatements(null, null, st.getObject(), authentication)
-                                .map(statements -> statements.stream()
-                                        .filter(s -> ! s.getPredicate().equals(Local.ORIGINAL_IDENTIFIER))
-                                        .filter(s -> ! s.getPredicate().equals(OWL.SAMEAS))
-                                        .collect(Collectors.toSet()))
-                                .map(statements -> new StatementsBag((Resource) st.getObject(), new HashSet<>(statements), new LinkedHashModel(), st, new RdfTransaction()))
-                );
-    }
 
 
 }

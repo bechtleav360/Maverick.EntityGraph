@@ -15,8 +15,15 @@ public class JobEventListener implements Publisher<JobScheduledEvent>, Applicati
 
     @Override
     public void onApplicationEvent(JobScheduledEvent event) {
+
+        // see https://github.com/spring-projects/spring-framework/pull/29924
         if(this.subscriber != null) {
-            this.subscriber.onNext(event);
+            try {
+                this.subscriber.onNext(event);
+            } catch (Exception e) {
+                log.warn("Exception while broadcasting job scheduled event to worker with message: {}", e.getMessage());
+            }
+
         }
 
     }
