@@ -44,8 +44,6 @@ public interface Searchable extends RepositoryBehaviour {
 //        return this.modify(all.getQueryString(), authentication, requiredAuthority);
 //    }
 
-    Flux<BindingSet> query(String queryString, Authentication authentication, GrantedAuthority requiredAuthority);
-
 //    Flux<BindingSet> modify(String queryString, Authentication authentication, GrantedAuthority requiredAuthority);
 
 

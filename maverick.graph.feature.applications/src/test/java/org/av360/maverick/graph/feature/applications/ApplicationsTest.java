@@ -95,7 +95,7 @@ class ApplicationsTest extends ApplicationsTestsBase {
 
         super.printStart("Read application");
 
-        Responses.ApplicationResponse app = this.client.createApplication("test", new ApplicationFlags(false, true))
+        Responses.ApplicationResponse app = this.client.createApplication("test", new ApplicationFlags(false, true, null, null, null))
                 .expectStatus().isCreated()
                 .expectBody(Responses.ApplicationResponse.class)
                 .returnResult()

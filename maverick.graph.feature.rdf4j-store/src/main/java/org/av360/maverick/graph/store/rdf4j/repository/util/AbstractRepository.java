@@ -193,7 +193,7 @@ public abstract class AbstractRepository implements RepositoryBehaviour, Stateme
                     } catch (IOException ignored) {
                     }
                 })
-                .doOnSubscribe(subscription -> log.trace("Starting reading data buffers from publisher during import of data."))
+                .doOnSubscribe(subscription -> getLogger().trace("Starting reading data buffers from publisher during import of data."))
                 .subscribe(DataBufferUtils.releaseConsumer());
         return isPipe;
     }
