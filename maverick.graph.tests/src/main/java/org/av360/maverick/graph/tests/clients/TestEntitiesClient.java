@@ -141,6 +141,7 @@ public class TestEntitiesClient {
                         .path("/api/entities/{id}/links/{prefixedKey}/{target}")
                         .build(sourceId, prefixedKey, targetId)
                 )
+                .accept(MediaType.parseMediaType(RDFFormat.JSONLD.getDefaultMIMEType()))
                 .exchange();
     }
 
