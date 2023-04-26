@@ -41,8 +41,6 @@ import reactor.core.publisher.Mono;
 
 import java.time.ZonedDateTime;
 import java.util.Objects;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Applications separate tenants. Each application has its own separate stores.
@@ -79,7 +77,8 @@ public class ApplicationsService implements ApplicationListener<ApplicationUpdat
         this.applicationsStore = applicationsStore;
         this.eventPublisher = eventPublisher;
         this.identifierFactory = identifierFactory;
-        this.cache = Caffeine.newBuilder().recordStats().expireAfterAccess(60, TimeUnit.MINUTES).build();
+        // this.cache = Caffeine.newBuilder().recordStats().expireAfterAccess(60, TimeUnit.MINUTES).build();
+        this.cache = Caffeine.newBuilder().recordStats().build();
     }
 
     /**
@@ -91,8 +90,6 @@ public class ApplicationsService implements ApplicationListener<ApplicationUpdat
      * @return New application as mono
      */
     public Mono<Application> createApplication(String label, ApplicationFlags flags, Authentication authentication) {
-
-
 
         LocalIdentifier subject = identifierFactory.createRandomIdentifier(Local.Applications.NAMESPACE);
 
@@ -179,9 +176,8 @@ public class ApplicationsService implements ApplicationListener<ApplicationUpdat
 
     public Flux<Application> listApplications(Authentication authentication) {
 
+        if(this.cache.asMap().isEmpty()) {
 
-        ConcurrentMap<String, Application> allApplications = this.cache.asMap();
-        if(allApplications.isEmpty()) {
             SelectQuery q = Queries.SELECT()
                     .where(varAppIri.isA(ApplicationTerms.TYPE)
                             .andHas(ApplicationTerms.HAS_KEY, varAppKey)
@@ -191,13 +187,13 @@ public class ApplicationsService implements ApplicationListener<ApplicationUpdat
                     )
                     .limit(100);
 
-            return this.applicationsStore.query(q, authentication, Authorities.GUEST)
+            return this.applicationsStore.query(q, authentication, Authorities.READER)
                     .map(BindingsAccessor::new)
                     .map(this::buildApplicationFromBindings)
                     .doOnNext(application -> this.cache.put(application.key(), application))
                     .doOnSubscribe(StreamsLogger.debug(log, "Loading all applications from repository."));
         } else {
-            return Flux.fromIterable(allApplications.values());
+            return Flux.fromIterable(this.cache.asMap().values());
         }
     }
 
@@ -307,6 +303,7 @@ public class ApplicationsService implements ApplicationListener<ApplicationUpdat
     @Override
     public void onApplicationEvent(ApplicationUpdatedEvent event) {
         this.cache.invalidateAll();
+        this.cache.cleanUp();
     }
 
 
