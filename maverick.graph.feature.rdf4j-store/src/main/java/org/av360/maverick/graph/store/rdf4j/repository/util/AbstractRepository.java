@@ -19,9 +19,9 @@ import org.eclipse.rdf4j.model.*;
 import org.eclipse.rdf4j.model.impl.SimpleNamespace;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.query.*;
+import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.RepositoryException;
-import org.eclipse.rdf4j.repository.RepositoryLockedException;
 import org.eclipse.rdf4j.repository.base.RepositoryConnectionWrapper;
 import org.eclipse.rdf4j.repository.util.RDFInserter;
 import org.eclipse.rdf4j.rio.RDFParser;
@@ -42,13 +42,11 @@ import org.springframework.web.client.HttpClientErrorException;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
-import reactor.util.retry.Retry;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
-import java.time.Duration;
 import java.util.Collection;
 import java.util.Objects;
 import java.util.Optional;
@@ -367,17 +365,7 @@ public abstract class AbstractRepository implements RepositoryBehaviour, Stateme
 
     }
 
-    @Deprecated
-    public Mono<RepositoryConnection> getConnection(Authentication authentication, RepositoryType repositoryType, GrantedAuthority requiredAuthority) {
-        if (!Authorities.satisfies(requiredAuthority, authentication.getAuthorities())) {
-            String msg = String.format("Required authority '%s' for repository '%s' not met in authentication with authorities '%s'", requiredAuthority.getAuthority(), repositoryType.name(), authentication.getAuthorities());
-            return Mono.error(new InsufficientAuthenticationException(msg));
-        }
-        return getBuilder().buildRepository(repositoryType, authentication)
-                .map(repository -> new RepositoryConnectionWrapper(repository, repository.getConnection()))
-                .retryWhen(Retry.backoff(5, Duration.ofSeconds(1)).filter(throwable -> throwable instanceof RepositoryLockedException))
-                .map(repositoryConnectionWrapper -> repositoryConnectionWrapper);
-    }
+
 
 
     protected <T> Mono<T> applyWithConnection(Authentication authentication, GrantedAuthority requiredAuthority, RepositoryType repositoryType, ThrowingFunction<RepositoryConnection, T> fun) {
@@ -386,20 +374,25 @@ public abstract class AbstractRepository implements RepositoryBehaviour, Stateme
             return Mono.error(new InsufficientAuthenticationException(msg));
         }
 
-        return getBuilder().buildRepository(repositoryType, authentication)
-                .flatMap(repository ->
-                        transactionsMonoTimer.record(() -> {
-                            try (RepositoryConnection connection = repository.getConnection()) {
 
-                                T result = fun.applyWithException(new RepositoryConnectionWrapper(repository, connection));
-                                if (Objects.isNull(result)) return Mono.empty();
-                                else return Mono.just(result);
-                            } catch (Exception e) {
-                                return Mono.error(e);
-                            } finally {
-                                transactionsMonoCounter.increment();
-                            }
-                        }));
+        return transactionsMonoTimer.record(() -> {
+            Repository repository = null;
+            try {
+                repository = this.getBuilder().buildRepository(repositoryType, authentication);
+            } catch (IOException e) {
+                return Mono.error(e);
+            }
+            try (RepositoryConnection connection = repository.getConnection()) {
+
+                T result = fun.applyWithException(new RepositoryConnectionWrapper(repository, connection));
+                if (Objects.isNull(result)) return Mono.empty();
+                else return Mono.just(result);
+            } catch (Exception e) {
+                return Mono.error(e);
+            } finally {
+                transactionsMonoCounter.increment();
+            }
+        });
     }
 
     protected <T> Mono<T> applyWithConnection(Authentication authentication, GrantedAuthority requiredAuthority, ThrowingFunction<RepositoryConnection, T> fun) {
@@ -415,20 +408,24 @@ public abstract class AbstractRepository implements RepositoryBehaviour, Stateme
             String msg = String.format("Required authority '%s' for repository '%s' not met in authentication with authorities '%s'", requiredAuthority.getAuthority(), repositoryType.name(), authentication.getAuthorities());
             return Mono.error(new InsufficientAuthenticationException(msg));
         }
+        return transactionsMonoTimer.record(() -> {
+            Repository repository = null;
+            try {
+                repository = this.getBuilder().buildRepository(repositoryType, authentication);
+            } catch (IOException e) {
+                return Mono.error(e);
+            }
 
-        return getBuilder().buildRepository(repositoryType, authentication)
-                .flatMap(repository ->
-                        transactionsMonoTimer.record(() -> {
-                            try (RepositoryConnection connection = repository.getConnection()) {
+            try (RepositoryConnection connection = repository.getConnection()) {
 
-                                fun.acceptWithException(new RepositoryConnectionWrapper(repository, connection));
-                                return Mono.empty();
-                            } catch (Exception e) {
-                                return Mono.error(e);
-                            } finally {
-                                transactionsMonoCounter.increment();
-                            }
-                        }));
+                fun.acceptWithException(new RepositoryConnectionWrapper(repository, connection));
+                return Mono.empty();
+            } catch (Exception e) {
+                return Mono.error(e);
+            } finally {
+                transactionsMonoCounter.increment();
+            }
+        });
     }
 
     protected <E, T extends Iterable<E>> Flux<E> applyManyWithConnection(Authentication authentication, GrantedAuthority requiredAuthority, RepositoryType repositoryType, ThrowingFunction<RepositoryConnection, T> fun) {
@@ -436,19 +433,35 @@ public abstract class AbstractRepository implements RepositoryBehaviour, Stateme
             String msg = String.format("Required authority '%s' for repository '%s' not met in authentication with authorities '%s'", requiredAuthority.getAuthority(), repositoryType.name(), authentication.getAuthorities());
             return Flux.error(new InsufficientAuthenticationException(msg));
         }
+        return transactionsFluxTimer.record(() -> {
+            Repository repository = null;
+            try {
+                repository = this.getBuilder().buildRepository(repositoryType, authentication);
+            } catch (Exception e) {
+                return Flux.error(e);
+            }
+
+
+            try (RepositoryConnection connection = repository.getConnection()) {
+                T result = fun.apply(connection);
+                return Flux.fromIterable(result);
+            } catch (Exception e) {
+                return Flux.error(e);
+            } finally {
+                transactionsFluxCounter.increment();
+            }
+        });
+        /*
         return getBuilder().buildRepository(repositoryType, authentication)
                 .flatMapMany(repository ->
-                        transactionsFluxTimer.record(() -> {
-                            try (RepositoryConnection connection = repository.getConnection()) {
-                                T result = fun.apply(connection);
-                                return Flux.fromIterable(result);
-                            } catch (Exception e) {
-                                return Flux.error(e);
-                            } finally {
-                                transactionsFluxCounter.increment();
-                            }
-                        }))
-                .retryWhen(Retry.backoff(5, Duration.ofSeconds(1)).filter(throwable -> throwable instanceof RepositoryLockedException));
+
+                .retryWhen(Retry.backoff(3, Duration.ofSeconds(1))
+                            .filter(throwable -> throwable instanceof RepositoryLockedException)
+                        .doAfterRetry(retrySignal -> {
+                                getLogger().warn("Repository seems to be locked, shutting it down.");
+                                getBuilder().buildRepository(repositoryType,authentication).doOnSuccess(Repository::shutDown);
+                        })
+                );*/
     }
 
 

@@ -58,7 +58,7 @@ public class JobWorker {
 
                         return requestedJob.get().run(event.getToken()).contextWrite(event::buildContext)
                                 .doOnSubscribe(subscription -> {
-                                    log.debug("Starting job '{}'. Currently active: {}", event.getJobIdentifier(), this.active);
+                                    log.debug("Starting job '{}'.", event.getJobIdentifier());
                                     this.active = event.getJobIdentifier();
                                 })
                                 .doOnSuccess(success -> {
@@ -67,7 +67,7 @@ public class JobWorker {
                                     meterRegistry.counter("graph.scheduled.jobs.counter", "name", event.getJobIdentifier(), "result", "completed").increment();
                                 })
                                 .doOnError(error -> {
-                                    log.warn("Failed job '{}'", event.getJobIdentifier());
+                                    log.warn("Failed job '{}' due to reason: {}", event.getJobIdentifier(), error.getMessage());
                                     meterRegistry.counter("graph.scheduled.jobs.counter", "name", event.getJobIdentifier(), "result", "failed").increment();
                                     this.active = "";
                                 });
