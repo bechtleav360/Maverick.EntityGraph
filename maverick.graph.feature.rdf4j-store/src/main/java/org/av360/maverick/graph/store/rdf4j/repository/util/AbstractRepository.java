@@ -47,10 +47,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
+import java.time.Duration;
 import java.util.Collection;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
 public abstract class AbstractRepository implements RepositoryBehaviour, Statements, ModelUpdates, Resettable {
@@ -251,28 +253,32 @@ public abstract class AbstractRepository implements RepositoryBehaviour, Stateme
         return this.applyManyWithConnection(authentication, requiredAuthority, connection -> {
             connection.begin();
             Set<RdfTransaction> result = transactions.stream().peek(trx -> {
-                getLogger().trace("Committing transaction '{}' to repository '{}'", trx.getIdentifier().getLocalName(), connection.getRepository().toString());
+                synchronized (connection) {
+                    getLogger().trace("Committing transaction '{}' to repository '{}'", trx.getIdentifier().getLocalName(), connection.getRepository().toString());
+                    // FIXME: the approach based on the context works only as long as the statements in the graph are all within the global context only
+                    // with this approach, we cannot insert a statement to a context (since it is already in GRAPH_CREATED), every st can only be in one context
+                    ValueFactory vf = connection.getValueFactory();
+                    Set<Statement> insertStatements = trx.getModel().filter(null, null, null, Transactions.GRAPH_CREATED).stream().map(s -> vf.createStatement(s.getSubject(), s.getPredicate(), s.getObject())).collect(Collectors.toSet());
+                    Set<Statement> removeStatements = trx.getModel().filter(null, null, null, Transactions.GRAPH_DELETED).stream().map(s -> vf.createStatement(s.getSubject(), s.getPredicate(), s.getObject())).collect(Collectors.toSet());
+                    try {
+                        getLogger().trace("add");
+                        connection.add(insertStatements);
+                        getLogger().trace("remove");
+                        connection.remove(removeStatements);
+                        getLogger().trace("commit");
+                        connection.commit();
 
-                // FIXME: the approach based on the context works only as long as the statements in the graph are all within the global context only
-                // with this approach, we cannot insert a statement to a context (since it is already in GRAPH_CREATED), every st can only be in one context
-                ValueFactory vf = connection.getValueFactory();
-                Set<Statement> insertStatements = trx.getModel().filter(null, null, null, Transactions.GRAPH_CREATED).stream().map(s -> vf.createStatement(s.getSubject(), s.getPredicate(), s.getObject())).collect(Collectors.toSet());
-                Set<Statement> removeStatements = trx.getModel().filter(null, null, null, Transactions.GRAPH_DELETED).stream().map(s -> vf.createStatement(s.getSubject(), s.getPredicate(), s.getObject())).collect(Collectors.toSet());
-
-                try {
-
-                    connection.add(insertStatements);
-                    connection.remove(removeStatements);
-                    connection.commit();
-                    trx.setCompleted();
-                    getLogger().debug("Transaction '{}' completed with {} inserted statements and {} removed statements in repository '{}'.", trx.getIdentifier().getLocalName(), insertStatements.size(), removeStatements.size(), connection.getRepository());
-                } catch (Exception e) {
-                    getLogger().error("Failed to complete transaction for repository '{}'.", connection.getRepository(), e);
-                    getLogger().trace("Insert Statements in this transaction: \n {}", insertStatements);
-                    getLogger().trace("Remove Statements in this transaction: \n {}", removeStatements);
-                    connection.rollback();
-                    trx.setFailed(e.getMessage());
+                        getLogger().debug("Transaction '{}' completed with {} inserted statements and {} removed statements in repository '{}'.", trx.getIdentifier().getLocalName(), insertStatements.size(), removeStatements.size(), connection.getRepository());
+                        trx.setCompleted();
+                    } catch (Exception e) {
+                        getLogger().error("Failed to complete transaction for repository '{}'.", connection.getRepository(), e);
+                        getLogger().trace("Insert Statements in this transaction: \n {}", insertStatements);
+                        getLogger().trace("Remove Statements in this transaction: \n {}", removeStatements);
+                        connection.rollback();
+                        trx.setFailed(e.getMessage());
+                    }
                 }
+
             }).collect(Collectors.toSet());
             connection.close();
             return result;
@@ -366,8 +372,6 @@ public abstract class AbstractRepository implements RepositoryBehaviour, Stateme
     }
 
 
-
-
     protected <T> Mono<T> applyWithConnection(Authentication authentication, GrantedAuthority requiredAuthority, RepositoryType repositoryType, ThrowingFunction<RepositoryConnection, T> fun) {
         if (!Authorities.satisfies(requiredAuthority, authentication.getAuthorities())) {
             String msg = String.format("Required authority '%s' for repository '%s' not met in authentication with authorities '%s'", requiredAuthority.getAuthority(), repositoryType.name(), authentication.getAuthorities());
@@ -433,6 +437,27 @@ public abstract class AbstractRepository implements RepositoryBehaviour, Stateme
             String msg = String.format("Required authority '%s' for repository '%s' not met in authentication with authorities '%s'", requiredAuthority.getAuthority(), repositoryType.name(), authentication.getAuthorities());
             return Flux.error(new InsufficientAuthenticationException(msg));
         }
+
+        return Flux.<E>create(sink -> {
+                    try {
+                        Repository repository = this.getBuilder().buildRepository(repositoryType, authentication);
+
+                        try (RepositoryConnection connection = repository.getConnection()) {
+                            fun.apply(connection).forEach(sink::next);
+                        } catch (Exception e) {
+                            getLogger().warn("Error while applying function to repository '{}' with message '{}'", repository, e.getMessage());
+                            sink.error(e);
+                        } finally {
+                            transactionsFluxCounter.increment();
+                            sink.complete();
+                        }
+                    } catch (Exception e) {
+                        sink.error(e);
+                    }
+                })
+                .timeout(Duration.ofMillis(500))
+                .onErrorResume(throwable -> Flux.error(new TimeoutException("Timeout while applying operation to repository:" + repositoryType.toString())));
+        /*
         return transactionsFluxTimer.record(() -> {
             Repository repository = null;
             try {
@@ -441,8 +466,8 @@ public abstract class AbstractRepository implements RepositoryBehaviour, Stateme
                 return Flux.error(e);
             }
 
-
             try (RepositoryConnection connection = repository.getConnection()) {
+
                 T result = fun.apply(connection);
                 return Flux.fromIterable(result);
             } catch (Exception e) {
@@ -450,7 +475,7 @@ public abstract class AbstractRepository implements RepositoryBehaviour, Stateme
             } finally {
                 transactionsFluxCounter.increment();
             }
-        });
+        }); */
         /*
         return getBuilder().buildRepository(repositoryType, authentication)
                 .flatMapMany(repository ->

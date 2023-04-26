@@ -26,6 +26,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import reactor.core.publisher.Mono;
 
+import javax.annotation.Nullable;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -75,17 +76,32 @@ public class DefaultRepositoryBuilder implements RepositoryBuilder {
             throw new IllegalArgumentException("Failed to resolve repository due to missing authentication");
         if (!authentication.isAuthenticated())
             throw new UnauthorizedException("Authentication is set to 'false' within the " + authentication.getClass().getSimpleName());
+
+        Repository repository = null;
+
         if (authentication instanceof TestingAuthenticationToken) {
-            return this.getRepository(repositoryType, "test");
+            repository = this.getRepository(repositoryType, "test");
         }
-        if (authentication instanceof ApiKeyAuthenticationToken) {
-            return this.getRepository(repositoryType, "default");
+        else if (authentication instanceof ApiKeyAuthenticationToken) {
+            repository = this.getRepository(repositoryType, "default");
         }
-        if (authentication instanceof AnonymousAuthenticationToken) {
-            return this.getRepository(repositoryType, "default");
+        else if (authentication instanceof AnonymousAuthenticationToken) {
+            repository = this.getRepository(repositoryType, "default");
         }
 
-        throw new IOException(String.format("Cannot resolve repository of type '%s' for authentication of type '%s'", repositoryType, authentication.getClass()));
+        return validateRepository(repository, repositoryType, authentication);
+
+    }
+
+    protected Repository validateRepository(@Nullable Repository repository, RepositoryType repositoryType, Authentication authentication) throws IOException {
+        if(!Objects.isNull(repository)) {
+            if(! repository.isInitialized()) {
+                repository.init();
+            }
+            return repository;
+        } else {
+            throw new IOException(String.format("Cannot resolve repository of type '%s' for authentication of type '%s'", repositoryType, authentication.getClass()));
+        }
     }
 
     protected Repository getRepository(RepositoryType repositoryType, String... details) {
@@ -109,8 +125,6 @@ public class DefaultRepositoryBuilder implements RepositoryBuilder {
             }
 
             Repository repository = getCache().getIfPresent(key);
-            // get(key, s -> new LabeledRepository(key, this.initializePersistentRepository(p, repositoryType)));
-
 
             if (!Objects.isNull(repository) && repository.isInitialized()) {
                 return repository;

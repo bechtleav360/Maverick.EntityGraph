@@ -61,7 +61,7 @@ public class ApplicationRepositoryBuilder extends DefaultRepositoryBuilder {
     @Override
     public Repository buildRepository(RepositoryType repositoryType, Authentication authentication) throws IOException {
         Application application = ReactiveApplicationContextHolder.getRequestedApplicationBlocking();
-        if(Objects.isNull(application)) {
+        if (Objects.isNull(application)) {
             return super.buildRepository(repositoryType, authentication);
         } else {
             return this.buildRepository(repositoryType, authentication, application);
@@ -69,36 +69,39 @@ public class ApplicationRepositoryBuilder extends DefaultRepositoryBuilder {
     }
 
     public Repository buildRepository(RepositoryType repositoryType, Authentication authentication, Application requestedApplication) throws IOException {
-        if(Objects.isNull(authentication)) throw new IllegalArgumentException("Failed to resolve repository due to missing authentication");
-        if(! authentication.isAuthenticated()) throw new UnauthorizedException("Authentication is set to 'false' within the " + authentication.getClass().getSimpleName());
+        if (Objects.isNull(authentication))
+            throw new IllegalArgumentException("Failed to resolve repository due to missing authentication");
+        if (!authentication.isAuthenticated())
+            throw new UnauthorizedException("Authentication is set to 'false' within the " + authentication.getClass().getSimpleName());
 
+
+        Repository repository = null;
         if (authentication instanceof TestingAuthenticationToken) {
             String key = super.buildRepositoryLabel(repositoryType, requestedApplication.label(), "test");
             log.trace("Requested repository of type {} and label {}", repositoryType.toString(), key);
-            return super.getCache().get(key, s -> new LabeledRepository(key, new SailRepository(new MemoryStore())));
-        }
-        if (authentication instanceof SubscriptionToken subscriptionToken && Authorities.satisfies(Authorities.READER, authentication.getAuthorities())) {
-            return this.resolveRepositoryForApplicationAuthentication(repositoryType, requestedApplication, subscriptionToken);
-        }
-        if (authentication instanceof AdminToken adminToken) {
-            return this.resolveRepositoryForSystemAuthentication(repositoryType, requestedApplication, adminToken);
-        }
-        if (authentication instanceof AnonymousAuthenticationToken anonymousAuthenticationToken) {
-            return this.resolveRepositoryForAnonymousAuthentication(repositoryType, requestedApplication);
+            repository = super.getCache().get(key, s -> new LabeledRepository(key, new SailRepository(new MemoryStore())));
+        } else if (authentication instanceof SubscriptionToken subscriptionToken && Authorities.satisfies(Authorities.READER, authentication.getAuthorities())) {
+            repository =  this.resolveRepositoryForApplicationAuthentication(repositoryType, requestedApplication, subscriptionToken);
+        } else if (authentication instanceof AdminToken adminToken) {
+            repository =  this.resolveRepositoryForSystemAuthentication(repositoryType, requestedApplication, adminToken);
+        } else if (authentication instanceof AnonymousAuthenticationToken anonymousAuthenticationToken) {
+            repository =  this.resolveRepositoryForAnonymousAuthentication(repositoryType, requestedApplication);
         }
 
-        throw new IOException(String.format("Cannot resolve repository of type '%s' for authentication of type '%s'", repositoryType, authentication.getClass()));
+        return super.validateRepository(repository, repositoryType, authentication);
     }
 
     private Repository resolveRepositoryForAnonymousAuthentication(RepositoryType repositoryType, Application requestedApplication) throws IOException {
-        if(! requestedApplication.flags().isPublic()) throw new InsufficientAuthenticationException("Requested application does not exist or is not public.");
+        if (!requestedApplication.flags().isPublic())
+            throw new InsufficientAuthenticationException("Requested application does not exist or is not public.");
 
         log.trace("Resolving public repository for application '{}' with anonymous authentication.", requestedApplication.label());
         return switch (repositoryType) {
             case ENTITIES -> this.getRepository(RepositoryType.ENTITIES, requestedApplication);
             case TRANSACTIONS -> this.getRepository(RepositoryType.TRANSACTIONS, requestedApplication);
             case SCHEMA -> this.getDefaultRepository(RepositoryType.SCHEMA);
-            default -> throw new IOException(String.format("Invalid Repository Type '%s' for requested application '%s'", repositoryType, requestedApplication.label()));
+            default ->
+                    throw new IOException(String.format("Invalid Repository Type '%s' for requested application '%s'", repositoryType, requestedApplication.label()));
         };
 
     }
@@ -106,7 +109,7 @@ public class ApplicationRepositoryBuilder extends DefaultRepositoryBuilder {
 
     private Repository resolveRepositoryForApplicationAuthentication(RepositoryType repositoryType, Application requestedApplication, SubscriptionToken authentication) throws IOException {
         Assert.isTrue(Authorities.satisfies(Authorities.READER, authentication.getAuthorities()), "Missing authorization: " + Authorities.READER.getAuthority());
-        Assert.isTrue(authentication.getApplication().label().equalsIgnoreCase(requestedApplication.label()), "Subscription token is not configured for requested application "+requestedApplication);
+        Assert.isTrue(authentication.getApplication().label().equalsIgnoreCase(requestedApplication.label()), "Subscription token is not configured for requested application " + requestedApplication);
 
         log.trace("Resolving repository with application authentication.");
         return switch (repositoryType) {
@@ -114,36 +117,40 @@ public class ApplicationRepositoryBuilder extends DefaultRepositoryBuilder {
             case TRANSACTIONS -> this.getRepository(RepositoryType.TRANSACTIONS, authentication.getApplication());
             case SCHEMA -> this.getDefaultRepository(RepositoryType.SCHEMA);
             // application is left out.. we cannot access the applications details with a user authorization only
-            default -> throw new IOException(String.format("Invalid Repository Type '%s' for requested application '%s'", repositoryType, requestedApplication.label()));
+            default ->
+                    throw new IOException(String.format("Invalid Repository Type '%s' for requested application '%s'", repositoryType, requestedApplication.label()));
         };
     }
 
     private Repository resolveRepositoryForSystemAuthentication(RepositoryType repositoryType, Application requestedApplication, Authentication authentication) throws IOException {
-            if(! Authorities.satisfies(Authorities.SYSTEM, authentication.getAuthorities())) throw new InsufficientAuthenticationException("Authorization issue while resolving repository.");
+        if (!Authorities.satisfies(Authorities.SYSTEM, authentication.getAuthorities()))
+            throw new InsufficientAuthenticationException("Authorization issue while resolving repository.");
 
-            log.trace("Resolving repository with admin authentication and additional subscription key.");
+        log.trace("Resolving repository with admin authentication and additional subscription key.");
 
-            return switch (repositoryType) {
-                case ENTITIES -> this.getRepository(RepositoryType.ENTITIES, requestedApplication);
-                case TRANSACTIONS -> this.getRepository(RepositoryType.TRANSACTIONS, requestedApplication);
-                case SCHEMA -> this.getDefaultRepository(RepositoryType.SCHEMA);
-                // application is left out.. we cannot access the applications details with a user authorization only
-                default -> throw new IOException(String.format("Invalid Repository Type '%s' for requested application '%s'", repositoryType, requestedApplication.label()));
-            };
+        return switch (repositoryType) {
+            case ENTITIES -> this.getRepository(RepositoryType.ENTITIES, requestedApplication);
+            case TRANSACTIONS -> this.getRepository(RepositoryType.TRANSACTIONS, requestedApplication);
+            case SCHEMA -> this.getDefaultRepository(RepositoryType.SCHEMA);
+            // application is left out.. we cannot access the applications details with a user authorization only
+            default ->
+                    throw new IOException(String.format("Invalid Repository Type '%s' for requested application '%s'", repositoryType, requestedApplication.label()));
+        };
 
     }
+
     private Repository resolveRepositoryForSystemAuthenticationOld(RepositoryType repositoryType, Application requestedApplication, Authentication authentication) {
         if (Authorities.satisfies(Authorities.SYSTEM, authentication.getAuthorities()) && authentication instanceof SubscriptionToken) {
-                log.trace("Resolving repository with admin authentication and additional subscription key.");
-                Application application = ((SubscriptionToken) authentication).getApplication();
-                return switch (repositoryType) {
-                    case ENTITIES -> this.getRepository(RepositoryType.ENTITIES, application);
-                    case TRANSACTIONS -> this.getRepository(RepositoryType.TRANSACTIONS, application);
-                    case APPLICATION -> this.getDefaultRepository(RepositoryType.APPLICATION);
-                    case SCHEMA -> this.getDefaultRepository(RepositoryType.SCHEMA);
-                };
+            log.trace("Resolving repository with admin authentication and additional subscription key.");
+            Application application = ((SubscriptionToken) authentication).getApplication();
+            return switch (repositoryType) {
+                case ENTITIES -> this.getRepository(RepositoryType.ENTITIES, application);
+                case TRANSACTIONS -> this.getRepository(RepositoryType.TRANSACTIONS, application);
+                case APPLICATION -> this.getDefaultRepository(RepositoryType.APPLICATION);
+                case SCHEMA -> this.getDefaultRepository(RepositoryType.SCHEMA);
+            };
         } else {
-            if(authentication instanceof AnonymousAuthenticationToken) {
+            if (authentication instanceof AnonymousAuthenticationToken) {
                 log.trace("Resolving repository with anonymous authentication with read access. Entities and transactions are default (probably in-memory) .");
             } else {
                 log.trace("Resolving repository with admin token without additional subscription key. Entities and transactions are default (probably in-memory) .");
@@ -155,11 +162,11 @@ public class ApplicationRepositoryBuilder extends DefaultRepositoryBuilder {
 
 
     private Repository getDefaultRepository(RepositoryType repositoryType) {
-       return this.getRepository(repositoryType, "default");
+        return this.getRepository(repositoryType, "default");
     }
 
     private Repository getRepository(RepositoryType repositoryType, @Nullable Application application) {
-        if(Objects.isNull(application)) return getRepository(repositoryType, "default");
+        if (Objects.isNull(application)) return getRepository(repositoryType, "default");
         else {
             String base = StringUtils.hasLength(this.applicationsPath) ? this.applicationsPath : this.defaultPath;
 
@@ -168,12 +175,6 @@ public class ApplicationRepositoryBuilder extends DefaultRepositoryBuilder {
         }
 
     }
-
-
-
-
-
-
 
 
     private Repository buildApplicationsRepository(String basePath, Application application, RepositoryType repositoryType) {
@@ -187,14 +188,13 @@ public class ApplicationRepositoryBuilder extends DefaultRepositoryBuilder {
     }
 
 
-
     private String resolveRequestedApplication(Authentication authentication) {
-        if(authentication.getDetails() instanceof RequestDetails requestDetails) {
+        if (authentication.getDetails() instanceof RequestDetails requestDetails) {
             Objects.requireNonNull(requestDetails.path());
 
             int modifierIndex = requestDetails.path().indexOf("/app/");
-            if(modifierIndex > 0) {
-                String substring = requestDetails.path().substring(modifierIndex+5);
+            if (modifierIndex > 0) {
+                String substring = requestDetails.path().substring(modifierIndex + 5);
                 return substring.substring(0, substring.indexOf("/"));
             } else return "default";
         } else {

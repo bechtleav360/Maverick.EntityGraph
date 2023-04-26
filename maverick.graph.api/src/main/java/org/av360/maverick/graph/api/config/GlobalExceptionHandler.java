@@ -1,8 +1,8 @@
 package org.av360.maverick.graph.api.config;
 
+import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.model.errors.InvalidRequest;
 import org.av360.maverick.graph.model.errors.store.InvalidEntityModel;
-import lombok.extern.slf4j.Slf4j;
 import org.eclipse.rdf4j.query.MalformedQueryException;
 import org.eclipse.rdf4j.rio.RDFParseException;
 import org.springframework.boot.web.error.ErrorAttributeOptions;
@@ -13,6 +13,7 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.reactive.function.server.ServerRequest;
 
 import java.util.Map;
+import java.util.concurrent.TimeoutException;
 
 /**
  * @see <a href="https://github.com/Opalo/spring-webflux-and-domain-exceptions/blob/master/error-attributes/src/test/java/org/opal/DomainExceptionWrapper.java">Description</a>
@@ -29,8 +30,7 @@ public class GlobalExceptionHandler extends DefaultErrorAttributes {
 
         options = options.including(ErrorAttributeOptions.Include.BINDING_ERRORS)
                 .including(ErrorAttributeOptions.Include.MESSAGE)
-                .including(ErrorAttributeOptions.Include.EXCEPTION)
-                .including(ErrorAttributeOptions.Include.STACK_TRACE);
+                .including(ErrorAttributeOptions.Include.EXCEPTION);
 
         Map<String, Object> errorAttributes = super.getErrorAttributes(request, options);
 
@@ -71,6 +71,16 @@ public class GlobalExceptionHandler extends DefaultErrorAttributes {
         } else if (error instanceof AuthenticationException) {
             errorAttributes.replace("status", HttpStatus.UNAUTHORIZED.value());
             errorAttributes.replace("error", HttpStatus.UNAUTHORIZED.getReasonPhrase());
+            errorAttributes.put("reason", error.getMessage());
+            errorAttributes.remove("exception");
+            errorAttributes.remove("trace");
+        } else if (error instanceof TimeoutException) {
+            errorAttributes.replace("status", HttpStatus.INTERNAL_SERVER_ERROR.value());
+            errorAttributes.replace("error", HttpStatus.INTERNAL_SERVER_ERROR.getReasonPhrase());
+            errorAttributes.put("reason", error.getMessage());
+            errorAttributes.remove("exception");
+            errorAttributes.remove("trace");
+        } else {
             errorAttributes.remove("exception");
             errorAttributes.remove("trace");
         }
