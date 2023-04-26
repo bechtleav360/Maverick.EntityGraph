@@ -6,6 +6,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.api.controller.AbstractController;
 import org.av360.maverick.graph.feature.jobs.DetectDuplicatesJob;
+import org.av360.maverick.graph.feature.jobs.ExportApplicationJob;
 import org.av360.maverick.graph.feature.jobs.ReplaceExternalIdentifiersJob;
 import org.av360.maverick.graph.feature.jobs.TypeCoercionJob;
 import org.av360.maverick.graph.services.SchemaServices;
@@ -28,14 +29,17 @@ public class JobsCtrl extends AbstractController {
 
     final TypeCoercionJob typeCoercionService;
 
+    final ExportApplicationJob exportApplicationJob;
+
     final SchemaServices schemaServices;
 
-    public JobsCtrl(ApplicationEventPublisher eventPublisher, DetectDuplicatesJob detectDuplicatesJob, ReplaceExternalIdentifiersJob replaceExternalIdentifiersJob, TypeCoercionJob typeCoercionService, SchemaServices schemaServices) {
+    public JobsCtrl(ApplicationEventPublisher eventPublisher, DetectDuplicatesJob detectDuplicatesJob, ReplaceExternalIdentifiersJob replaceExternalIdentifiersJob, TypeCoercionJob typeCoercionService, ExportApplicationJob exportApplicationJob,SchemaServices schemaServices) {
         this.eventPublisher = eventPublisher;
 
         this.detectDuplicatesJob = detectDuplicatesJob;
         this.replaceExternalIdentifiersService = replaceExternalIdentifiersJob;
         this.typeCoercionService = typeCoercionService;
+        this.exportApplicationJob = exportApplicationJob;
         this.schemaServices = schemaServices;
     }
 
@@ -75,6 +79,14 @@ public class JobsCtrl extends AbstractController {
     Mono<Void> execCoercionJob() {
         return super.getAuthentication()
                 .flatMapMany(this.typeCoercionService::run).then();
+
+    }
+
+    @PostMapping(value = "/execute/export")
+    @ResponseStatus(HttpStatus.ACCEPTED)
+    Mono<Void> execExportJob() {
+        return super.getAuthentication()
+                .flatMapMany(this.exportApplicationJob::run).then();
 
     }
 
