@@ -439,23 +439,25 @@ public abstract class AbstractRepository implements RepositoryBehaviour, Stateme
         }
 
         return Flux.<E>create(sink -> {
+                    Repository repository = null;
                     try {
-                        Repository repository = this.getBuilder().buildRepository(repositoryType, authentication);
+                        repository = this.getBuilder().buildRepository(repositoryType, authentication);
 
                         try (RepositoryConnection connection = repository.getConnection()) {
                             fun.apply(connection).forEach(sink::next);
                         } catch (Exception e) {
                             getLogger().warn("Error while applying function to repository '{}' with message '{}'", repository, e.getMessage());
-                            sink.error(e);
+                            throw e;
                         } finally {
                             transactionsFluxCounter.increment();
                             sink.complete();
                         }
                     } catch (Exception e) {
+                        if(! Objects.isNull(repository)) repository.shutDown();
                         sink.error(e);
                     }
                 })
-                .timeout(Duration.ofMillis(500))
+                .timeout(Duration.ofMillis(5000))
                 .onErrorResume(throwable -> Flux.error(new TimeoutException("Timeout while applying operation to repository:" + repositoryType.toString())));
         /*
         return transactionsFluxTimer.record(() -> {
