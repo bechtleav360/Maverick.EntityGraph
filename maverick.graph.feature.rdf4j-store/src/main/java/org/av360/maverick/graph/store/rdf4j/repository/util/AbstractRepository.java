@@ -13,6 +13,7 @@ import org.av360.maverick.graph.store.behaviours.ModelUpdates;
 import org.av360.maverick.graph.store.behaviours.RepositoryBehaviour;
 import org.av360.maverick.graph.store.behaviours.Resettable;
 import org.av360.maverick.graph.store.behaviours.Statements;
+import org.av360.maverick.graph.store.rdf.LabeledRepository;
 import org.av360.maverick.graph.store.rdf.fragments.RdfTransaction;
 import org.av360.maverick.graph.store.rdf.helpers.RdfUtils;
 import org.eclipse.rdf4j.model.*;
@@ -22,6 +23,7 @@ import org.eclipse.rdf4j.query.*;
 import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.RepositoryException;
+import org.eclipse.rdf4j.repository.RepositoryLockedException;
 import org.eclipse.rdf4j.repository.base.RepositoryConnectionWrapper;
 import org.eclipse.rdf4j.repository.util.RDFInserter;
 import org.eclipse.rdf4j.rio.RDFParser;
@@ -439,17 +441,22 @@ public abstract class AbstractRepository implements RepositoryBehaviour, Stateme
         }
 
         return Flux.<E>create(sink -> {
-                    Repository repository = null;
+                    LabeledRepository repository = null;
                     try {
                         repository = this.getBuilder().buildRepository(repositoryType, authentication);
+                        if(! repository.isInitialized()) {
+                            getLogger().warn("Invalid repository, it should have been initialized");
+                            repository.init();
+                        }
 
                         try (RepositoryConnection connection = repository.getConnection()) {
                             fun.apply(connection).forEach(sink::next);
                         } catch (Exception e) {
-                            getLogger().warn("Error while applying function to repository '{}' with message '{}'", repository, e.getMessage());
+                            this.meterRegistry.counter("graph.store.operations", "cardinality", "multiple", "state", "failure").increment();
+                            getLogger().warn("Error while applying function to repository '{}' with message '{}'. Active connections for repository: {}", repository, e.getMessage(), repository.getConnectionsCount());
                             throw e;
                         } finally {
-                            transactionsFluxCounter.increment();
+                            this.meterRegistry.counter("graph.store.operations", "cardinality", "multiple", "state", "complete").increment();
                             sink.complete();
                         }
                     } catch (Exception e) {
@@ -457,8 +464,18 @@ public abstract class AbstractRepository implements RepositoryBehaviour, Stateme
                         sink.error(e);
                     }
                 })
-                .timeout(Duration.ofMillis(5000))
-                .onErrorResume(throwable -> Flux.error(new TimeoutException("Timeout while applying operation to repository:" + repositoryType.toString())));
+                .timeout(Duration.ofMillis(10000))
+                .onErrorResume(throwable -> {
+                    if(throwable instanceof TimeoutException te) {
+                        getLogger().warn("Long-running operation on repository of type '{}' has been canceled.", repositoryType);
+                        return Flux.error(new TimeoutException("Timeout while applying operation to repository:" + repositoryType.toString()));
+                    } else if(throwable instanceof RepositoryLockedException te) {
+                        getLogger().warn("Operation on repository of type '{}' is still locked. Attempting shutdown", repositoryType);
+                        return Flux.error(throwable);
+                    } else {
+                        return Flux.error(throwable);
+                    }
+                });
         /*
         return transactionsFluxTimer.record(() -> {
             Repository repository = null;

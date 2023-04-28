@@ -5,6 +5,7 @@ import org.av360.maverick.graph.feature.applications.config.ReactiveApplicationC
 import org.av360.maverick.graph.feature.applications.domain.model.Application;
 import org.av360.maverick.graph.feature.applications.domain.model.ApplicationFlags;
 import org.av360.maverick.graph.store.RepositoryType;
+import org.av360.maverick.graph.store.rdf.LabeledRepository;
 import org.av360.maverick.graph.tests.config.TestRepositoryConfig;
 import org.av360.maverick.graph.tests.config.TestSecurityConfig;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
@@ -63,7 +64,7 @@ public class ResolveRepositoriesTest {
         Application application = new Application(SimpleValueFactory.getInstance().createIRI("http://example.org/app"), "app", "123213", new ApplicationFlags(false, false));
 
 
-        Mono<Repository> mono = Mono.just(builder.buildRepository(RepositoryType.ENTITIES, TestSecurityConfig.createAdminToken()))
+        Mono<LabeledRepository> mono = Mono.just(builder.buildRepository(RepositoryType.ENTITIES, TestSecurityConfig.createAdminToken()))
                 .contextWrite(ctx -> ctx.put(ReactiveApplicationContextHolder.CONTEXT_KEY, application));
 
 
