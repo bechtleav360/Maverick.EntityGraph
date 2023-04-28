@@ -54,7 +54,7 @@ import java.util.*;
 @Component
 public class ReplaceExternalIdentifiersJob implements Job {
 
-    public static String NAME = "replaceIdentifiers";
+    public static String NAME = "replaceSubjectIdentifiers";
 
     private final QueryServices queryServices;
 
@@ -108,10 +108,10 @@ public class ReplaceExternalIdentifiersJob implements Job {
                 .flatMap(this::convertSubjectStatements)
                 .flatMap(this::insertStatements)
                 .flatMap(this::deleteStatements)
-                .buffer(50)
+                .buffer(10)
                 .flatMap(transactions -> this.commit(transactions, authentication))
                 .doOnNext(transaction -> Assert.isTrue(transaction.hasStatement(null, Transactions.STATUS, Transactions.SUCCESS), "Failed transaction: \n" + transaction))
-                .buffer(50)
+                .buffer(10)
                 .flatMap(transactions -> this.storeTransactions(transactions, authentication))
                 .doOnError(throwable -> log.error("Exception while finding and replacing subject identifiers: {}", throwable.getMessage()))
                 .doOnSubscribe(sub -> log.trace("Checking for external or anonymous subject identifiers."))
@@ -140,7 +140,8 @@ public class ReplaceExternalIdentifiersJob implements Job {
 
     private Flux<RdfTransaction> commit(List<RdfTransaction> transactions, Authentication authentication) {
         // log.trace("Committing {} transactions", transactions.size());
-        return this.entityStore.commit(transactions, authentication);
+        return this.entityStore.commit(transactions, authentication)
+                .doOnComplete(() -> log.trace("Committed {} transactions in job {}", transactions.size(), this.getName()));
     }
 
     private Flux<RdfTransaction> storeTransactions(Collection<RdfTransaction> transactions, Authentication authentication) {
@@ -182,7 +183,7 @@ public class ReplaceExternalIdentifiersJob implements Job {
             });
             bag.convertedStatements().addAll(modelBuilder.build());
             return bag;
-        }).doOnSubscribe(sub -> log.trace("Converting subject removableStatements for resource '{}' with {} removableStatements", bag.candidateIdentifier(), bag.removableStatements().size()));
+        }).doOnSubscribe(sub -> log.trace("Converting subjects for resource '{}' with {} removableStatements", bag.candidateIdentifier(), bag.removableStatements().size()));
 
     }
 

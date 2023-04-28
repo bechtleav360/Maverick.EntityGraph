@@ -101,12 +101,12 @@ public class ReplaceLinkedExternalIdentifiersJob implements Job {
                 .flatMap(this::convertObjectStatements)
                 .flatMap(this::insertStatements)
                 .flatMap(this::deleteStatements)
-                .buffer(50)
+                .buffer(10)
                 .flatMap(transactions -> this.commit(transactions, authentication))
                 .doOnNext(transaction -> {
                     Assert.isTrue(transaction.hasStatement(null, Transactions.STATUS, Transactions.SUCCESS), "Failed transaction: \n" + transaction);
                 })
-                .buffer(50)
+                .buffer(10)
                 .flatMap(transactions -> this.storeTransactions(transactions, authentication))
                 .doOnError(throwable -> {
                     log.error("Exception while relinking objects to new subject identifiers: {}", throwable.getMessage());
