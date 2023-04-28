@@ -263,14 +263,19 @@ public abstract class AbstractRepository implements RepositoryBehaviour, Stateme
                     Set<Statement> insertStatements = trx.getModel().filter(null, null, null, Transactions.GRAPH_CREATED).stream().map(s -> vf.createStatement(s.getSubject(), s.getPredicate(), s.getObject())).collect(Collectors.toSet());
                     Set<Statement> removeStatements = trx.getModel().filter(null, null, null, Transactions.GRAPH_DELETED).stream().map(s -> vf.createStatement(s.getSubject(), s.getPredicate(), s.getObject())).collect(Collectors.toSet());
                     try {
-                        getLogger().trace("add");
-                        connection.add(insertStatements);
-                        getLogger().trace("remove");
-                        connection.remove(removeStatements);
-                        getLogger().trace("commit");
-                        connection.commit();
+                        if(insertStatements.size() > 0) {
+                            connection.add(insertStatements);
+                        }
+                        if(removeStatements.size() > 0) {
+                            connection.remove(removeStatements);
 
-                        getLogger().debug("Transaction '{}' completed with {} inserted statements and {} removed statements in repository '{}'.", trx.getIdentifier().getLocalName(), insertStatements.size(), removeStatements.size(), connection.getRepository());
+                        }
+                        if(insertStatements.size() > 0 || removeStatements.size() > 0) {
+                            connection.prepare();
+                            connection.commit();
+                            getLogger().debug("Transaction '{}' completed with {} inserted statements and {} removed statements in repository '{}'.", trx.getIdentifier().getLocalName(), insertStatements.size(), removeStatements.size(), connection.getRepository());
+                        }
+
                         trx.setCompleted();
                     } catch (Exception e) {
                         getLogger().error("Failed to complete transaction for repository '{}'.", connection.getRepository(), e);

@@ -159,7 +159,7 @@ public class ReplaceLinkedExternalIdentifiersJob implements Job {
             bag.convertedStatements().add(bag.originalIdentifierStatement().getSubject(), OWL.SAMEAS, bag.originalIdentifierStatement().getObject());
         }
 
-        return Mono.just(bag).doOnSubscribe(sub -> log.trace("Converting object removableStatements for resource '{}' with {} removableStatements", bag.candidateIdentifier(), bag.removableStatements().size()));
+        return Mono.just(bag).doOnSubscribe(sub -> log.trace("Converting object removableStatements for resource '{}' with {} affected Statements", bag.candidateIdentifier(), bag.removableStatements().size()));
     }
 
 

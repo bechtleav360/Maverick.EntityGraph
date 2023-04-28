@@ -118,11 +118,11 @@ public class DetectDuplicatesJob implements Job {
                                 .collectList()
                                 .flatMap(duplicates -> this.mergeDuplicates(duplicates, authentication)))
                 .doOnSubscribe(sub -> {
-                    log.trace("Checking duplicates sharing the same label");
+                    log.trace("Checking duplicates sharing the same characteristic property <{}>", characteristicProperty);
 
                 })
-                .doOnComplete(() -> {
-                }).thenEmpty(Mono.empty());
+                .doOnComplete(() -> log.debug("Completed checking for duplicates sharing the same characteristic property <{}>", characteristicProperty))
+                .thenEmpty(Mono.empty());
 
     }
 

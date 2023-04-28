@@ -81,9 +81,8 @@ public class TypeCoercionJob implements Job {
                 .doOnError(throwable -> {
                     log.error("Exception while finding and replacing subject identifiers: {}", throwable.getMessage());
                 })
-                .doOnSubscribe(sub -> {
-                    log.debug("Checking for external or anonymous subject identifiers.");
-                })
+                .doOnSubscribe(sub -> log.trace("Checking for entities with missing internal type definitions."))
+                .doOnComplete(() -> log.debug("Completed checking for entities with missing internal type definitions."))
                 .then();
 
     }
