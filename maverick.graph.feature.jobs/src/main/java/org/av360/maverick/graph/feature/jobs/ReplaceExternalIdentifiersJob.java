@@ -26,8 +26,7 @@ import java.util.*;
 /**
  * Checks for subjects which don't conform to our internal identifier schema, e.g
  * - _:fefa62849b5844b4a2dff3f2747619632 for anonymous nodes
- * - http://example.com/data/sds for external identifiers
- *
+ * - "//example.com/data/sds" for external identifiers
  *
  * <p>
  * This job will replace these identifiers with internal urns both in subjects in objects
@@ -109,22 +108,14 @@ public class ReplaceExternalIdentifiersJob implements Job {
                 .flatMap(this::convertSubjectStatements)
                 .flatMap(this::insertStatements)
                 .flatMap(this::deleteStatements)
-                .buffer(100)
+                .buffer(50)
                 .flatMap(transactions -> this.commit(transactions, authentication))
-                .doOnNext(transaction -> {
-                    Assert.isTrue(transaction.hasStatement(null, Transactions.STATUS, Transactions.SUCCESS), "Failed transaction: \n" + transaction);
-                })
-                .buffer(100)
+                .doOnNext(transaction -> Assert.isTrue(transaction.hasStatement(null, Transactions.STATUS, Transactions.SUCCESS), "Failed transaction: \n" + transaction))
+                .buffer(50)
                 .flatMap(transactions -> this.storeTransactions(transactions, authentication))
-                .doOnError(throwable -> {
-                    log.error("Exception while finding and replacing subject identifiers: {}", throwable.getMessage());
-                })
-                .doOnSubscribe(sub -> {
-                    log.trace("Checking for external or anonymous subject identifiers.");
-                })
-                .doOnComplete(() -> {
-                    log.debug("Completed checking for external or anonymous identifiers in subjects.");
-                });
+                .doOnError(throwable -> log.error("Exception while finding and replacing subject identifiers: {}", throwable.getMessage()))
+                .doOnSubscribe(sub -> log.trace("Checking for external or anonymous subject identifiers."))
+                .doOnComplete(() -> log.debug("Completed checking for external or anonymous identifiers in subjects."));
     }
 
 

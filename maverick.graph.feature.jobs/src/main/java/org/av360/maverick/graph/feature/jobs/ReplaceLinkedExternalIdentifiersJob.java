@@ -6,7 +6,6 @@ import org.av360.maverick.graph.model.errors.requests.InvalidConfiguration;
 import org.av360.maverick.graph.model.security.Authorities;
 import org.av360.maverick.graph.model.vocabulary.Local;
 import org.av360.maverick.graph.model.vocabulary.Transactions;
-import org.av360.maverick.graph.services.QueryServices;
 import org.av360.maverick.graph.services.transformers.replaceIdentifiers.ReplaceAnonymousIdentifiers;
 import org.av360.maverick.graph.services.transformers.replaceIdentifiers.ReplaceExternalIdentifiers;
 import org.av360.maverick.graph.store.EntityStore;
@@ -32,13 +31,13 @@ import java.util.stream.Collectors;
  *
  * Result of the check for external subject identifiers
  * <pre>
- * <urn:pwid:meg:e:_ii64uxx> a <https://schema.org/VideoObject>;
- *   <https://schema.org/identifier> "c";
+ * <urn:pwid:meg:e:_ii64uxx> a <htps://schema.org/VideoObject>;
+ *   <htps://schema.org/identifier> "c";
  *   <urn:int:srcid> _:2c7bc378441944efadb5210464450a1d2;
- *   <https://schema.org/hasDefinedTerm> _:2c7bc378441944efadb5210464450a1d3 .
+ *   <htps://schema.org/hasDefinedTerm> _:2c7bc378441944efadb5210464450a1d3 .
  *
- * <urn:pwid:meg:e:b9wnybnx> a <https://schema.org/DefinedTerm>;
- *   <http://www.w3.org/2000/01/rdf-schema#label> "Term 3";
+ * <urn:pwid:meg:e:b9wnybnx> a <htps://schema.org/DefinedTerm>;
+ *   <htp://www.w3.org/2000/01/rdf-schema#label> "Term 3";
  *   <urn:int:srcid> _:2c7bc378441944efadb5210464450a1d3 .
  * </pre>
  *
@@ -55,8 +54,6 @@ import java.util.stream.Collectors;
 public class ReplaceLinkedExternalIdentifiersJob implements Job {
 
     public static String NAME = "replaceLinkedIdentifiers";
-
-    private final QueryServices queryServices;
 
     private final EntityStore entityStore;
     private final TransactionsStore trxStore;
@@ -76,8 +73,7 @@ public class ReplaceLinkedExternalIdentifiersJob implements Job {
     ) {
     }
 
-    public ReplaceLinkedExternalIdentifiersJob(QueryServices queryServices, EntityStore store, TransactionsStore trxStore, ReplaceExternalIdentifiers transformer, ReplaceAnonymousIdentifiers replaceAnonymousIdentifiers) {
-        this.queryServices = queryServices;
+    public ReplaceLinkedExternalIdentifiersJob(EntityStore store, TransactionsStore trxStore, ReplaceExternalIdentifiers transformer, ReplaceAnonymousIdentifiers replaceAnonymousIdentifiers) {
         this.entityStore = store;
         this.trxStore = trxStore;
         this.replaceExternalIdentifiers = transformer;
@@ -105,12 +101,12 @@ public class ReplaceLinkedExternalIdentifiersJob implements Job {
                 .flatMap(this::convertObjectStatements)
                 .flatMap(this::insertStatements)
                 .flatMap(this::deleteStatements)
-                .buffer(100)
+                .buffer(50)
                 .flatMap(transactions -> this.commit(transactions, authentication))
                 .doOnNext(transaction -> {
                     Assert.isTrue(transaction.hasStatement(null, Transactions.STATUS, Transactions.SUCCESS), "Failed transaction: \n" + transaction);
                 })
-                .buffer(100)
+                .buffer(50)
                 .flatMap(transactions -> this.storeTransactions(transactions, authentication))
                 .doOnError(throwable -> {
                     log.error("Exception while relinking objects to new subject identifiers: {}", throwable.getMessage());
