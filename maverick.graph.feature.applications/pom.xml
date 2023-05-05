@@ -44,18 +44,7 @@
             <artifactId>graph-feature-admin</artifactId>
             <scope>test</scope>
         </dependency>
-        <dependency>
-            <groupId>org.eclipse.rdf4j</groupId>
-            <artifactId>rdf4j-repository-sail</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.eclipse.rdf4j</groupId>
-            <artifactId>rdf4j-sail-lmdb</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.eclipse.rdf4j</groupId>
-            <artifactId>rdf4j-sail-memory</artifactId>
-        </dependency>
+       
         <dependency>
             <groupId>io.projectreactor</groupId>
             <artifactId>reactor-test</artifactId>
