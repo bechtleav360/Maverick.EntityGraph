@@ -20,7 +20,14 @@ public class ReactiveApplicationContextHolder {
 
     public static Application getRequestedApplicationBlocking() {
         try {
-            return getRequestedApplication().toFuture().get();
+
+            Application block = getRequestedApplication().block();
+            Application application = getRequestedApplication()
+                    .map(app -> {
+                        return app;
+                    })
+                    .toFuture().get();
+            return application;
         } catch (InterruptedException | ExecutionException e) {
             throw new RuntimeException(e);
         }

@@ -10,20 +10,17 @@ import org.av360.maverick.graph.model.vocabulary.Transactions;
 import org.av360.maverick.graph.store.RepositoryBuilder;
 import org.av360.maverick.graph.store.RepositoryType;
 import org.av360.maverick.graph.store.behaviours.ModelUpdates;
-import org.av360.maverick.graph.store.behaviours.RepositoryBehaviour;
 import org.av360.maverick.graph.store.behaviours.Resettable;
 import org.av360.maverick.graph.store.behaviours.Statements;
-import org.av360.maverick.graph.store.rdf.LabeledRepository;
+import org.av360.maverick.graph.store.behaviours.TripleStore;
 import org.av360.maverick.graph.store.rdf.fragments.RdfTransaction;
 import org.av360.maverick.graph.store.rdf.helpers.RdfUtils;
 import org.eclipse.rdf4j.model.*;
 import org.eclipse.rdf4j.model.impl.SimpleNamespace;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.query.*;
-import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.RepositoryException;
-import org.eclipse.rdf4j.repository.RepositoryLockedException;
 import org.eclipse.rdf4j.repository.base.RepositoryConnectionWrapper;
 import org.eclipse.rdf4j.repository.util.RDFInserter;
 import org.eclipse.rdf4j.rio.RDFParser;
@@ -57,7 +54,7 @@ import java.util.Set;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
-public abstract class AbstractRepository implements RepositoryBehaviour, Statements, ModelUpdates, Resettable {
+public abstract class AbstractStore implements TripleStore, Statements, ModelUpdates, Resettable {
 
     private final RepositoryType repositoryType;
     private RepositoryBuilder repositoryConfiguration;
@@ -67,7 +64,7 @@ public abstract class AbstractRepository implements RepositoryBehaviour, Stateme
     private Timer transactionsMonoTimer;
     private Timer transactionsFluxTimer;
 
-    public AbstractRepository(RepositoryType repositoryType) {
+    public AbstractStore(RepositoryType repositoryType) {
         this.repositoryType = repositoryType;
     }
 
@@ -96,8 +93,8 @@ public abstract class AbstractRepository implements RepositoryBehaviour, Stateme
     }
 
 
-    public Flux<AnnotatedStatement> construct(String query, Authentication authentication, GrantedAuthority requiredAuthority, RepositoryType repositoryType) {
-        return this.applyManyWithConnection(authentication, requiredAuthority, repositoryType, connection -> {
+    public Flux<AnnotatedStatement> construct(String query, Authentication authentication, GrantedAuthority requiredAuthority) {
+        return this.applyManyWithConnection(authentication, requiredAuthority, connection -> {
             try {
                 getLogger().trace("Running construct query in repository: {}", connection.getRepository());
 
@@ -122,9 +119,10 @@ public abstract class AbstractRepository implements RepositoryBehaviour, Stateme
 
     }
 
-    public Flux<BindingSet> query(String query, Authentication authentication, GrantedAuthority requiredAuthority, RepositoryType repositoryType) {
-        return this.applyManyWithConnection(authentication, requiredAuthority, repositoryType, connection -> {
+    public Flux<BindingSet> query(String query, Authentication authentication, GrantedAuthority requiredAuthority) {
+        return this.applyManyWithConnection(authentication, requiredAuthority, connection -> {
             try {
+                getLogger().trace("Running select query in repository: {}", connection.getRepository());
 
                 TupleQuery q = connection.prepareTupleQuery(QueryLanguage.SPARQL, query);
                 if (getLogger().isTraceEnabled())
@@ -143,9 +141,7 @@ public abstract class AbstractRepository implements RepositoryBehaviour, Stateme
                 getLogger().error("Unknown error while running query", e);
                 throw e;
             }
-
         });
-
     }
 
     @Override
@@ -263,14 +259,14 @@ public abstract class AbstractRepository implements RepositoryBehaviour, Stateme
                     Set<Statement> insertStatements = trx.getModel().filter(null, null, null, Transactions.GRAPH_CREATED).stream().map(s -> vf.createStatement(s.getSubject(), s.getPredicate(), s.getObject())).collect(Collectors.toSet());
                     Set<Statement> removeStatements = trx.getModel().filter(null, null, null, Transactions.GRAPH_DELETED).stream().map(s -> vf.createStatement(s.getSubject(), s.getPredicate(), s.getObject())).collect(Collectors.toSet());
                     try {
-                        if(insertStatements.size() > 0) {
+                        if (insertStatements.size() > 0) {
                             connection.add(insertStatements);
                         }
-                        if(removeStatements.size() > 0) {
+                        if (removeStatements.size() > 0) {
                             connection.remove(removeStatements);
 
                         }
-                        if(insertStatements.size() > 0 || removeStatements.size() > 0) {
+                        if (insertStatements.size() > 0 || removeStatements.size() > 0) {
                             connection.prepare();
                             connection.commit();
                             getLogger().debug("Transaction '{}' completed with {} inserted statements and {} removed statements in repository '{}'.", trx.getIdentifier().getLocalName(), insertStatements.size(), removeStatements.size(), connection.getRepository());
@@ -379,142 +375,79 @@ public abstract class AbstractRepository implements RepositoryBehaviour, Stateme
     }
 
 
-    protected <T> Mono<T> applyWithConnection(Authentication authentication, GrantedAuthority requiredAuthority, RepositoryType repositoryType, ThrowingFunction<RepositoryConnection, T> fun) {
+    protected <T> Mono<T> applyWithConnection(Authentication authentication, GrantedAuthority requiredAuthority, ThrowingFunction<RepositoryConnection, T> fun) {
         if (!Authorities.satisfies(requiredAuthority, authentication.getAuthorities())) {
             String msg = String.format("Required authority '%s' for repository '%s' not met in authentication with authorities '%s'", requiredAuthority.getAuthority(), repositoryType.name(), authentication.getAuthorities());
             return Mono.error(new InsufficientAuthenticationException(msg));
         }
 
 
-        return transactionsMonoTimer.record(() -> {
-            Repository repository = null;
-            try {
-                repository = this.getBuilder().buildRepository(repositoryType, authentication);
-            } catch (IOException e) {
-                return Mono.error(e);
-            }
-            try (RepositoryConnection connection = repository.getConnection()) {
+        return transactionsMonoTimer.record(() ->
+                this.getBuilder().buildRepository(this, authentication)
+                        .flatMap(repository -> {
+                            try (RepositoryConnection connection = repository.getConnection()) {
 
-                T result = fun.applyWithException(new RepositoryConnectionWrapper(repository, connection));
-                if (Objects.isNull(result)) return Mono.empty();
-                else return Mono.just(result);
-            } catch (Exception e) {
-                return Mono.error(e);
-            } finally {
-                transactionsMonoCounter.increment();
-            }
-        });
+                                T result = fun.applyWithException(new RepositoryConnectionWrapper(repository, connection));
+                                if (Objects.isNull(result)) return Mono.empty();
+                                else return Mono.just(result);
+                            } catch (Exception e) {
+                                return Mono.error(e);
+                            } finally {
+                                transactionsMonoCounter.increment();
+                            }
+                        }));
     }
 
-    protected <T> Mono<T> applyWithConnection(Authentication authentication, GrantedAuthority requiredAuthority, ThrowingFunction<RepositoryConnection, T> fun) {
-        return this.applyWithConnection(authentication, requiredAuthority, this.getRepositoryType(), fun);
-    }
 
     protected Mono<Void> consumeWithConnection(Authentication authentication, GrantedAuthority requiredAuthority, ThrowingConsumer<RepositoryConnection> fun) {
-        return this.consumeWithConnection(authentication, requiredAuthority, this.getRepositoryType(), fun);
-    }
-
-    protected Mono<Void> consumeWithConnection(Authentication authentication, GrantedAuthority requiredAuthority, RepositoryType repositoryType, ThrowingConsumer<RepositoryConnection> fun) {
         if (!Authorities.satisfies(requiredAuthority, authentication.getAuthorities())) {
             String msg = String.format("Required authority '%s' for repository '%s' not met in authentication with authorities '%s'", requiredAuthority.getAuthority(), repositoryType.name(), authentication.getAuthorities());
             return Mono.error(new InsufficientAuthenticationException(msg));
         }
-        return transactionsMonoTimer.record(() -> {
-            Repository repository = null;
-            try {
-                repository = this.getBuilder().buildRepository(repositoryType, authentication);
-            } catch (IOException e) {
-                return Mono.error(e);
-            }
+        return transactionsMonoTimer.record(() ->
+                this.getBuilder().buildRepository(this, authentication)
+                        .flatMap(repository -> {
+                            try (RepositoryConnection connection = repository.getConnection()) {
 
-            try (RepositoryConnection connection = repository.getConnection()) {
-
-                fun.acceptWithException(new RepositoryConnectionWrapper(repository, connection));
-                return Mono.empty();
-            } catch (Exception e) {
-                return Mono.error(e);
-            } finally {
-                transactionsMonoCounter.increment();
-            }
-        });
+                                fun.acceptWithException(new RepositoryConnectionWrapper(repository, connection));
+                                return Mono.empty();
+                            } catch (Exception e) {
+                                return Mono.error(e);
+                            } finally {
+                                transactionsMonoCounter.increment();
+                            }
+                        }));
     }
 
-    protected <E, T extends Iterable<E>> Flux<E> applyManyWithConnection(Authentication authentication, GrantedAuthority requiredAuthority, RepositoryType repositoryType, ThrowingFunction<RepositoryConnection, T> fun) {
+    protected <E, T extends Iterable<E>> Flux<E> applyManyWithConnection(Authentication authentication, GrantedAuthority requiredAuthority, ThrowingFunction<RepositoryConnection, T> fun) {
         if (!Authorities.satisfies(requiredAuthority, authentication.getAuthorities())) {
             String msg = String.format("Required authority '%s' for repository '%s' not met in authentication with authorities '%s'", requiredAuthority.getAuthority(), repositoryType.name(), authentication.getAuthorities());
             return Flux.error(new InsufficientAuthenticationException(msg));
         }
 
-        return Flux.<E>create(sink -> {
-                    LabeledRepository repository = null;
-                    try {
-                        repository = this.getBuilder().buildRepository(repositoryType, authentication);
-                        if(! repository.isInitialized()) {
-                            getLogger().warn("Invalid repository, it should have been initialized");
-                            repository.init();
-                        }
-
-                        try (RepositoryConnection connection = repository.getConnection()) {
-                            fun.apply(connection).forEach(sink::next);
-                        } catch (Exception e) {
-                            this.meterRegistry.counter("graph.store.operations", "cardinality", "multiple", "state", "failure").increment();
-                            getLogger().warn("Error while applying function to repository '{}' with message '{}'. Active connections for repository: {}", repository, e.getMessage(), repository.getConnectionsCount());
-                            throw e;
-                        } finally {
-                            this.meterRegistry.counter("graph.store.operations", "cardinality", "multiple", "state", "complete").increment();
-                            sink.complete();
-                        }
+        return this.getBuilder().buildRepository(this, authentication)
+                .flatMapMany(repository -> {
+                    try (RepositoryConnection connection = repository.getConnection()) {
+                        return Flux.fromIterable(fun.apply(connection));
                     } catch (Exception e) {
-                        if(! Objects.isNull(repository)) repository.shutDown();
-                        sink.error(e);
+                        this.meterRegistry.counter("graph.store.operations", "cardinality", "multiple", "state", "failure").increment();
+                        getLogger().warn("Error while applying function to repository '{}' with message '{}'. Active connections for repository: {}", repository, e.getMessage(), repository.getConnectionsCount());
+                        return Mono.error(e);
+                    } finally {
+                        this.meterRegistry.counter("graph.store.operations", "cardinality", "multiple", "state", "complete").increment();
                     }
                 })
-                .timeout(Duration.ofMillis(10000))
+                .timeout(Duration.ofMillis(20000))
                 .onErrorResume(throwable -> {
-                    if(throwable instanceof TimeoutException te) {
+                    if (throwable instanceof TimeoutException te) {
                         getLogger().warn("Long-running operation on repository of type '{}' has been canceled.", repositoryType);
                         return Flux.error(new TimeoutException("Timeout while applying operation to repository:" + repositoryType.toString()));
-                    } else if(throwable instanceof RepositoryLockedException te) {
-                        getLogger().warn("Operation on repository of type '{}' is still locked. Attempting shutdown", repositoryType);
-                        return Flux.error(throwable);
                     } else {
                         return Flux.error(throwable);
                     }
                 });
-        /*
-        return transactionsFluxTimer.record(() -> {
-            Repository repository = null;
-            try {
-                repository = this.getBuilder().buildRepository(repositoryType, authentication);
-            } catch (Exception e) {
-                return Flux.error(e);
-            }
 
-            try (RepositoryConnection connection = repository.getConnection()) {
-
-                T result = fun.apply(connection);
-                return Flux.fromIterable(result);
-            } catch (Exception e) {
-                return Flux.error(e);
-            } finally {
-                transactionsFluxCounter.increment();
-            }
-        }); */
-        /*
-        return getBuilder().buildRepository(repositoryType, authentication)
-                .flatMapMany(repository ->
-
-                .retryWhen(Retry.backoff(3, Duration.ofSeconds(1))
-                            .filter(throwable -> throwable instanceof RepositoryLockedException)
-                        .doAfterRetry(retrySignal -> {
-                                getLogger().warn("Repository seems to be locked, shutting it down.");
-                                getBuilder().buildRepository(repositoryType,authentication).doOnSuccess(Repository::shutDown);
-                        })
-                );*/
     }
 
 
-    protected <E, T extends Iterable<E>> Flux<E> applyManyWithConnection(Authentication authentication, GrantedAuthority requiredAuthority, ThrowingFunction<RepositoryConnection, T> fun) {
-        return this.applyManyWithConnection(authentication, requiredAuthority, this.getRepositoryType(), fun);
-    }
 }

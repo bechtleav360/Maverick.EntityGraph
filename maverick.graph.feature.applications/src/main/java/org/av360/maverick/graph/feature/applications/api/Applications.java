@@ -7,6 +7,7 @@ import org.av360.maverick.graph.api.controller.AbstractController;
 import org.av360.maverick.graph.feature.applications.api.dto.Requests;
 import org.av360.maverick.graph.feature.applications.api.dto.Responses;
 import org.av360.maverick.graph.feature.applications.domain.ApplicationsService;
+import org.av360.maverick.graph.feature.applications.domain.SubscriptionsService;
 import org.av360.maverick.graph.feature.applications.domain.errors.InvalidApplication;
 import org.springframework.http.HttpStatus;
 import org.springframework.util.Assert;
@@ -25,9 +26,12 @@ public class Applications extends AbstractController {
 
     private final ApplicationsService applicationsService;
 
-    public Applications(ApplicationsService applicationsService) {
+    private final SubscriptionsService subscriptionsService;
+
+    public Applications(ApplicationsService applicationsService, SubscriptionsService subscriptionsService) {
 
         this.applicationsService = applicationsService;
+        this.subscriptionsService = subscriptionsService;
     }
 
 
@@ -86,7 +90,7 @@ public class Applications extends AbstractController {
         Assert.isTrue(StringUtils.hasLength(request.label()), "Name is a required parameter");
 
         return super.getAuthentication()
-                .flatMap(authentication -> this.applicationsService.createSubscription(applicationId, request.label(), authentication))
+                .flatMap(authentication -> this.subscriptionsService.createSubscription(applicationId, request.label(), authentication))
                 .map(apiKey ->
                         new Responses.ApiKeyWithApplicationResponse(
                                 apiKey.key(),
@@ -109,7 +113,7 @@ public class Applications extends AbstractController {
         Assert.isTrue(StringUtils.hasLength(applicationId), "Application ID is a required parameter");
 
         return super.getAuthentication()
-                .flatMapMany(authentication -> this.applicationsService.listSubscriptionsForApplication(applicationId, authentication))
+                .flatMapMany(authentication -> this.subscriptionsService.listSubscriptionsForApplication(applicationId, authentication))
                 .switchIfEmpty(Mono.error(new InvalidApplication(applicationId)))
                 .map(subscription -> new Responses.SubscriptionResponse(subscription.key(), subscription.issueDate(), subscription.active()))
                 .doOnSubscribe(s -> log.info("Fetching all api keys for an application"));
@@ -127,7 +131,7 @@ public class Applications extends AbstractController {
         Assert.isTrue(StringUtils.hasLength(label), "Name is a required parameter");
 
         return super.getAuthentication()
-                .flatMapMany(authentication -> this.applicationsService.revokeToken(applicationId, label, authentication))
+                .flatMapMany(authentication -> this.subscriptionsService.revokeToken(applicationId, label, authentication))
                 .then()
                 .doOnSubscribe(subscription -> log.info("Generating a new token for an application"));
     }

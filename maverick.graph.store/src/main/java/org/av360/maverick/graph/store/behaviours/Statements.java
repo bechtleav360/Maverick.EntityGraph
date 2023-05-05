@@ -13,7 +13,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 
-public interface Statements extends RepositoryBehaviour {
+public interface Statements extends TripleStore {
 
     default Mono<RdfTransaction> removeStatement(Resource subject, IRI predicate, Value value, RdfTransaction transaction) {
         return this.removeStatement(getValueFactory().createStatement(subject, predicate, value), transaction);

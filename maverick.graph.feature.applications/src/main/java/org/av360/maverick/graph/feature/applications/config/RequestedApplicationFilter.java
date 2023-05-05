@@ -5,8 +5,6 @@ import org.av360.maverick.graph.feature.applications.domain.ApplicationsService;
 import org.av360.maverick.graph.model.security.AdminToken;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.server.reactive.ServerHttpRequest;
-import org.springframework.security.core.context.ReactiveSecurityContextHolder;
-import org.springframework.security.core.context.SecurityContext;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 import org.springframework.web.server.ServerWebExchange;
@@ -36,10 +34,8 @@ public class RequestedApplicationFilter implements WebFilter {
             //this.getRequestedApplicationFromPath(exchange.getRequest().getPath().toString());
             return requestedApplication
                     .map(label ->
-                            ReactiveSecurityContextHolder.getContext().map(SecurityContext::getAuthentication)
-                                    .flatMap(authentication -> this.subscriptionsService.getApplicationByLabel(label, new AdminToken()))
-                                    .flatMap(application -> chain.filter(exchange)
-                                            .contextWrite(ctx -> ctx.put(ReactiveApplicationContextHolder.CONTEXT_KEY, application))))
+                            this.subscriptionsService.getApplicationByLabel(label, new AdminToken())
+                                            .flatMap(application -> chain.filter(exchange).contextWrite(context -> context.put(ReactiveApplicationContextHolder.CONTEXT_KEY, application))))
                     .orElseGet(() -> chain.filter(exchange));
         } catch (IOException e) {
             return Mono.error(e);

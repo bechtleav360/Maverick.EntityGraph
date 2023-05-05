@@ -30,9 +30,12 @@ application:
     validators:
       checkRequiredType: true
   storage:
-    default:
+    vocabularies:
       persistent: true
-      path: "D:/Graphen/default"
+      path: "D:/Graphen/vocabularies"
+    system:
+      persistent: true
+      path: "D:/Graphen/system"
     entities:
       persistent: true
       path: "D:/Graphen/entities"
@@ -51,14 +54,17 @@ logging:
     name: "main.log"
     path: "D:/Graphen/"
   level:
+    root: INFO
     graph:
       jobs: DEBUG
       repo: DEBUG
       srvc: DEBUG
       ctrl: DEBUG
-
-
+      feat:
+        admin: DEBUG
     org:
+      eclipse:
+        rdf4j: DEBUG
       springframework:
         security: INFO
 

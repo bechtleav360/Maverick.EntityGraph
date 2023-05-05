@@ -25,8 +25,10 @@ public class RdfEntity extends TripleModel implements Entity {
         identifier = id;
     }
 
-    public RdfEntity withResult(RepositoryResult<Statement> statements) {
-        statements.stream().parallel().forEach(statement -> this.getBuilder().add(statement.getSubject(), statement.getPredicate(), statement.getObject()));
+    public RdfEntity withResult(RepositoryResult<Statement> result) {
+        try (result) {
+            result.stream().forEach(statement -> this.getBuilder().add(statement.getSubject(), statement.getPredicate(), statement.getObject()));
+        }
         return this;
     }
 

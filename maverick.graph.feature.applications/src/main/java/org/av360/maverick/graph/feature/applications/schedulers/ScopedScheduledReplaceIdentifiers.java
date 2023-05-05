@@ -47,7 +47,7 @@ public class ScopedScheduledReplaceIdentifiers {
 
         applicationsService.listApplications(new AdminToken())
                 .doOnNext(application -> {
-                    JobScheduledEvent event = new ApplicationJobScheduledEvent("replaceIdentifiers", new AdminToken(), application);
+                    JobScheduledEvent event = new ApplicationJobScheduledEvent("replaceSubjectIdentifiers", new AdminToken(), application);
                     eventPublisher.publishEvent(event);
                 }).subscribe();
 

@@ -87,7 +87,7 @@ public class Admin extends AbstractController {
         return Mono.zip(super.getAuthentication(), fileMono)
                 .flatMap(objects -> adminServices.importEntities(objects.getT2().content(), mimetype, objects.getT1()))
                 .doOnError(throwable -> log.error("Error while importing to repository.", throwable))
-                .doOnSubscribe(s -> log.debug("Request to import a file of mimetype {}", mimetype));
+                .doOnSubscribe(s -> log.info("Request to import a file of mimetype {}", mimetype));
     }
 
 

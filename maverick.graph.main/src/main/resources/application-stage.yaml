@@ -18,9 +18,12 @@ application:
     validators:
       checkRequiredType: true
   storage:
-    default:
+    vocabularies:
       persistent: true
-      path: "/var/data/application"
+      path: "/var/data/vocabularies"
+    system:
+      persistent: true
+      path: "/var/data/system"
     entities:
       persistent: true
       path: "/var/data/entities"

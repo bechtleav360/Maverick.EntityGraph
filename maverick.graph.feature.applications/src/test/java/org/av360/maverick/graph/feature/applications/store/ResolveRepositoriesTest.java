@@ -4,7 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.feature.applications.config.ReactiveApplicationContextHolder;
 import org.av360.maverick.graph.feature.applications.domain.model.Application;
 import org.av360.maverick.graph.feature.applications.domain.model.ApplicationFlags;
-import org.av360.maverick.graph.store.RepositoryType;
+import org.av360.maverick.graph.store.EntityStore;
 import org.av360.maverick.graph.store.rdf.LabeledRepository;
 import org.av360.maverick.graph.tests.config.TestRepositoryConfig;
 import org.av360.maverick.graph.tests.config.TestSecurityConfig;
@@ -32,22 +32,24 @@ public class ResolveRepositoriesTest {
     @Autowired
     ApplicationRepositoryBuilder builder;
 
+    @Autowired
+    EntityStore entityStore;
 
     @Test
     public void buildEntityRepoWithTestAuthentication() throws IOException {
-        Repository repository = builder.buildRepository(RepositoryType.ENTITIES, TestSecurityConfig.createAuthenticationToken());
+        Repository repository = builder.buildRepository(entityStore, TestSecurityConfig.createAuthenticationToken()).block();
         Assertions.assertTrue(repository.isInitialized());
     }
 
     @Test
     public void buildEntityRepoWithAdminAuthentication() throws IOException {
-        Repository repository = builder.buildRepository(RepositoryType.ENTITIES, TestSecurityConfig.createAdminToken());
+        Repository repository = builder.buildRepository(entityStore, TestSecurityConfig.createAdminToken()).block();
         Assertions.assertTrue(repository.isInitialized());
     }
 
     @Test
     public void buildEntityRepoWithAnonAuthentication() throws IOException {
-        Repository repository = builder.buildRepository(RepositoryType.ENTITIES, TestSecurityConfig.createAnonymousToken());
+        Repository repository = builder.buildRepository(entityStore, TestSecurityConfig.createAnonymousToken()).block();
         Assertions.assertTrue(repository.isInitialized());
 
     }
@@ -55,7 +57,7 @@ public class ResolveRepositoriesTest {
     @Test
     public void buildAppEntityRepoWithTestAuthentication() throws IOException {
         Application application = new Application(SimpleValueFactory.getInstance().createIRI("http://example.org/app"), "app", "123213", new ApplicationFlags(false, false));
-        Repository repository = builder.buildRepository(RepositoryType.ENTITIES, TestSecurityConfig.createAuthenticationToken(), application);
+        Repository repository = builder.buildRepository(entityStore, TestSecurityConfig.createAuthenticationToken(), application);
         Assertions.assertTrue(repository.isInitialized());
     }
 
@@ -64,7 +66,7 @@ public class ResolveRepositoriesTest {
         Application application = new Application(SimpleValueFactory.getInstance().createIRI("http://example.org/app"), "app", "123213", new ApplicationFlags(false, false));
 
 
-        Mono<LabeledRepository> mono = Mono.just(builder.buildRepository(RepositoryType.ENTITIES, TestSecurityConfig.createAdminToken()))
+        Mono<LabeledRepository> mono = builder.buildRepository(entityStore, TestSecurityConfig.createAdminToken())
                 .contextWrite(ctx -> ctx.put(ReactiveApplicationContextHolder.CONTEXT_KEY, application));
 
 

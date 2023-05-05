@@ -18,9 +18,11 @@ import reactor.core.publisher.Mono;
 import java.util.Collection;
 import java.util.List;
 
-public interface RepositoryBehaviour {
+public interface TripleStore {
 
     Logger getLogger();
+
+    String getDirectory();
 
     default ValueFactory getValueFactory() {
         return SimpleValueFactory.getInstance();

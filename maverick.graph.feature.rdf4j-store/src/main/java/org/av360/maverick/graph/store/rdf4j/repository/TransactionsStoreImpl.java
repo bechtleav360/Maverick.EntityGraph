@@ -4,8 +4,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.store.RepositoryType;
 import org.av360.maverick.graph.store.TransactionsStore;
 import org.av360.maverick.graph.store.rdf.fragments.RdfTransaction;
-import org.av360.maverick.graph.store.rdf4j.repository.util.AbstractRepository;
+import org.av360.maverick.graph.store.rdf4j.repository.util.AbstractStore;
 import org.slf4j.Logger;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.stereotype.Component;
@@ -17,10 +18,11 @@ import java.util.List;
 
 @Slf4j(topic = "graph.repo.transactions")
 @Component
-public class TransactionsRepository extends AbstractRepository implements TransactionsStore {
+public class TransactionsStoreImpl extends AbstractStore implements TransactionsStore {
 
-
-    public TransactionsRepository() {
+    @Value("${application.storage.transactions.path:#{null}}")
+    private String path;
+    public TransactionsStoreImpl() {
         super(RepositoryType.TRANSACTIONS);
     }
 
@@ -52,5 +54,10 @@ public class TransactionsRepository extends AbstractRepository implements Transa
     @Override
     public Logger getLogger() {
         return log;
+    }
+
+    @Override
+    public String getDirectory() {
+        return this.path;
     }
 }
