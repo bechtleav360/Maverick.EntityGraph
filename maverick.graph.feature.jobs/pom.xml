@@ -59,6 +59,7 @@
             <groupId>org.av360.maverick.graph</groupId>
             <artifactId>graph-feature-applications</artifactId>
         </dependency>
+
     </dependencies>
 
 </project>

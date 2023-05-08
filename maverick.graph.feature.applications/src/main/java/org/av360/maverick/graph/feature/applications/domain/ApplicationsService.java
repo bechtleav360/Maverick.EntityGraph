@@ -137,6 +137,9 @@ public class ApplicationsService implements ApplicationListener<ApplicationUpdat
                             .andHas(ApplicationTerms.HAS_LABEL, QueryVariables.varAppLabel)
                             .andHas(ApplicationTerms.IS_PERSISTENT, QueryVariables.varAppFlagPersistent)
                             .andHas(ApplicationTerms.IS_PUBLIC, QueryVariables.varAppFlagPublic)
+                            .andHas(ApplicationTerms.HAS_S3HOST, QueryVariables.varAppFlagS3Host)
+                            .andHas(ApplicationTerms.HAS_S3BUCKETID, QueryVariables.varAppFlagS3BucketId)
+                            .andHas(ApplicationTerms.HAS_EXPORT_FREQUENCY, QueryVariables.varAppFlagExportFrequency)
                     )
                     .limit(100);
 

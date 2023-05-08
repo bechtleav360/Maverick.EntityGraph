@@ -24,8 +24,8 @@ public class ScopedScheduledExportApplication {
         this.applicationsService = applicationsService;
     }
 
-    @Scheduled(initialDelay = 60, fixedRate = 600, timeUnit = TimeUnit.SECONDS)
     //@Scheduled(cron = "application.flags().exportFrequency()")
+    @Scheduled(initialDelay = 60, fixedRate = 600, timeUnit = TimeUnit.SECONDS)
     public void scheduled() {
         applicationsService.listApplications(new AdminToken())
                 .doOnNext(application -> {

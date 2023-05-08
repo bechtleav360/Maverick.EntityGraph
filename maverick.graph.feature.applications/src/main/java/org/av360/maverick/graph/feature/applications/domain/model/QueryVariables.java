@@ -11,6 +11,9 @@ public class QueryVariables {
     public static final Variable varAppLabel = SparqlBuilder.var("appLabel");
     public static final Variable varAppFlagPersistent = SparqlBuilder.var("appPersistent");
     public static final Variable varAppFlagPublic = SparqlBuilder.var("appPublic");
+    public static final Variable varAppFlagS3Host = SparqlBuilder.var("appS3Host");
+    public static final Variable varAppFlagS3BucketId = SparqlBuilder.var("appS3BucketId");
+    public static final Variable varAppFlagExportFrequency = SparqlBuilder.var("appExportFrequency");
 
     public static final Variable varSubIri = SparqlBuilder.var("subNode");
     public static final Variable varSubKey = SparqlBuilder.var("subId");
@@ -51,7 +54,10 @@ public class QueryVariables {
                 ba.asString(varAppKey),
                 new ApplicationFlags(
                         ba.asBoolean(varAppFlagPersistent),
-                        ba.asBoolean(varAppFlagPublic)
+                        ba.asBoolean(varAppFlagPublic),
+                        ba.asString(varAppFlagS3Host),
+                        ba.asString(varAppFlagS3BucketId),
+                        ba.asString(varAppFlagExportFrequency)
                 )
         );
     }

@@ -27,8 +27,11 @@ public class ExportApplicationJob implements Job {
 
     public static String NAME = "exportApplication";
     private final EntityServices entityServices;
+
+    private final Application application;
     public ExportApplicationJob(EntityServices service) {
         this.entityServices = service;
+        this.application = ReactiveApplicationContextHolder.getRequestedApplicationBlocking();
     }
 
     @Override
@@ -38,12 +41,10 @@ public class ExportApplicationJob implements Job {
 
     @Override
     public Mono<Void> run(Authentication authentication) {
-        return ReactiveApplicationContextHolder.getRequestedApplication()
-                .flatMap(application -> {
-                    S3AsyncClient s3Client = createS3Client(application.flags().s3Host());
-                    return exportRdfStatements(authentication)
-                            .flatMap(rdfString -> uploadRdfStringToS3(s3Client, rdfString, application));
-                }).then();
+        S3AsyncClient s3Client = createS3Client(application.flags().s3Host());
+        return exportRdfStatements(authentication)
+                .flatMap(rdfString -> uploadRdfStringToS3(s3Client, rdfString, application))
+                .then();
     }
 
     private S3AsyncClient createS3Client(String s3Host) {
