@@ -148,8 +148,11 @@ public class DefaultRepositoryBuilder implements RepositoryBuilder {
             return labeledRepository;
 
 
-        } catch (RepositoryException | IOException e) {
-            log.error("Failed to initialize persistent repository in path '{}'. Falling back to in-memory.", path, e);
+        } catch (RepositoryException e) {
+            log.error("Failed to initialize persistent repository in path '{}'.", path, e);
+            throw e;
+        } catch (IOException e) {
+            log.error("Failed to initialize persistent repository in path '{}'.", path, e);
             return this.initializeVolatileRepository(label);
         }
     }

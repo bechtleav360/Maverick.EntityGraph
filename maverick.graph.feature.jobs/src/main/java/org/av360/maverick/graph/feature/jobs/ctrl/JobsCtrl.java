@@ -14,6 +14,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 @RestController
 @RequestMapping(path = "/api/admin/jobs")
@@ -44,7 +45,6 @@ public class JobsCtrl extends AbstractController {
     }
 
 
-    //@ApiOperation(value = "Empty repository", tags = {})
     @PostMapping(value = "/execute/deduplication")
     @ResponseStatus(HttpStatus.OK)
     Mono<Void> execDeduplicationJob(
@@ -52,32 +52,36 @@ public class JobsCtrl extends AbstractController {
             @Parameter(
                     schema = @Schema(type = "string",
                             allowableValues = {"dc.identifier", "dcterms.identifier", "sdo.identifier", "rdfs.label", "skos.pref_label"})
-                    )
+            )
             String property) {
 
 
-        return Mono.zip(
-                super.getAuthentication(),
-                schemaServices.resolvePrefixedName(property)
-        ).flatMap(tuple -> this.detectDuplicatesJob.checkForDuplicates(tuple.getT2(), tuple.getT1()));
+        Mono.zip(super.getAuthentication(),  schemaServices.resolvePrefixedName(property))
+                .subscribeOn(Schedulers.single())
+                .flatMap(tuple -> this.detectDuplicatesJob.checkForDuplicates(tuple.getT2(), tuple.getT1()))
+                .subscribe();
+        return Mono.empty();
 
     }
 
     @PostMapping(value = "/execute/normalize/subjectIdentifiers")
     @ResponseStatus(HttpStatus.ACCEPTED)
     Mono<Void> execReplaceSubjectIdentifiersJob() {
-        return super.getAuthentication()
+        super.getAuthentication()
+                .subscribeOn(Schedulers.single())
                 .flatMap(this.replaceExternalIdentifiersService::run)
-                .then();
-
+                .subscribe();
+        return Mono.empty();
     }
 
     @PostMapping(value = "/execute/normalize/objectIdentifiers")
     @ResponseStatus(HttpStatus.ACCEPTED)
     Mono<Void> execReplaceObjectIdentifiersJob() {
-        return super.getAuthentication()
+        super.getAuthentication()
+                .subscribeOn(Schedulers.single())
                 .flatMap(this.replaceLinkedExternalIdentifiersJob::run)
                 .then();
+        return Mono.empty();
 
     }
 
@@ -85,9 +89,10 @@ public class JobsCtrl extends AbstractController {
     @PostMapping(value = "/execute/coercion")
     @ResponseStatus(HttpStatus.OK)
     Mono<Void> execCoercionJob() {
-        return super.getAuthentication()
+        super.getAuthentication()
+                .subscribeOn(Schedulers.single())
                 .flatMapMany(this.typeCoercionService::run).then();
-
+        return Mono.empty();
     }
 
 
