@@ -6,6 +6,7 @@ import org.av360.maverick.graph.model.vocabulary.Local;
 import org.av360.maverick.graph.services.transformers.replaceIdentifiers.ReplaceAnonymousIdentifiers;
 import org.eclipse.rdf4j.model.*;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
+import org.springframework.util.StringUtils;
 import reactor.core.publisher.Mono;
 
 import java.util.Optional;
@@ -27,7 +28,7 @@ public class DelegatingAnonymousIdentifierTransformer extends ReplaceAnonymousId
                     LocalIdentifier identifier;
 
                     String namespace = Local.Entities.NAMESPACE;
-                    if (charProp.isPresent() && entityType.isPresent()) {
+                    if (charProp.isPresent() && StringUtils.hasLength(charProp.get().stringValue()) && entityType.isPresent()) {
                         // we build the identifier from entity type and value
                         identifier = super.getIdentifierFactory().createReproducibleIdentifier(namespace, entityType.get(), charProp.get());
                     } else {

@@ -9,6 +9,7 @@ import org.av360.maverick.graph.feature.applications.domain.model.Application;
 import org.av360.maverick.graph.feature.applications.security.SubscriptionToken;
 import org.av360.maverick.graph.model.security.AdminToken;
 import org.av360.maverick.graph.model.security.Authorities;
+import org.av360.maverick.graph.model.security.RequestDetails;
 import org.av360.maverick.graph.store.behaviours.TripleStore;
 import org.av360.maverick.graph.store.rdf.LabeledRepository;
 import org.av360.maverick.graph.store.rdf4j.config.DefaultRepositoryBuilder;
@@ -60,7 +61,13 @@ public class ApplicationRepositoryBuilder extends DefaultRepositoryBuilder {
                         return Mono.error(e);
                     }
                 })
-                .switchIfEmpty(super.buildRepository(store, authentication));
+
+                .switchIfEmpty(Mono.defer(() -> {
+                    if(((RequestDetails) authentication.getDetails()).headers().containsKey("X-APPLICATION")) {
+                        return Mono.error(new IOException("Application header provided, but not in context."));
+                    }
+                    return super.buildRepository(store, authentication);
+                }));
     }
 
     public LabeledRepository buildRepository(TripleStore store, Authentication authentication, @NotNull Application requestedApplication) throws IOException {

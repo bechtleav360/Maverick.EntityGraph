@@ -4,6 +4,7 @@ import com.google.common.hash.Hashing;
 import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.model.rdf.LocalIRI;
 import org.eclipse.rdf4j.model.IRI;
+import org.springframework.util.Assert;
 
 import java.io.Serializable;
 import java.math.BigInteger;
@@ -40,6 +41,7 @@ public class ChecksumIdentifier extends LocalIRI implements LocalIdentifier  {
         super(namespace);
 
         String collect = Arrays.stream(parts).map(Object::toString).collect(Collectors.joining());
+        Assert.hasLength(collect, "No content to generate reproducible identifier.");
         super.setLocalName(generateChecksum(collect));
     }
 

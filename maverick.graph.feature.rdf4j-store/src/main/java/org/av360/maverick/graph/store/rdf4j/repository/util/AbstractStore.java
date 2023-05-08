@@ -444,7 +444,7 @@ public abstract class AbstractStore implements TripleStore, Statements, ModelUpd
                         this.meterRegistry.counter("graph.store.operations", "cardinality", "multiple", "state", "complete").increment();
                     }
                 })
-                .timeout(Duration.ofMillis(20000))
+                .timeout(Duration.ofMillis(30000))
                 .onErrorResume(throwable -> {
                     if (throwable instanceof TimeoutException te) {
                         getLogger().warn("Long-running operation on repository of type '{}' has been canceled.", repositoryType);

@@ -83,9 +83,9 @@ public class DefaultAuthenticationManager implements ReactiveAuthenticationManag
 
     private Mono<? extends Authentication> handleApiKeyAuthentication(ApiKeyAuthenticationToken authentication) {
         log.trace("Handling request with API Key authentication in default authentication manager");
-        // check if this is the admin user
+        // check if this is the admin userTransaction '
         if (StringUtils.hasLength(this.key) && authentication.getApiKey().isPresent() && authentication.getApiKey().get().equalsIgnoreCase(this.key)) {
-            log.info("Valid admin key provided, granting system access in default authentication manager.");
+            log.debug("Valid admin key provided, granting system access in default authentication manager.");
 
             return Mono.just(new AdminToken(authentication.getDetails()));
         } else {
