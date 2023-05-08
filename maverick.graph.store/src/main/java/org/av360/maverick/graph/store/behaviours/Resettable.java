@@ -7,7 +7,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import reactor.core.publisher.Mono;
 
-public interface Resettable extends RepositoryBehaviour {
+public interface Resettable extends TripleStore {
 
     Mono<Void> reset(Authentication authentication, GrantedAuthority requiredAuthority);
 

@@ -92,14 +92,13 @@ public class Links extends AbstractController {
 
 
     @Operation(summary = "Deletes edge to existing entity identified by target id.")
-    @DeleteMapping(value = "/entities/{source_id:[\\w|\\d|\\-|\\_]+}/links/{prefixedKey:[\\w|\\d]+\\.[\\w|\\d]+}/{target_id:[\\w|\\d|-|_]+}")
+    @DeleteMapping(value = "/entities/{source_id:[\\w|\\d|\\-|\\_]+}/links/{prefixedKey:[\\w|\\d]+\\.[\\w|\\d]+}/{target_id:[\\w|\\d|-|_]+}", 
+            produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE, MediaType.APPLICATION_JSON_VALUE})
     @ResponseStatus(HttpStatus.OK)
     public Flux<AnnotatedStatement> deleteLink(@PathVariable String source_id, @PathVariable String prefixedKey, @PathVariable String target_id) {
         return super.getAuthentication()
                 .flatMap(authentication -> this.values.removeLink(source_id, prefixedKey, target_id, authentication))
-                .flatMap(trx -> {
-                    return Mono.just(trx);
-                })
+                .flatMap(Mono::just)
                 .flatMapIterable(TripleModel::asStatements)
                 .doOnSubscribe(s -> {
                     if (log.isDebugEnabled())
@@ -108,6 +107,9 @@ public class Links extends AbstractController {
                 .doOnComplete(() -> {
                     if (log.isDebugEnabled())
                         log.debug("Request to remove link '{}' between entity '{}' and entity '{}' completed", prefixedKey, source_id, target_id);
+                })
+                .doOnError(error -> {
+                    log.warn("Failed request to remove link '{}' between entity '{}' and entity '{}'", prefixedKey, source_id, target_id);
                 });
 
 

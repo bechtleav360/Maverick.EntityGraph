@@ -6,7 +6,7 @@ import org.av360.maverick.graph.model.vocabulary.SDO;
 import org.av360.maverick.graph.model.vocabulary.Transactions;
 import org.av360.maverick.graph.store.RepositoryType;
 import org.av360.maverick.graph.store.SchemaStore;
-import org.av360.maverick.graph.store.rdf4j.repository.util.AbstractRepository;
+import org.av360.maverick.graph.store.rdf4j.repository.util.AbstractStore;
 import org.eclipse.rdf4j.model.Namespace;
 import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
@@ -20,7 +20,10 @@ import java.util.Set;
 
 @Slf4j(topic = "graph.repo.schema")
 @Component
-public class SchemaRepository extends AbstractRepository implements SchemaStore {
+public class VocabularyStoreImpl extends AbstractStore implements SchemaStore {
+
+    @org.springframework.beans.factory.annotation.Value("${application.storage.vocabularies.path:#{null}}")
+    private String path;
 
     private final static Set<Namespace> namespaces;
 
@@ -34,7 +37,7 @@ public class SchemaRepository extends AbstractRepository implements SchemaStore 
     }
 
 
-    public SchemaRepository() {
+    public VocabularyStoreImpl() {
         super(RepositoryType.SCHEMA);
     }
 
@@ -53,5 +56,10 @@ public class SchemaRepository extends AbstractRepository implements SchemaStore 
     @Override
     public Logger getLogger() {
         return log;
+    }
+
+    @Override
+    public String getDirectory() {
+        return this.path;
     }
 }

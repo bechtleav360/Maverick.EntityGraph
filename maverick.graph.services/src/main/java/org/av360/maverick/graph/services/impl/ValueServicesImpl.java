@@ -122,7 +122,7 @@ public class ValueServicesImpl implements ValueServices {
                 this.removeLinkStatement(triple.getT1(), triple.getT3(), triple.getT2(), new RdfTransaction(), authentication)
         ).doOnSuccess(trx -> {
             eventPublisher.publishEvent(new LinkRemovedEvent(trx));
-        });
+        }).doOnError(error -> log.error("Failed to remove link due to reason: {}", error.getMessage()));
     }
 
 

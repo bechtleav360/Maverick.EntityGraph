@@ -4,18 +4,16 @@ import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.model.security.ApiKeyAuthenticationToken;
-import org.av360.maverick.graph.model.util.StreamsLogger;
 import org.av360.maverick.graph.store.RepositoryBuilder;
 import org.av360.maverick.graph.store.RepositoryType;
+import org.av360.maverick.graph.store.behaviours.TripleStore;
 import org.av360.maverick.graph.store.rdf.LabeledRepository;
 import org.eclipse.rdf4j.http.protocol.UnauthorizedException;
-import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryException;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
 import org.eclipse.rdf4j.sail.lmdb.LmdbStore;
 import org.eclipse.rdf4j.sail.lmdb.config.LmdbStoreConfig;
 import org.eclipse.rdf4j.sail.memory.MemoryStore;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
@@ -26,6 +24,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import reactor.core.publisher.Mono;
 
+import javax.annotation.Nullable;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -40,21 +39,12 @@ import java.util.concurrent.TimeUnit;
 public class DefaultRepositoryBuilder implements RepositoryBuilder {
 
 
-    @Value("${application.storage.entities.path:#{null}}")
-    private String entitiesPath;
-    @Value("${application.storage.transactions.path:#{null}}")
-    private String transactionsPath;
-    @Value("${application.storage.default.path: #{null}}")
-    private String defaultPath;
 
-    @Value("${application.storage.default.path: #{null}}")
-    private String schemaPath;
 
-    private final Cache<String, Repository> cache;
+    private final Cache<String, LabeledRepository> cache;
     private Map<String, List<String>> storage;
     private String test;
     private Map<String, String> security;
-
 
 
     public DefaultRepositoryBuilder() {
@@ -65,124 +55,117 @@ public class DefaultRepositoryBuilder implements RepositoryBuilder {
     /**
      * Initializes the connection to a repository. The repositories are cached
      *
-     * @param repositoryType Type of the repository
+     * @param store Store
      * @param authentication Current authentication information
      * @return The repository object
      * @throws IOException If repository cannot be found
      */
     @Override
-    public Mono<Repository> buildRepository(RepositoryType repositoryType, Authentication authentication) {
+    public Mono<LabeledRepository> buildRepository(TripleStore store, Authentication authentication) {
         if (Objects.isNull(authentication))
-            return Mono.error(new IllegalArgumentException("Failed to resolve repository due to missing authentication"));
+            throw new IllegalArgumentException("Failed to resolve repository due to missing authentication");
         if (!authentication.isAuthenticated())
-            return Mono.error(new UnauthorizedException("Authentication is set to 'false' within the " + authentication.getClass().getSimpleName()));
+            throw new UnauthorizedException("Authentication is set to 'false' within the " + authentication.getClass().getSimpleName());
+
+        LabeledRepository repository = null;
 
         if (authentication instanceof TestingAuthenticationToken) {
-            return this.getRepository(repositoryType, "test");
+            repository = this.buildDefaultRepository(store, "test");
+        }
+        else if (authentication instanceof ApiKeyAuthenticationToken) {
+            repository = this.buildDefaultRepository(store, "default");
+        }
+        else if (authentication instanceof AnonymousAuthenticationToken) {
+            repository = this.buildDefaultRepository(store, "default");
         }
 
-        if (authentication instanceof ApiKeyAuthenticationToken) {
-            return this.getRepository(repositoryType, "default");
-        }
-
-        if (authentication instanceof AnonymousAuthenticationToken) {
-            return this.getRepository(repositoryType, "default");
-        }
-
-        return Mono.error(new IOException(String.format("Cannot resolve repository of type '%s' for authentication of type '%s'", repositoryType, authentication.getClass())));
-    }
-    protected Mono<Repository> getRepository(RepositoryType repositoryType, String... details) {
-        return Mono.create(sink -> {
-
-            String key = buildRepositoryLabel(repositoryType, details);
-            String path = switch (repositoryType) {
-                case ENTITIES -> this.entitiesPath;
-                case TRANSACTIONS -> this.transactionsPath;
-                default -> this.defaultPath;
-            };
-            log.trace("Resolving repository of type '{}', label '{}'", repositoryType, key);
-
-            if (!StringUtils.hasLength(path)) {
-                sink.success(getCache().get(key, s -> new LabeledRepository(key, this.initializeVolatileRepository(repositoryType))));
-            } else {
-                Path p;
-                if(path.equalsIgnoreCase(this.defaultPath)) {
-                    p = Paths.get(path, repositoryType.toString(), "lmdb");
-                } else {
-                    p = Paths.get(path,  "lmdb");
-                }
-                sink.success(getCache().get(key, s -> new LabeledRepository(key, this.initializePersistentRepository(p, repositoryType))));
-            }
-        });
-                // .doOnSubscribe(StreamsLogger.trace(log, "Resolving repository of type '{}', label '{}'", repositoryType, buildRepositoryLabel(repositoryType, details)));
-    }
-
-    private String getPathForRepositoryType(RepositoryType repositoryType) {
-        return switch (repositoryType) {
-            case ENTITIES -> this.entitiesPath;
-            case TRANSACTIONS -> this.transactionsPath;
-            case APPLICATION -> this.defaultPath;
-            case SCHEMA -> this.schemaPath; 
-            default -> this.defaultPath;
-        };
-    }
-
-    protected Mono<Repository> getRepository3(RepositoryType repositoryType, String... details) {
-
-
-        String key = buildRepositoryLabel(repositoryType, details);
-
-        Repository repository;
-        String basePath = getPathForRepositoryType(repositoryType);
-        if (!StringUtils.hasLength(basePath)) {
-            repository = getCache().get(key, s -> new LabeledRepository(key, this.initializeVolatileRepository(repositoryType)));
-        } else {
-
-            Path p = switch (repositoryType) {
-                case ENTITIES -> Paths.get(basePath, "lmdb");
-                case TRANSACTIONS -> Paths.get(basePath, "lmdb");
-                case APPLICATION -> Paths.get(basePath, "lmbd");
-                case SCHEMA -> Paths.get(basePath, "lmbd");
-                default -> Paths.get(basePath, repositoryType.toString(), "lmdb");
-            };
-            repository = getCache().get(key, s -> new LabeledRepository(key, this.initializePersistentRepository(p, repositoryType)));
-        }
-
-        return Mono.just(repository)
-                .doOnSubscribe(StreamsLogger.trace(log, "Resolving repository of type '{}', label '{}'", repositoryType, key));
-    }
-
-
-    protected Repository initializePersistentRepository(Path path, RepositoryType repositoryType) {
         try {
-            log.debug("Initializing persistent repository in path '{}' for label '{}'", path, repositoryType.toString());
+            return Mono.just(this.validateRepository(repository, store, authentication));
+        } catch (IOException e) {
+            return Mono.error(e);
+        }
+
+    }
+
+    protected LabeledRepository validateRepository(@Nullable LabeledRepository repository, TripleStore store, Authentication authentication) throws IOException {
+        if(!Objects.isNull(repository)) {
+            if(! repository.isInitialized() && repository.getConnectionsCount() == 0) {
+                log.warn("Validation error: Repository of type '{}' is not initialized", repository);
+                throw new IOException(String.format("Repository %s not initialized", store.getRepositoryType()));
+            }
+            return repository;
+        } else {
+            throw new IOException(String.format("Cannot resolve repository of type '%s' for authentication of type '%s'", store.getRepositoryType(), authentication.getClass()));
+        }
+    }
+
+    protected LabeledRepository buildDefaultRepository(TripleStore store, String... details) {
+
+        String key = formatRepositoryLabel(store.getRepositoryType(), details);
+        String path = store.getDirectory();
+
+        log.trace("Resolving repository of type '{}', label '{}'", store.getRepositoryType(), key);
+
+        if (!StringUtils.hasLength(path)) {
+            return getCache().get(key, s -> this.initializeVolatileRepository(key));
+        } else {
+            Path p = Paths.get(path, "default");
+
+            LabeledRepository repository = getCache().getIfPresent(key);
+
+            if (!Objects.isNull(repository) && repository.isInitialized()) {
+                return repository;
+            } else if (!Objects.isNull(repository) && !repository.isInitialized()) {
+                log.warn("Repository '{}' was cached and built, but not initialized.", key);
+                repository.init();
+                return repository;
+            } else {
+                return getCache().get(key, s -> this.initializePersistentRepository(p, key));
+            }
+        }
+        // .doOnSubscribe(StreamsLogger.trace(log, "Resolving repository of type '{}', label '{}'", repositoryType, buildRepositoryLabel(repositoryType, details)));
+    }
+
+
+
+
+
+    protected LabeledRepository initializePersistentRepository(Path path, String label) {
+        try {
+            log.debug("Initializing persistent repository in path '{}' for label '{}'", path, label);
             Resource file = new FileSystemResource(path);
             LmdbStoreConfig config = new LmdbStoreConfig();
 
+            config.setTripleIndexes("spoc,ospc,psoc");
+           // config.setForceSync(true);
 
-            if(! file.exists() && ! file.getFile().mkdirs())
-                throw new IOException("Failed to create path: "+ file.getFile());
 
-            return new SailRepository(new LmdbStore(file.getFile(), config));
+            if (!file.exists() && !file.getFile().mkdirs())
+                throw new IOException("Failed to create path: " + file.getFile());
 
+            LabeledRepository labeledRepository = new LabeledRepository(label, new SailRepository(new LmdbStore(file.getFile(), config)));
+            labeledRepository.init();
+            return labeledRepository;
 
 
         } catch (RepositoryException | IOException e) {
             log.error("Failed to initialize persistent repository in path '{}'. Falling back to in-memory.", path, e);
-            return new SailRepository(new MemoryStore());
+            return this.initializeVolatileRepository(label);
         }
     }
 
-    protected Repository initializeVolatileRepository(RepositoryType repositoryType) {
-        log.debug("Initializing in-memory repository for label '{}'", repositoryType.toString());
-        return new SailRepository(new MemoryStore());
+    protected LabeledRepository initializeVolatileRepository(String label) {
+        log.debug("Initializing in-memory repository for label '{}'", label);
+        LabeledRepository labeledRepository = new LabeledRepository(label, new SailRepository(new MemoryStore()));
+        labeledRepository.init();
+        return labeledRepository;
     }
 
-    public Cache<String, Repository> getCache() {
+    public Cache<String, LabeledRepository> getCache() {
         return cache;
     }
 
-    protected String buildRepositoryLabel(RepositoryType rt, String... details) {
+    protected String formatRepositoryLabel(RepositoryType rt, String... details) {
         StringBuilder label = new StringBuilder(rt.toString());
         for (String appendix : details) {
             label.append("_").append(appendix);

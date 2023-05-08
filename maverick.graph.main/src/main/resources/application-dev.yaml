@@ -29,16 +29,7 @@ application:
       exportApplication: true
     validators:
       checkRequiredType: true
-  storage:
-    default:
-      persistent: false
-      path: ~
-    entities:
-      persistent: false
-      path: ~
-    transactions:
-      persistent: false
-      path: ~
+
 
 
 

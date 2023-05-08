@@ -7,7 +7,7 @@ import org.springframework.security.core.GrantedAuthority;
 import reactor.core.publisher.Mono;
 
 
-public interface ModelUpdates extends RepositoryBehaviour {
+public interface ModelUpdates extends TripleStore {
 
     /**
      * Deletes the triples directly in the model (without transaction context)

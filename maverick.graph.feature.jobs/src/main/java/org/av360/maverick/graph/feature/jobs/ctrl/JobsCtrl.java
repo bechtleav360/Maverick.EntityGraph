@@ -5,10 +5,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.api.controller.AbstractController;
-import org.av360.maverick.graph.feature.jobs.DetectDuplicatesJob;
-import org.av360.maverick.graph.feature.jobs.ExportApplicationJob;
-import org.av360.maverick.graph.feature.jobs.ReplaceExternalIdentifiersJob;
-import org.av360.maverick.graph.feature.jobs.TypeCoercionJob;
+import org.av360.maverick.graph.feature.jobs.*;
 import org.av360.maverick.graph.services.SchemaServices;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
@@ -27,17 +24,20 @@ public class JobsCtrl extends AbstractController {
     final DetectDuplicatesJob detectDuplicatesJob;
     final ReplaceExternalIdentifiersJob replaceExternalIdentifiersService;
 
+    final ReplaceLinkedExternalIdentifiersJob replaceLinkedExternalIdentifiersJob;
+
     final TypeCoercionJob typeCoercionService;
 
     final ExportApplicationJob exportApplicationJob;
 
     final SchemaServices schemaServices;
 
-    public JobsCtrl(ApplicationEventPublisher eventPublisher, DetectDuplicatesJob detectDuplicatesJob, ReplaceExternalIdentifiersJob replaceExternalIdentifiersJob, TypeCoercionJob typeCoercionService, ExportApplicationJob exportApplicationJob,SchemaServices schemaServices) {
+    public JobsCtrl(ApplicationEventPublisher eventPublisher, DetectDuplicatesJob detectDuplicatesJob, ReplaceExternalIdentifiersJob replaceExternalIdentifiersJob, ReplaceLinkedExternalIdentifiersJob replaceLinkedExternalIdentifiersJob, TypeCoercionJob typeCoercionService, ExportApplicationJob exportApplicationJob, SchemaServices schemaServices) {
         this.eventPublisher = eventPublisher;
 
         this.detectDuplicatesJob = detectDuplicatesJob;
         this.replaceExternalIdentifiersService = replaceExternalIdentifiersJob;
+        this.replaceLinkedExternalIdentifiersJob = replaceLinkedExternalIdentifiersJob;
         this.typeCoercionService = typeCoercionService;
         this.exportApplicationJob = exportApplicationJob;
         this.schemaServices = schemaServices;
@@ -63,13 +63,21 @@ public class JobsCtrl extends AbstractController {
 
     }
 
-    @PostMapping(value = "/execute/normalize")
+    @PostMapping(value = "/execute/normalize/subjectIdentifiers")
     @ResponseStatus(HttpStatus.ACCEPTED)
-    Mono<Void> execSkolemizationJob() {
-
-
+    Mono<Void> execReplaceSubjectIdentifiersJob() {
         return super.getAuthentication()
-                .flatMap(this.replaceExternalIdentifiersService::run);
+                .flatMap(this.replaceExternalIdentifiersService::run)
+                .then();
+
+    }
+
+    @PostMapping(value = "/execute/normalize/objectIdentifiers")
+    @ResponseStatus(HttpStatus.ACCEPTED)
+    Mono<Void> execReplaceObjectIdentifiersJob() {
+        return super.getAuthentication()
+                .flatMap(this.replaceLinkedExternalIdentifiersJob::run)
+                .then();
 
     }
 

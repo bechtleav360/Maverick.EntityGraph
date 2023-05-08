@@ -1,13 +1,14 @@
 package org.av360.maverick.graph.feature.applications.security;
 
+import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.feature.applications.config.ReactiveApplicationContextHolder;
 import org.av360.maverick.graph.feature.applications.domain.ApplicationsService;
+import org.av360.maverick.graph.feature.applications.domain.SubscriptionsService;
 import org.av360.maverick.graph.feature.applications.domain.model.Application;
 import org.av360.maverick.graph.model.security.AdminToken;
 import org.av360.maverick.graph.model.security.ApiKeyAuthenticationToken;
 import org.av360.maverick.graph.model.security.Authorities;
 import org.av360.maverick.graph.model.security.RequestDetails;
-import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.model.util.StreamsLogger;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.authentication.ReactiveAuthenticationManager;
@@ -36,11 +37,14 @@ public class ApplicationAuthenticationManager implements ReactiveAuthenticationM
 
     private static final String SUBSCRIPTION_KEY_HEADER = "X-SUBSCRIPTION-KEY";
 
-    private final ApplicationsService subscriptionsService;
+    private final ApplicationsService applicationsService;
 
-    public ApplicationAuthenticationManager(ApplicationsService subscriptionsService) {
+    private final SubscriptionsService subscriptionsService;
+
+    public ApplicationAuthenticationManager(ApplicationsService subscriptionsService, SubscriptionsService subscriptionsService1) {
+        this.subscriptionsService = subscriptionsService1;
         log.trace("Activated Application Authentication Manager (checking subscription api keys)");
-        this.subscriptionsService = subscriptionsService;
+        this.applicationsService = subscriptionsService;
     }
 
 

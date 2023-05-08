@@ -14,3 +14,6 @@ buildNumber.properties
 *.gz
 .flattened-pom.xml
 logs.*
+.vscode
+*.tmp
+*.logs

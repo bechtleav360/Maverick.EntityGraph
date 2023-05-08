@@ -1,13 +1,14 @@
 package org.av360.maverick.graph.store;
 
-import org.eclipse.rdf4j.repository.Repository;
+import org.av360.maverick.graph.store.behaviours.TripleStore;
+import org.av360.maverick.graph.store.rdf.LabeledRepository;
 import org.springframework.security.core.Authentication;
 import reactor.core.publisher.Mono;
 
 public interface RepositoryBuilder {
 
 
-    Mono<Repository> buildRepository(RepositoryType repositoryType, Authentication authentication);
+    Mono<LabeledRepository> buildRepository(TripleStore store, Authentication authentication);
 
 
 }

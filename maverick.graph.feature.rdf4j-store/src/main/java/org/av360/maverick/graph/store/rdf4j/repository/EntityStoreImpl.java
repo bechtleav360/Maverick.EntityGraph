@@ -4,7 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.store.EntityStore;
 import org.av360.maverick.graph.store.RepositoryType;
 import org.av360.maverick.graph.store.rdf.fragments.RdfEntity;
-import org.av360.maverick.graph.store.rdf4j.repository.util.AbstractRepository;
+import org.av360.maverick.graph.store.rdf4j.repository.util.AbstractStore;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Statement;
@@ -16,15 +16,17 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 
-import java.util.List;
+import java.util.HashSet;
 import java.util.stream.Stream;
 
 @Slf4j(topic = "graph.repo.entities")
 @Component
-public class EntityRepository extends AbstractRepository implements EntityStore {
+public class EntityStoreImpl extends AbstractStore implements EntityStore {
 
+    @org.springframework.beans.factory.annotation.Value("${application.storage.entities.path:#{null}}")
+    private String path;
 
-    public EntityRepository() {
+    public EntityStoreImpl() {
         super(RepositoryType.ENTITIES);
     }
 
@@ -38,8 +40,7 @@ public class EntityRepository extends AbstractRepository implements EntityStore 
         return this.applyWithConnection(authentication, requiredAuthority, connection -> {
             log.trace("Loading entity with id '{}' from repository {}", id, connection.getRepository().toString());
 
-            try {
-                RepositoryResult<Statement> statements = connection.getStatements(id, null, null);
+            try (RepositoryResult<Statement> statements = connection.getStatements(id, null, null)) {
                 if (!statements.hasNext()) {
                     if (log.isDebugEnabled()) log.debug("Found no statements for IRI: <{}>.", id);
                     return null;
@@ -48,11 +49,14 @@ public class EntityRepository extends AbstractRepository implements EntityStore 
                 RdfEntity entity = new RdfEntity(id).withResult(statements);
 
                 if(includeNeighborsLevel >= 1) {
-                    Stream<Value> stream = entity.getModel().objects().stream();
-                    Stream<Value> filtered = stream.filter(Value::isIRI);
-                    Stream<RepositoryResult<Statement>> results = filtered.map(value -> connection.getStatements((IRI) value, null, null));
-                    List<RepositoryResult<Statement>> repositoryResults = results.toList();
-                    repositoryResults.forEach(entity::withResult);
+                    HashSet<Value> objects = new HashSet<>(entity.getModel().objects());
+
+                    Stream<RepositoryResult<Statement>> repositoryResultStream = objects.stream()
+                            .filter(Value::isIRI)
+                            .map(value -> connection.getStatements((IRI) value, null, null));
+
+                    repositoryResultStream.forEach(entity::withResult);
+
                 }
                 // embedded level 1
 
@@ -69,5 +73,10 @@ public class EntityRepository extends AbstractRepository implements EntityStore 
     @Override
     public Logger getLogger() {
         return log;
+    }
+
+    @Override
+    public String getDirectory() {
+        return this.path;
     }
 }

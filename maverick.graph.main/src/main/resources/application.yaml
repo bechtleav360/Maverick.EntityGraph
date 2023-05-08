@@ -7,6 +7,21 @@ spring:
     active: dev
 
 
+application:
+  storage:
+    vocabularies:
+      persistent: false
+      path: ~
+    system:
+      persistent: false
+      path: ~
+    entities:
+      persistent: false
+      path: ~
+    transactions:
+      persistent: false
+      path: ~
+
 management:
   info:
     env:

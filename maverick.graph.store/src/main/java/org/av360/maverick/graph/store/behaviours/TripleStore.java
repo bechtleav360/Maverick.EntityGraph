@@ -9,7 +9,6 @@ import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
-import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.slf4j.Logger;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
@@ -19,9 +18,11 @@ import reactor.core.publisher.Mono;
 import java.util.Collection;
 import java.util.List;
 
-public interface RepositoryBehaviour {
+public interface TripleStore {
 
     Logger getLogger();
+
+    String getDirectory();
 
     default ValueFactory getValueFactory() {
         return SimpleValueFactory.getInstance();
@@ -57,13 +58,6 @@ public interface RepositoryBehaviour {
         return this.commit(List.of(transaction), authentication, requiredAuthority).singleOrEmpty();
     }
 
-
-    @Deprecated
-    default Mono<RepositoryConnection> getConnection(Authentication authentication, GrantedAuthority requiredAuthority) {
-        return this.getConnection(authentication, getRepositoryType(), requiredAuthority);
-    }
-
-    Mono<RepositoryConnection> getConnection(Authentication authentication, RepositoryType repositoryType, GrantedAuthority requiredAuthority);
 
 
     RepositoryType getRepositoryType();

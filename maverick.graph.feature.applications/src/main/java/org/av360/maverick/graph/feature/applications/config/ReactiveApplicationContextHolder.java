@@ -4,6 +4,8 @@ import org.av360.maverick.graph.feature.applications.domain.model.Application;
 import reactor.core.publisher.Mono;
 import reactor.util.context.Context;
 
+import java.util.concurrent.ExecutionException;
+
 public class ReactiveApplicationContextHolder {
 
     public static final Class<Application> CONTEXT_KEY = Application.class;
@@ -13,6 +15,22 @@ public class ReactiveApplicationContextHolder {
                 .filter(ctx -> ctx.hasKey(CONTEXT_KEY))
                 .map(ctx -> ctx.get(CONTEXT_KEY))
                 .switchIfEmpty(Mono.empty());
+
+    }
+
+    public static Application getRequestedApplicationBlocking() {
+        try {
+
+            Application block = getRequestedApplication().block();
+            Application application = getRequestedApplication()
+                    .map(app -> {
+                        return app;
+                    })
+                    .toFuture().get();
+            return application;
+        } catch (InterruptedException | ExecutionException e) {
+            throw new RuntimeException(e);
+        }
 
     }
 
