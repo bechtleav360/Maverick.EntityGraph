@@ -10,6 +10,4 @@ public class Requests {
     public record CreateApiKeyRequest(String label) {
     }
 
-    public record SetApplicationConfigRequest(String s3Host, String s3BucketId, String exportFrequency) {}
-
 }

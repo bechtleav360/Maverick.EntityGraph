@@ -21,4 +21,7 @@ public class ApplicationTerms {
     public static final IRI HAS_LABEL = RDFS.LABEL;
     public static final IRI IS_PERSISTENT = LocalIRI.from(NAMESPACE, "isPersistent");
     public static final IRI IS_PUBLIC = LocalIRI.from(NAMESPACE, "isPublic");
+    public static final IRI HAS_S3HOST = LocalIRI.from(NAMESPACE, "HasS3Host");
+    public static final IRI HAS_S3BUCKETID = LocalIRI.from(NAMESPACE, "HasS3BucketId");
+    public static final IRI HAS_EXPORT_FREQUENCY = LocalIRI.from(NAMESPACE, "HasExportFrequency");
 }

@@ -58,6 +58,9 @@ public class ApplicationsService implements ApplicationListener<ApplicationUpdat
     private static final Variable varAppLabel = SparqlBuilder.var("appLabel");
     private static final Variable varAppFlagPersistent = SparqlBuilder.var("appPersistent");
     private static final Variable varAppFlagPublic = SparqlBuilder.var("appPublic");
+    private static final Variable varAppFlagS3Host = SparqlBuilder.var("appS3Host");
+    private static final Variable varAppFlagS3BucketId = SparqlBuilder.var("appS3BucketId");
+    private static final Variable varAppFlagExportFrequency = SparqlBuilder.var("appExportFrequency");
 
     private static final Variable varSubIri = SparqlBuilder.var("subNode");
     private static final Variable varSubKey = SparqlBuilder.var("subId");
@@ -113,6 +116,10 @@ public class ApplicationsService implements ApplicationListener<ApplicationUpdat
         modelBuilder.add(ApplicationTerms.HAS_LABEL, application.label());
         modelBuilder.add(ApplicationTerms.IS_PERSISTENT, flags.isPersistent());
         modelBuilder.add(ApplicationTerms.IS_PUBLIC, flags.isPublic());
+        modelBuilder.add(ApplicationTerms.HAS_S3HOST, flags.s3Host());
+        modelBuilder.add(ApplicationTerms.HAS_S3BUCKETID, flags.s3BucketId());
+        modelBuilder.add(ApplicationTerms.HAS_EXPORT_FREQUENCY, flags.exportFrequency());
+
 
         Mono<Application> applicationMono = this.applicationsStore.insert(modelBuilder.build(), authentication, Authorities.SYSTEM)
                 .then(Mono.just(application))
@@ -189,6 +196,9 @@ public class ApplicationsService implements ApplicationListener<ApplicationUpdat
                             .andHas(ApplicationTerms.HAS_LABEL, varAppLabel)
                             .andHas(ApplicationTerms.IS_PERSISTENT, varAppFlagPersistent)
                             .andHas(ApplicationTerms.IS_PUBLIC, varAppFlagPublic)
+                            .andHas(ApplicationTerms.HAS_S3HOST, varAppFlagS3Host)
+                            .andHas(ApplicationTerms.HAS_S3BUCKETID, varAppFlagS3BucketId)
+                            .andHas(ApplicationTerms.HAS_EXPORT_FREQUENCY, varAppFlagExportFrequency)
                     )
                     .limit(100);
 
@@ -275,9 +285,9 @@ public class ApplicationsService implements ApplicationListener<ApplicationUpdat
                 new ApplicationFlags(
                         ba.asBoolean(varAppFlagPersistent),
                         ba.asBoolean(varAppFlagPublic),
-                        null,
-                        null,
-                        null
+                        ba.asString(varAppFlagS3Host),
+                        ba.asString(varAppFlagS3BucketId),
+                        ba.asString(varAppFlagExportFrequency)
                 )
         );
     }

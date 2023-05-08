@@ -26,15 +26,4 @@ public class Responses {
 
     }
 
-    public record ApplicationConfigResponse(String key, boolean persistent, String s3Host, String s3BucketId, String exportFrequency) {
-
-    }
-
-    public record ExportResponse(String id) {
-
-    }
-
-    public record GetExportResponse(String s3Host, String s3BucketId, String s3ObjectId) {
-
-    }
 }
