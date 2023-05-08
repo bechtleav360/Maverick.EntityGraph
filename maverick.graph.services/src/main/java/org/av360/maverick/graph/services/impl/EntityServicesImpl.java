@@ -261,7 +261,7 @@ public class EntityServicesImpl implements EntityServices {
                             .map(transaction -> {
                                 transaction.listModifiedResources(Activity.INSERTED, Activity.UPDATED)
                                         .forEach(value -> {
-                                            transaction.insert(iri, predicate, value, Activity.UPDATED);
+                                            transaction.insert(iri, predicate, value, null, Activity.UPDATED);
                                         });
 
                                 return transaction;

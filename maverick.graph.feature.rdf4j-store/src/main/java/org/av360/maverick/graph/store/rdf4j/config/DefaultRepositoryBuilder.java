@@ -2,6 +2,10 @@ package org.av360.maverick.graph.store.rdf4j.config;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
+import io.micrometer.core.instrument.Gauge;
+import io.micrometer.core.instrument.MeterRegistry;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
 import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.model.security.ApiKeyAuthenticationToken;
 import org.av360.maverick.graph.store.RepositoryBuilder;
@@ -10,6 +14,7 @@ import org.av360.maverick.graph.store.behaviours.TripleStore;
 import org.av360.maverick.graph.store.rdf.LabeledRepository;
 import org.eclipse.rdf4j.http.protocol.UnauthorizedException;
 import org.eclipse.rdf4j.repository.RepositoryException;
+import org.eclipse.rdf4j.repository.base.RepositoryWrapper;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
 import org.eclipse.rdf4j.sail.lmdb.LmdbStore;
 import org.eclipse.rdf4j.sail.lmdb.config.LmdbStoreConfig;
@@ -28,10 +33,7 @@ import javax.annotation.Nullable;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.List;
-import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.TimeUnit;
 
 @Component
 @Slf4j(topic = "graph.repo.cfg.builder")
@@ -39,16 +41,47 @@ import java.util.concurrent.TimeUnit;
 public class DefaultRepositoryBuilder implements RepositoryBuilder {
 
 
-
-
     private final Cache<String, LabeledRepository> cache;
-    private Map<String, List<String>> storage;
-    private String test;
-    private Map<String, String> security;
+
+    protected final MeterRegistry meterRegistry;
 
 
-    public DefaultRepositoryBuilder() {
-        cache = Caffeine.newBuilder().expireAfterAccess(60, TimeUnit.MINUTES).build();
+    @PreDestroy
+    public void shutdownRepositories() {
+        if(cache != null) {
+            cache.asMap().values().forEach(RepositoryWrapper::shutDown);
+        }
+
+    }
+
+    @PostConstruct
+    public void init() {
+
+        Gauge.builder("graph.store.repository.cache", cache, Cache::estimatedSize)
+                .tag("metric", "estimatedSize")
+                .register(this.meterRegistry);
+
+        Gauge.builder("graph.store.repository.cache", cache, cache -> cache.stats().evictionCount())
+                .tag("metric", "evictionCount")
+                .register(this.meterRegistry);
+
+        Gauge.builder("graph.store.repository.cache", cache, cache -> cache.stats().loadCount())
+                .tag("metric", "loadCount")
+                .register(this.meterRegistry);
+
+        Gauge.builder("graph.store.repository.cache", cache, cache -> cache.stats().hitCount())
+                .tag("metric", "hitCount")
+                .register(this.meterRegistry);
+    }
+
+    public DefaultRepositoryBuilder(MeterRegistry meterRegistry) {
+        this.meterRegistry = meterRegistry;
+
+
+        cache = Caffeine.newBuilder()
+                .recordStats()
+                .build();
+
     }
 
 
@@ -105,6 +138,7 @@ public class DefaultRepositoryBuilder implements RepositoryBuilder {
         String path = store.getDirectory();
 
         log.trace("Resolving repository of type '{}', label '{}'", store.getRepositoryType(), key);
+        meterRegistry.counter("graph.store.repository", "method", "access", "label", key).increment();
 
         if (!StringUtils.hasLength(path)) {
             return getCache().get(key, s -> this.initializeVolatileRepository(key));
@@ -133,6 +167,7 @@ public class DefaultRepositoryBuilder implements RepositoryBuilder {
     protected LabeledRepository initializePersistentRepository(Path path, String label) {
         try {
             log.debug("Initializing persistent repository in path '{}' for label '{}'", path, label);
+            meterRegistry.counter("graph.store.repository", "method", "init", "mode", "persistent", "label", label).increment();
             Resource file = new FileSystemResource(path);
             LmdbStoreConfig config = new LmdbStoreConfig();
 
@@ -159,6 +194,7 @@ public class DefaultRepositoryBuilder implements RepositoryBuilder {
 
     protected LabeledRepository initializeVolatileRepository(String label) {
         log.debug("Initializing in-memory repository for label '{}'", label);
+        meterRegistry.counter("graph.store.repository", "method", "init", "mode", "volatile", "label", label).increment();
         LabeledRepository labeledRepository = new LabeledRepository(label, new SailRepository(new MemoryStore()));
         labeledRepository.init();
         return labeledRepository;

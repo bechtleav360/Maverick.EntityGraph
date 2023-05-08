@@ -60,7 +60,6 @@ public class ScheduledDetectDuplicates  {
     @Scheduled(initialDelay = 60, fixedRate = 600, timeUnit = TimeUnit.SECONDS)
     // @Scheduled(initialDelay = 5, fixedRate = 20, timeUnit = TimeUnit.SECONDS)
     public void checkForDuplicatesScheduled() {
-
         JobScheduledEvent event = new JobScheduledEvent(DetectDuplicatesJob.NAME, new AdminToken());
         eventPublisher.publishEvent(event);
 

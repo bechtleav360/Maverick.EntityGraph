@@ -26,6 +26,9 @@ public interface Statements extends TripleStore {
 
     Mono<RdfTransaction> addStatement(Resource subject, IRI predicate, Value literal, RdfTransaction transaction);
 
+    Mono<RdfTransaction> addStatement(Resource subject, IRI predicate, Value literal, Resource context, RdfTransaction transaction);
+
+
     default Mono<RdfTransaction> addStatement(Resource subject, IRI predicate, Value literal) {
         return this.addStatement(subject, predicate, literal);
     }

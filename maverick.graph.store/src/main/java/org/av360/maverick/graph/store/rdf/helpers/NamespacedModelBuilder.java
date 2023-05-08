@@ -52,6 +52,7 @@ public class NamespacedModelBuilder extends ModelBuilder {
 
     public NamespacedModelBuilder add(Collection<Statement> statements, Resource... contexts) {
         statements.forEach(sts -> {
+
             super.build().add(sts.getSubject(), sts.getPredicate(), sts.getObject(), contexts);
         });
         return this;

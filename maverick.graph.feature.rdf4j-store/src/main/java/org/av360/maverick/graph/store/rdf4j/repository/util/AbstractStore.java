@@ -42,6 +42,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
+import javax.annotation.Nullable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PipedInputStream;
@@ -330,6 +331,8 @@ public abstract class AbstractStore implements TripleStore, Statements, ModelUpd
     }
 
 
+
+
     @Override
     public Mono<Boolean> exists(Resource subj, Authentication authentication, GrantedAuthority requiredAuthority) {
         return this.applyWithConnection(authentication, requiredAuthority, connection -> connection.hasStatement(subj, RDF.TYPE, null, false));
@@ -363,15 +366,19 @@ public abstract class AbstractStore implements TripleStore, Statements, ModelUpd
 
     @Override
     public Mono<RdfTransaction> addStatement(Resource subject, IRI predicate, Value literal, RdfTransaction transaction) {
-        Assert.notNull(transaction, "Transaction cannot be null");
+        return this.addStatement(subject, predicate, literal, null, transaction);
+    }
+
+    @Override
+    public Mono<RdfTransaction> addStatement(Resource subject, IRI predicate, Value literal, @Nullable Resource context, RdfTransaction transaction) {
         if (getLogger().isTraceEnabled())
             getLogger().trace("Marking statement for insert in transaction {}: {} - {} - {}", transaction.getIdentifier().getLocalName(), subject, predicate, literal);
 
+
         return transaction
-                .insert(subject, predicate, literal, Activity.UPDATED)
+                .insert(subject, predicate, literal, context, Activity.UPDATED)
                 .affected(subject, predicate, literal)
                 .asMono();
-
     }
 
 

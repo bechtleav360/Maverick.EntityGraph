@@ -12,8 +12,6 @@ application:
     modules:
       applications:
         enabled: true
-        config:
-          base: "D:/Graphen/applications"
       admin:
         enabled: true
       jobs:
