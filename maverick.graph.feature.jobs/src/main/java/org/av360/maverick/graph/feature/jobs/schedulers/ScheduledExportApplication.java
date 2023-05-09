@@ -23,7 +23,7 @@ public class ScheduledExportApplication {
 
 
 
-    @Scheduled(initialDelay = 60, fixedRate = 600, timeUnit = TimeUnit.SECONDS)
+    @Scheduled(initialDelay = 60, fixedRate = 60, timeUnit = TimeUnit.SECONDS)
     public void scheduled() {
         JobScheduledEvent event = new JobScheduledEvent(ExportApplicationJob.NAME, new AdminToken());
         eventPublisher.publishEvent(event);

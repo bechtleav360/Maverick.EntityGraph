@@ -17,9 +17,9 @@ application:
       jobs:
         enabled: true
         scheduled:
-          detectDuplicates: true
-          replaceIdentifiers: true
-          typeCoercion: true
+          detectDuplicates: false
+          replaceIdentifiers: false
+          typeCoercion: false
           exportApplication: true
     transformers:
       replaceGlobalIdentifiers: true

@@ -43,7 +43,7 @@ public class ExportApplicationJob implements Job {
     public Mono<Void> run(Authentication authentication) {
         S3AsyncClient s3Client = createS3Client(application.flags().s3Host());
         return exportRdfStatements(authentication)
-                .flatMap(rdfString -> uploadRdfStringToS3(s3Client, rdfString, application))
+                .flatMap(rdfString -> uploadRdfStringToS3(s3Client, rdfString))
                 .then();
     }
 
@@ -67,7 +67,7 @@ public class ExportApplicationJob implements Job {
                 });
     }
 
-    private Mono<PutObjectResponse> uploadRdfStringToS3(S3AsyncClient s3Client, String rdfString, Application application) {
+    private Mono<PutObjectResponse> uploadRdfStringToS3(S3AsyncClient s3Client, String rdfString) {
         PutObjectRequest putObjectRequest = PutObjectRequest.builder()
                 .bucket(application.flags().s3BucketId())
                 .key(application.label() + ".txt")
