@@ -1,15 +1,17 @@
 package org.av360.maverick.graph.feature.jobs.ctrl;
 
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.api.controller.AbstractController;
 import org.av360.maverick.graph.feature.jobs.*;
-import org.av360.maverick.graph.services.SchemaServices;
+import org.av360.maverick.graph.model.events.JobScheduledEvent;
+import org.av360.maverick.graph.model.security.AdminToken;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Mono;
 
 @RestController
@@ -21,63 +23,37 @@ public class JobsCtrl extends AbstractController {
 
 
     private final ApplicationEventPublisher eventPublisher;
-    final DetectDuplicatesJob detectDuplicatesJob;
-    final ReplaceExternalIdentifiersJob replaceExternalIdentifiersService;
 
-    final ReplaceLinkedExternalIdentifiersJob replaceLinkedExternalIdentifiersJob;
 
-    final TypeCoercionJob typeCoercionService;
-
-    final ExportApplicationJob exportApplicationJob;
-
-    final SchemaServices schemaServices;
-
-    public JobsCtrl(ApplicationEventPublisher eventPublisher, DetectDuplicatesJob detectDuplicatesJob, ReplaceExternalIdentifiersJob replaceExternalIdentifiersJob, ReplaceLinkedExternalIdentifiersJob replaceLinkedExternalIdentifiersJob, TypeCoercionJob typeCoercionService, ExportApplicationJob exportApplicationJob, SchemaServices schemaServices) {
+    public JobsCtrl(ApplicationEventPublisher eventPublisher) {
         this.eventPublisher = eventPublisher;
 
-        this.detectDuplicatesJob = detectDuplicatesJob;
-        this.replaceExternalIdentifiersService = replaceExternalIdentifiersJob;
-        this.replaceLinkedExternalIdentifiersJob = replaceLinkedExternalIdentifiersJob;
-        this.typeCoercionService = typeCoercionService;
-        this.exportApplicationJob = exportApplicationJob;
-        this.schemaServices = schemaServices;
     }
 
 
-    //@ApiOperation(value = "Empty repository", tags = {})
     @PostMapping(value = "/execute/deduplication")
     @ResponseStatus(HttpStatus.OK)
-    Mono<Void> execDeduplicationJob(
-            @RequestParam(name = "property", required = true)
-            @Parameter(
-                    schema = @Schema(type = "string",
-                            allowableValues = {"dc.identifier", "dcterms.identifier", "sdo.identifier", "rdfs.label", "skos.pref_label"})
-                    )
-            String property) {
-
-
-        return Mono.zip(
-                super.getAuthentication(),
-                schemaServices.resolvePrefixedName(property)
-        ).flatMap(tuple -> this.detectDuplicatesJob.checkForDuplicates(tuple.getT2(), tuple.getT1()));
+    Mono<Void> execDeduplicationJob() {
+        JobScheduledEvent event = new JobScheduledEvent(DetectDuplicatesJob.NAME, new AdminToken());
+        eventPublisher.publishEvent(event);
+        return Mono.empty();
 
     }
 
     @PostMapping(value = "/execute/normalize/subjectIdentifiers")
     @ResponseStatus(HttpStatus.ACCEPTED)
     Mono<Void> execReplaceSubjectIdentifiersJob() {
-        return super.getAuthentication()
-                .flatMap(this.replaceExternalIdentifiersService::run)
-                .then();
-
+        JobScheduledEvent event = new JobScheduledEvent(ReplaceExternalIdentifiersJob.NAME, new AdminToken());
+        eventPublisher.publishEvent(event);
+        return Mono.empty();
     }
 
     @PostMapping(value = "/execute/normalize/objectIdentifiers")
     @ResponseStatus(HttpStatus.ACCEPTED)
     Mono<Void> execReplaceObjectIdentifiersJob() {
-        return super.getAuthentication()
-                .flatMap(this.replaceLinkedExternalIdentifiersJob::run)
-                .then();
+        JobScheduledEvent event = new JobScheduledEvent(ReplaceLinkedExternalIdentifiersJob.NAME, new AdminToken());
+        eventPublisher.publishEvent(event);
+        return Mono.empty();
 
     }
 
@@ -85,16 +61,17 @@ public class JobsCtrl extends AbstractController {
     @PostMapping(value = "/execute/coercion")
     @ResponseStatus(HttpStatus.OK)
     Mono<Void> execCoercionJob() {
-        return super.getAuthentication()
-                .flatMapMany(this.typeCoercionService::run).then();
-
+        JobScheduledEvent event = new JobScheduledEvent(TypeCoercionJob.NAME, new AdminToken());
+        eventPublisher.publishEvent(event);
+        return Mono.empty();
     }
 
     @PostMapping(value = "/execute/export")
     @ResponseStatus(HttpStatus.ACCEPTED)
     Mono<Void> execExportJob() {
-        return super.getAuthentication()
-                .flatMapMany(this.exportApplicationJob::run).then();
+        JobScheduledEvent event = new JobScheduledEvent(ExportApplicationJob.NAME, new AdminToken());
+        eventPublisher.publishEvent(event);
+        return Mono.empty();
 
     }
 

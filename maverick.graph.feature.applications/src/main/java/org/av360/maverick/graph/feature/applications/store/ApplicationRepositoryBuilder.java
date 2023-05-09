@@ -1,5 +1,6 @@
 package org.av360.maverick.graph.feature.applications.store;
 
+import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.validation.constraints.NotNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ArrayUtils;
@@ -8,11 +9,11 @@ import org.av360.maverick.graph.feature.applications.domain.model.Application;
 import org.av360.maverick.graph.feature.applications.security.SubscriptionToken;
 import org.av360.maverick.graph.model.security.AdminToken;
 import org.av360.maverick.graph.model.security.Authorities;
+import org.av360.maverick.graph.model.security.RequestDetails;
 import org.av360.maverick.graph.store.behaviours.TripleStore;
 import org.av360.maverick.graph.store.rdf.LabeledRepository;
 import org.av360.maverick.graph.store.rdf4j.config.DefaultRepositoryBuilder;
 import org.eclipse.rdf4j.http.protocol.UnauthorizedException;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Primary;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.authentication.InsufficientAuthenticationException;
@@ -37,12 +38,8 @@ import java.util.Objects;
 public class ApplicationRepositoryBuilder extends DefaultRepositoryBuilder {
 
 
-    @Value("${application.features.modules.applications.config.base:}")
-    private String applicationsPath;
-
-
-    public ApplicationRepositoryBuilder() {
-        super();
+    public ApplicationRepositoryBuilder(MeterRegistry meterRegistry) {
+        super(meterRegistry);
     }
 
 
@@ -51,7 +48,6 @@ public class ApplicationRepositoryBuilder extends DefaultRepositoryBuilder {
      * <p>
      * We assert a valid and positive authentication at this point.
      *
-     * @param repositoryType the type, e.g. for schema or entities
      * @return the repository
      * @throws IOException if repository cannot be resolved
      */
@@ -65,7 +61,13 @@ public class ApplicationRepositoryBuilder extends DefaultRepositoryBuilder {
                         return Mono.error(e);
                     }
                 })
-                .switchIfEmpty(super.buildRepository(store, authentication));
+
+                .switchIfEmpty(Mono.defer(() -> {
+                    if(authentication.getDetails() != null && authentication.getDetails() instanceof RequestDetails && ((RequestDetails) authentication.getDetails()).headers().containsKey("X-APPLICATION")) {
+                        return Mono.error(new IOException("Application header provided, but not in context."));
+                    }
+                    return super.buildRepository(store, authentication);
+                }));
     }
 
     public LabeledRepository buildRepository(TripleStore store, Authentication authentication, @NotNull Application requestedApplication) throws IOException {
@@ -118,14 +120,15 @@ public class ApplicationRepositoryBuilder extends DefaultRepositoryBuilder {
 
     private LabeledRepository buildApplicationsRepository(TripleStore store, @NotNull Application application, String... details) {
         String label = super.formatRepositoryLabel(store.getRepositoryType(), ArrayUtils.addAll(new String[]{application.label()}, details));
+        meterRegistry.counter("graph.store.repository", "method", "access", "label", label).increment();
 
         if (!application.flags().isPersistent() || !StringUtils.hasLength(store.getDirectory())) {
             log.debug("Initializing volatile {} repository for application '{}' [{}]", label, application.label(), application.key());
-            return super.getCache().get(label, s -> this.initializeVolatileRepository(label));
+            return super.getCache().get(label, s -> super.initializeVolatileRepository(label));
 
         } else {
             Path path = Paths.get(store.getDirectory(), application.key());
-            return super.getCache().get(label, s -> this.initializePersistentRepository(path, label));
+            return super.getCache().get(label, s -> super.initializePersistentRepository(path, label));
         }
     }
 

@@ -40,8 +40,17 @@ application:
 
 logging:
   level:
-    graph: TRACE
+    root: DEBUG
+    graph:
+      jobs: DEBUG
+      repo: TRACE
+      srvc: DEBUG
+      ctrl: DEBUG
+      feat:
+        admin: DEBUG
     org:
-      springframework:
-        security: INFO
+      eclipse:
+        rdf4j: TRACE
+      springframework: INFO
+
 

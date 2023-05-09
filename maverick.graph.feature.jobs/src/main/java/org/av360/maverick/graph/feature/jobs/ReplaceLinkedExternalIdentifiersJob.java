@@ -115,7 +115,7 @@ public class ReplaceLinkedExternalIdentifiersJob implements Job {
                     log.trace("Checking for external or anonymous identifiers in objects.");
                 })
                 .doOnComplete(() -> {
-                    log.debug("Completed checking for external or anonymous identifiers in objects.");
+                    log.info("Completed checking for external or anonymous identifiers in objects.");
                 });
     }
 

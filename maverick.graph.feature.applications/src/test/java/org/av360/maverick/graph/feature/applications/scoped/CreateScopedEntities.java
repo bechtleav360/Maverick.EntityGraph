@@ -1,12 +1,12 @@
 package org.av360.maverick.graph.feature.applications.scoped;
 
+import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.feature.applications.client.ApplicationsTestClient;
 import org.av360.maverick.graph.feature.applications.domain.model.ApplicationFlags;
 import org.av360.maverick.graph.tests.clients.TestEntitiesClient;
 import org.av360.maverick.graph.tests.config.TestSecurityConfig;
 import org.av360.maverick.graph.tests.util.ApiTestsBase;
 import org.av360.maverick.graph.tests.util.RdfConsumer;
-import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -40,21 +40,22 @@ public class CreateScopedEntities  extends ApiTestsBase {
 
     @Test
     public void createEntity() {
+        super.printStart("creating scoped entity");
         client.createApplication("testApp", new ApplicationFlags(false, true, null, null, null))
                 .expectStatus().isCreated();
 
 
         Resource file = new ClassPathResource("requests/create-valid.jsonld");
 
-        log.info("----------------------------------");
-        RdfConsumer c1 = this.entityClient.createEntity(file, "/api/app/testApp/entities");
+        super.printStep();
+        RdfConsumer c1 = this.entityClient.createEntity(file, "/api/s/testApp/entities");
 
-        log.info("----------------------------------");
+        super.printStep();
 
-        RdfConsumer c2 = this.entityClient.listEntities("/api/app/testApp/entities");
+        RdfConsumer c2 = this.entityClient.listEntities("/api/s/testApp/entities");
         Assertions.assertEquals(4, c2.getStatements().size());
 
-        log.info("----------------------------------");
+        super.printStep();
         RdfConsumer c3 = this.entityClient.listEntities("/api/entities");
         Assertions.assertEquals(0, c3.getStatements().size());
 

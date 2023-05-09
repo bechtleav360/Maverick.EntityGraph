@@ -77,6 +77,7 @@ public class JobWorker {
                 .doOnError(error -> log.error("Failed to consume event.", error));
 
         voidFlux.subscribeOn(Schedulers.single())
+                .onErrorResume((error) -> Mono.empty())
                 .subscribe();
     }
 

@@ -13,6 +13,7 @@ import org.eclipse.rdf4j.model.vocabulary.PROV;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import reactor.core.publisher.Mono;
 
+import javax.annotation.Nullable;
 import java.util.*;
 import java.util.stream.Stream;
 
@@ -78,8 +79,8 @@ public class RdfTransaction extends TripleModel implements Transaction {
         return this.insert(List.of(sts), activity);
     }
 
-    public RdfTransaction insert(Resource subject, IRI predicate, Value value, Activity activity) {
-        return this.insert(SimpleValueFactory.getInstance().createStatement(subject, predicate, value), activity);
+    public RdfTransaction insert(Resource subject, IRI predicate, Value value, @Nullable Resource context, Activity activity) {
+        return this.insert(SimpleValueFactory.getInstance().createStatement(subject, predicate, value, context), activity);
     }
 
 

@@ -31,7 +31,6 @@ public class EntityStoreImpl extends AbstractStore implements EntityStore {
     }
 
 
-
     public Mono<RdfEntity> getEntity(Resource id, Authentication authentication, GrantedAuthority requiredAuthority) {
         return this.getEntity(id, authentication, requiredAuthority, 1);
     }
@@ -48,7 +47,7 @@ public class EntityStoreImpl extends AbstractStore implements EntityStore {
 
                 RdfEntity entity = new RdfEntity(id).withResult(statements);
 
-                if(includeNeighborsLevel >= 1) {
+                if (includeNeighborsLevel >= 1) {
                     HashSet<Value> objects = new HashSet<>(entity.getModel().objects());
 
                     Stream<RepositoryResult<Statement>> repositoryResultStream = objects.stream()
@@ -64,7 +63,7 @@ public class EntityStoreImpl extends AbstractStore implements EntityStore {
                     log.debug("Loaded {} statements for entity with IRI: <{}>.", entity.getModel().size(), id);
                 return entity;
             } catch (Exception e) {
-                log.error("Unknown error while collection statements for entity '{}' ", id,  e);
+                log.error("Unknown error while collection statements for entity '{}' ", id, e);
                 throw e;
             }
         });
@@ -80,3 +79,5 @@ public class EntityStoreImpl extends AbstractStore implements EntityStore {
         return this.path;
     }
 }
+
+
