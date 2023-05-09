@@ -63,7 +63,7 @@ public class ApplicationRepositoryBuilder extends DefaultRepositoryBuilder {
                 })
 
                 .switchIfEmpty(Mono.defer(() -> {
-                    if(((RequestDetails) authentication.getDetails()).headers().containsKey("X-APPLICATION")) {
+                    if(authentication.getDetails() != null && authentication.getDetails() instanceof RequestDetails && ((RequestDetails) authentication.getDetails()).headers().containsKey("X-APPLICATION")) {
                         return Mono.error(new IOException("Application header provided, but not in context."));
                     }
                     return super.buildRepository(store, authentication);

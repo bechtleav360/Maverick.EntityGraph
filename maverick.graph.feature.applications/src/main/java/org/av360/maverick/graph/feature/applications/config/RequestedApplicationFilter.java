@@ -30,6 +30,8 @@ public class RequestedApplicationFilter implements WebFilter {
     public Mono<Void> filter(@NotNull ServerWebExchange exchange, WebFilterChain chain) {
         try {
 
+            // FIXME: remove repo request from filter, only extract label from path and store it as string. Let it handle downstream
+
             Optional<String> requestedApplication = this.getRequestedApplication(exchange.getRequest());
             //this.getRequestedApplicationFromPath(exchange.getRequest().getPath().toString());
             return requestedApplication

@@ -7,6 +7,7 @@ import org.av360.maverick.graph.store.rdf4j.repository.util.AbstractStore;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
 /**
  *
@@ -29,6 +30,7 @@ public class ApplicationsRepository extends AbstractStore implements Application
 
     @Override
     public String getDirectory() {
-        return this.path+"/applications";
+        if(StringUtils.hasLength(this.path)) return this.path+"/applications";
+        else return "";
     }
 }
