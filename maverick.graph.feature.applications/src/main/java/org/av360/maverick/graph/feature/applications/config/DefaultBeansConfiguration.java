@@ -2,8 +2,10 @@ package org.av360.maverick.graph.feature.applications.config;
 
 import org.av360.maverick.graph.feature.applications.decorators.DelegatingAnonymousIdentifierTransformer;
 import org.av360.maverick.graph.feature.applications.decorators.DelegatingExternalIdentifierTransformer;
+import org.av360.maverick.graph.feature.applications.decorators.DelegatingIdentifierServices;
 import org.av360.maverick.graph.feature.applications.decorators.DelegatingNavigationServices;
 import org.av360.maverick.graph.feature.applications.domain.ApplicationsService;
+import org.av360.maverick.graph.services.IdentifierServices;
 import org.av360.maverick.graph.services.NavigationServices;
 import org.av360.maverick.graph.services.transformers.replaceIdentifiers.ReplaceAnonymousIdentifiers;
 import org.av360.maverick.graph.services.transformers.replaceIdentifiers.ReplaceExternalIdentifiers;
@@ -33,6 +35,9 @@ public class DefaultBeansConfiguration implements BeanPostProcessor {
         }
         else if(bean instanceof NavigationServices delegate) {
             return new DelegatingNavigationServices(delegate, applicationsService);
+        }
+        else if(bean instanceof IdentifierServices delegate) {
+            return new DelegatingIdentifierServices(delegate, applicationsService);
         }
 
 
