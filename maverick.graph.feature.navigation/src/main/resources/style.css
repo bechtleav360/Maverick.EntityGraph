@@ -1,0 +1,11 @@
+        a.external {
+            color: CornflowerBlue;
+        }
+
+        a.internal {
+            color: PaleVioletRed;
+        }
+
+        span.ns {
+            font-weight: bold;
+        }

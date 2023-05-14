@@ -20,6 +20,8 @@ application:
           detectDuplicates: false
           replaceIdentifiers: false
           typeCoercion: false
+      navigation:
+        enabled: true
     transformers:
       replaceGlobalIdentifiers: true
       replaceAnonymousIdentifiers: true

@@ -1,0 +1,106 @@
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        a.external {
+            color: royalblue;
+        }
+        a.internal {
+            color: green;
+        }
+        span.ns {
+            font-weight: bold;
+        }
+
+    </style>
+    <source>
+</head>
+
+<body>
+<pre id="source"></pre>
+<script id="rdf" type="text/turtle">
+
+
+
+
+@prefix hydra: <http://www.w3.org/ns/hydra/core#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix meg: <http://w3id.org/av360/emav#> .
+@prefix nav: <http://localhost:8080/> .
+
+meg:Start a hydra:ApiDocumentation;
+          hydra:title "Maverick.EntityGraph";
+          hydra:description "Opinionated Web API to access linked data fragments in a knowledge graph.";
+          hydra:entrypoint <http://localhost:8080/api>;
+          meg:swagger meg:SwaggerUI;
+          meg:openApi meg:OpenApiDocument;
+          meg:applications <http://localhost:8080/ApplicationSet> .
+
+meg:SwaggerUI a hydra:Link;
+              hydra:title "Swagger UI to interact with the API";
+              hydra:returns "text/html";
+              hydra:entrypoint <http://localhost:8080/webjars/swagger-ui/index.html?urls.primaryName=Entities%20API> .
+
+meg:OpenApiDocument a hydra:Link;
+                    hydra:title "Machine-readable OpenApi Documentation";
+                    hydra:returns "application/json";
+                    hydra:entrypoint <http://localhost:8080/v3/api-docs> .
+
+<http://localhost:8080/ApplicationSet> a hydra:Collection;
+                                       hydra:totalItems "2"^^<http://www.w3.org/2001/XMLSchema#int>;
+                                       hydra:member <http://localhost:8080/api/applications/v5x74qyl>, <http://localhost:8080/api/applications/xbhszdb1> .
+
+<http://localhost:8080/api/applications/v5x74qyl> <http://purl.org/dc/elements/1.1/identifier>
+                                                                   "v5x74qyl";
+                                                  rdfs:label "youtube";
+                                                  hydra:entrypoint <http://localhost:8080/api/s/youtube/entities> .
+
+<http://localhost:8080/api/applications/xbhszdb1> <http://purl.org/dc/elements/1.1/identifier>
+                                                                   "xbhszdb1";
+                                                  rdfs:label "geonames";
+                                                  hydra:entrypoint <http://localhost:8080/api/s/geonames/entities> .
+
+
+
+</script>
+<script type="text/javascript">
+
+
+        // Update header text
+        const namespace = /(.*)(@prefix)\s([a-z]+):\s(.*)\s/;
+        const prefix = /[a-z]+:[a-z]{1}[a-z0-9A-Z]+/g;
+        const link = /\&#60;(http:\/\/localhost.*)\&#62;/;
+        // &#60;http://localhost:8080/webjars/swagger-ui/index.html?urls.primaryName=Entities%20API&#62; . "
+        const lines = document.getElementById('rdf').innerText.split("\n");
+        var pretty = ""
+        lines.forEach(line => {
+            line = line.replace(/[\u00A0-\u9999<>\&]/g, i => '&#'+i.charCodeAt(0)+';')
+            const nsm = line.match(namespace)
+            const lm = line.match(link)
+            if(nsm) {
+                pretty += `${nsm[1]}<span class="ns">${nsm[2]} ${nsm[3]} ${nsm[4]}</span>`;
+            }  else {
+                line.split(" ").forEach(token => {
+                    if(link.test(token)) {
+                        pretty +=`<a class="external" href="${token.match(link)[1]}">${token}</a>`
+                    } else if(prefix.test(token)) {
+                        pretty +=`<a class="internal" href="/nav/">${token}</a>`
+                    } else pretty += token
+                    pretty += " "
+
+                })
+            }
+            pretty += "</br>"
+        })
+
+
+        document.querySelector('#source').innerHTML = pretty
+
+    </script>
+
+</body>
+
+</html>

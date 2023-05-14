@@ -28,6 +28,7 @@
         <module>maverick.graph.feature.applications</module>
         <module>maverick.graph.feature.jobs</module>
         <module>maverick.graph.tests</module>
+        <module>maverick.graph.feature.navigation</module>
 
     </modules>
 
@@ -160,6 +161,11 @@
             <dependency>
                 <groupId>org.av360.maverick.graph</groupId>
                 <artifactId>graph-feature-jobs</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.av360.maverick.graph</groupId>
+                <artifactId>graph-feature-navigation</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

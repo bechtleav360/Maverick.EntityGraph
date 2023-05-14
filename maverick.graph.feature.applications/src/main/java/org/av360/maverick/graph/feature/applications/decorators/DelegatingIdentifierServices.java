@@ -19,7 +19,10 @@ public class DelegatingIdentifierServices implements IdentifierServices{
 
     @Override
     public Mono<String> validate(String identifier) {
-        return delegate.validate(identifier);
+        return ReactiveApplicationContextHolder.getRequestedApplication()
+                .map(application -> String.format("%s.%s", application.label(), identifier))
+                .switchIfEmpty(delegate.validate(identifier));
+
     }
 
     @Override
