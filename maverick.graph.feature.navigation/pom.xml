@@ -4,12 +4,13 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
-        <groupId>org.av360.maverick.graph</groupId>
         <artifactId>graph-parent</artifactId>
-        <version>0.2.5</version>
+        <groupId>org.av360.maverick.graph</groupId>
+        <version>${revision}</version>
     </parent>
 
     <artifactId>graph-feature-navigation</artifactId>
+    <name>Maverick.EntityGraph Feature: Navigation</name>
 
     <properties>
         <maven.compiler.source>17</maven.compiler.source>
