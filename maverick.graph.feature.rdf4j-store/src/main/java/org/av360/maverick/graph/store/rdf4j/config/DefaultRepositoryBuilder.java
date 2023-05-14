@@ -24,6 +24,7 @@ import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.authentication.TestingAuthenticationToken;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
@@ -109,6 +110,9 @@ public class DefaultRepositoryBuilder implements RepositoryBuilder {
             repository = this.buildDefaultRepository(store, "default");
         }
         else if (authentication instanceof AnonymousAuthenticationToken) {
+            repository = this.buildDefaultRepository(store, "default");
+        }
+        else if (authentication instanceof UsernamePasswordAuthenticationToken) {
             repository = this.buildDefaultRepository(store, "default");
         }
 

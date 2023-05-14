@@ -1,26 +1,22 @@
-package org.av360.maverick.graph.api.converter.encoder;
+package org.av360.maverick.graph.feature.navigation.api.encoder;
 
 import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.api.config.ReactiveRequestUriContextHolder;
-import org.av360.maverick.graph.model.enums.RdfMimeTypes;
 import org.av360.maverick.graph.model.vocabulary.Local;
-import org.av360.maverick.graph.services.SchemaServices;
 import org.av360.maverick.graph.store.rdf.helpers.RdfUtils;
 import org.eclipse.rdf4j.model.*;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.rio.RDFFormat;
 import org.eclipse.rdf4j.rio.RDFWriter;
-import org.eclipse.rdf4j.rio.RDFWriterFactory;
-import org.eclipse.rdf4j.rio.helpers.JSONLDMode;
-import org.eclipse.rdf4j.rio.helpers.JSONLDSettings;
+import org.eclipse.rdf4j.rio.turtle.TurtleWriter;
 import org.reactivestreams.Publisher;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.ResolvableType;
 import org.springframework.core.codec.Encoder;
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.core.io.buffer.DataBufferFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.util.MimeType;
+import org.springframework.util.MimeTypeUtils;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.util.UriComponentsBuilder;
 import reactor.core.publisher.Flux;
@@ -35,42 +31,21 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * The buffered statements encoder is required by formats with a header (JSON-LD, Turtle) and a concise syntax. Here,
- * we need to collect all statements to print a completed document. For n-quads or similar formats, we simply dump the statements.
+ * Transforms a set of statements to navigable HTML
  */
-@Slf4j(topic = "graph.ctrl.io.encoder.buffered")
-public class BufferedStatementsEncoder implements Encoder<Statement> {
-    private static final List<MimeType> mimeTypes;
-
-    private static final Map<MimeType, RDFWriterFactory> factories;
-
-    static {
-        MimeType turtle = MimeType.valueOf(RDFFormat.TURTLE.getDefaultMIMEType());
-        MimeType jsonld = MimeType.valueOf(RDFFormat.JSONLD.getDefaultMIMEType());
-        MimeType turtlestar = MimeType.valueOf(RDFFormat.TURTLESTAR.getDefaultMIMEType());
+@Slf4j(topic = "graph.ctrl.io.encoder.html")
+public class RdfHtmlEncoder implements Encoder<Statement> {
 
 
-        mimeTypes = List.of(turtle, jsonld, turtlestar);
+    private final SimpleValueFactory vf;
 
-        factories = Map.of(
-                turtle, RdfUtils.getWriterFactory(turtle).orElseThrow(),
-                jsonld, RdfUtils.getWriterFactory(jsonld).orElseThrow(),
-                turtlestar, RdfUtils.getWriterFactory(turtlestar).orElseThrow()
-        );
-
-    }
-
-    private final SchemaServices schemaServices;
-
-
-    public BufferedStatementsEncoder(@Autowired SchemaServices schemaServices) {
-        this.schemaServices = schemaServices;
-
+    public RdfHtmlEncoder() {
+        this.vf = SimpleValueFactory.getInstance();
     }
 
     @Override
     public boolean canEncode(ResolvableType elementType, MimeType mimeType) {
-        return mimeType != null && Statement.class.isAssignableFrom(elementType.toClass()) && mimeType.isPresentIn(mimeTypes);
+        return mimeType != null && mimeType.equals(MimeTypeUtils.TEXT_HTML);
     }
 
     @Override
@@ -91,18 +66,17 @@ public class BufferedStatementsEncoder implements Encoder<Statement> {
                 .collectList()
                 .flatMap(list ->  Mono.zip(Mono.just(list), ReactiveRequestUriContextHolder.getURI()))
                 .flatMapMany(tuple -> {
-
                     List<Statement> statements = tuple.getT1();
                     URI requestURI = tuple.getT2(); // we need the request to resolve the current request url
 
                     try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
 
-                        RDFWriter writer = getWriter(mimeType, baos);
+                        RDFWriter writer = getWriter(baos);
 
                         writer.startRDF();
 
                         if(statements.size() > 0) {
-                            this.handleNamespaces(writer, statements.get(0));
+                            this.handleNamespaces(writer, statements.get(0), requestURI);
                         }
 
                         for (Statement st : statements) {
@@ -125,17 +99,18 @@ public class BufferedStatementsEncoder implements Encoder<Statement> {
     }
 
     private void handleStatement(Statement st, RDFWriter writer, URI requestURI) {
-        SimpleValueFactory vf = SimpleValueFactory.getInstance();
 
-        Resource subject = convertLocalIRI(st.getSubject(), requestURI, vf);
-        IRI predicate = convertLocalIRI(st.getPredicate(), requestURI, vf);
-        Value object = convertLocalIRI(st.getObject(), requestURI, vf);
+        Resource subject = convertLocalIRI(st.getSubject(), requestURI);
+        IRI predicate = convertLocalIRI(st.getPredicate(), requestURI);
+        Value object = convertLocalIRI(st.getObject(), requestURI);
 
         Statement convertedStatement = vf.createStatement(subject, predicate, object);
         writer.handleStatement(convertedStatement);
     }
 
-    private <T extends Value> T convertLocalIRI(T value, URI requestURI, SimpleValueFactory vf) {
+    private <T extends Value> T convertLocalIRI(T value, URI requestURI) {
+
+
         if(value instanceof IRI iri) {
             if(iri.getNamespace().startsWith(Local.URN_PREFIX)) {
 
@@ -178,9 +153,9 @@ public class BufferedStatementsEncoder implements Encoder<Statement> {
                 String uri = UriComponentsBuilder.fromUri(requestURI).replacePath(path).replaceQuery("").build().toUriString();
                 return (T) vf.createIRI(uri);
             }
-        } else if(value instanceof Literal) {
-            if(value.stringValue().startsWith("?/")) {
-                String p = value.stringValue().substring(2);
+        } else if(value instanceof Literal literal) {
+            if(literal.stringValue().startsWith("?/")) {
+                String p = literal.stringValue().substring(2);
                 String uri = UriComponentsBuilder.fromUri(requestURI).replacePath(p).replaceQuery("").build().toUriString();
                 return (T) vf.createIRI(uri);
             }
@@ -190,34 +165,28 @@ public class BufferedStatementsEncoder implements Encoder<Statement> {
     }
 
 
-    private RDFWriter getWriter(MimeType mimeType, OutputStream out) {
-        RDFWriter writer = factories.get(mimeType).getWriter(out);
-
-        if(mimeType.equals(RdfMimeTypes.JSONLD)) {
-            writer.set(JSONLDSettings.HIERARCHICAL_VIEW, true);
-            writer.set(JSONLDSettings.COMPACT_ARRAYS, true);
-            writer.set(JSONLDSettings.OPTIMIZE, true);
-            writer.set(JSONLDSettings.USE_NATIVE_TYPES, true);
-            writer.set(JSONLDSettings.JSONLD_MODE, JSONLDMode.COMPACT);
-
-
-        }
-
-        return writer;
-
+    private RDFWriter getWriter(OutputStream out) {
+        MimeType turtle = MimeType.valueOf(RDFFormat.TURTLE.getDefaultMIMEType());
+        TurtleWriter writer = (TurtleWriter) RdfUtils.getWriterFactory(turtle).get().getWriter(out);
+        return new TurtleHtmlWriter(writer, out);
     }
 
 
 
-    private boolean handleNamespaces(RDFWriter writer, Statement statement) {
+    private boolean handleNamespaces(RDFWriter writer, Statement statement, URI requestURI) {
         if (NamespaceAware.class.isAssignableFrom(statement.getClass())) {
             Set<Namespace> namespaces = ((NamespaceAware) statement).getNamespaces();
 
             namespaces.forEach(ns -> {
                 // local URNs are ignored by default
-                if(ns.getName().startsWith("urn:pwid:eg:")) return;
+                String url = ns.getName();
+                if(url.startsWith("urn:pwid:eg:")) return;
+                if(url.startsWith("?")) {
+                    String p = url.substring(2);
+                    url = UriComponentsBuilder.fromUri(requestURI).replacePath(p).replaceQuery("").build().toUriString();
+                }
 
-                writer.handleNamespace(ns.getPrefix(), ns.getName());
+                writer.handleNamespace(ns.getPrefix(), url);
             });
             return true;
         }
@@ -226,6 +195,6 @@ public class BufferedStatementsEncoder implements Encoder<Statement> {
 
     @Override
     public List<MimeType> getEncodableMimeTypes() {
-        return mimeTypes;
+        return List.of(MimeTypeUtils.TEXT_HTML);
     }
 }

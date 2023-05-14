@@ -6,6 +6,7 @@ import org.av360.maverick.graph.model.security.AdminToken;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.util.Assert;
+import org.springframework.util.MultiValueMap;
 import org.springframework.util.StringUtils;
 import org.springframework.web.server.ServerWebExchange;
 import org.springframework.web.server.WebFilter;
@@ -50,11 +51,17 @@ public class RequestedApplicationFilter implements WebFilter {
         // header OR path (path wins)
         Optional<String> fromHeader = request.getHeaders().containsKey(Globals.HEADER_APPLICATION_LABEL) ? request.getHeaders().get(Globals.HEADER_APPLICATION_LABEL).stream().findFirst() : Optional.empty();
         Optional<String> fromPath = this.getRequestedApplicationFromPath(request.getPath().toString());
+        Optional<String> fromParameter = this.getRequestedApplicationFromQueryParam(request.getQueryParams()); 
 
         return fromPath
                 .or(() -> fromHeader)
+                .or(() -> fromParameter)
                 .filter(app -> !app.equalsIgnoreCase(Globals.DEFAULT_APPLICATION_LABEL))
                 .or(Optional::empty);
+    }
+
+    private Optional<String> getRequestedApplicationFromQueryParam(MultiValueMap<String, String> queryParams) {
+        return Optional.ofNullable(queryParams.getFirst("s"));
     }
 
     /**

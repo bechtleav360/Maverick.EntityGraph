@@ -18,6 +18,7 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.authentication.InsufficientAuthenticationException;
 import org.springframework.security.authentication.TestingAuthenticationToken;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
@@ -86,6 +87,8 @@ public class ApplicationRepositoryBuilder extends DefaultRepositoryBuilder {
             repository = this.resolveRepositoryForSystemAuthentication(store, requestedApplication, adminToken);
         } else if (authentication instanceof AnonymousAuthenticationToken) {
             repository = this.resolveRepositoryForAnonymousAuthentication(store, requestedApplication);
+        }else if (authentication instanceof UsernamePasswordAuthenticationToken authenticationToken) {
+            repository = this.resolveRepositoryForSystemAuthentication(store, requestedApplication, authenticationToken);
         }
 
         return super.validateRepository(repository, store, authentication);

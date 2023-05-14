@@ -12,8 +12,10 @@ import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.util.ModelBuilder;
 import org.eclipse.rdf4j.model.vocabulary.HYDRA;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.ReactiveSecurityContextHolder;
 import org.springframework.security.core.context.SecurityContext;
+import org.springframework.util.MultiValueMap;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -29,10 +31,10 @@ public class DelegatingNavigationServices implements NavigationServices {
         this.vf = SimpleValueFactory.getInstance();
     }
 
-    public Flux<AnnotatedStatement> start() {
+    public Flux<AnnotatedStatement> start(Authentication authentication) {
 
 
-        return delegate.start().mergeWith(
+        return delegate.start(authentication).mergeWith(
                 ReactiveSecurityContextHolder.getContext().map(SecurityContext::getAuthentication)
                         .switchIfEmpty(Mono.just(new GuestToken()))
                         .flatMapMany(applicationsService::listApplications)
@@ -49,6 +51,9 @@ public class DelegatingNavigationServices implements NavigationServices {
 
                             applications.forEach(application -> {
                                 IRI app = vf.createIRI(Local.Applications.NAMESPACE, application.key());
+                                builder.setNamespace(application.label(), "?/api/s/"+application.label()+"/");
+                                // FIXME: we only add the new namespace to late statements, later we just use the namespaces of the first statement
+
                                 builder.subject(app)
                                         .add(ApplicationTerms.HAS_KEY, application.key())
                                         .add(ApplicationTerms.HAS_LABEL, application.label())
@@ -62,5 +67,10 @@ public class DelegatingNavigationServices implements NavigationServices {
 
 
                         })));
+    }
+
+    @Override
+    public Flux<AnnotatedStatement> browse(MultiValueMap<String, String> params, Authentication authentication) {
+        return delegate.browse(params, authentication);
     }
 }
