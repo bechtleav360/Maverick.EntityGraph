@@ -71,7 +71,7 @@ public class RdfHtmlEncoder implements Encoder<Statement> {
 
                     try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
 
-                        RDFWriter writer = getWriter(baos);
+                        RDFWriter writer = getWriter(baos, requestURI);
 
                         writer.startRDF();
 
@@ -165,10 +165,10 @@ public class RdfHtmlEncoder implements Encoder<Statement> {
     }
 
 
-    private RDFWriter getWriter(OutputStream out) {
+    private RDFWriter getWriter(OutputStream out, URI requestURI) {
         MimeType turtle = MimeType.valueOf(RDFFormat.TURTLE.getDefaultMIMEType());
         TurtleWriter writer = (TurtleWriter) RdfUtils.getWriterFactory(turtle).get().getWriter(out);
-        return new TurtleHtmlWriter(writer, out);
+        return new TurtleHtmlWriter(writer, out, requestURI);
     }
 
 

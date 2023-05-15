@@ -9,7 +9,7 @@ const lines = document.getElementById('rdf').innerText.split("\n");
             } else {
                 line.split(" ").forEach(token => {
                     const prm = token.match(/([a-z]+):([a-zA-Z]{1}[a-z0-9A-Z]+)/);
-                    const lnm = token.match(/\&#60;(http:\/\/localhost[:0-9]*)(\/.*)\&#62;/);
+                    const lnm = token.match(/\&#60;(http:\/\/{{host}}[:0-9]*)(\/.*)\&#62;/);
                     if (lnm) {
                         pretty += `<a class="internal" href="/nav/node?id=${encodeURIComponent(lnm[2])}">${token}</a>`
                     } else if (prm) {

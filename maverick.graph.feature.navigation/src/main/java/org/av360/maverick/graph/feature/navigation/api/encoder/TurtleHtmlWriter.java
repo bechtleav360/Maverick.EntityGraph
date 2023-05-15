@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.StringWriter;
+import java.net.URI;
 import java.nio.charset.Charset;
 import java.util.Collection;
 import java.util.HashMap;
@@ -22,6 +23,7 @@ public class TurtleHtmlWriter implements RDFWriter {
 
     private final TurtleWriter delegate;
     private final OutputStream out;
+    private final URI requestURI;
 
 
     private void appendLine(String line) {
@@ -33,9 +35,10 @@ public class TurtleHtmlWriter implements RDFWriter {
         }
     }
 
-    public TurtleHtmlWriter(TurtleWriter turtleWriter, OutputStream out) {
+    public TurtleHtmlWriter(TurtleWriter turtleWriter, OutputStream out, URI requestURI) {
         delegate = turtleWriter;
         this.out = out;
+        this.requestURI = requestURI;
     }
     @Override
     public RDFFormat getRDFFormat() {
@@ -69,7 +72,7 @@ public class TurtleHtmlWriter implements RDFWriter {
                 <head>
                     <title>Maverick Entity Graph Navigation</title>
                     <meta charset="UTF-8">
-                    <style>"""+this.printFile("style.css")+"""
+                    <style>"""+this.printStyles()+"""
                     </style>
                 </head>
                 <body>
@@ -87,7 +90,7 @@ public class TurtleHtmlWriter implements RDFWriter {
                     </script>
                     <script id="ns" type="application/json">"""+this.getPrefixes()+"""
                     </script>
-                    <script type="text/javascript">"""+this.printFile("script.js")+"""
+                    <script type="text/javascript">"""+this.printScripts()+"""
                     </script>
                 </body>
                 </html>
@@ -95,6 +98,16 @@ public class TurtleHtmlWriter implements RDFWriter {
 
         delegate.endRDF();
         appendLine(footer);
+    }
+
+    private String printStyles() {
+        return this.printFile("style.css");
+    }
+
+    private String printScripts() {
+        String s = this.printFile("script.js");
+        s = s.replace("{{host}}", this.requestURI.getHost());
+        return s;
     }
 
     private String printFile(String name) {
@@ -141,7 +154,6 @@ public class TurtleHtmlWriter implements RDFWriter {
 
     @Override
     public void handleStatement(Statement st) throws RDFHandlerException {
-
         delegate.handleStatement(st);
 
     }
