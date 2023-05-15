@@ -106,7 +106,10 @@ public class TurtleHtmlWriter implements RDFWriter {
 
     private String printScripts() {
         String s = this.printFile("script.js");
-        s = s.replace("{{host}}", this.requestURI.getHost());
+
+
+
+        s = s.replace("{{host}}", this.requestURI.getHost().replace(".", "\\."));
         return s;
     }
 

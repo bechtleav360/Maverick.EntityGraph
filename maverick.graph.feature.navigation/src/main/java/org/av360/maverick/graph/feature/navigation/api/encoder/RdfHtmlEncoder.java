@@ -80,7 +80,6 @@ public class RdfHtmlEncoder implements Encoder<Statement> {
                         }
 
                         for (Statement st : statements) {
-
                             this.handleStatement(st, writer, requestURI);
 
                         }
@@ -110,7 +109,6 @@ public class RdfHtmlEncoder implements Encoder<Statement> {
 
     private <T extends Value> T convertLocalIRI(T value, URI requestURI) {
 
-
         if(value instanceof IRI iri) {
             if(iri.getNamespace().startsWith(Local.URN_PREFIX)) {
 
@@ -122,8 +120,6 @@ public class RdfHtmlEncoder implements Encoder<Statement> {
                     urn:pwid:meg:e:,213 -> /api/entities/213
                     urn:pwid:meg:e:, f33.213 -> /api/entities/s/f33/213
                     urn:pwid:meg:, 123 -> /
-
-
                  */
                 String[] parts = iri.getLocalName().split("\\.");
                 String ns = iri.getNamespace();
