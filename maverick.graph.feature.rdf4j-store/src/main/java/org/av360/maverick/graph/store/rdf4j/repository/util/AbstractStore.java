@@ -432,7 +432,7 @@ public abstract class AbstractStore implements TripleStore, Statements, ModelUpd
             return Flux.error(new InsufficientAuthenticationException(msg));
         }
 
-        return this.getBuilder().buildRepository(this, authentication)
+        Flux<E> result = this.getBuilder().buildRepository(this, authentication)
                 .flatMapMany(repository -> {
                     try (RepositoryConnection connection = repository.getConnection()) {
                         return Flux.fromIterable(fun.apply(connection));
@@ -443,16 +443,20 @@ public abstract class AbstractStore implements TripleStore, Statements, ModelUpd
                     } finally {
                         this.meterRegistry.counter("graph.store.operations", "cardinality", "multiple", "state", "complete").increment();
                     }
-                })
-                .timeout(Duration.ofMillis(30000))
-                .onErrorResume(throwable -> {
-                    if (throwable instanceof TimeoutException te) {
-                        getLogger().warn("Long-running operation on repository of type '{}' has been canceled.", repositoryType);
-                        return Flux.error(new TimeoutException("Timeout while applying operation to repository:" + repositoryType.toString()));
-                    } else {
-                        return Flux.error(throwable);
-                    }
                 });
+
+        if (!Authorities.satisfies(Authorities.SYSTEM, authentication.getAuthorities())) {
+            result.timeout(Duration.ofMillis(10000))
+                    .onErrorResume(throwable -> {
+                        if (throwable instanceof TimeoutException te) {
+                            getLogger().warn("Long-running operation on repository of type '{}' has been canceled.", repositoryType);
+                            return Flux.error(new TimeoutException("Timeout while applying operation to repository:" + repositoryType.toString()));
+                        } else {
+                            return Flux.error(throwable);
+                        }
+                    });
+        }
+        return result;
 
     }
 

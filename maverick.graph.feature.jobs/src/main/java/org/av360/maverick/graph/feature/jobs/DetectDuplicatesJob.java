@@ -233,6 +233,8 @@ public class DetectDuplicatesJob implements Job {
 
     }
 
+
+
     private Flux<DuplicateCandidate> findCandidates(IRI sharedProperty, Authentication authentication) {
 
         /*
@@ -252,7 +254,7 @@ public class DetectDuplicatesJob implements Job {
                 .where(
                         thing.isA(type),
                         thing.has(sharedProperty, sharedValue)
-                ).groupBy(sharedValue, type).having(Expressions.gt(Expressions.count(thing), 1)).limit(100);
+                ).groupBy(sharedValue, type).having(Expressions.gt(Expressions.count(thing), 1)).limit(10);
 
 
         String q = findDuplicates.getQueryString();

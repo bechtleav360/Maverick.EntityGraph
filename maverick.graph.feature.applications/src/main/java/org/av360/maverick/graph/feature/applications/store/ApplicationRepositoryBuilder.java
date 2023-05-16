@@ -4,6 +4,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.validation.constraints.NotNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ArrayUtils;
+import org.av360.maverick.graph.feature.applications.config.Globals;
 import org.av360.maverick.graph.feature.applications.config.ReactiveApplicationContextHolder;
 import org.av360.maverick.graph.feature.applications.domain.model.Application;
 import org.av360.maverick.graph.feature.applications.security.SubscriptionToken;
@@ -57,7 +58,11 @@ public class ApplicationRepositoryBuilder extends DefaultRepositoryBuilder {
         return ReactiveApplicationContextHolder.getRequestedApplication()
                 .flatMap(application -> {
                     try {
-                        return Mono.just(this.buildRepository(store, authentication, application));
+                        if(application.label().equalsIgnoreCase(Globals.DEFAULT_APPLICATION_LABEL)) {
+                            return super.buildRepository(store, authentication);
+                        } else {
+                            return Mono.just(this.buildRepository(store, authentication, application));
+                        }
                     } catch (IOException e) {
                         return Mono.error(e);
                     }

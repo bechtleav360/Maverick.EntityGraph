@@ -14,14 +14,12 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.authentication.ReactiveAuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
 import org.springframework.security.config.web.server.SecurityWebFiltersOrder;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
 import org.springframework.security.web.server.SecurityWebFilterChain;
 import org.springframework.security.web.server.authentication.AuthenticationWebFilter;
 import org.springframework.security.web.server.authentication.ServerAuthenticationConverter;
-import org.springframework.security.web.server.authentication.ServerHttpBasicAuthenticationConverter;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
@@ -55,8 +53,9 @@ public class SecurityConfiguration {
                 .pathMatchers(HttpMethod.POST, "/api/**").hasAnyAuthority(Authorities.SYSTEM.getAuthority(), Authorities.APPLICATION.getAuthority(), Authorities.CONTRIBUTOR.getAuthority())
                 .pathMatchers("/api/admin/**").hasAnyAuthority(Authorities.SYSTEM.getAuthority(), Authorities.APPLICATION.getAuthority())
                 .pathMatchers(HttpMethod.GET, "/swagger-ui/*").permitAll()
+                .pathMatchers(HttpMethod.GET, "/nav").permitAll()
                 .matchers(EndpointRequest.to("env", "logfile", "loggers", "metrics", "scheduledTasks")).hasAuthority(Authorities.SYSTEM.getAuthority())
-                .matchers(EndpointRequest.to("health")).permitAll()
+                .matchers(EndpointRequest.to("health", "info")).permitAll()
 
                 .anyExchange().permitAll()
                 .and()
@@ -67,9 +66,25 @@ public class SecurityConfiguration {
                 .logout().disable()
                 .build();
 
-        log.trace("Security is enabled and was configured to secure all requests.");
+        log.info("Security is enabled and was configured to secure all requests.");
         return build;
+    }
 
+    @Bean
+    @ConditionalOnProperty(name = "application.security.enabled", havingValue = "false")
+    public SecurityWebFilterChain unsecureWebFilterChain(ServerHttpSecurity http) {
+        SecurityWebFilterChain build = http
+                .authorizeExchange()
+                .anyExchange().permitAll()
+                .and()
+                .httpBasic().disable()
+                .csrf().disable()
+                .formLogin().disable()
+                .logout().disable()
+                .build();
+
+        log.info("Security is disabled.");
+        return build;
     }
 
 
@@ -88,18 +103,23 @@ public class SecurityConfiguration {
                     AnonymousAuthenticationToken anonymous = new GuestToken(details);
                     return Mono.just(anonymous);
                 } else {
+                    return Mono.just(new GuestToken(details));
+                    /* else {
                     // lets fallback to the standard authentication (basic) (for actuators and others)
                     ServerHttpBasicAuthenticationConverter basicAuthenticationConverter = new ServerHttpBasicAuthenticationConverter();
                     return basicAuthenticationConverter.convert(exchange).map(authentication -> {
                         ((UsernamePasswordAuthenticationToken) authentication).setDetails(details);
                         return authentication;
                     });
+                } */
                 }
+            } else {
+                log.trace("Found a valid api key in request, delegating authentication.");
+                ApiKeyAuthenticationToken apiKeyToken = new ApiKeyAuthenticationToken(details);
+                return Mono.just(apiKeyToken);
             }
 
-            log.trace("Found a valid api key in request, delegating authentication.");
-            ApiKeyAuthenticationToken apiKeyToken = new ApiKeyAuthenticationToken(details);
-            return Mono.just(apiKeyToken);
+
         };
     }
 
