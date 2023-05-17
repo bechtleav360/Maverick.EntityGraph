@@ -7,6 +7,7 @@ import org.reactivestreams.Subscriber;
 import org.springframework.context.ApplicationListener;
 import org.springframework.stereotype.Service;
 
+
 @Slf4j(topic = "graph.jobs")
 @Service
 public class JobEventListener implements Publisher<JobScheduledEvent>, ApplicationListener<JobScheduledEvent> {

@@ -22,16 +22,14 @@ import java.net.URI;
 import java.nio.charset.StandardCharsets;
 
 @Service
-@Slf4j(topic = "graph.jobs.export")
+@Slf4j(topic = "graph.jobs.exports")
 public class ExportApplicationJob implements Job {
 
     public static String NAME = "exportApplication";
     private final EntityServices entityServices;
 
-    private final Application application;
     public ExportApplicationJob(EntityServices service) {
         this.entityServices = service;
-        this.application = ReactiveApplicationContextHolder.getRequestedApplicationBlocking();
     }
 
     @Override
@@ -41,10 +39,12 @@ public class ExportApplicationJob implements Job {
 
     @Override
     public Mono<Void> run(Authentication authentication) {
-        S3AsyncClient s3Client = createS3Client(application.flags().s3Host());
-        return exportRdfStatements(authentication)
-                .flatMap(rdfString -> uploadRdfStringToS3(s3Client, rdfString))
-                .then();
+        return ReactiveApplicationContextHolder.getRequestedApplication()
+                .flatMap(application -> {
+                    S3AsyncClient s3Client = createS3Client(application.flags().s3Host());
+                    return exportRdfStatements(authentication)
+                            .flatMap(rdfString -> uploadRdfStringToS3(s3Client, rdfString, application)).then();
+                });
     }
 
     private S3AsyncClient createS3Client(String s3Host) {
@@ -67,7 +67,7 @@ public class ExportApplicationJob implements Job {
                 });
     }
 
-    private Mono<PutObjectResponse> uploadRdfStringToS3(S3AsyncClient s3Client, String rdfString) {
+    private Mono<PutObjectResponse> uploadRdfStringToS3(S3AsyncClient s3Client, String rdfString, Application application) {
         PutObjectRequest putObjectRequest = PutObjectRequest.builder()
                 .bucket(application.flags().s3BucketId())
                 .key(application.label() + ".txt")
