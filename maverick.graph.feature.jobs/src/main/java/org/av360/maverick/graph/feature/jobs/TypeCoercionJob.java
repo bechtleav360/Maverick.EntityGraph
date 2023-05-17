@@ -79,7 +79,7 @@ public class TypeCoercionJob implements Job {
                 })
                 .flatMap(transaction -> this.transactionsStore.store(List.of(transaction), authentication))
                 .doOnError(throwable -> {
-                    log.error("Exception while finding and replacing subject identifiers: {}", throwable.getMessage());
+                    log.error("Exception while assigning internal types: {}", throwable.getMessage());
                 })
                 .doOnSubscribe(sub -> log.trace("Checking for entities with missing internal type definitions."))
                 .doOnComplete(() -> log.debug("Completed checking for entities with missing internal type definitions."))

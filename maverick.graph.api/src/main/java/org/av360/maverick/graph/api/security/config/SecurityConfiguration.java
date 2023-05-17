@@ -55,8 +55,9 @@ public class SecurityConfiguration {
                 .pathMatchers(HttpMethod.POST, "/api/**").hasAnyAuthority(Authorities.SYSTEM.getAuthority(), Authorities.APPLICATION.getAuthority(), Authorities.CONTRIBUTOR.getAuthority())
                 .pathMatchers("/api/admin/**").hasAnyAuthority(Authorities.SYSTEM.getAuthority(), Authorities.APPLICATION.getAuthority())
                 .pathMatchers(HttpMethod.GET, "/swagger-ui/*").permitAll()
+                .pathMatchers(HttpMethod.GET, "/nav").permitAll()
                 .matchers(EndpointRequest.to("env", "logfile", "loggers", "metrics", "scheduledTasks")).hasAuthority(Authorities.SYSTEM.getAuthority())
-                .matchers(EndpointRequest.to("health")).permitAll()
+                .matchers(EndpointRequest.to("health", "info")).permitAll()
 
                 .anyExchange().permitAll()
                 .and()
@@ -67,9 +68,25 @@ public class SecurityConfiguration {
                 .logout().disable()
                 .build();
 
-        log.trace("Security is enabled and was configured to secure all requests.");
+        log.info("Security is enabled and was configured to secure all requests.");
         return build;
+    }
 
+    @Bean
+    @ConditionalOnProperty(name = "application.security.enabled", havingValue = "false")
+    public SecurityWebFilterChain unsecureWebFilterChain(ServerHttpSecurity http) {
+        SecurityWebFilterChain build = http
+                .authorizeExchange()
+                .anyExchange().permitAll()
+                .and()
+                .httpBasic().disable()
+                .csrf().disable()
+                .formLogin().disable()
+                .logout().disable()
+                .build();
+
+        log.info("Security is disabled.");
+        return build;
     }
 
 
@@ -87,7 +104,10 @@ public class SecurityConfiguration {
                     log.trace("API Request to path '{}' without an API Key Header", exchange.getRequest().getPath().value());
                     AnonymousAuthenticationToken anonymous = new GuestToken(details);
                     return Mono.just(anonymous);
-                } else {
+                }
+
+                if(exchange.getRequest().getPath().value().startsWith("/actuator")) {
+                    log.trace("API Request to path '{}' without an API Key Header", exchange.getRequest().getPath().value());
                     // lets fallback to the standard authentication (basic) (for actuators and others)
                     ServerHttpBasicAuthenticationConverter basicAuthenticationConverter = new ServerHttpBasicAuthenticationConverter();
                     return basicAuthenticationConverter.convert(exchange).map(authentication -> {
@@ -95,11 +115,17 @@ public class SecurityConfiguration {
                         return authentication;
                     });
                 }
+
+                else {
+                    return Mono.just(new GuestToken(details));
+                }
+            } else {
+                log.trace("Found a valid api key in request, delegating authentication.");
+                ApiKeyAuthenticationToken apiKeyToken = new ApiKeyAuthenticationToken(details);
+                return Mono.just(apiKeyToken);
             }
 
-            log.trace("Found a valid api key in request, delegating authentication.");
-            ApiKeyAuthenticationToken apiKeyToken = new ApiKeyAuthenticationToken(details);
-            return Mono.just(apiKeyToken);
+
         };
     }
 

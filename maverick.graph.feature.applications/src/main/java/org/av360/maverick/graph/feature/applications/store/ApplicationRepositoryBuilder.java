@@ -4,6 +4,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.validation.constraints.NotNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ArrayUtils;
+import org.av360.maverick.graph.feature.applications.config.Globals;
 import org.av360.maverick.graph.feature.applications.config.ReactiveApplicationContextHolder;
 import org.av360.maverick.graph.feature.applications.domain.model.Application;
 import org.av360.maverick.graph.feature.applications.security.SubscriptionToken;
@@ -18,6 +19,7 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.authentication.InsufficientAuthenticationException;
 import org.springframework.security.authentication.TestingAuthenticationToken;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
@@ -56,7 +58,11 @@ public class ApplicationRepositoryBuilder extends DefaultRepositoryBuilder {
         return ReactiveApplicationContextHolder.getRequestedApplication()
                 .flatMap(application -> {
                     try {
-                        return Mono.just(this.buildRepository(store, authentication, application));
+                        if(application.label().equalsIgnoreCase(Globals.DEFAULT_APPLICATION_LABEL)) {
+                            return super.buildRepository(store, authentication);
+                        } else {
+                            return Mono.just(this.buildRepository(store, authentication, application));
+                        }
                     } catch (IOException e) {
                         return Mono.error(e);
                     }
@@ -86,6 +92,8 @@ public class ApplicationRepositoryBuilder extends DefaultRepositoryBuilder {
             repository = this.resolveRepositoryForSystemAuthentication(store, requestedApplication, adminToken);
         } else if (authentication instanceof AnonymousAuthenticationToken) {
             repository = this.resolveRepositoryForAnonymousAuthentication(store, requestedApplication);
+        }else if (authentication instanceof UsernamePasswordAuthenticationToken authenticationToken) {
+            repository = this.resolveRepositoryForSystemAuthentication(store, requestedApplication, authenticationToken);
         }
 
         return super.validateRepository(repository, store, authentication);

@@ -41,6 +41,8 @@ public class JobWorker {
     public void listen() {
         Flux<Void> voidFlux = Flux.from(eventListener)
                 .filter(event -> {
+                    meterRegistry.counter("graph.scheduled.jobs.counter", "name", event.getJobIdentifier(), "event", "accepted").increment();
+
                     if (StringUtils.hasLength(this.active)) {
                         log.debug("Job '{}' still running, skipping scheduled run of job '{}'.", this.active, event.getJobIdentifier());
                         meterRegistry.counter("graph.scheduled.jobs.counter", "name", event.getJobIdentifier(), "result", "skipped").increment();

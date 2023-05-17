@@ -15,11 +15,13 @@ application:
       admin:
         enabled: true
       jobs:
-        enabled: false
+        enabled: true
         scheduled:
-          detectDuplicates: false
-          replaceIdentifiers: false
-          typeCoercion: false
+          detectDuplicates: true
+          replaceIdentifiers: true
+          typeCoercion: true
+      navigation:
+        enabled: true
     transformers:
       replaceGlobalIdentifiers: true
       replaceAnonymousIdentifiers: true
