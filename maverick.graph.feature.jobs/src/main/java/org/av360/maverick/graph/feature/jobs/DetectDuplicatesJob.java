@@ -102,6 +102,7 @@ public class DetectDuplicatesJob implements Job {
                 .then(this.checkForDuplicates(SDO.IDENTIFIER, authentication))
                 .then(this.checkForDuplicates(SKOS.PREF_LABEL, authentication))
                 .then(this.checkForDuplicates(DCTERMS.IDENTIFIER, authentication))
+                .then(this.checkForDuplicates(SDO.TERM_CODE, authentication))
                 .then(this.checkForDuplicates(DC.IDENTIFIER, authentication));
 
     }
