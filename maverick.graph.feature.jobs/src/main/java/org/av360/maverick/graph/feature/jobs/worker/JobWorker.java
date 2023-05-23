@@ -35,18 +35,21 @@ public class JobWorker {
 
     @Scheduled(fixedRate = 10, timeUnit = TimeUnit.SECONDS)
     public void runJob() {
+        if(queue.peek().isEmpty()) return;
+
         if (StringUtils.hasLength(this.active)) {
-            log.debug("Job '{}' still running, skipping scheduled run of job '{}'.", this.active, queue.peek());
-            meterRegistry.counter("graph.scheduled.jobs.counter", "name", queue.peek(), "result", "hold").increment();
+            log.debug("Job '{}' still running, skipping scheduled run of job '{}'.", this.active, queue.peek().get());
+            meterRegistry.counter("graph.scheduled.jobs.counter", "name", queue.peek().get(), "result", "hold").increment();
             return;
         }
 
-        JobScheduledEvent event = this.queue.accept();
+        JobScheduledEvent event = queue.accept().orElseThrow();
         Optional<Job> requestedJob = this.getRegisteredJobs().stream().filter(job -> job.getName().equalsIgnoreCase(event.getJobName())).findFirst();
         if (requestedJob.isEmpty()) {
             log.warn("Job with label '{}' requested, but not active.", event.getJobName());
             return;
         }
+
 
         requestedJob.get().run(event.getToken())
                 .subscribeOn(scheduler)

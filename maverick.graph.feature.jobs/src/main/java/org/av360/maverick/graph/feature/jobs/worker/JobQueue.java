@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
+import java.util.Optional;
 
 @Slf4j(topic = "graph.jobs")
 @Service
@@ -31,13 +32,15 @@ public class JobQueue implements ApplicationListener<JobScheduledEvent> {
         }
     }
 
-    public JobScheduledEvent accept() {
+    public Optional<JobScheduledEvent> accept() {
+        if(this.publishedJobs.isEmpty()) return Optional.empty();
+
         JobScheduledEvent next = publishedJobs.pop();
         meterRegistry.counter("graph.scheduled.jobs.counter", "name", next.getJobIdentifier(), "event", "accepted").increment();
-        return next;
+        return Optional.of(next);
     }
 
-    public String peek() {
-        return publishedJobs.peek() != null ? publishedJobs.peek().getJobIdentifier() : "";
+    public Optional<String> peek() {
+        return Optional.ofNullable(publishedJobs.peek()).map(JobScheduledEvent::getJobIdentifier);
     }
 }

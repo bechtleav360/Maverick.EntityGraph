@@ -25,7 +25,7 @@ public class JobScheduledEvent extends ApplicationEvent {
 
 
     public String getJobIdentifier() {
-        return (String) super.getSource();
+        return String.format("%s:%s", getJobName(), "default");
     }
 
     public Context buildContext(Context ctx) {
