@@ -37,6 +37,7 @@ public class JobsCtrl extends AbstractController {
     @PostMapping(value = "/execute/deduplication")
     @ResponseStatus(HttpStatus.OK)
     Mono<Void> execDeduplicationJob() {
+        log.info("Request to execute job: Deduplication");
         JobScheduledEvent event = new JobScheduledEvent(DetectDuplicatesJob.NAME, new AdminToken());
         eventPublisher.publishEvent(event);
         return Mono.empty();
@@ -46,6 +47,7 @@ public class JobsCtrl extends AbstractController {
     @PostMapping(value = "/execute/normalize/subjectIdentifiers")
     @ResponseStatus(HttpStatus.ACCEPTED)
     Mono<Void> execReplaceSubjectIdentifiersJob() {
+        log.info("Request to execute job: Replace subject identifiers");
         JobScheduledEvent event = new JobScheduledEvent(ReplaceExternalIdentifiersJob.NAME, new AdminToken());
         eventPublisher.publishEvent(event);
         return Mono.empty();
@@ -54,6 +56,7 @@ public class JobsCtrl extends AbstractController {
     @PostMapping(value = "/execute/normalize/objectIdentifiers")
     @ResponseStatus(HttpStatus.ACCEPTED)
     Mono<Void> execReplaceObjectIdentifiersJob() {
+        log.info("Request to execute job: Replace object identifiers");
         JobScheduledEvent event = new JobScheduledEvent(ReplaceLinkedExternalIdentifiersJob.NAME, new AdminToken());
         eventPublisher.publishEvent(event);
         return Mono.empty();
@@ -64,6 +67,7 @@ public class JobsCtrl extends AbstractController {
     @PostMapping(value = "/execute/coercion")
     @ResponseStatus(HttpStatus.OK)
     Mono<Void> execCoercionJob() {
+        log.info("Request to execute job: Infer types");
         JobScheduledEvent event = new JobScheduledEvent(TypeCoercionJob.NAME, new AdminToken());
         eventPublisher.publishEvent(event);
         return Mono.empty();

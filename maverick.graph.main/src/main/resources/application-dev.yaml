@@ -11,15 +11,17 @@ application:
   features:
     modules:
       applications:
-        enabled: true
+        enabled: false
       admin:
         enabled: true
       jobs:
         enabled: true
         scheduled:
-          detectDuplicates: false
-          replaceIdentifiers: false
+          detectDuplicates: true
+          replaceIdentifiers: true
           typeCoercion: true
+      navigation:
+        enabled: true
     transformers:
       replaceGlobalIdentifiers: true
       replaceAnonymousIdentifiers: true
@@ -33,11 +35,19 @@ application:
 
 logging:
   level:
-    graph: TRACE
+    root: INFO
+    graph:
+      jobs: TRACE
+      repo: TRACE
+      srvc: TRACE
+      ctrl: TRACE
+      feat:
+        admin: TRACE
     org:
+      eclipse:
+        rdf4j: DEBUG
       springframework:
         security: INFO
-
 management:
   info:
     env:

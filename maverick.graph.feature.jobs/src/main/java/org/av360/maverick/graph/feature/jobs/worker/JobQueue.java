@@ -27,7 +27,7 @@ public class JobQueue implements ApplicationListener<JobScheduledEvent> {
     public void onApplicationEvent(JobScheduledEvent event) {
         meterRegistry.counter("graph.scheduled.jobs.counter", "name", event.getJobIdentifier(), "event", "received").increment();
 
-        if(this.publishedJobs.contains(event)) {
+        if(! this.publishedJobs.contains(event)) {
             this.publishedJobs.add(event);
         }
     }
