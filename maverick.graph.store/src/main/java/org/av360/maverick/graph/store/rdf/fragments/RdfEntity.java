@@ -2,6 +2,8 @@ package org.av360.maverick.graph.store.rdf.fragments;
 
 import org.apache.commons.lang3.NotImplementedException;
 import org.av360.maverick.graph.model.entities.Entity;
+import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.repository.RepositoryResult;
@@ -25,12 +27,21 @@ public class RdfEntity extends TripleModel implements Entity {
         identifier = id;
     }
 
+
+    public RdfEntity(IRI resource, Model model) {
+        super(model);
+        this.identifier = resource;
+    }
+
+
     public RdfEntity withResult(RepositoryResult<Statement> result) {
         try (result) {
             result.stream().forEach(statement -> this.getBuilder().add(statement.getSubject(), statement.getPredicate(), statement.getObject()));
         }
         return this;
     }
+
+
 
     boolean isShared() {
         throw new NotImplementedException();

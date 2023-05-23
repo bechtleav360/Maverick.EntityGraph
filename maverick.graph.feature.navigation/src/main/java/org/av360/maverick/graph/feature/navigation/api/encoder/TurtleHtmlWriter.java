@@ -146,10 +146,10 @@ public class TurtleHtmlWriter implements RDFWriter {
 
     private String getUrlFor(String prefix, String url) {
         return switch (prefix) {
-            case "hydra": yield "https://www.hydra-cg.com/spec/latest/core/";
+            case "hydra": yield "https://www.hydra-cg.com/spec/latest/core/#";
             case "rdf": yield "https://www.w3.org/TR/rdf-syntax-grammar/";
             case "rdfs": yield "https://www.w3.org/TR/rdf-schema/";
-            case "sdo": yield "https://schema.org";
+            case "sdo": yield "https://schema.org/";
             default: yield url;
         };
     }

@@ -13,10 +13,13 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.WebSession;
 import org.springframework.web.util.UriComponentsBuilder;
 import reactor.core.publisher.Flux;
 
 import java.net.URI;
+import java.util.Map;
+import java.util.Objects;
 
 @RestController
 @RequestMapping(path = "/nav")
@@ -34,29 +37,35 @@ public class Entrypoint extends AbstractController {
 
     @GetMapping(produces = MediaType.TEXT_HTML_VALUE)
     @ResponseStatus(HttpStatus.OK)
-    public Flux<AnnotatedStatement> start() {
-        return super.getAuthentication().flatMapMany(this.navigationServices::start);
+    public Flux<AnnotatedStatement> start(WebSession session) {
+        return super.getAuthentication().flatMapMany(auth -> this.navigationServices.start(auth, session));
     }
 
     @GetMapping(value = "/node", produces = MediaType.TEXT_HTML_VALUE)
     @ResponseStatus(HttpStatus.OK)
-    public ResponseEntity<Void> navigate(@RequestParam String id) {
+    public ResponseEntity<Void> navigate(@RequestParam MultiValueMap<String, String> requestParameters, WebSession session) {
+
+        String id =  Objects.requireNonNull(requestParameters.getFirst("id"), "Parameter 'id' is required here. ");
         log.info("Request to navigate to node {}", id);
         if(! id.startsWith("/api"))  {
+            URI location = UriComponentsBuilder
+                    .fromUri(URI.create(id))
+                    .build().toUri();
+
             return ResponseEntity.status(HttpStatus.TEMPORARY_REDIRECT)
-                    .location(URI.create(id))
+                    .location(location)
                     .build();
 
         } else {
+            MultiValueMap<String,String> params = new LinkedMultiValueMap<>(requestParameters);
             String[] split = id.substring(5).split("/");
             String key = "";
             String val = "";
-            MultiValueMap<String, String> queryParams = new LinkedMultiValueMap<>();
 
             for (int i = 0; i < split.length; i++) {
                 if(i%2 == 0) {
                     if(StringUtils.hasLength(key) && StringUtils.hasLength(val)) {
-                        queryParams.set(key, val);
+                        params.set(key, val);
                         key = "";
                         val = "";
                     }
@@ -64,12 +73,12 @@ public class Entrypoint extends AbstractController {
                 }
                 else val = split[i];
             }
-            if(StringUtils.hasLength(key) && ! StringUtils.hasLength(val)) queryParams.set(key, "list");
-            if(StringUtils.hasLength(key) && StringUtils.hasLength(val)) queryParams.set(key, val);
+            if(StringUtils.hasLength(key) && ! StringUtils.hasLength(val)) params.set(key, "list");
+            if(StringUtils.hasLength(key) && StringUtils.hasLength(val)) params.set(key, val);
 
             URI location = UriComponentsBuilder
                     .fromUri(URI.create("/nav/api"))
-                    .queryParams(queryParams)
+                    .queryParams(params)
                     .build().toUri();
             return ResponseEntity.status(HttpStatus.TEMPORARY_REDIRECT)
                     .location(location)
@@ -82,9 +91,11 @@ public class Entrypoint extends AbstractController {
 
     @GetMapping(value = "/api", produces = MediaType.TEXT_HTML_VALUE)
     @ResponseStatus(HttpStatus.OK)
-    public Flux<Statement> wrap(@RequestParam MultiValueMap<String, String> params) {
+    public Flux<Statement> wrap(@RequestParam MultiValueMap<String, String> params, @RequestHeader Map<String, String> headers, WebSession session) {
         log.info("Request to navigate to params {}", params);
-        return super.getAuthentication().flatMapMany(authentication -> this.navigationServices.browse(params, authentication));
+
+
+        return super.getAuthentication().flatMapMany(authentication -> this.navigationServices.browse(params, authentication, session));
 
 
     }

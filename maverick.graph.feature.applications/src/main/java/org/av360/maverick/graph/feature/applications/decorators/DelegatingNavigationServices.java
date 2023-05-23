@@ -16,6 +16,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.ReactiveSecurityContextHolder;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.util.MultiValueMap;
+import org.springframework.web.server.WebSession;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -31,10 +32,10 @@ public class DelegatingNavigationServices implements NavigationServices {
         this.vf = SimpleValueFactory.getInstance();
     }
 
-    public Flux<AnnotatedStatement> start(Authentication authentication) {
+    public Flux<AnnotatedStatement> start(Authentication authentication, WebSession session) {
 
 
-        return delegate.start(authentication).mergeWith(
+        return delegate.start(authentication, session).mergeWith(
                 ReactiveSecurityContextHolder.getContext().map(SecurityContext::getAuthentication)
                         .switchIfEmpty(Mono.just(new GuestToken()))
                         .flatMapMany(applicationsService::listApplications)
@@ -51,13 +52,13 @@ public class DelegatingNavigationServices implements NavigationServices {
 
                             applications.forEach(application -> {
                                 IRI app = vf.createIRI(Local.Applications.NAMESPACE, application.key());
-                                builder.setNamespace(application.label(), "?/api/s/"+application.label()+"/");
+                                builder.setNamespace(application.label(), ResolvableUrlPrefix+"/api/s/"+application.label()+"/");
                                 // FIXME: we only add the new namespace to late statements, later we just use the namespaces of the first statement
 
                                 builder.subject(app)
                                         .add(ApplicationTerms.HAS_KEY, application.key())
                                         .add(ApplicationTerms.HAS_LABEL, application.label())
-                                        .add(HYDRA.ENTRYPOINT, String.format("?/api/s/%s/entities",  application.label()))
+                                        .add(HYDRA.ENTRYPOINT, String.format(ResolvableUrlPrefix+"?/api/s/%s/entities",  application.label()))
                                         .add(appsCollection, HYDRA.MEMBER, app);
                             });
 
@@ -70,7 +71,7 @@ public class DelegatingNavigationServices implements NavigationServices {
     }
 
     @Override
-    public Flux<AnnotatedStatement> browse(MultiValueMap<String, String> params, Authentication authentication) {
-        return delegate.browse(params, authentication);
+    public Flux<AnnotatedStatement> browse(MultiValueMap<String, String> params, Authentication authentication, WebSession session) {
+        return delegate.browse(params, authentication, session);
     }
 }
