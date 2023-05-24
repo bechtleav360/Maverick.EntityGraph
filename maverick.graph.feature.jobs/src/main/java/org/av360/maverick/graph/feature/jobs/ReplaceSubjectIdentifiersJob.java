@@ -52,7 +52,7 @@ import java.util.*;
 
 @Slf4j(topic = "graph.jobs.identifiers")
 @Component
-public class ReplaceExternalIdentifiersJob implements Job {
+public class ReplaceSubjectIdentifiersJob implements Job {
 
     public static String NAME = "replaceSubjectIdentifiers";
 
@@ -76,7 +76,7 @@ public class ReplaceExternalIdentifiersJob implements Job {
     ) {
     }
 
-    public ReplaceExternalIdentifiersJob(QueryServices queryServices, EntityStore store, TransactionsStore trxStore, ReplaceExternalIdentifiers transformer, ReplaceAnonymousIdentifiers replaceAnonymousIdentifiers) {
+    public ReplaceSubjectIdentifiersJob(QueryServices queryServices, EntityStore store, TransactionsStore trxStore, ReplaceExternalIdentifiers transformer, ReplaceAnonymousIdentifiers replaceAnonymousIdentifiers) {
         this.queryServices = queryServices;
         this.entityStore = store;
         this.trxStore = trxStore;
@@ -128,6 +128,7 @@ public class ReplaceExternalIdentifiersJob implements Job {
                     FILTER STRSTARTS(str(?a), "%s").
                     }
                   }
+                  LIMIT 5000
                 """;
         String query = String.format(tpl, Local.Entities.NAMESPACE);
         return queryServices.queryValues(query, authentication)

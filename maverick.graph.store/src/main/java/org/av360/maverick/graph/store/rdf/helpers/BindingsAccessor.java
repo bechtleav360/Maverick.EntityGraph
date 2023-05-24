@@ -1,14 +1,17 @@
 package org.av360.maverick.graph.store.rdf.helpers;
 
-import org.av360.maverick.graph.model.errors.store.DuplicateRecordsException;
 import lombok.extern.slf4j.Slf4j;
+import org.av360.maverick.graph.model.errors.store.DuplicateRecordsException;
 import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.util.Literals;
 import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.sparqlbuilder.core.Variable;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 
 /**
  * Helper class to access values in RDF4J's BindingSets
@@ -22,11 +25,34 @@ public class BindingsAccessor {
     }
 
     public IRI asIRI(Variable var) {
-        return (IRI) this.bindings.getValue(var.getVarName());
+        return this.asIRI(var.getVarName());
+    }
+
+    public IRI asIRI(String var) {
+        return (IRI) this.bindings.getValue(var);
     }
 
     public String asString(Variable var) {
-        return this.bindings.getValue(var.getVarName()).stringValue();
+        return this.asString(var.getVarName());
+    }
+    public String asString(String var) {
+        return this.findString(var).orElseThrow();
+    }
+
+    public Optional<String> findString(String var) {
+        return findValue(var).map(Value::stringValue);
+    }
+
+    public Set<String> asSet(String concatenatedStringVarName) {
+        return this.findValue(concatenatedStringVarName)
+                .map(Value::stringValue)
+                .map(s -> s.split(","))
+                .map(Set::of)
+                .orElse(Set.of());
+    }
+
+    public Optional<Value> findValue(String var) {
+        return Optional.ofNullable(this.bindings.getValue(var));
     }
 
     public boolean asBoolean(Variable var) {
@@ -44,4 +70,8 @@ public class BindingsAccessor {
 
         return Mono.just(result.get(0));
     }
+
+
+
+
 }

@@ -1,7 +1,7 @@
 package org.av360.maverick.graph.jobs;
 
 import lombok.extern.slf4j.Slf4j;
-import org.av360.maverick.graph.feature.jobs.ReplaceExternalIdentifiersJob;
+import org.av360.maverick.graph.feature.jobs.ReplaceSubjectIdentifiersJob;
 import org.av360.maverick.graph.model.vocabulary.Local;
 import org.av360.maverick.graph.tests.config.TestRepositoryConfig;
 import org.av360.maverick.graph.tests.config.TestSecurityConfig;
@@ -30,10 +30,11 @@ import java.io.IOException;
 @RecordApplicationEvents
 @ActiveProfiles("test")
 @Slf4j
-class ConvertExternalIdentifiers extends TestsBase {
+@SuppressWarnings("all")
+class TestConvertExternalIdentifiers extends TestsBase {
 
     @Autowired
-    private ReplaceExternalIdentifiersJob scheduled;
+    private ReplaceSubjectIdentifiersJob scheduled;
 
 
     @Autowired
@@ -96,9 +97,7 @@ class ConvertExternalIdentifiers extends TestsBase {
         Mono<Void> jobMono = scheduled.run(TestSecurityConfig.createAuthenticationToken()).doOnSubscribe(sub -> super.printStep());
 
         StepVerifier.create(importMono.then(read1))
-                .assertNext(md -> {
-                    Assertions.assertTrue(md.subjects().size() > 0);
-                }).verifyComplete();
+                .assertNext(md -> Assertions.assertTrue(md.subjects().size() > 0)).verifyComplete();
 
         StepVerifier.create(jobMono).verifyComplete();
 

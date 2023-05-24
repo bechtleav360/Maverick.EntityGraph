@@ -1,7 +1,7 @@
 package org.av360.maverick.graph.jobs;
 
 import lombok.extern.slf4j.Slf4j;
-import org.av360.maverick.graph.feature.jobs.ReplaceLinkedExternalIdentifiersJob;
+import org.av360.maverick.graph.feature.jobs.ReplaceObjectIdentifiersJob;
 import org.av360.maverick.graph.model.vocabulary.Local;
 import org.av360.maverick.graph.model.vocabulary.SDO;
 import org.av360.maverick.graph.tests.config.TestRepositoryConfig;
@@ -33,10 +33,11 @@ import java.io.IOException;
 @RecordApplicationEvents
 @ActiveProfiles("test")
 @Slf4j
+@SuppressWarnings("all")
 class ConvertExternalLinked extends TestsBase {
 
     @Autowired
-    private ReplaceLinkedExternalIdentifiersJob scheduled;
+    private ReplaceObjectIdentifiersJob scheduled;
 
 
     @Autowired

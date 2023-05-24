@@ -5,23 +5,23 @@ const lines = document.getElementById('rdf').innerText.split("\n");
             line = line.replace(/[\u00A0-\u9999<>\&]/g, i => '&#' + i.charCodeAt(0) + ';')
             const nsm = line.match(/(.*)(@prefix)\s([a-z]+):\s(.*)\s/)
             if (nsm) {
-                pretty += `${nsm[1]}<span class="ns">${nsm[2]} ${nsm[3]} ${nsm[4]}</span>`;
+                pretty += `${nsm[1]}<span class="ns">${nsm[2]} ${nsm[3]}: ${nsm[4]} .</span>`;
             } else {
                 line.split(" ").forEach(token => {
                     const prm = token.match(/([a-z]+):([a-zA-Z]{1}[a-z0-9A-Z]+)/);
-                    const lnm = token.match(/\&#60;(https?:\/\/{{host}}[:0-9]*)(\/.*)\&#62;/);
+                    const lnm = token.match(/\&#60;(https?:\/\/{{host}}[:0-9]*)(\/[a-zA-Z0-9-_\.\/]*)\??(.*)\&#62;/);
                     if (lnm) {
-                        pretty += `<a class="internal" href="/nav/node?id=${encodeURIComponent(lnm[2])}">${token}</a>`
+                        pretty += `<a class="internal" rel="next" href="/nav/node?id=${encodeURIComponent(lnm[2])}&${lnm[3]}">${token}</a>`
                     } else if (prm) {
                         if(prefix[prm[1]]) {
                             if(prefix[prm[1]]["external"]) {
-                                pretty += `<a class="external" target="_blank" href="${prefix[prm[1]]["url"]}#${prm[2]}">${token}</a>`
+                                pretty += `<a class="external" target="_blank" rel="external" href="${prefix[prm[1]]["url"]}${prm[2]}">${token}</a>`
                             } else {
 
-                                pretty += `<a class="internal" href="/nav/node?id=${token}">${token}</a>`
+                                pretty += `<a class="internal" rel="next" href="/nav/node?id=${token}">${token}</a>`
                             }
                         } else {
-                            pretty += `<a class="internal" href="/nav/node?id=${token}">${token}</a>`
+                            pretty += `<a class="internal" rel="next" href="/nav/node?id=${token}">${token}</a>`
                         }
 
                     } else pretty += token

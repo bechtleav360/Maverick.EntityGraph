@@ -62,7 +62,7 @@ import java.util.TreeSet;
  */
 @Service
 @Slf4j(topic = "graph.jobs.duplicates")
-public class DetectDuplicatesJob implements Job {
+public class MergeDuplicatesJob implements Job {
 
     public static String NAME = "detectDuplicates";
 
@@ -90,7 +90,7 @@ public class DetectDuplicatesJob implements Job {
     private final ValueServices valueServices;
     private final SimpleValueFactory valueFactory;
 
-    public DetectDuplicatesJob(EntityServices service, QueryServices queryServices, ValueServices valueServices) {
+    public MergeDuplicatesJob(EntityServices service, QueryServices queryServices, ValueServices valueServices) {
         this.entityServices = service;
         this.queryServices = queryServices;
         this.valueServices = valueServices;
@@ -102,6 +102,7 @@ public class DetectDuplicatesJob implements Job {
                 .then(this.checkForDuplicates(SDO.IDENTIFIER, authentication))
                 .then(this.checkForDuplicates(SKOS.PREF_LABEL, authentication))
                 .then(this.checkForDuplicates(DCTERMS.IDENTIFIER, authentication))
+                .then(this.checkForDuplicates(SDO.TERM_CODE, authentication))
                 .then(this.checkForDuplicates(DC.IDENTIFIER, authentication));
 
     }
@@ -117,10 +118,7 @@ public class DetectDuplicatesJob implements Job {
                                 .doOnNext(duplicate -> log.trace("Entity '{}' identified as duplicate. Another item exists with property {} and value {} .", duplicate.id(), candidate.sharedProperty(), candidate.sharedValue()))
                                 .collectList()
                                 .flatMap(duplicates -> this.mergeDuplicates(duplicates, authentication)))
-                .doOnSubscribe(sub -> {
-                    log.trace("Checking duplicates sharing the same characteristic property <{}>", characteristicProperty);
-
-                })
+                .doOnSubscribe(sub -> log.trace("Checking duplicates sharing the same characteristic property <{}>", characteristicProperty))
                 .doOnComplete(() -> log.debug("Completed checking for duplicates sharing the same characteristic property <{}>", characteristicProperty))
                 .thenEmpty(Mono.empty());
 
@@ -186,7 +184,7 @@ public class DetectDuplicatesJob implements Job {
                 .doOnSubscribe(subscription -> log.trace("Trying to merge all duplicates, keeping entity '{}' as original", original.id()))
                 .flatMap(duplicate ->
                         this.findStatementsPointingToDuplicate(duplicate, authentication)
-                                .flatMap(mislinkedStatement -> this.relinkEntity((IRI) mislinkedStatement.subject(), mislinkedStatement.predicate(), mislinkedStatement.object(), original.id(), authentication))
+                                .flatMap(mislinkedStatement -> this.relinkEntity(mislinkedStatement.subject(), mislinkedStatement.predicate(), mislinkedStatement.object(), original.id(), authentication))
                                 .doOnNext(trx -> log.info("Relinking completed in Transaction {}", trx.getIdentifier()))
                                 .map(transaction -> duplicate)
                 )
@@ -256,8 +254,6 @@ public class DetectDuplicatesJob implements Job {
                         thing.has(sharedProperty, sharedValue)
                 ).groupBy(sharedValue, type).having(Expressions.gt(Expressions.count(thing), 1)).limit(10);
 
-
-        String q = findDuplicates.getQueryString();
 
         return queryServices.queryValues(findDuplicates, authentication)
                 .map(binding -> {

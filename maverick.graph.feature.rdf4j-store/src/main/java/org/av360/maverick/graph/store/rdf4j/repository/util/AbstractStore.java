@@ -55,6 +55,7 @@ import java.util.Set;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
+@SuppressWarnings("FieldCanBeLocal")
 public abstract class AbstractStore implements TripleStore, Statements, ModelUpdates, Resettable {
 
     private final RepositoryType repositoryType;

@@ -21,7 +21,8 @@ public class ApplicationJobScheduledEvent extends JobScheduledEvent {
     }
 
     @Override
-    public String getJobIdentifier() {
-        return String.format("%s (%s)", super.getJobName(), this.requestedApplication.label());
+    public String getScope() {
+        return this.requestedApplication.label();
     }
+
 }

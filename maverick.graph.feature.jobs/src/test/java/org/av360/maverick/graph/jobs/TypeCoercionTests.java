@@ -1,7 +1,7 @@
 package org.av360.maverick.graph.jobs;
 
 import lombok.extern.slf4j.Slf4j;
-import org.av360.maverick.graph.feature.jobs.TypeCoercionJob;
+import org.av360.maverick.graph.feature.jobs.AssignInternalTypesJob;
 import org.av360.maverick.graph.model.vocabulary.Local;
 import org.av360.maverick.graph.tests.config.TestRepositoryConfig;
 import org.av360.maverick.graph.tests.config.TestSecurityConfig;
@@ -31,10 +31,11 @@ import java.io.IOException;
 @RecordApplicationEvents
 @ActiveProfiles("test")
 @Slf4j
+@SuppressWarnings("all")
 class TypeCoercionTests extends TestsBase {
 
     @Autowired
-    private TypeCoercionJob scheduled;
+    private AssignInternalTypesJob scheduled;
 
 
     @Autowired

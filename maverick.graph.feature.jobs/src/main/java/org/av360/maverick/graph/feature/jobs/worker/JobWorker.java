@@ -1,97 +1,94 @@
 package org.av360.maverick.graph.feature.jobs.worker;
 
 import io.micrometer.core.instrument.MeterRegistry;
-import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.model.entities.Job;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.av360.maverick.graph.model.events.JobScheduledEvent;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 
 @Slf4j(topic = "graph.jobs")
 @Service
 public class JobWorker {
 
-    private String active;
-    private final JobEventListener eventListener;
-    private List<Job> jobs;
-
     private final Scheduler scheduler;
-    private MeterRegistry meterRegistry;
+    private final Map<String, String> activeJobs;
+    private final JobQueue requestedJobs;
+    private final List<Job> registeredJobs;
 
-    @Autowired(required = false)
-    public void setRegisteredJobs(List<Job> jobs) {
-        this.jobs = jobs;
+    private final MeterRegistry meterRegistry;
+
+
+    public JobWorker(JobQueue eventListener, List<Job> jobs, MeterRegistry meterRegistry) {
+        this.requestedJobs = eventListener;
+        this.registeredJobs = jobs;
+        this.meterRegistry = meterRegistry;
+        this.scheduler = Schedulers.newBoundedElastic(5, 10, "jobs");
+        this.activeJobs = new HashMap<>();
     }
 
+    @Scheduled(fixedRate = 10, timeUnit = TimeUnit.SECONDS)
+    public void runJob() {
+        if(requestedJobs.peek().isEmpty()) return;
 
-    public JobWorker(JobEventListener eventListener) {
-        this.eventListener = eventListener;
-        this.scheduler = Schedulers.newSingle("jobs");
-    }
 
-    @PostConstruct
-    public void listen() {
-        Flux<Void> voidFlux = Flux.from(eventListener)
-                .filter(event -> {
-                    meterRegistry.counter("graph.scheduled.jobs.counter", "name", event.getJobIdentifier(), "event", "accepted").increment();
+        // we should always have only job running in one scope, to prevent read/write conflicts
+        requestedJobs.peek().ifPresent(jobIdentifier -> {
+            if(StringUtils.hasLength(this.activeJobs.get(jobIdentifier.scope()))) {
+                log.debug("Job '{}' in scope '{}' still running, skipping scheduled run of job '{}'.", this.activeJobs.get(jobIdentifier.scope()), jobIdentifier.scope(), jobIdentifier.name());
+                meterRegistry.counter("graph.scheduled.jobs.counter", "name", jobIdentifier.name(), "scope", jobIdentifier.scope(), "result", "hold").increment();
+                return;
+             }
 
-                    if (StringUtils.hasLength(this.active)) {
-                        log.debug("Job '{}' still running, skipping scheduled run of job '{}'.", this.active, event.getJobIdentifier());
-                        meterRegistry.counter("graph.scheduled.jobs.counter", "name", event.getJobIdentifier(), "result", "skipped").increment();
-                        return false;
-                    } else {
-                        return true;
-                    }
-                })
-                .flatMap(event -> {
-                    Optional<Job> requestedJob = this.getRegisteredJobs().stream().filter(job -> job.getName().equalsIgnoreCase(event.getJobName())).findFirst();
-                    if (requestedJob.isEmpty()) {
-                        log.warn("Job with label '{}' requested, but not active.", event.getJobName());
-                        return Mono.empty();
-                    } else {
+            JobScheduledEvent event = requestedJobs.accept().orElseThrow();
+            Optional<Job> requestedJob = this.getRegisteredJobs().stream().filter(job -> job.getName().equalsIgnoreCase(event.getJobName())).findFirst();
+            if (requestedJob.isEmpty()) {
+                log.warn("Job with label '{}' requested, but not active.", event.getJobName());
+                return;
+            }
 
-                        return requestedJob.get().run(event.getToken()).contextWrite(event::buildContext)
-                                .doOnSubscribe(subscription -> {
-                                    log.debug("Starting job '{}'.", event.getJobIdentifier());
-                                    this.active = event.getJobIdentifier();
-                                })
-                                .doOnSuccess(success -> {
-                                    log.trace("Completed job '{}'", event.getJobIdentifier());
-                                    this.active = "";
-                                    meterRegistry.counter("graph.scheduled.jobs.counter", "name", event.getJobIdentifier(), "result", "completed").increment();
-                                })
-                                .doOnError(error -> {
-                                    log.warn("Failed job '{}' due to reason: {}", event.getJobIdentifier(), error.getMessage());
-                                    meterRegistry.counter("graph.scheduled.jobs.counter", "name", event.getJobIdentifier(), "result", "failed").increment();
-                                    this.active = "";
-                                });
+            requestedJob.get().run(event.getToken())
+                    .subscribeOn(scheduler)
+                    .contextWrite(event::buildContext)
+                    .doOnSubscribe(subscription -> {
+                        log.debug("Starting job '{}'.", event.getJobIdentifier());
+                        this.activeJobs.put(jobIdentifier.scope(), jobIdentifier.name());
+                    })
+                    .doOnSuccess(success -> {
+                        log.trace("Completed job '{}'", event.getJobIdentifier());
+                        this.activeJobs.put(jobIdentifier.scope(), null);
+                        meterRegistry.counter("graph.scheduled.jobs.counter", "name", event.getJobIdentifier(), "result", "completed").increment();
+                    })
+                    .doOnError(error -> {
+                        log.warn("Failed job '{}' due to reason: {}", event.getJobIdentifier(), error.getMessage());
+                        meterRegistry.counter("graph.scheduled.jobs.counter", "name", event.getJobIdentifier(), "result", "failed").increment();
+                        this.activeJobs.put(jobIdentifier.scope(), null);
+                    }).subscribe();
 
-                    }
-                })
-                .doOnError(error -> log.error("Failed to consume event.", error));
 
-        voidFlux.subscribeOn(Schedulers.single())
-                .onErrorResume((error) -> Mono.empty())
-                .subscribe();
+        });
+
+
+
+
+
+
     }
 
 
 
     public List<Job> getRegisteredJobs() {
-        return jobs;
+        return registeredJobs;
     }
 
-    @Autowired
-    private void setMeterRegistry(MeterRegistry meterRegistry) {
-        this.meterRegistry = meterRegistry;
 
-    }
 }

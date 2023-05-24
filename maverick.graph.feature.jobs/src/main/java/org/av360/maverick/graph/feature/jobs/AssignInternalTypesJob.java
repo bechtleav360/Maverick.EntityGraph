@@ -13,7 +13,6 @@ import org.av360.maverick.graph.store.TransactionsStore;
 import org.av360.maverick.graph.store.rdf.fragments.RdfTransaction;
 import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.Resource;
-import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.util.ModelCollector;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,20 +27,23 @@ import java.util.List;
 import java.util.Objects;
 
 /**
+ * <p>
  * Type coercion detects linked data fragments within a repository and tries to infer
  * - individuals (entities)
- * - classifier
- *
+ * - classifier (shared embedded)
+ * - embedded (single use embedded)
+ * </p>
+ * <p>
  * Individual are fragments with characteristic properties which induce uniqueness.
  * Classifiers are concepts used to categorize or cluster the individuals.
- *
  * A fragment is a collection of statements with a common subject. This job queries for fragments which are neither
  * individual nor classifier. The entity api serves only individuals.
- *
+ *</p>
  */
 @Service
 @Slf4j(topic = "graph.jobs.coercion")
-public class TypeCoercionJob implements Job {
+@SuppressWarnings("javadoc")
+public class AssignInternalTypesJob implements Job {
 
     public static String NAME = "typeCoercion";
     private final EntityServices entityServices;
@@ -50,7 +52,7 @@ public class TypeCoercionJob implements Job {
     private final InsertLocalTypes localTypesTransformer;
     private final TransactionsStore transactionsStore;
 
-    public TypeCoercionJob(EntityServices entityServices, QueryServices queryServices, @Autowired(required = false) @Nullable InsertLocalTypes localTypesTransformer, TransactionsStore transactionsStore) {
+    public AssignInternalTypesJob(EntityServices entityServices, QueryServices queryServices, @Autowired(required = false) @Nullable InsertLocalTypes localTypesTransformer, TransactionsStore transactionsStore) {
         this.entityServices = entityServices;
         this.queryServices = queryServices;
         this.localTypesTransformer = localTypesTransformer;
@@ -74,22 +76,16 @@ public class TypeCoercionJob implements Job {
                 .doOnNext(model -> log.trace("Collected {} statements for new types", model.size()))
                 .flatMap(model -> this.entityServices.getStore().insert(model, new RdfTransaction()))
                 .flatMapMany(trx -> this.entityServices.getStore().commit(trx, authentication))
-                .doOnNext(transaction -> {
-                    Assert.isTrue(transaction.hasStatement(null, Transactions.STATUS, Transactions.SUCCESS), "Failed transaction: \n" + transaction);
-                })
+                .doOnNext(transaction -> Assert.isTrue(transaction.hasStatement(null, Transactions.STATUS, Transactions.SUCCESS), "Failed transaction: \n" + transaction))
                 .flatMap(transaction -> this.transactionsStore.store(List.of(transaction), authentication))
-                .doOnError(throwable -> {
-                    log.error("Exception while assigning internal types: {}", throwable.getMessage());
-                })
+                .doOnError(throwable -> log.error("Exception while assigning internal types: {}", throwable.getMessage()))
                 .doOnSubscribe(sub -> log.trace("Checking for entities with missing internal type definitions."))
                 .doOnComplete(() -> log.debug("Completed checking for entities with missing internal type definitions."))
                 .then();
 
     }
 
-    private Flux<Statement> getTypeStatements(Model model) {
-        return localTypesTransformer.getStatements(model);
-    }
+
 
     private Mono<Model> loadFragment(Authentication authentication, Resource value) {
         return this.entityServices.getStore().listStatements(value, null, null, authentication)

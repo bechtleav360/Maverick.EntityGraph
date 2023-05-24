@@ -19,6 +19,17 @@ import reactor.core.publisher.Flux;
 
 import javax.annotation.Nullable;
 
+/**
+ * Supports links where the scope is encoded in the path in the form
+ * <pre> host.com/api/s/{scope}/entities/{id}</pre>
+ *
+ * All requests are delegated to the default operator, the scope is extracted by the filter (the correct IDs are then
+ * extracted by the delegating Identifier service)
+ *
+ * @see Entities
+ * @see org.av360.maverick.graph.feature.applications.config.RequestedApplicationFilter
+ * @see org.av360.maverick.graph.feature.applications.decorators.DelegatingIdentifierServices
+ */
 @RestController
 @RequestMapping(path = "/api")
 @Slf4j(topic = "graph.api.ctrl.details")
@@ -54,7 +65,7 @@ public class ScopedReadOperations extends AbstractController {
             @PathVariable String prefixedValueKey,
             @RequestParam(required = false) boolean hash
     ) {
-        return this.detailsCtrl.getDetails(scopeId(label, id), type, prefixedValueKey, hash);
+        return this.detailsCtrl.getDetails(id, type, prefixedValueKey, hash);
     }
 
 
@@ -64,9 +75,10 @@ public class ScopedReadOperations extends AbstractController {
     Flux<AnnotatedStatement> read(@PathVariable String label, @PathVariable String id, @RequestParam(required = false) @Nullable String property) {
         /* since we encode the scope (identified by label) also in the id (e.g. urn:pwi:meg:e:{label}:{id}, we add the scope as prefix
          */
-        return entitiesCtrl.read(scopeId(label, id), property);
+        return entitiesCtrl.read(id, property);
     }
 
+    @Deprecated
     private String scopeId(String label, String id) {
         return String.format("%s.%s", label, id);
     }
@@ -86,7 +98,7 @@ public class ScopedReadOperations extends AbstractController {
             produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE, MediaType.APPLICATION_JSON_VALUE})
     @ResponseStatus(HttpStatus.OK)
     Flux<AnnotatedStatement> listEntityValues(@PathVariable String label, @PathVariable String id) {
-        return this.valuesCtrl.listEntityValues(scopeId(label, id));
+        return this.valuesCtrl.listEntityValues(id);
     }
 
     @Operation(summary = "Returns all links of an entity.")
@@ -94,7 +106,7 @@ public class ScopedReadOperations extends AbstractController {
             produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE})
     @ResponseStatus(HttpStatus.OK)
     Flux<AnnotatedStatement> getLinks(@PathVariable String label, @PathVariable String id) {
-        return this.linksCtrl.getLinks(scopeId(label, id));
+        return this.linksCtrl.getLinks(id);
     }
 
     @Operation(summary = "Returns all links of the given type.")
@@ -102,7 +114,7 @@ public class ScopedReadOperations extends AbstractController {
             produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE})
     @ResponseStatus(HttpStatus.OK)
     Flux<AnnotatedStatement> getLinksByType(@PathVariable String label, @PathVariable String id, @PathVariable String prefixedKey) {
-        return this.linksCtrl.getLinksByType(scopeId(label, id), prefixedKey);
+        return this.linksCtrl.getLinksByType(id, prefixedKey);
     }
 
 

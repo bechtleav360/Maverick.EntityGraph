@@ -9,4 +9,8 @@ public class TokenRevokedEvent {
 
         this.token = token;
     }
+
+    public Subscription getToken() {
+        return token;
+    }
 }

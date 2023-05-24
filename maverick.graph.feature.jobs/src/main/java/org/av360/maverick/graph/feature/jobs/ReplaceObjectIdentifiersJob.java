@@ -6,7 +6,6 @@ import org.av360.maverick.graph.model.errors.requests.InvalidConfiguration;
 import org.av360.maverick.graph.model.security.Authorities;
 import org.av360.maverick.graph.model.vocabulary.Local;
 import org.av360.maverick.graph.model.vocabulary.Transactions;
-import org.av360.maverick.graph.services.transformers.replaceIdentifiers.ReplaceAnonymousIdentifiers;
 import org.av360.maverick.graph.services.transformers.replaceIdentifiers.ReplaceExternalIdentifiers;
 import org.av360.maverick.graph.store.EntityStore;
 import org.av360.maverick.graph.store.TransactionsStore;
@@ -51,7 +50,7 @@ import java.util.stream.Collectors;
 
 @Slf4j(topic = "graph.jobs.identifiers")
 @Component
-public class ReplaceLinkedExternalIdentifiersJob implements Job {
+public class ReplaceObjectIdentifiersJob implements Job {
 
     public static String NAME = "replaceLinkedIdentifiers";
 
@@ -60,8 +59,6 @@ public class ReplaceLinkedExternalIdentifiersJob implements Job {
 
 
     private final ReplaceExternalIdentifiers replaceExternalIdentifiers;
-    private final ReplaceAnonymousIdentifiers replaceAnonymousIdentifiers;
-
 
 
     private record StatementsBag(
@@ -73,11 +70,10 @@ public class ReplaceLinkedExternalIdentifiersJob implements Job {
     ) {
     }
 
-    public ReplaceLinkedExternalIdentifiersJob(EntityStore store, TransactionsStore trxStore, ReplaceExternalIdentifiers transformer, ReplaceAnonymousIdentifiers replaceAnonymousIdentifiers) {
+    public ReplaceObjectIdentifiersJob(EntityStore store, TransactionsStore trxStore, ReplaceExternalIdentifiers transformer) {
         this.entityStore = store;
         this.trxStore = trxStore;
         this.replaceExternalIdentifiers = transformer;
-        this.replaceAnonymousIdentifiers = replaceAnonymousIdentifiers;
     }
 
     @Override
@@ -103,20 +99,12 @@ public class ReplaceLinkedExternalIdentifiersJob implements Job {
                 .flatMap(this::deleteStatements)
                 .buffer(10)
                 .flatMap(transactions -> this.commit(transactions, authentication))
-                .doOnNext(transaction -> {
-                    Assert.isTrue(transaction.hasStatement(null, Transactions.STATUS, Transactions.SUCCESS), "Failed transaction: \n" + transaction);
-                })
+                .doOnNext(transaction -> Assert.isTrue(transaction.hasStatement(null, Transactions.STATUS, Transactions.SUCCESS), "Failed transaction: \n" + transaction))
                 .buffer(10)
                 .flatMap(transactions -> this.storeTransactions(transactions, authentication))
-                .doOnError(throwable -> {
-                    log.error("Exception while relinking objects to new subject identifiers: {}", throwable.getMessage());
-                })
-                .doOnSubscribe(sub -> {
-                    log.trace("Checking for external or anonymous identifiers in objects.");
-                })
-                .doOnComplete(() -> {
-                    log.info("Completed checking for external or anonymous identifiers in objects.");
-                });
+                .doOnError(throwable -> log.error("Exception while relinking objects to new subject identifiers: {}", throwable.getMessage()))
+                .doOnSubscribe(sub -> log.trace("Checking for external or anonymous identifiers in objects."))
+                .doOnComplete(() -> log.info("Completed checking for external or anonymous identifiers in objects."));
     }
 
 
@@ -143,9 +131,7 @@ public class ReplaceLinkedExternalIdentifiersJob implements Job {
         Objects.requireNonNull(bag.originalIdentifierStatement());
 
         ModelBuilder modelBuilder = new ModelBuilder();
-        bag.removableStatements().forEach(statement -> {
-            modelBuilder.add(statement.getSubject(), statement.getPredicate(), bag.originalIdentifierStatement().getSubject());
-        });
+        bag.removableStatements().forEach(statement -> modelBuilder.add(statement.getSubject(), statement.getPredicate(), bag.originalIdentifierStatement().getSubject()));
         bag.convertedStatements().addAll(modelBuilder.build());
 
         if(bag.originalIdentifierStatement().getObject().isBNode()) {

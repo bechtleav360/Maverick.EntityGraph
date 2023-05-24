@@ -9,4 +9,8 @@ public class TokenCreatedEvent {
 
         this.token = token;
     }
+
+    public Subscription getToken() {
+        return token;
+    }
 }

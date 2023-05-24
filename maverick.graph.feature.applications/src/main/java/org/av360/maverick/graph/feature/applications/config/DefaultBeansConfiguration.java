@@ -37,7 +37,7 @@ public class DefaultBeansConfiguration implements BeanPostProcessor {
             return new DelegatingNavigationServices(delegate, applicationsService);
         }
         else if(bean instanceof IdentifierServices delegate) {
-            return new DelegatingIdentifierServices(delegate, applicationsService);
+            return new DelegatingIdentifierServices(delegate);
         }
 
 

@@ -3,6 +3,7 @@ package org.av360.maverick.graph.feature.navigation.api.encoder;
 import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.api.config.ReactiveRequestUriContextHolder;
 import org.av360.maverick.graph.model.vocabulary.Local;
+import org.av360.maverick.graph.services.NavigationServices;
 import org.av360.maverick.graph.store.rdf.helpers.RdfUtils;
 import org.eclipse.rdf4j.model.*;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
@@ -110,6 +111,12 @@ public class RdfHtmlEncoder implements Encoder<Statement> {
     private <T extends Value> T convertLocalIRI(T value, URI requestURI) {
 
         if(value instanceof IRI iri) {
+            if(iri.getNamespace().startsWith(NavigationServices.ResolvableUrlPrefix)) {
+                String path = iri.stringValue().substring(NavigationServices.ResolvableUrlPrefix.length()+1);
+                String uri = UriComponentsBuilder.fromUri(requestURI).replacePath(path).replaceQuery("").build().toUriString();
+                return (T) vf.createIRI(uri);
+            }
+
             if(iri.getNamespace().startsWith(Local.URN_PREFIX)) {
 
                 /* ok, here the application module is leaking into the default implementation. If the IRI namespace includes a qualifier,
@@ -119,7 +126,7 @@ public class RdfHtmlEncoder implements Encoder<Statement> {
                    Examples:
                     urn:pwid:meg:e:,213 -> /api/entities/213
                     urn:pwid:meg:e:, f33.213 -> /api/entities/s/f33/213
-                    urn:pwid:meg:, 123 -> /
+                    urn:pwid:meg:, 123 ->  /api/
                  */
                 String[] parts = iri.getLocalName().split("\\.");
                 String ns = iri.getNamespace();
@@ -150,9 +157,9 @@ public class RdfHtmlEncoder implements Encoder<Statement> {
                 return (T) vf.createIRI(uri);
             }
         } else if(value instanceof Literal literal) {
-            if(literal.stringValue().startsWith("?/")) {
-                String p = literal.stringValue().substring(2);
-                String uri = UriComponentsBuilder.fromUri(requestURI).replacePath(p).replaceQuery("").build().toUriString();
+            if(literal.stringValue().startsWith(NavigationServices.ResolvableUrlPrefix)) {
+                String path = literal.stringValue().substring(NavigationServices.ResolvableUrlPrefix.length()+1);
+                String uri = UriComponentsBuilder.fromUri(requestURI).replacePath(path).replaceQuery("").build().toUriString();
                 return (T) vf.createIRI(uri);
             }
         }

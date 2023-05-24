@@ -12,6 +12,8 @@ import static org.springframework.web.reactive.function.server.RouterFunctions.r
 
 @Configuration
 public class RoutesConfiguration {
+
+
     @Bean
     RouterFunction<ServerResponse> redirectStart() {
         return route(GET("/"), req -> ServerResponse.temporaryRedirect(URI.create("/nav")).build());

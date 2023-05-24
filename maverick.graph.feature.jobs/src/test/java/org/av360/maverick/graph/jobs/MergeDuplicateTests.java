@@ -1,7 +1,7 @@
 package org.av360.maverick.graph.jobs;
 
 import lombok.extern.slf4j.Slf4j;
-import org.av360.maverick.graph.feature.jobs.DetectDuplicatesJob;
+import org.av360.maverick.graph.feature.jobs.MergeDuplicatesJob;
 import org.av360.maverick.graph.model.vocabulary.SDO;
 import org.av360.maverick.graph.store.rdf.fragments.RdfTransaction;
 import org.av360.maverick.graph.tests.config.TestSecurityConfig;
@@ -32,11 +32,12 @@ import java.util.stream.Collectors;
 @RecordApplicationEvents
 @ActiveProfiles("test")
 @Slf4j
+@SuppressWarnings("all")
 public class MergeDuplicateTests extends TestsBase  {
 
 
     @Autowired
-    private DetectDuplicatesJob scheduledDetectDuplicates;
+    private MergeDuplicatesJob scheduledDetectDuplicates;
 
     @Autowired
     EntityServicesClient entityServicesClient;

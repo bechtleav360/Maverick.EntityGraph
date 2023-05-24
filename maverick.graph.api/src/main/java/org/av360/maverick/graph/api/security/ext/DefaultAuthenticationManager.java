@@ -73,7 +73,7 @@ public class DefaultAuthenticationManager implements ReactiveAuthenticationManag
     }
 
     private Mono<? extends Authentication> handleAnonymousAuthentication(AnonymousAuthenticationToken authentication) {
-        log.info("Handling request with no authentication, granting read-only access in default authentication manager.");
+        log.debug("Handling request with no authentication, granting read-only access in default authentication manager.");
 
         AnonymousAuthenticationToken auth = new GuestToken();
         auth.setAuthenticated(true);

@@ -1,7 +1,7 @@
 package org.av360.maverick.graph.feature.jobs.schedulers;
 
 import lombok.extern.slf4j.Slf4j;
-import org.av360.maverick.graph.feature.jobs.ReplaceExternalIdentifiersJob;
+import org.av360.maverick.graph.feature.jobs.ReplaceObjectIdentifiersJob;
 import org.av360.maverick.graph.model.events.JobScheduledEvent;
 import org.av360.maverick.graph.model.security.AdminToken;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -12,34 +12,26 @@ import org.springframework.stereotype.Component;
 import java.util.concurrent.TimeUnit;
 
 /**
- * If we have any global identifiers (externally set) in the repo, we have to replace them with our internal identifiers.
- * Otherwise we cannot address the entities through our API.
- * <p>
- * Periodically runs the following sparql queries, grabs the entity definition for it and regenerates the identifiers
- * <p>
- * SELECT ?a WHERE { ?a a ?c . }
- * FILTER NOT EXISTS {
- * FILTER STRSTARTS(str(?a), "http://graphs.azurewebsites.net/api/entities/").
- * }
- * LIMIT 100
+ * After the object identifiers have been replaced, this job is responsible to replace also the objects pointing to the
+ * old object identifiers with the new identifiers. The latter are stored in a property.
  */
 @Slf4j(topic = "graph.jobs.identifiers")
 @Component
 @ConditionalOnProperty(name = "application.features.modules.jobs.scheduled.replaceIdentifiers", havingValue = "true")
-public class ScheduledReplaceIdentifiers  {
+public class ScheduledReplaceSubjectIdentifiers {
 
     // FIXME: should not directly access the services
     private final ApplicationEventPublisher eventPublisher;
 
-    public ScheduledReplaceIdentifiers(ApplicationEventPublisher eventPublisher) {
+    public ScheduledReplaceSubjectIdentifiers(ApplicationEventPublisher eventPublisher) {
         this.eventPublisher = eventPublisher;
     }
 
 
-    @Scheduled(initialDelay = 90, fixedRate = 600, timeUnit = TimeUnit.SECONDS)
+    @Scheduled(initialDelay = 120, fixedRate = 600, timeUnit = TimeUnit.SECONDS)
     // @Scheduled(initialDelay = 7, fixedRate = 20, timeUnit = TimeUnit.SECONDS)
     public void checkForGlobalIdentifiersScheduled() {
-        JobScheduledEvent event = new JobScheduledEvent(ReplaceExternalIdentifiersJob.NAME, new AdminToken());
+        JobScheduledEvent event = new JobScheduledEvent(ReplaceObjectIdentifiersJob.NAME, new AdminToken());
         eventPublisher.publishEvent(event);
     }
 

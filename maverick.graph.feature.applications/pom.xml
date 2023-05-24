@@ -54,6 +54,10 @@
             <groupId>org.springframework.security</groupId>
             <artifactId>spring-security-core</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.av360.maverick.graph</groupId>
+            <artifactId>graph-feature-navigation</artifactId>
+        </dependency>
     </dependencies>
 
 
