@@ -3,7 +3,6 @@ package org.av360.maverick.graph.services.impl;
 import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.model.rdf.AnnotatedStatement;
 import org.av360.maverick.graph.services.QueryServices;
-import org.av360.maverick.graph.services.SchemaServices;
 import org.av360.maverick.graph.store.EntityStore;
 import org.av360.maverick.graph.store.RepositoryType;
 import org.eclipse.rdf4j.query.BindingSet;
@@ -24,13 +23,11 @@ public class QueryServicesImpl implements QueryServices {
 
     private final EntityStore entityStore;
 
-    private final SchemaServices schemaServices;
 
     private final QueryParser queryParser;
 
-    public QueryServicesImpl(EntityStore graph, SchemaServices schemaServices) {
+    public QueryServicesImpl(EntityStore graph) {
         this.entityStore = graph;
-        this.schemaServices = schemaServices;
 
         queryParser = QueryParserUtil.createParser(QueryLanguage.SPARQL);
     }

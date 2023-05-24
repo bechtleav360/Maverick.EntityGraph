@@ -14,7 +14,6 @@ import org.av360.maverick.graph.services.SchemaServices;
 import org.av360.maverick.graph.services.transformers.DelegatingTransformer;
 import org.av360.maverick.graph.services.validators.DelegatingValidator;
 import org.av360.maverick.graph.store.EntityStore;
-import org.av360.maverick.graph.store.TransactionsStore;
 import org.av360.maverick.graph.store.rdf.fragments.RdfEntity;
 import org.av360.maverick.graph.store.rdf.fragments.RdfTransaction;
 import org.av360.maverick.graph.store.rdf.fragments.TripleBag;
@@ -49,7 +48,6 @@ public class EntityServicesImpl implements EntityServices {
 
 
     private final EntityStore entityStore;
-    private final TransactionsStore trxStore;
 
     private final SchemaServices schemaServices;
     private final QueryServices queryServices;
@@ -63,10 +61,8 @@ public class EntityServicesImpl implements EntityServices {
 
 
     public EntityServicesImpl(EntityStore graph,
-                              TransactionsStore trxStore,
                               SchemaServices schemaServices, QueryServices queryServices, IdentifierServices identifierServices, ApplicationEventPublisher eventPublisher) {
         this.entityStore = graph;
-        this.trxStore = trxStore;
         this.schemaServices = schemaServices;
         this.queryServices = queryServices;
         this.identifierServices = identifierServices;
@@ -83,30 +79,30 @@ public class EntityServicesImpl implements EntityServices {
     @Override
     public Flux<RdfEntity> list(Authentication authentication, int limit, int offset) {
         String query = """
-                
-            PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-            PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
-            PREFIX sdo: <https://schema.org/>
-            PREFIX dcterms: <http://purl.org/dc/terms/>
+                        
+                    PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+                    PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+                    PREFIX sdo: <https://schema.org/>
+                    PREFIX dcterms: <http://purl.org/dc/terms/>
 
-            SELECT ?id ?sct ?dct ?rdt ?skt (GROUP_CONCAT(DISTINCT ?type; SEPARATOR=",") AS ?types)
-            WHERE
-            {
-              {
-                SELECT ?id WHERE {
-                  ?id a <urn:pwid:meg:e:Individual> .
-                }
-                LIMIT $limit
-                OFFSET $offset
-              }
-              OPTIONAL { ?id sdo:title ?sct }.
-              OPTIONAL { ?id dcterms:title ?dct }.
-              OPTIONAL { ?id rdfs:label ?rdt }.
-              OPTIONAL { ?id skos:prefLabel ?skt }.
-              ?id a ?type .
-            }
-            GROUP BY ?id  ?sct ?dct ?rdt ?skt
-        """.replace("$limit", limit+"").replace("$offset", offset+"");
+                    SELECT ?id ?sct ?dct ?rdt ?skt (GROUP_CONCAT(DISTINCT ?type; SEPARATOR=",") AS ?types)
+                    WHERE
+                    {
+                      {
+                        SELECT ?id WHERE {
+                          ?id a <urn:pwid:meg:e:Individual> .
+                        }
+                        LIMIT $limit
+                        OFFSET $offset
+                      }
+                      OPTIONAL { ?id sdo:title ?sct }.
+                      OPTIONAL { ?id dcterms:title ?dct }.
+                      OPTIONAL { ?id rdfs:label ?rdt }.
+                      OPTIONAL { ?id skos:prefLabel ?skt }.
+                      ?id a ?type .
+                    }
+                    GROUP BY ?id  ?sct ?dct ?rdt ?skt
+                """.replace("$limit", limit + "").replace("$offset", offset + "");
 
         return this.queryServices.queryValues(query, authentication)
                 .map(BindingsAccessor::new)

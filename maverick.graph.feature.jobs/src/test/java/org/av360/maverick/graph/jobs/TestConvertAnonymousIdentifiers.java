@@ -1,7 +1,7 @@
 package org.av360.maverick.graph.jobs;
 
 import lombok.extern.slf4j.Slf4j;
-import org.av360.maverick.graph.feature.jobs.ReplaceExternalIdentifiersJob;
+import org.av360.maverick.graph.feature.jobs.ReplaceSubjectIdentifiersJob;
 import org.av360.maverick.graph.model.vocabulary.Local;
 import org.av360.maverick.graph.tests.config.TestRepositoryConfig;
 import org.av360.maverick.graph.tests.config.TestSecurityConfig;
@@ -28,10 +28,11 @@ import java.io.IOException;
 @RecordApplicationEvents
 @ActiveProfiles("test")
 @Slf4j
-class ConvertAnonymousIdentifiers extends TestsBase {
+@SuppressWarnings("all")
+class TestConvertAnonymousIdentifiers extends TestsBase {
 
     @Autowired
-    private ReplaceExternalIdentifiersJob scheduled;
+    private ReplaceSubjectIdentifiersJob scheduled;
 
 
     @Autowired
@@ -58,17 +59,15 @@ class ConvertAnonymousIdentifiers extends TestsBase {
         Mono<Void> jobMono = scheduled.run(TestSecurityConfig.createAuthenticationToken()).doOnSubscribe(sub -> super.printStep());
 
         StepVerifier.create(importMono.then(read1))
-                .assertNext(md -> {
-                    Assertions.assertTrue(md.subjects().size() > 0);
-                }).verifyComplete();
+                .assertNext(md -> Assertions.assertTrue(md.subjects().size() > 0)).verifyComplete();
 
         StepVerifier.create(jobMono).verifyComplete();
 
         StepVerifier.create(read2)
                 .assertNext(model -> {
-                    Assertions.assertEquals(3, model.size());
+                    Assertions.assertEquals(4, model.size());
                     Assertions.assertEquals(1, model.subjects().size());
-                    Assertions.assertEquals(Local.Entities.NAMESPACE+"b2p6u4vx", model.subjects().stream().findFirst().get().stringValue());
+                    Assertions.assertEquals(Local.Entities.NAMESPACE + "b2p6u4vx", model.subjects().stream().findFirst().get().stringValue());
                 })
                 .verifyComplete();
 
@@ -89,16 +88,12 @@ class ConvertAnonymousIdentifiers extends TestsBase {
         Mono<Void> jobMono = scheduled.run(TestSecurityConfig.createAuthenticationToken()).doOnSubscribe(sub -> super.printStep());
 
         StepVerifier.create(importMono.then(read1))
-                .assertNext(md -> {
-                    Assertions.assertTrue(md.subjects().size() > 0);
-                }).verifyComplete();
+                .assertNext(md -> Assertions.assertTrue(md.subjects().size() > 0)).verifyComplete();
 
         StepVerifier.create(jobMono).verifyComplete();
 
         StepVerifier.create(read2)
-                .assertNext(model -> {
-                    Assertions.assertEquals(8, model.size());
-                })
+                .assertNext(model -> Assertions.assertEquals(8, model.size()))
                 .verifyComplete();
 
     }
@@ -118,16 +113,12 @@ class ConvertAnonymousIdentifiers extends TestsBase {
         Mono<Void> jobMono = scheduled.run(TestSecurityConfig.createAuthenticationToken()).doOnSubscribe(sub -> super.printStep());
 
         StepVerifier.create(importMono.then(read1))
-                .assertNext(md -> {
-                    Assertions.assertTrue(md.subjects().size() > 0);
-                }).verifyComplete();
+                .assertNext(md -> Assertions.assertTrue(md.subjects().size() > 0)).verifyComplete();
 
         StepVerifier.create(jobMono).verifyComplete();
 
         StepVerifier.create(read2)
-                .assertNext(model -> {
-                    Assertions.assertEquals(7, model.size());
-                })
+                .assertNext(model -> Assertions.assertEquals(7, model.size()))
                 .verifyComplete();
 
     }
@@ -155,7 +146,7 @@ class ConvertAnonymousIdentifiers extends TestsBase {
 
         StepVerifier.create(read2)
                 .assertNext(model -> {
-                    Assertions.assertEquals(8, model.size());
+                    Assertions.assertEquals(12, model.size());
                 })
                 .verifyComplete();
 

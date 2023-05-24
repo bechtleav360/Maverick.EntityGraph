@@ -1,14 +1,9 @@
 package org.av360.maverick.graph.feature.applications.domain;
 
-import com.github.benmanes.caffeine.cache.Cache;
-import com.github.benmanes.caffeine.cache.Caffeine;
-import io.micrometer.core.instrument.Gauge;
-import io.micrometer.core.instrument.MeterRegistry;
 import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.api.security.errors.RevokedApiKeyUsed;
 import org.av360.maverick.graph.api.security.errors.UnknownApiKey;
 import org.av360.maverick.graph.feature.applications.domain.events.TokenCreatedEvent;
-import org.av360.maverick.graph.feature.applications.domain.model.Application;
 import org.av360.maverick.graph.feature.applications.domain.model.QueryVariables;
 import org.av360.maverick.graph.feature.applications.domain.model.Subscription;
 import org.av360.maverick.graph.feature.applications.domain.vocab.ApplicationTerms;
@@ -41,7 +36,6 @@ import java.time.ZonedDateTime;
 public class SubscriptionsService {
 
 
-    private final Cache<String, Application> cache;
 
     private final ApplicationsStore applicationsStore;
 
@@ -50,8 +44,6 @@ public class SubscriptionsService {
     private final ApplicationEventPublisher eventPublisher;
 
     private final IdentifierFactory identifierFactory;
-    private MeterRegistry meterRegistry;
-    private Gauge cacheGauge;
 
 
     public SubscriptionsService(ApplicationsStore applicationsStore, ApplicationsService applicationsService, ApplicationEventPublisher eventPublisher, IdentifierFactory identifierFactory) {
@@ -60,7 +52,6 @@ public class SubscriptionsService {
         this.eventPublisher = eventPublisher;
         this.identifierFactory = identifierFactory;
         // this.cache = Caffeine.newBuilder().recordStats().expireAfterAccess(60, TimeUnit.MINUTES).build();
-        this.cache = Caffeine.newBuilder().recordStats().build();
     }
 
 

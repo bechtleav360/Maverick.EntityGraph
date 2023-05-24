@@ -3,10 +3,10 @@ package org.av360.maverick.graph.feature.jobs.ctrl;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.api.controller.AbstractController;
-import org.av360.maverick.graph.feature.jobs.DetectDuplicatesJob;
-import org.av360.maverick.graph.feature.jobs.ReplaceExternalIdentifiersJob;
-import org.av360.maverick.graph.feature.jobs.ReplaceLinkedExternalIdentifiersJob;
-import org.av360.maverick.graph.feature.jobs.TypeCoercionJob;
+import org.av360.maverick.graph.feature.jobs.AssignInternalTypesJob;
+import org.av360.maverick.graph.feature.jobs.MergeDuplicatesJob;
+import org.av360.maverick.graph.feature.jobs.ReplaceObjectIdentifiersJob;
+import org.av360.maverick.graph.feature.jobs.ReplaceSubjectIdentifiersJob;
 import org.av360.maverick.graph.model.events.JobScheduledEvent;
 import org.av360.maverick.graph.model.security.AdminToken;
 import org.springframework.context.ApplicationEventPublisher;
@@ -30,7 +30,6 @@ public class JobsCtrl extends AbstractController {
 
     public JobsCtrl(ApplicationEventPublisher eventPublisher) {
         this.eventPublisher = eventPublisher;
-
     }
 
 
@@ -38,7 +37,7 @@ public class JobsCtrl extends AbstractController {
     @ResponseStatus(HttpStatus.OK)
     Mono<Void> execDeduplicationJob() {
         log.info("Request to execute job: Deduplication");
-        JobScheduledEvent event = new JobScheduledEvent(DetectDuplicatesJob.NAME, new AdminToken());
+        JobScheduledEvent event = new JobScheduledEvent(MergeDuplicatesJob.NAME, new AdminToken());
         eventPublisher.publishEvent(event);
         return Mono.empty();
 
@@ -48,7 +47,7 @@ public class JobsCtrl extends AbstractController {
     @ResponseStatus(HttpStatus.ACCEPTED)
     Mono<Void> execReplaceSubjectIdentifiersJob() {
         log.info("Request to execute job: Replace subject identifiers");
-        JobScheduledEvent event = new JobScheduledEvent(ReplaceExternalIdentifiersJob.NAME, new AdminToken());
+        JobScheduledEvent event = new JobScheduledEvent(ReplaceSubjectIdentifiersJob.NAME, new AdminToken());
         eventPublisher.publishEvent(event);
         return Mono.empty();
     }
@@ -57,7 +56,7 @@ public class JobsCtrl extends AbstractController {
     @ResponseStatus(HttpStatus.ACCEPTED)
     Mono<Void> execReplaceObjectIdentifiersJob() {
         log.info("Request to execute job: Replace object identifiers");
-        JobScheduledEvent event = new JobScheduledEvent(ReplaceLinkedExternalIdentifiersJob.NAME, new AdminToken());
+        JobScheduledEvent event = new JobScheduledEvent(ReplaceObjectIdentifiersJob.NAME, new AdminToken());
         eventPublisher.publishEvent(event);
         return Mono.empty();
 
@@ -68,7 +67,7 @@ public class JobsCtrl extends AbstractController {
     @ResponseStatus(HttpStatus.OK)
     Mono<Void> execCoercionJob() {
         log.info("Request to execute job: Infer types");
-        JobScheduledEvent event = new JobScheduledEvent(TypeCoercionJob.NAME, new AdminToken());
+        JobScheduledEvent event = new JobScheduledEvent(AssignInternalTypesJob.NAME, new AdminToken());
         eventPublisher.publishEvent(event);
         return Mono.empty();
     }

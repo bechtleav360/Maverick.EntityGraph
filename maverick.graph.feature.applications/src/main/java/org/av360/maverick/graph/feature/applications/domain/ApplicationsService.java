@@ -2,8 +2,6 @@ package org.av360.maverick.graph.feature.applications.domain;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
-import io.micrometer.core.instrument.Gauge;
-import io.micrometer.core.instrument.MeterRegistry;
 import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.feature.applications.config.Globals;
 import org.av360.maverick.graph.feature.applications.domain.errors.InvalidApplication;
@@ -24,7 +22,6 @@ import org.eclipse.rdf4j.model.util.ModelBuilder;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.sparqlbuilder.core.query.Queries;
 import org.eclipse.rdf4j.sparqlbuilder.core.query.SelectQuery;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ApplicationListener;
 import org.springframework.security.core.Authentication;
@@ -50,8 +47,6 @@ public class ApplicationsService implements ApplicationListener<ApplicationUpdat
     private final ApplicationEventPublisher eventPublisher;
 
     private final IdentifierFactory identifierFactory;
-    private MeterRegistry meterRegistry;
-    private Gauge cacheGauge;
 
 
     public ApplicationsService(ApplicationsStore applicationsStore, ApplicationEventPublisher eventPublisher, IdentifierFactory identifierFactory) {
@@ -170,8 +165,5 @@ public class ApplicationsService implements ApplicationListener<ApplicationUpdat
     }
 
 
-    @Autowired
-    private void setMeterRegistry(MeterRegistry meterRegistry) {
-        this.meterRegistry = meterRegistry;
-    }
+
 }

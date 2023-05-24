@@ -10,7 +10,7 @@ import javax.annotation.Nonnull;
 import java.util.Objects;
 
 public class JobScheduledEvent extends ApplicationEvent {
-    private Authentication token;
+    private final Authentication token;
 
     public JobScheduledEvent(@Nonnull String name, Authentication authentication) {
         super(name);
@@ -23,9 +23,13 @@ public class JobScheduledEvent extends ApplicationEvent {
         return (String) super.getSource();
     }
 
+    public String getScope() {
+        return "default";
+    }
+
 
     public String getJobIdentifier() {
-        return String.format("%s:%s", getJobName(), "default");
+        return String.format("%s:%s", getJobName(), getScope());
     }
 
     public Context buildContext(Context ctx) {

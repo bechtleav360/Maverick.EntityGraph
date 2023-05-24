@@ -23,6 +23,8 @@ public class JobQueue implements ApplicationListener<JobScheduledEvent> {
         this.publishedJobs = new ArrayDeque<>();
     }
 
+    public record JobIdentifier(String name, String scope) {}
+
     @Override
     public void onApplicationEvent(JobScheduledEvent event) {
         meterRegistry.counter("graph.scheduled.jobs.counter", "name", event.getJobIdentifier(), "event", "received").increment();
@@ -40,7 +42,9 @@ public class JobQueue implements ApplicationListener<JobScheduledEvent> {
         return Optional.of(next);
     }
 
-    public Optional<String> peek() {
-        return Optional.ofNullable(publishedJobs.peek()).map(JobScheduledEvent::getJobIdentifier);
+    public Optional<JobIdentifier> peek() {
+        return Optional.ofNullable(publishedJobs.peek()).map(event -> new JobIdentifier(event.getJobName(), event.getScope()));
     }
+
+
 }
