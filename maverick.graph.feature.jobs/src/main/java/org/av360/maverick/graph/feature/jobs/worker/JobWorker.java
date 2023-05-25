@@ -45,7 +45,8 @@ public class JobWorker {
         requestedJobs.peek().ifPresent(jobIdentifier -> {
             if(StringUtils.hasLength(this.activeJobs.get(jobIdentifier.scope()))) {
                 log.debug("Job '{}' in scope '{}' still running, skipping scheduled run of job '{}'.", this.activeJobs.get(jobIdentifier.scope()), jobIdentifier.scope(), jobIdentifier.name());
-                meterRegistry.counter("graph.scheduled.jobs.counter", "name", jobIdentifier.name(), "scope", jobIdentifier.scope(), "result", "hold").increment();
+                requestedJobs.delayFirst();
+                meterRegistry.counter("graph.jobs.counter", "name", jobIdentifier.name(), "scope", jobIdentifier.scope(), "status", "hold").increment();
                 return;
              }
 
@@ -66,11 +67,11 @@ public class JobWorker {
                     .doOnSuccess(success -> {
                         log.trace("Completed job '{}'", event.getJobIdentifier());
                         this.activeJobs.put(jobIdentifier.scope(), null);
-                        meterRegistry.counter("graph.scheduled.jobs.counter", "name", event.getJobIdentifier(), "result", "completed").increment();
+                        meterRegistry.counter("graph.jobs.counter", "name", jobIdentifier.name(), "scope", jobIdentifier.scope(), "status", "completed").increment();
                     })
                     .doOnError(error -> {
                         log.warn("Failed job '{}' due to reason: {}", event.getJobIdentifier(), error.getMessage());
-                        meterRegistry.counter("graph.scheduled.jobs.counter", "name", event.getJobIdentifier(), "result", "failed").increment();
+                        meterRegistry.counter("graph.jobs.counter", "name", jobIdentifier.name(), "scope", jobIdentifier.scope(), "status ", "failed").increment();
                         this.activeJobs.put(jobIdentifier.scope(), null);
                     }).subscribe();
 
