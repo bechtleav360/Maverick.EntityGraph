@@ -12,6 +12,8 @@ public interface NavigationServices {
 
     Flux<AnnotatedStatement> start(Authentication authentication);
 
+    Flux<AnnotatedStatement> list(Map<String, String> requestParams, Authentication authentication);
+
     Flux<AnnotatedStatement> browse(Map<String, String> params, Authentication authentication);
 
 

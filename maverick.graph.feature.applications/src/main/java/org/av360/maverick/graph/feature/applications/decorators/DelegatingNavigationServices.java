@@ -2,17 +2,17 @@ package org.av360.maverick.graph.feature.applications.decorators;
 
 import org.av360.maverick.graph.feature.applications.domain.ApplicationsService;
 import org.av360.maverick.graph.feature.applications.domain.vocab.ApplicationTerms;
-import org.av360.maverick.graph.feature.navigation.domain.impl.NavigationServicesImpl;
 import org.av360.maverick.graph.model.rdf.AnnotatedStatement;
 import org.av360.maverick.graph.model.security.GuestToken;
 import org.av360.maverick.graph.model.vocabulary.Local;
-import org.av360.maverick.graph.services.EntityServices;
+import org.av360.maverick.graph.services.NavigationServices;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Namespace;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.util.ModelBuilder;
 import org.eclipse.rdf4j.model.vocabulary.HYDRA;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.ReactiveSecurityContextHolder;
 import org.springframework.security.core.context.SecurityContext;
@@ -21,13 +21,15 @@ import reactor.core.publisher.Mono;
 
 import java.util.Map;
 import java.util.Set;
-public class ExtendedNavigationServices extends NavigationServicesImpl {
-    private final ApplicationsService applicationsService;
+
+public class DelegatingNavigationServices implements NavigationServices {
+    private final NavigationServices delegate;
+    private ApplicationsService applicationsService;
     private final SimpleValueFactory vf;
 
-    public ExtendedNavigationServices(EntityServices entityServices, ApplicationsService applicationsService) {
-        super(entityServices);
+    public DelegatingNavigationServices(NavigationServices delegate, ApplicationsService applicationsService) {
         this.applicationsService = applicationsService;
+        this.delegate = delegate;
         this.vf = SimpleValueFactory.getInstance();
     }
 
@@ -35,7 +37,7 @@ public class ExtendedNavigationServices extends NavigationServicesImpl {
     public Flux<AnnotatedStatement> start(Authentication authentication) {
 
 
-        return super.start(authentication).mergeWith(
+        return delegate.start(authentication).mergeWith(
                 ReactiveSecurityContextHolder.getContext().map(SecurityContext::getAuthentication)
                         .switchIfEmpty(Mono.just(new GuestToken()))
                         .flatMapMany(applicationsService::listApplications)
@@ -72,19 +74,22 @@ public class ExtendedNavigationServices extends NavigationServicesImpl {
 
     @Override
     public Flux<AnnotatedStatement> list(Map<String, String> requestParams, Authentication authentication) {
-
-        return super.list(requestParams, authentication);
+        return delegate.list(requestParams, authentication);
     }
 
     @Override
     public Flux<AnnotatedStatement> browse(Map<String, String> params, Authentication authentication) {
-        return super.browse(params, authentication);
+        return delegate.browse(params, authentication);
     }
 
     @Override
     public IRI generateResolvableIRI(String path, Map<String, String> params) {
-        return super.generateResolvableIRI(path, params);
+        return delegate.generateResolvableIRI(path, params);
     }
 
 
+    @Autowired
+    public void setApplicationsService(ApplicationsService applicationsService) {
+        this.applicationsService = applicationsService;
+    }
 }

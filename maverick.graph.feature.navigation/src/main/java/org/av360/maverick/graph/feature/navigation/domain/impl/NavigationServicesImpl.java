@@ -15,6 +15,7 @@ import org.eclipse.rdf4j.model.util.ModelBuilder;
 import org.eclipse.rdf4j.model.vocabulary.HYDRA;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.model.vocabulary.RDFS;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
@@ -29,14 +30,10 @@ import java.util.stream.Collectors;
 @Service
 public class NavigationServicesImpl implements NavigationServices {
 
-    private final EntityServices entityServices;
-
+    private EntityServices entityServices;
 
     ValueFactory vf = SimpleValueFactory.getInstance();
 
-    public NavigationServicesImpl(EntityServices entityServices) {
-        this.entityServices = entityServices;
-    }
 
     @Override
     public Flux<AnnotatedStatement> start(Authentication authentication) {
@@ -103,13 +100,13 @@ public class NavigationServicesImpl implements NavigationServices {
     }
 
 
+
+
     public Flux<AnnotatedStatement> list(Map<String, String> params, Authentication authentication) {
         Integer limit = Optional.ofNullable(params.get("limit")).map(Integer::parseInt).orElse(20);
         Integer offset = Optional.ofNullable(params.get("offset")).map(Integer::parseInt).orElse(0);
         params.put("limit", limit.toString());
         params.put("offset", offset.toString());
-
-
 
 
 
@@ -173,4 +170,8 @@ public class NavigationServicesImpl implements NavigationServices {
     }
 
 
+    @Autowired
+    public void setEntityServices(EntityServices entityServices) {
+        this.entityServices = entityServices;
+    }
 }
