@@ -24,15 +24,12 @@ public class JobQueue implements ApplicationListener<JobScheduledEvent> {
     }
 
     /**
-     * Switches the first two positions of jobs
+     * Moves the first to the end of the queue
      */
     public void delayFirst() {
-        if(this.publishedJobs.size() > 2) {
-
+        if(this.publishedJobs.size() > 1) {
             JobScheduledEvent first = this.publishedJobs.pop();
-            JobScheduledEvent second = this.publishedJobs.pop();
-            this.publishedJobs.addFirst(first);
-            this.publishedJobs.addFirst(second);
+            this.publishedJobs.addLast(first);
 
             log.info("Current job queue: "+this.publishedJobs);
         }
