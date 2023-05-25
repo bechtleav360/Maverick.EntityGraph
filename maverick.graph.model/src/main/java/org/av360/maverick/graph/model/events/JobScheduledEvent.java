@@ -40,6 +40,12 @@ public class JobScheduledEvent extends ApplicationEvent {
         return token;
     }
 
+
+    @Override
+    public String toString() {
+        return this.getJobIdentifier(); 
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

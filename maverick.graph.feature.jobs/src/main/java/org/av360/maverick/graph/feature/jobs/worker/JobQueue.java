@@ -27,10 +27,15 @@ public class JobQueue implements ApplicationListener<JobScheduledEvent> {
      * Switches the first two positions of jobs
      */
     public void delayFirst() {
-        JobScheduledEvent first = this.publishedJobs.pop();
-        JobScheduledEvent second = this.publishedJobs.pop();
-        this.publishedJobs.addFirst(first);
-        this.publishedJobs.addFirst(second);
+        if(this.publishedJobs.size() > 2) {
+
+            JobScheduledEvent first = this.publishedJobs.pop();
+            JobScheduledEvent second = this.publishedJobs.pop();
+            this.publishedJobs.addFirst(first);
+            this.publishedJobs.addFirst(second);
+
+            log.info("Current job queue: "+this.publishedJobs);
+        }
     }
 
     public record JobIdentifier(String name, String scope) {}
