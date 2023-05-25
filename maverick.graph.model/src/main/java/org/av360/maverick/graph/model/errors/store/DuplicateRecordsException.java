@@ -1,6 +1,6 @@
 package org.av360.maverick.graph.model.errors.store;
 
-import org.av360.maverick.graph.model.errors.InconsistentModel;
+import org.av360.maverick.graph.model.errors.InconsistentModelException;
 
-public class DuplicateRecordsException extends InconsistentModel {
+public class DuplicateRecordsException extends InconsistentModelException {
 }

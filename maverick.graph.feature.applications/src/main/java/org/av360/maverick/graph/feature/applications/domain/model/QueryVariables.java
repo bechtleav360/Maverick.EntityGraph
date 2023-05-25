@@ -1,8 +1,10 @@
 package org.av360.maverick.graph.feature.applications.domain.model;
 
+import org.av360.maverick.graph.model.errors.InconsistentModelException;
 import org.av360.maverick.graph.store.rdf.helpers.BindingsAccessor;
 import org.eclipse.rdf4j.sparqlbuilder.core.SparqlBuilder;
 import org.eclipse.rdf4j.sparqlbuilder.core.Variable;
+import reactor.core.publisher.Mono;
 
 public class QueryVariables {
 
@@ -19,40 +21,45 @@ public class QueryVariables {
     public static final Variable varSubLabel = SparqlBuilder.var("subLabel");
 
 
-    public static Subscription buildSubscriptionFromBindings(BindingsAccessor ba) {
-
-        return new Subscription(
-                ba.asIRI(varSubIri),
-                ba.asString(varSubLabel),
-                ba.asString(varSubKey),
-                ba.asBoolean(varSubActive),
-                ba.asString(varSubIssued),
-                buildApplicationFromBindings(ba)
-        );
+    public static Mono<Subscription> buildSubscriptionFromBindings(BindingsAccessor ba)  {
+        return buildApplicationFromBindings(ba)
+                .flatMap(application ->
+                        buildSubscriptionFromBindings(ba, application)
+                );
     }
 
 
-    public static  Subscription buildSubscriptionFromBindings(BindingsAccessor ba, Application app) {
+    public static  Mono<Subscription> buildSubscriptionFromBindings(BindingsAccessor ba, Application app) {
+        try {
+            Subscription subscription = new Subscription(
+                    ba.asIRI(varSubIri),
+                    ba.asString(varSubLabel),
+                    ba.asString(varSubKey),
+                    ba.asBoolean(varSubActive),
+                    ba.asString(varSubIssued),
+                    app
+            );
+            return Mono.just(subscription);
+        } catch (InconsistentModelException e) {
+            return Mono.error(e);
+        }
 
-        return new Subscription(
-                ba.asIRI(varSubIri),
-                ba.asString(varSubLabel),
-                ba.asString(varSubKey),
-                ba.asBoolean(varSubActive),
-                ba.asString(varSubIssued),
-                app
-        );
     }
 
-    public static Application buildApplicationFromBindings(BindingsAccessor ba) {
-        return new Application(
-                ba.asIRI(varAppIri),
-                ba.asString(varAppLabel),
-                ba.asString(varAppKey),
-                new ApplicationFlags(
-                        ba.asBoolean(varAppFlagPersistent),
-                        ba.asBoolean(varAppFlagPublic)
-                )
-        );
+    public static Mono<Application> buildApplicationFromBindings(BindingsAccessor ba) {
+        try {
+            Application application =  new Application(
+                    ba.asIRI(varAppIri),
+                    ba.asString(varAppLabel),
+                    ba.asString(varAppKey),
+                    new ApplicationFlags(
+                            ba.asBoolean(varAppFlagPersistent),
+                            ba.asBoolean(varAppFlagPublic)
+                    )
+            );
+            return Mono.just(application);
+        } catch (InconsistentModelException e) {
+            return Mono.error(e);
+        }
     }
 }

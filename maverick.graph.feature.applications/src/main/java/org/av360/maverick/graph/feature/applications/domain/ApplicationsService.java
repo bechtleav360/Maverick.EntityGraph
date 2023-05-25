@@ -133,7 +133,7 @@ public class ApplicationsService implements ApplicationListener<ApplicationUpdat
 
             return this.applicationsStore.query(q, authentication, Authorities.READER)
                     .map(BindingsAccessor::new)
-                    .map(QueryVariables::buildApplicationFromBindings)
+                    .flatMap(QueryVariables::buildApplicationFromBindings)
                     .doOnNext(application -> this.cache.put(application.key(), application))
                     .doOnSubscribe(StreamsLogger.debug(log, "Loading all applications from repository."));
         } else {

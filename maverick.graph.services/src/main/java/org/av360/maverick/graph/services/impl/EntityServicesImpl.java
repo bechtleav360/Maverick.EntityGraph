@@ -2,6 +2,7 @@ package org.av360.maverick.graph.services.impl;
 
 import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.model.enums.Activity;
+import org.av360.maverick.graph.model.errors.InconsistentModelException;
 import org.av360.maverick.graph.model.errors.requests.EntityNotFound;
 import org.av360.maverick.graph.model.events.EntityCreatedEvent;
 import org.av360.maverick.graph.model.events.EntityDeletedEvent;
@@ -106,32 +107,36 @@ public class EntityServicesImpl implements EntityServices {
 
         return this.queryServices.queryValues(query, authentication)
                 .map(BindingsAccessor::new)
-                .map(bnd -> {
-                    IRI resource = bnd.asIRI("id");
+                .flatMap(bnd -> {
+                    try {
+                        Resource resource = bnd.asIRI("id");
 
-                    ModelBuilder builder = new ModelBuilder();
-                    builder.subject(resource);
-                    bnd.asSet("types").stream()
-                            .map(typeString -> SimpleValueFactory.getInstance().createIRI(typeString))
-                            .forEach(typeIRI -> builder.add(RDF.TYPE, typeIRI));
-                    bnd.findValue("sct").ifPresent(val -> {
-                        builder.add(SDO.TITLE, val);
-                        builder.setNamespace(SDO.NS);
-                    });
-                    bnd.findValue("rdt").ifPresent(val -> {
-                        builder.add(RDFS.LABEL, val);
-                        builder.setNamespace(RDFS.NS);
-                    });
-                    bnd.findValue("dct").ifPresent(val -> {
-                        builder.add(DCTERMS.TITLE, val);
-                        builder.setNamespace(DCTERMS.NS);
-                    });
-                    bnd.findValue("skt").ifPresent(val -> {
-                        builder.add(SKOS.PREF_LABEL, val);
-                        builder.setNamespace(SKOS.NS);
-                    });
+                        ModelBuilder builder = new ModelBuilder();
+                        builder.subject(resource);
+                        bnd.asSet("types").stream()
+                                .map(typeString -> SimpleValueFactory.getInstance().createIRI(typeString))
+                                .forEach(typeIRI -> builder.add(RDF.TYPE, typeIRI));
+                        bnd.findValue("sct").ifPresent(val -> {
+                            builder.add(SDO.TITLE, val);
+                            builder.setNamespace(SDO.NS);
+                        });
+                        bnd.findValue("rdt").ifPresent(val -> {
+                            builder.add(RDFS.LABEL, val);
+                            builder.setNamespace(RDFS.NS);
+                        });
+                        bnd.findValue("dct").ifPresent(val -> {
+                            builder.add(DCTERMS.TITLE, val);
+                            builder.setNamespace(DCTERMS.NS);
+                        });
+                        bnd.findValue("skt").ifPresent(val -> {
+                            builder.add(SKOS.PREF_LABEL, val);
+                            builder.setNamespace(SKOS.NS);
+                        });
 
-                    return new RdfEntity(resource, builder.build());
+                        return Mono.just(new RdfEntity(resource, builder.build()));
+                    } catch (InconsistentModelException e) {
+                        return Mono.error(e);
+                    }
                 });
 
         /*

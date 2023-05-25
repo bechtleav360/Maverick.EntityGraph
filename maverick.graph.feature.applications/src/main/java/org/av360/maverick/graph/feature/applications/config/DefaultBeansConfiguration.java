@@ -3,8 +3,9 @@ package org.av360.maverick.graph.feature.applications.config;
 import org.av360.maverick.graph.feature.applications.decorators.DelegatingAnonymousIdentifierTransformer;
 import org.av360.maverick.graph.feature.applications.decorators.DelegatingExternalIdentifierTransformer;
 import org.av360.maverick.graph.feature.applications.decorators.DelegatingIdentifierServices;
-import org.av360.maverick.graph.feature.applications.decorators.DelegatingNavigationServices;
+import org.av360.maverick.graph.feature.applications.decorators.ExtendedNavigationServices;
 import org.av360.maverick.graph.feature.applications.domain.ApplicationsService;
+import org.av360.maverick.graph.services.EntityServices;
 import org.av360.maverick.graph.services.IdentifierServices;
 import org.av360.maverick.graph.services.NavigationServices;
 import org.av360.maverick.graph.services.transformers.replaceIdentifiers.ReplaceAnonymousIdentifiers;
@@ -20,6 +21,9 @@ public class DefaultBeansConfiguration implements BeanPostProcessor {
     @Autowired
     ApplicationsService applicationsService;
 
+    @Autowired
+    EntityServices entityServices;
+
     @Override
     public Object postProcessAfterInitialization(Object bean, String beanName) throws BeansException {
         /*if(bean instanceof IdentifierFactory delegate) {
@@ -34,7 +38,7 @@ public class DefaultBeansConfiguration implements BeanPostProcessor {
             return new DelegatingAnonymousIdentifierTransformer(delegate);
         }
         else if(bean instanceof NavigationServices delegate) {
-            return new DelegatingNavigationServices(delegate, applicationsService);
+            return new ExtendedNavigationServices(entityServices, applicationsService);
         }
         else if(bean instanceof IdentifierServices delegate) {
             return new DelegatingIdentifierServices(delegate);

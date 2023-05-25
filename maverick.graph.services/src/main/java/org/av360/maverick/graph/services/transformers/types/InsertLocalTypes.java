@@ -24,6 +24,9 @@ public class InsertLocalTypes implements Transformer {
     static Set<IRI> characteristicProperties = new HashSet<>();
 
     static Set<IRI> classifierTypes = new HashSet<>();
+
+
+    static Set<IRI> embeddedTypes = new HashSet<>();
     static ValueFactory valueFactory = SimpleValueFactory.getInstance();
 
     static {
@@ -37,6 +40,11 @@ public class InsertLocalTypes implements Transformer {
         classifierTypes.add(SDO.DEFINED_TERM);
         classifierTypes.add(SKOS.CONCEPT);
         classifierTypes.add(SDO.CATEGORY_CODE);
+
+        embeddedTypes.add(SDO.PROPERTY_VALUE);
+        embeddedTypes.add(SDO.QUANTITATIVE_VALUE);
+        embeddedTypes.add(SDO.STRUCTURED_VALUE);
+
     }
 
     @Override

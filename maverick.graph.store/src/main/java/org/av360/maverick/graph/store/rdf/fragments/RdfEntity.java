@@ -2,7 +2,6 @@ package org.av360.maverick.graph.store.rdf.fragments;
 
 import org.apache.commons.lang3.NotImplementedException;
 import org.av360.maverick.graph.model.entities.Entity;
-import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Statement;
@@ -28,7 +27,7 @@ public class RdfEntity extends TripleModel implements Entity {
     }
 
 
-    public RdfEntity(IRI resource, Model model) {
+    public RdfEntity(Resource resource, Model model) {
         super(model);
         this.identifier = resource;
     }
