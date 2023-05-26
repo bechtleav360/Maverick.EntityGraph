@@ -13,7 +13,7 @@ import java.util.concurrent.TimeUnit;
 
 @Component
 @Slf4j(topic = "graph.jobs.exports")
-@ConditionalOnProperty(name = "application.features.modules.jobs.scheduled.exportApplication", havingValue = "true")
+@ConditionalOnProperty(name = "application.features.modules.jobs.scheduled.exportApplication.enabled", havingValue = "true")
 public class ScheduledExportApplication {
     private final ApplicationEventPublisher eventPublisher;
 

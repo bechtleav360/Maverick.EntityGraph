@@ -20,7 +20,11 @@ application:
           detectDuplicates: true
           replaceIdentifiers: true
           typeCoercion: true
-          exportApplication: true
+          exportApplication:
+            enabled: true
+            defaultS3Host: "http://127.0.0.1:9000"
+            defaultS3BucketId: "test"
+            defaultExportFrequency: "0 0 0 * * *"
       navigation:
         enabled: true
     transformers:
@@ -28,7 +32,6 @@ application:
       replaceAnonymousIdentifiers: true
       mergeDuplicates: true
       typeCoercion: true
-      exportApplication: true
     validators:
       checkRequiredType: true
 
