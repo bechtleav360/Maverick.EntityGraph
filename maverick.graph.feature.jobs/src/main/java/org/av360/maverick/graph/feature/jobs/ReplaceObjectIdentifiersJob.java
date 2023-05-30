@@ -30,7 +30,7 @@ import java.util.stream.Collectors;
  *
  * Result of the check for external subject identifiers
  * <pre>
- * <urn:pwid:meg:e:_ii64uxx> a <htps://schema.org/VideoObject>;
+ * <urn:epwid:meg:e:_ii64uxx> a <htps://schema.org/VideoObject>;
  *   <htps://schema.org/identifier> "c";
  *   <urn:int:srcid> _:2c7bc378441944efadb5210464450a1d2;
  *   <htps://schema.org/hasDefinedTerm> _:2c7bc378441944efadb5210464450a1d3 .
@@ -97,10 +97,10 @@ public class ReplaceObjectIdentifiersJob implements Job {
                 .flatMap(this::convertObjectStatements)
                 .flatMap(this::insertStatements)
                 .flatMap(this::deleteStatements)
-                .buffer(10)
+                .buffer(50)
                 .flatMap(transactions -> this.commit(transactions, authentication))
                 .doOnNext(transaction -> Assert.isTrue(transaction.hasStatement(null, Transactions.STATUS, Transactions.SUCCESS), "Failed transaction: \n" + transaction))
-                .buffer(10)
+                .buffer(5)
                 .flatMap(transactions -> this.storeTransactions(transactions, authentication))
                 .doOnError(throwable -> log.error("Exception while relinking objects to new subject identifiers: {}", throwable.getMessage()))
                 .doOnSubscribe(sub -> log.trace("Checking for external or anonymous identifiers in objects."))
@@ -110,7 +110,7 @@ public class ReplaceObjectIdentifiersJob implements Job {
 
     private Flux<RdfTransaction> commit(List<RdfTransaction> transactions, Authentication authentication) {
         // log.trace("Committing {} transactions", transactions.size());
-        return this.entityStore.commit(transactions, authentication);
+        return this.entityStore.commit(transactions, authentication, Authorities.CONTRIBUTOR, true);
     }
 
     private Flux<RdfTransaction> storeTransactions(Collection<RdfTransaction> transactions, Authentication authentication) {

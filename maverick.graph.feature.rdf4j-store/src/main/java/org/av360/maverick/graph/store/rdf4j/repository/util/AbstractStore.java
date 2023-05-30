@@ -249,9 +249,20 @@ public abstract class AbstractStore implements TripleStore, Statements, ModelUpd
 
 
     @Override
-    public Flux<RdfTransaction> commit(Collection<RdfTransaction> transactions, Authentication authentication, GrantedAuthority requiredAuthority) {
+    public Flux<RdfTransaction> commit(final Collection<RdfTransaction> transactions, Authentication authentication, GrantedAuthority requiredAuthority, boolean merge) {
         return this.applyManyWithConnection(authentication, requiredAuthority, connection -> {
             connection.begin();
+
+            if(merge) {
+                RdfTransaction merged = new RdfTransaction();
+                transactions.forEach(rdfTransaction -> {
+                    merged.getModel().addAll(rdfTransaction.getModel());
+                });
+                transactions.clear();
+                transactions.add(merged);
+            }
+
+
             Set<RdfTransaction> result = transactions.stream().peek(trx -> {
                 synchronized (connection) {
                     getLogger().trace("Committing transaction '{}' to repository '{}'", trx.getIdentifier().getLocalName(), connection.getRepository().toString());
