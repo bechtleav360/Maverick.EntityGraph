@@ -24,7 +24,7 @@ application:
             enabled: true
             defaultS3Host: "http://127.0.0.1:9000"
             defaultS3BucketId: "test"
-            defaultExportFrequency: "0 0 0 * * *"
+            defaultExportFrequency: "0 0 * * * *"
       navigation:
         enabled: true
     transformers:

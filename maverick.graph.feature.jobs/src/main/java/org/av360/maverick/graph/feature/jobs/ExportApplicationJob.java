@@ -55,10 +55,10 @@ public class ExportApplicationJob implements Job {
     public Mono<Void> run(Authentication authentication) {
         return ReactiveApplicationContextHolder.getRequestedApplication()
                 .flatMap(application -> {
-                    try (S3AsyncClient s3Client = createS3Client(application.flags().s3Host())) {
-                        return exportRdfStatements(authentication)
-                                .flatMap(rdfString -> uploadRdfStringToS3(s3Client, rdfString, application)).then();
-                    }
+                    S3AsyncClient s3Client = createS3Client(application.flags().s3Host());
+                    return exportRdfStatements(authentication)
+                            .flatMap(rdfString -> uploadRdfStringToS3(s3Client, rdfString, application)).then();
+
                 })
                 .switchIfEmpty(Mono.defer(() -> {
                     Application defaultApplication =  new Application(
@@ -75,10 +75,10 @@ public class ExportApplicationJob implements Job {
                             new ApplicationFlags(true, true, defaultS3Host, defaultS3BucketId, defaultExportFrequency));
 
 
-                    try (S3AsyncClient s3Client = createS3Client(defaultApplication.flags().s3Host())) {
+                        S3AsyncClient s3Client = createS3Client(defaultApplication.flags().s3Host());
                         return exportRdfStatements(authentication)
                                 .flatMap(rdfString -> uploadRdfStringToS3(s3Client, rdfString, defaultApplication)).then();
-                    }
+
                 }));
     }
 
@@ -107,7 +107,6 @@ public class ExportApplicationJob implements Job {
                 .bucket(application.flags().s3BucketId())
                 .key(application.label() + ".txt")
                 .build();
-
         return Mono.fromCompletionStage(s3Client.putObject(
                 putObjectRequest,
                 AsyncRequestBody.fromBytes(rdfString.getBytes(StandardCharsets.UTF_8))
