@@ -5,10 +5,8 @@ import org.av360.maverick.graph.store.EntityStore;
 import org.av360.maverick.graph.store.RepositoryType;
 import org.av360.maverick.graph.store.rdf.fragments.RdfEntity;
 import org.av360.maverick.graph.store.rdf4j.repository.util.AbstractStore;
-import org.eclipse.rdf4j.model.IRI;
-import org.eclipse.rdf4j.model.Resource;
-import org.eclipse.rdf4j.model.Statement;
-import org.eclipse.rdf4j.model.Value;
+import org.eclipse.rdf4j.model.*;
+import org.eclipse.rdf4j.model.util.ModelCollector;
 import org.eclipse.rdf4j.repository.RepositoryResult;
 import org.slf4j.Logger;
 import org.springframework.security.core.Authentication;
@@ -49,12 +47,19 @@ public class EntityStoreImpl extends AbstractStore implements EntityStore {
 
                 if (includeNeighborsLevel >= 1) {
                     HashSet<Value> objects = new HashSet<>(entity.getModel().objects());
-
                     Stream<RepositoryResult<Statement>> repositoryResultStream = objects.stream()
                             .filter(Value::isIRI)
                             .map(value -> connection.getStatements((IRI) value, null, null));
 
-                    repositoryResultStream.forEach(entity::withResult);
+                    Model neighbours = objects.stream()
+                            .filter(Value::isIRI)
+                            .map(value -> connection.getStatements((IRI) value, null, null))
+                            .flatMap(result -> result.stream())
+                            .filter(sts -> sts.getObject().isLiteral())
+                            .filter(sts -> sts.getObject().isLiteral() && sts.getObject().stringValue().length() < 50)
+                            .collect(new ModelCollector());
+                    // ModelCollector
+                    entity.getModel().addAll(neighbours);
 
                 }
                 // embedded level 1

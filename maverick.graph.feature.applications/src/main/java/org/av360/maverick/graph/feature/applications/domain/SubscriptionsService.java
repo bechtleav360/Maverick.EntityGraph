@@ -73,7 +73,7 @@ public class SubscriptionsService {
         return this.applicationsStore.query(q, authentication, Authorities.APPLICATION)
                 .singleOrEmpty()
                 .map(BindingsAccessor::new)
-                .map(QueryVariables::buildSubscriptionFromBindings)
+                .flatMap(QueryVariables::buildSubscriptionFromBindings)
                 .switchIfEmpty(Mono.error(new UnknownApiKey(subscriptionIdentifier)))
                 .filter(Subscription::active)
                 .switchIfEmpty(Mono.error(new RevokedApiKeyUsed(subscriptionIdentifier)))
@@ -97,7 +97,7 @@ public class SubscriptionsService {
 
                     return this.applicationsStore.query(q, authentication, Authorities.APPLICATION)
                             .map(BindingsAccessor::new)
-                            .map(ba -> QueryVariables.buildSubscriptionFromBindings(ba, app));
+                            .flatMap(ba -> QueryVariables.buildSubscriptionFromBindings(ba, app));
                 })
                 .doOnSubscribe(StreamsLogger.debug(log, "Requesting all API Keys for application with key '{}'", applicationKey));
     }

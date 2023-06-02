@@ -3,6 +3,7 @@ package org.av360.maverick.graph.feature.jobs;
 import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.model.entities.Job;
 import org.av360.maverick.graph.model.errors.requests.InvalidConfiguration;
+import org.av360.maverick.graph.model.security.Authorities;
 import org.av360.maverick.graph.model.vocabulary.Local;
 import org.av360.maverick.graph.model.vocabulary.Transactions;
 import org.av360.maverick.graph.services.QueryServices;
@@ -108,10 +109,10 @@ public class ReplaceSubjectIdentifiersJob implements Job {
                 .flatMap(this::convertSubjectStatements)
                 .flatMap(this::insertStatements)
                 .flatMap(this::deleteStatements)
-                .buffer(10)
+                .buffer(50)
                 .flatMap(transactions -> this.commit(transactions, authentication))
                 .doOnNext(transaction -> Assert.isTrue(transaction.hasStatement(null, Transactions.STATUS, Transactions.SUCCESS), "Failed transaction: \n" + transaction))
-                .buffer(10)
+                .buffer(5)
                 .flatMap(transactions -> this.storeTransactions(transactions, authentication))
                 .doOnError(throwable -> log.error("Exception while finding and replacing subject identifiers: {}", throwable.getMessage()))
                 .doOnSubscribe(sub -> log.trace("Checking for external or anonymous subject identifiers."))
@@ -141,7 +142,7 @@ public class ReplaceSubjectIdentifiersJob implements Job {
 
     private Flux<RdfTransaction> commit(List<RdfTransaction> transactions, Authentication authentication) {
         // log.trace("Committing {} transactions", transactions.size());
-        return this.entityStore.commit(transactions, authentication)
+        return this.entityStore.commit(transactions, authentication, Authorities.CONTRIBUTOR, true)
                 .doOnComplete(() -> log.trace("Committed {} transactions in job {}", transactions.size(), this.getName()));
     }
 

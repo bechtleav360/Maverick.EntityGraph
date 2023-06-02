@@ -10,6 +10,11 @@ application:
       enabled: false
   features:
     modules:
+      objects:
+        enabled: true
+        configuration:
+          mode: local
+          path: "D:/Graphen/entities/objects"
       applications:
         enabled: true
       admin:

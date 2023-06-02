@@ -1,8 +1,10 @@
 package org.av360.maverick.graph.store.rdf.helpers;
 
 import lombok.extern.slf4j.Slf4j;
+import org.av360.maverick.graph.model.errors.InconsistentModelException;
 import org.av360.maverick.graph.model.errors.store.DuplicateRecordsException;
 import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.util.Literals;
 import org.eclipse.rdf4j.query.BindingSet;
@@ -10,6 +12,7 @@ import org.eclipse.rdf4j.sparqlbuilder.core.Variable;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
@@ -24,12 +27,26 @@ public class BindingsAccessor {
         this.bindings = bindings;
     }
 
-    public IRI asIRI(Variable var) {
+    public IRI asIRI(Variable var) throws InconsistentModelException {
         return this.asIRI(var.getVarName());
     }
 
-    public IRI asIRI(String var) {
-        return (IRI) this.bindings.getValue(var);
+    public IRI asIRI(String var) throws InconsistentModelException {
+        Value value = this.bindings.getValue(var);
+
+        if(Objects.isNull(value)) throw new InconsistentModelException("Trying to access missing binding '%s' in query result".formatted(var));
+        if(! value.isIRI())  throw new InconsistentModelException("Trying to access binding '%s' as IRI in query result, but it is of type %s".formatted(var, value.getClass()));
+
+        return (IRI) value;
+    }
+
+    public Resource asResource(String var) throws InconsistentModelException {
+        Value value = this.bindings.getValue(var);
+
+        if(Objects.isNull(value)) throw new InconsistentModelException("Trying to access missing binding '%s' in query result".formatted(var));
+        if(! value.isResource())  throw new InconsistentModelException("Trying to access binding '%s' as resource in query result, but it is of type %s".formatted(var, value.getClass()));
+
+        return (Resource) value;
     }
 
     public String asString(Variable var) {

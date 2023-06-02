@@ -85,9 +85,9 @@ public class BufferedStatementsEncoder implements Encoder<Statement> {
                 })
                 .map(statement -> (Statement) statement)
                 // we filter out any internal statements
-                .filter(statement -> ! statement.getObject().equals(Local.Entities.INDIVIDUAL))
-                .filter(statement -> ! statement.getObject().equals(Local.Entities.EMBEDDED))
-                .filter(statement -> ! statement.getObject().equals(Local.Entities.CLASSIFIER))
+                .filter(statement -> ! statement.getObject().equals(Local.Entities.TYPE_INDIVIDUAL))
+                .filter(statement -> ! statement.getObject().equals(Local.Entities.TYPE_EMBEDDED))
+                .filter(statement -> ! statement.getObject().equals(Local.Entities.TYPE_CLASSIFIER))
                 .filter(statement -> ! statement.getPredicate().equals(Local.ORIGINAL_IDENTIFIER))
                 .collectList()
                 .flatMap(list ->  Mono.zip(Mono.just(list), ReactiveRequestUriContextHolder.getURI()))

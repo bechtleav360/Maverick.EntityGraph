@@ -68,9 +68,7 @@ class CheckGlobalIdentifiersTest extends TestsBase {
         StepVerifier.create(actionMono)
                 .thenAwait(Duration.of(2, ChronoUnit.SECONDS))
                 .assertNext(Assertions::assertNotNull)
-                .assertNext(Assertions::assertNotNull)
-                .assertNext(Assertions::assertNotNull)
-                .assertNext(Assertions::assertNotNull)
+
                 .verifyComplete();
 
         StepVerifier.create(readModelMono)

@@ -23,11 +23,23 @@ public class JobQueue implements ApplicationListener<JobScheduledEvent> {
         this.publishedJobs = new ArrayDeque<>();
     }
 
+    /**
+     * Moves the first to the end of the queue
+     */
+    public void delayFirst() {
+        if(this.publishedJobs.size() > 1) {
+            JobScheduledEvent first = this.publishedJobs.pop();
+            this.publishedJobs.addLast(first);
+
+            log.info("Current job queue: "+this.publishedJobs);
+        }
+    }
+
     public record JobIdentifier(String name, String scope) {}
 
     @Override
     public void onApplicationEvent(JobScheduledEvent event) {
-        meterRegistry.counter("graph.scheduled.jobs.counter", "name", event.getJobIdentifier(), "event", "received").increment();
+        meterRegistry.counter("graph.jobs.counter", "name", event.getJobName(), "scope", event.getScope(), "status", "received").increment();
 
         if(! this.publishedJobs.contains(event)) {
             this.publishedJobs.add(event);
@@ -37,9 +49,9 @@ public class JobQueue implements ApplicationListener<JobScheduledEvent> {
     public Optional<JobScheduledEvent> accept() {
         if(this.publishedJobs.isEmpty()) return Optional.empty();
 
-        JobScheduledEvent next = publishedJobs.pop();
-        meterRegistry.counter("graph.scheduled.jobs.counter", "name", next.getJobIdentifier(), "event", "accepted").increment();
-        return Optional.of(next);
+        JobScheduledEvent event = publishedJobs.pop();
+        meterRegistry.counter("graph.jobs.counter", "name", event.getJobName(), "scope", event.getScope(), "status", "accepted").increment();
+        return Optional.of(event);
     }
 
     public Optional<JobIdentifier> peek() {

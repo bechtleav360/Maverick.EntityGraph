@@ -1,0 +1,71 @@
+#spring:
+#  datasource:
+#    url: jdbc:h2:file:/data/demo
+
+application:
+  security:
+    enabled: true
+    apiKey: "123"
+    basic:
+      enabled: false
+  features:
+    modules:
+      objects:
+        enabled: true
+        configuration:
+          mode: local
+          path: "D:/Graphen/entities/objects"
+      applications:
+        enabled: false
+      admin:
+        enabled: true
+      jobs:
+        enabled: false
+        scheduled:
+          detectDuplicates: true
+          replaceIdentifiers: true
+          typeCoercion: true
+      navigation:
+        enabled: true
+    transformers:
+      replaceGlobalIdentifiers: true
+      replaceAnonymousIdentifiers: true
+      mergeDuplicates: true
+      typeCoercion: true
+    validators:
+      checkRequiredType: true
+  storage:
+    vocabularies:
+      persistent: true
+      path: "D:/Graphen/tdf/vocabularies"
+    system:
+      persistent: true
+      path: "D:/Graphen/tdf/system"
+    entities:
+      persistent: true
+      path: "D:/Graphen/tdf/entities"
+    transactions:
+      persistent: true
+      path: "D:/Graphen/tdf/transactions"
+
+spring:
+  security:
+    user:
+      name: "xxx"
+      password: "xx"
+
+logging:
+  level:
+    root: INFO
+    graph:
+      jobs: DEBUG
+      repo: TRACE
+      srvc: DEBUG
+      ctrl: DEBUG
+      feat: DEBUG
+    org:
+      eclipse:
+        rdf4j: DEBUG
+      springframework:
+        security: INFO
+

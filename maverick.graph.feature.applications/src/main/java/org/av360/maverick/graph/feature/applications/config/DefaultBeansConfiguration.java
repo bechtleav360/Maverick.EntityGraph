@@ -17,8 +17,14 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class DefaultBeansConfiguration implements BeanPostProcessor {
 
+
     @Autowired
     ApplicationsService applicationsService;
+
+    @Override
+    public Object postProcessBeforeInitialization(Object bean, String beanName) throws BeansException {
+       return bean;
+    }
 
     @Override
     public Object postProcessAfterInitialization(Object bean, String beanName) throws BeansException {
@@ -29,21 +35,17 @@ public class DefaultBeansConfiguration implements BeanPostProcessor {
         if(bean instanceof ReplaceExternalIdentifiers delegate) {
             return new DelegatingExternalIdentifierTransformer(delegate);
         }
-
         else if(bean instanceof ReplaceAnonymousIdentifiers delegate) {
             return new DelegatingAnonymousIdentifierTransformer(delegate);
-        }
-        else if(bean instanceof NavigationServices delegate) {
-            return new DelegatingNavigationServices(delegate, applicationsService);
+        } else if(bean instanceof NavigationServices delegate) {
+            return new DelegatingNavigationServices(delegate, this.applicationsService);
         }
         else if(bean instanceof IdentifierServices delegate) {
             return new DelegatingIdentifierServices(delegate);
-        }
-
-
-
-        return bean;
+        } else return bean;
     }
+
+
 }
 
 

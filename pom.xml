@@ -8,7 +8,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.0.7</version>
+        <version>3.1.0</version>
         <relativePath/>
         <!-- lookup parent from repository -->
     </parent>
@@ -28,6 +28,7 @@
         <module>maverick.graph.feature.applications</module>
         <module>maverick.graph.feature.jobs</module>
         <module>maverick.graph.feature.navigation</module>
+        <module>maverick.graph.feature.objects-store</module>
         <module>maverick.graph.tests</module>
 
 
@@ -137,6 +138,11 @@
             <dependency>
                 <groupId>org.av360.maverick.graph</groupId>
                 <artifactId>graph-store-rdf4j</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.av360.maverick.graph</groupId>
+                <artifactId>graph-feature-store-objects</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
