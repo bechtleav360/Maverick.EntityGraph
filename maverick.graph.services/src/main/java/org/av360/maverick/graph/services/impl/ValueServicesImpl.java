@@ -15,10 +15,7 @@ import org.av360.maverick.graph.services.ValueServices;
 import org.av360.maverick.graph.store.SchemaStore;
 import org.av360.maverick.graph.store.rdf.fragments.RdfEntity;
 import org.av360.maverick.graph.store.rdf.fragments.RdfTransaction;
-import org.eclipse.rdf4j.model.IRI;
-import org.eclipse.rdf4j.model.Literal;
-import org.eclipse.rdf4j.model.Statement;
-import org.eclipse.rdf4j.model.Value;
+import org.eclipse.rdf4j.model.*;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.rio.LanguageHandler;
@@ -32,6 +29,7 @@ import javax.annotation.Nullable;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 @Slf4j(topic = "graph.srvc.values")
 @Service
@@ -96,11 +94,21 @@ public class ValueServicesImpl implements ValueServices {
 
     @Override
     public Mono<RdfTransaction> insertValue(IRI entityIdentifier, IRI predicate, Value value, Authentication authentication) {
-        return this.insertStatements(entityIdentifier, predicate, value, new RdfTransaction(), authentication)
+        return this.insertStatement(entityIdentifier, predicate, value, new RdfTransaction(), authentication)
                 .doOnSuccess(trx -> {
                     eventPublisher.publishEvent(new ValueInsertedEvent(trx));
                 });
     }
+
+    @Override
+    public Mono<RdfTransaction> insertEmbedded(IRI entityIdentifier, IRI predicate, Resource embeddedNode, Set<Statement> embedded, Authentication authentication) {
+        return this.insertStatements(entityIdentifier, predicate, embeddedNode, embedded, new RdfTransaction(), authentication)
+                .doOnSuccess(trx -> {
+                    eventPublisher.publishEvent(new ValueInsertedEvent(trx));
+                });
+    }
+
+
 
     @Override
     public Mono<RdfTransaction> removeValue(IRI entityIdentifier, IRI predicate, String lang, Authentication authentication) {
@@ -214,7 +222,24 @@ public class ValueServicesImpl implements ValueServices {
                 })
                 .flatMap(trx -> this.entityServices.getStore().commit(trx, authentication));
     }
-    private Mono<RdfTransaction> insertStatements(IRI entityIdentifier, IRI predicate, Value value, RdfTransaction transaction, Authentication authentication) {
+
+    private Mono<RdfTransaction> insertStatements(IRI entityIdentifier, IRI predicate, Resource embeddedNode, Set<Statement> embedded, RdfTransaction transaction, Authentication authentication) {
+        return this.entityServices.get(entityIdentifier, authentication)
+                .switchIfEmpty(Mono.error(new EntityNotFound(entityIdentifier.stringValue())))
+                .map(entity -> Pair.of(entity, transaction.affected(entity)))
+                .filter(pair -> ! embeddedNode.isBNode())
+                .switchIfEmpty(Mono.error(new InvalidEntityUpdate(entityIdentifier, "Trying to link to shared node as anonymous node.")))
+                .doOnNext(pair -> {
+                    Statement statement = SimpleValueFactory.getInstance().createStatement(entityIdentifier, predicate, embeddedNode);
+                    embedded.add(statement);
+                })
+                .flatMap(pair -> this.entityServices.getStore().insert(embedded, pair.getRight()))
+                .flatMap(trx -> this.entityServices.getStore().commit(trx, authentication))
+                .switchIfEmpty(Mono.just(transaction));
+
+    }
+
+    private Mono<RdfTransaction> insertStatement(IRI entityIdentifier, IRI predicate, Value value, RdfTransaction transaction, Authentication authentication) {
 
         return this.entityServices.get(entityIdentifier, authentication)
                 .switchIfEmpty(Mono.error(new EntityNotFound(entityIdentifier.stringValue())))

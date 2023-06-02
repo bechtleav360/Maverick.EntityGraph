@@ -3,11 +3,14 @@ package org.av360.maverick.graph.services;
 import org.av360.maverick.graph.store.rdf.fragments.RdfEntity;
 import org.av360.maverick.graph.store.rdf.fragments.RdfTransaction;
 import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Resource;
+import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.Value;
 import org.springframework.security.core.Authentication;
 import reactor.core.publisher.Mono;
 
 import javax.annotation.Nullable;
+import java.util.Set;
 
 public interface ValueServices {
     /**
@@ -41,6 +44,18 @@ public interface ValueServices {
      * @return The transaction information.
      */
     Mono<RdfTransaction> insertValue(IRI entityIdentifier, IRI predicate, Value value, Authentication authentication);
+
+
+    /**
+     * Inserts a set of statement as embedded entity
+     *
+     * @param entityIdentifier The unique local identifier of the entity
+     * @param predicate        Qualified predicate from existing schema
+     * @param value            The new value
+     * @param authentication   The current authentication
+     * @return The transaction information.
+     */
+    Mono<RdfTransaction> insertEmbedded(IRI entityIdentifier, IRI predicate, Resource value, Set<Statement> embedded, Authentication authentication);
 
     /**
      * @param entityKey         The unique local identifier of the entity

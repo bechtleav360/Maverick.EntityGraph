@@ -120,7 +120,7 @@ public class AssignInternalTypesJob implements Job {
                     FILTER NOT EXISTS { ?entity a <%s> . }
                 } LIMIT 10000
                 """;
-        String query = String.format(tpl, Local.Entities.INDIVIDUAL, Local.Entities.CLASSIFIER, Local.Entities.EMBEDDED);
+        String query = String.format(tpl, Local.Entities.TYPE_INDIVIDUAL, Local.Entities.TYPE_CLASSIFIER, Local.Entities.TYPE_EMBEDDED);
         return this.queryServices.queryValues(query, authentication)
                 .map(bindings -> bindings.getValue("entity"))
                 .filter(Value::isResource)

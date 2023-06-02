@@ -90,7 +90,7 @@ public class InsertLocalTypes implements Transformer {
         Optional<IRI> classifier = classifierTypes.stream().filter(iri -> fragment.contains(subject, RDF.TYPE, iri)).findFirst();
         Optional<IRI> named = fragment.predicates().stream().filter(iri -> iri.getLocalName().matches("(?i).*(name|title|label|id|key|code).*")).findFirst();
         if ((cp.isEmpty() && named.isEmpty()) && classifier.isEmpty()) {
-            Statement statement = valueFactory.createStatement(subject, RDF.TYPE, Local.Entities.EMBEDDED);
+            Statement statement = valueFactory.createStatement(subject, RDF.TYPE, Local.Entities.TYPE_EMBEDDED);
             log.trace("Fragment for subject '{}' typed as Embedded.", subject);
             return Optional.of(statement);
         } else return Optional.empty();
@@ -103,7 +103,7 @@ public class InsertLocalTypes implements Transformer {
         Optional<IRI> named = fragment.predicates().stream().filter(iri -> iri.getLocalName().matches("(?i).*(name|title|label|id|key|code).*")).findFirst();
 
         if ((cp.isPresent() || named.isPresent()) && classifier.isEmpty()) {
-            Statement statement = valueFactory.createStatement(subject, RDF.TYPE, Local.Entities.INDIVIDUAL);
+            Statement statement = valueFactory.createStatement(subject, RDF.TYPE, Local.Entities.TYPE_INDIVIDUAL);
             log.trace("Fragment for subject '{}' typed as Individual.", subject);
             return Optional.of(statement);
         } else {
@@ -119,7 +119,7 @@ public class InsertLocalTypes implements Transformer {
     private Optional<Statement>  handleClassifier(Resource subject, Model fragment) {
         Optional<IRI> cp = classifierTypes.stream().filter(iri -> fragment.contains(subject, RDF.TYPE, iri)).findFirst();
         if (cp.isPresent()) {
-            Statement statement = valueFactory.createStatement(subject, RDF.TYPE, Local.Entities.CLASSIFIER);
+            Statement statement = valueFactory.createStatement(subject, RDF.TYPE, Local.Entities.TYPE_CLASSIFIER);
             log.trace("Fragment for subject {} typed as Classifier.", subject);
             return Optional.of(statement);
         } else return Optional.empty();

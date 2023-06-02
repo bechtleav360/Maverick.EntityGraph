@@ -32,7 +32,6 @@ public class Values extends AbstractController {
     protected final ValueServices values;
 
     protected final EntityServices entities;
-
     protected final SchemaServices schemaServices;
 
     public Values(ValueServices values, EntityServices entities, SchemaServices schemaServices) {
@@ -52,7 +51,7 @@ public class Values extends AbstractController {
 
     //  @ApiOperation(value = "Sets a value for an entity. Replaces an existing value. ")
     @PostMapping(value = "/entities/{id:[\\w|\\d|\\-|\\_]+}/values/{prefixedKey:[\\w|\\d]+\\.[\\w|\\d|\\-|\\_]+}",
-            consumes = MediaType.TEXT_PLAIN_VALUE,
+            consumes = {MediaType.TEXT_PLAIN_VALUE},
             produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE})
     @ResponseStatus(HttpStatus.OK)
     public Flux<AnnotatedStatement> create(@PathVariable String id, @PathVariable String prefixedKey, @RequestBody String value, @Nullable @RequestParam(required = false) String lang) {

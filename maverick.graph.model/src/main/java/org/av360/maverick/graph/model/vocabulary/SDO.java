@@ -17,6 +17,14 @@ public class SDO {
     public static final String PREFIX = "sdo";
     public static final Namespace NS = new SimpleNamespace(PREFIX, NAMESPACE);
 
+    public static final IRI IN_LANGUAGE = vf.createIRI(NAMESPACE, "inLanguage");
+    public static final IRI CONTENT_LOCATION = vf.createIRI(NAMESPACE, "contentLocation");
+    public static final IRI SUBJECT_OF = vf.createIRI(NAMESPACE, "subjectOf");
+    public static final IRI CONTENT_URL = vf.createIRI(NAMESPACE, "contentUrl");
+    public static final IRI CONTENT_SIZE = vf.createIRI(NAMESPACE, "contentSize");
+    public static final IRI UPLOAD_DATE = vf.createIRI(NAMESPACE, "uploadDate");
+    public static final IRI NAME = vf.createIRI(NAMESPACE, "name");
+    public static final IRI MEDIA_OBJECT = vf.createIRI(NAMESPACE, "MediaObject");
     public static final IRI DEFINED_TERM = vf.createIRI(NAMESPACE, "DefinedTerm");
     public static final IRI VIDEO_OBJECT = vf.createIRI(NAMESPACE, "VideoObject");
 
