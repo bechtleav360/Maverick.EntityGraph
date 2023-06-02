@@ -16,7 +16,7 @@ public class Local {
     public static final String PREFIX = "meg";
     public static String URN_PREFIX = "urn:pwid:meg:";
     public static final IRI ORIGINAL_IDENTIFIER = LocalIRI.from("urn:int:", "srcid");
-
+    public static String Files;
 
 
     public static class Entities {
@@ -26,9 +26,18 @@ public class Local {
         public static String PREFIX = "ent";
         public static Namespace NS = EntityNamespace.of(PREFIX, NAMESPACE);
 
-        public static final IRI INDIVIDUAL = LocalIRI.from(NAMESPACE, "Individual");
-        public static final IRI CLASSIFIER = LocalIRI.from(NAMESPACE, "Classifier");
-        public static final IRI EMBEDDED = LocalIRI.from(NAMESPACE, "Embedded");
+        public static final IRI TYPE_INDIVIDUAL = LocalIRI.from(NAMESPACE, "Individual");
+        public static final IRI TYPE_CLASSIFIER = LocalIRI.from(NAMESPACE, "Classifier");
+        public static final IRI TYPE_EMBEDDED = LocalIRI.from(NAMESPACE, "Embedded");
+    }
+
+    public static class Objects {
+
+        public static String NAMESPACE = URN_PREFIX+"o:";
+
+        public static String PREFIX = "file";
+        public static Namespace NS = EntityNamespace.of(PREFIX, NAMESPACE);
+
     }
 
 

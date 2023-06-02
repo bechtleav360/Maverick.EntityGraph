@@ -20,7 +20,7 @@ application:
       admin:
         enabled: true
       jobs:
-        enabled: true
+        enabled: false
         scheduled:
           detectDuplicates: true
           replaceIdentifiers: true
@@ -34,58 +34,38 @@ application:
       typeCoercion: true
     validators:
       checkRequiredType: true
+  storage:
+    vocabularies:
+      persistent: true
+      path: "D:/Graphen/tdf/vocabularies"
+    system:
+      persistent: true
+      path: "D:/Graphen/tdf/system"
+    entities:
+      persistent: true
+      path: "D:/Graphen/tdf/entities"
+    transactions:
+      persistent: true
+      path: "D:/Graphen/tdf/transactions"
 
-
-
+spring:
+  security:
+    user:
+      name: "xxx"
+      password: "xx"
 
 logging:
   level:
     root: INFO
     graph:
-      jobs: TRACE
+      jobs: DEBUG
       repo: TRACE
-      srvc: TRACE
-      ctrl: TRACE
-      feat:
-        admin: TRACE
+      srvc: DEBUG
+      ctrl: DEBUG
+      feat: DEBUG
     org:
       eclipse:
         rdf4j: DEBUG
       springframework:
         security: INFO
-management:
-  info:
-    env:
-      enabled: true
-    git:
-      enabled: true
-      mode: full
-  health:
-    defaults:
-      enabled: false
-    probes:
-      enabled: true
-  endpoints:
-    web:
-      exposure:
-        include: "health, info, env, beans, git, loggers, metrics, scheduledTasks, logfile, mappings, prometheus"
-  endpoint:
-    discovery:
-      enabled: true
-    health:
-      enabled: true
-      show-details: always
-    info:
-      enabled: true
-    env:
-      enabled: true
-    loggers:
-      enabled: true
-    metrics:
-      enabled: true
-    scheduledTasks:
-      enabled: true
-    logfile:
-      enabled: true
-    prometheus:
-      enabled: true
+

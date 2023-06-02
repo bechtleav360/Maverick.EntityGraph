@@ -60,9 +60,9 @@ public class RdfHtmlEncoder implements Encoder<Statement> {
                 })
                 .map(statement -> (Statement) statement)
                 // we filter out any internal statements
-                .filter(statement -> ! statement.getObject().equals(Local.Entities.INDIVIDUAL))
-                .filter(statement -> ! statement.getObject().equals(Local.Entities.EMBEDDED))
-                .filter(statement -> ! statement.getObject().equals(Local.Entities.CLASSIFIER))
+                .filter(statement -> ! statement.getObject().equals(Local.Entities.TYPE_INDIVIDUAL))
+                .filter(statement -> ! statement.getObject().equals(Local.Entities.TYPE_EMBEDDED))
+                .filter(statement -> ! statement.getObject().equals(Local.Entities.TYPE_CLASSIFIER))
                 .filter(statement -> ! statement.getPredicate().equals(Local.ORIGINAL_IDENTIFIER))
                 .collectList()
                 .flatMap(list ->  Mono.zip(Mono.just(list), ReactiveRequestUriContextHolder.getURI()))
@@ -159,6 +159,12 @@ public class RdfHtmlEncoder implements Encoder<Statement> {
         } else if(value instanceof Literal literal) {
             if(literal.stringValue().startsWith(NavigationServices.ResolvableUrlPrefix)) {
                 String path = literal.stringValue().substring(NavigationServices.ResolvableUrlPrefix.length()+1);
+                String uri = UriComponentsBuilder.fromUri(requestURI).replacePath(path).replaceQuery("").build().toUriString();
+                return (T) vf.createIRI(uri);
+            }
+
+            if(literal.stringValue().startsWith("/")) {
+                String path = literal.stringValue();
                 String uri = UriComponentsBuilder.fromUri(requestURI).replacePath(path).replaceQuery("").build().toUriString();
                 return (T) vf.createIRI(uri);
             }

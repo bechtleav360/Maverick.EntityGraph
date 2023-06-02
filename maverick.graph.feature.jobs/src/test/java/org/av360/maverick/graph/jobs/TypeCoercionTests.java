@@ -76,7 +76,7 @@ class TypeCoercionTests extends TestsBase {
                     Assertions.assertEquals(4, model.size());
                     Assertions.assertEquals(1, model.subjects().size());
                     Assertions.assertEquals(iri, model.subjects().stream().findFirst().get());
-                    Assertions.assertTrue(model.contains(iri, RDF.TYPE, Local.Entities.INDIVIDUAL));
+                    Assertions.assertTrue(model.contains(iri, RDF.TYPE, Local.Entities.TYPE_INDIVIDUAL));
                 })
                 .verifyComplete();
 
@@ -109,8 +109,8 @@ class TypeCoercionTests extends TestsBase {
                 .assertNext(model -> {
                     Assertions.assertEquals(14, model.size());
                     Assertions.assertEquals(4, model.subjects().size());
-                    Assertions.assertTrue(model.contains(null, RDF.TYPE, Local.Entities.INDIVIDUAL), "No individual");
-                    Assertions.assertTrue(model.contains(null, RDF.TYPE, Local.Entities.CLASSIFIER), "No classifier");
+                    Assertions.assertTrue(model.contains(null, RDF.TYPE, Local.Entities.TYPE_INDIVIDUAL), "No individual");
+                    Assertions.assertTrue(model.contains(null, RDF.TYPE, Local.Entities.TYPE_CLASSIFIER), "No classifier");
                 })
                 .verifyComplete();
 

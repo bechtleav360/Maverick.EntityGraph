@@ -351,7 +351,7 @@ public abstract class AbstractStore implements TripleStore, Statements, ModelUpd
     }
 
     @Override
-    public Mono<RdfTransaction> insert(Model model, RdfTransaction transaction) {
+    public Mono<RdfTransaction> insert(Set<Statement> model, RdfTransaction transaction) {
         Assert.notNull(transaction, "Transaction cannot be null");
         if (getLogger().isTraceEnabled())
             getLogger().trace("Insert planned for {} statements in transaction '{}'.", model.size(), transaction.getIdentifier().getLocalName());
