@@ -2,7 +2,7 @@ package org.av360.maverick.graph.feature.jobs;
 
 import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.model.entities.Job;
-import org.av360.maverick.graph.model.errors.requests.InvalidConfiguration;
+import org.av360.maverick.graph.model.errors.InvalidConfiguration;
 import org.av360.maverick.graph.model.security.Authorities;
 import org.av360.maverick.graph.model.vocabulary.Local;
 import org.av360.maverick.graph.model.vocabulary.Transactions;

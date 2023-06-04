@@ -4,27 +4,32 @@
 
 application:
   security:
-    enabled: true
+    enabled: false
     apiKey: "123"
     basic:
       enabled: false
   features:
     modules:
       objects:
-        enabled: true
+        enabled: false
         configuration:
           mode: local
           path: "D:/Graphen/entities/objects"
       applications:
-        enabled: false
+        enabled: true
       admin:
-        enabled: true
+        enabled: false
       jobs:
-        enabled: true
+        enabled: false
         scheduled:
           detectDuplicates: true
           replaceIdentifiers: true
           typeCoercion: true
+          exportApplication:
+            enabled: true
+            defaultS3Host: "http://127.0.0.1:9000"
+            defaultS3BucketId: "test"
+            defaultExportFrequency: "0 0 * * * *"
       navigation:
         enabled: true
     transformers:
@@ -53,6 +58,7 @@ logging:
         rdf4j: DEBUG
       springframework:
         security: INFO
+
 management:
   info:
     env:

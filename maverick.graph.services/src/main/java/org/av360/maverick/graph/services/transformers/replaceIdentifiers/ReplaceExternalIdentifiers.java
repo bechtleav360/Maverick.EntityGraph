@@ -1,10 +1,9 @@
 package org.av360.maverick.graph.services.transformers.replaceIdentifiers;
 
 import lombok.extern.slf4j.Slf4j;
-import org.av360.maverick.graph.model.identifier.IdentifierFactory;
 import org.av360.maverick.graph.model.vocabulary.Local;
+import org.av360.maverick.graph.services.IdentifierServices;
 import org.av360.maverick.graph.services.transformers.Transformer;
-import org.av360.maverick.graph.store.rdf.fragments.TripleModel;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.Value;
@@ -29,30 +28,23 @@ import java.util.stream.Collectors;
 @ConditionalOnProperty(name = "application.features.transformers.replaceGlobalIdentifiers", havingValue = "true")
 public class ReplaceExternalIdentifiers extends AbstractIdentifierReplace implements Transformer {
 
-    private final IdentifierFactory identifierFactory;
+    protected final IdentifierServices identifierServices;
 
 
-
-    public IdentifierFactory getIdentifierFactory() {
-        return identifierFactory;
-    }
-
-
-
-    public ReplaceExternalIdentifiers(IdentifierFactory identifierFactory) {
-        this.identifierFactory = identifierFactory;
+    public ReplaceExternalIdentifiers(IdentifierServices identifierServices) {
+        this.identifierServices = identifierServices;
     }
 
 
     @Override
-    public Mono<? extends TripleModel> handle(TripleModel triples, Map<String, String> parameters) {
+    public Mono<? extends Model> handle(Model triples, Map<String, String> parameters) {
 
-        return this.buildIdentifierMappings(triples.getModel())
+        return this.buildIdentifierMappings(triples)
                 .collect(Collectors.toSet())
-                .flatMap(mappings -> replaceIdentifiers(mappings, triples.getModel()))
-                .flatMap(mappings -> preserveExternalIdentifiers(mappings, triples.getModel()))
+                .flatMap(mappings -> replaceIdentifiers(mappings, triples))
+                .flatMap(mappings -> preserveExternalIdentifiers(mappings, triples))
                 .doOnNext(mappings -> {
-                    if(mappings.size() > 0) {
+                    if (mappings.size() > 0) {
                         log.debug("Replaced global identifiers in incoming model with local identifiers.");
                         mappings.forEach(mapping -> log.trace("Mapping from {} to {}", mapping.oldIdentifier().stringValue(), mapping.newIdentifier().stringValue()));
                     }
@@ -61,7 +53,6 @@ public class ReplaceExternalIdentifiers extends AbstractIdentifierReplace implem
                 .doOnSubscribe(c -> log.debug("Check if model contains replaceable external identifiers."))
                 .doFinally(signalType -> log.trace("Finished checks for external identifiers"));
     }
-
 
 
     public Flux<IdentifierMapping> buildIdentifierMappings(Model model) {
@@ -84,22 +75,15 @@ public class ReplaceExternalIdentifiers extends AbstractIdentifierReplace implem
                 .map(val -> (IRI) val)
                 .filter(iri -> !iri.stringValue().startsWith(Local.URN_PREFIX))
                 .flatMap(iri ->
-                    createLocalIdentifierFrom(iri, model)
-                            .map(localIdentifier -> new IdentifierMapping(iri, localIdentifier))
+                        identifierServices.asReproducibleIRI(Local.Entities.NAMESPACE, iri)
+                                .map(generated -> new IdentifierMapping(iri, generated))
                 );
 
 
-
-    }
-
-    protected Mono<IRI> createLocalIdentifierFrom(IRI iri, Model model) {
-        return Mono.just(identifierFactory.createReproducibleIdentifier(Local.Entities.NS, iri));
     }
 
 
-
-
-
-
-
+    public IdentifierServices getIdentifierService() {
+        return this.identifierServices;
+    }
 }

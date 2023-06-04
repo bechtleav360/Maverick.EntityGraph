@@ -20,8 +20,13 @@ public class IdentifierServicesImpl implements IdentifierServices {
         return Mono.just(identifier);
     }
 
+
     @Override
-    public Mono<IRI> asIRI(String key) {
-       return this.validate(key).map(checkedKey -> LocalIRI.withDefaultNamespace(key));
+    public Mono<IRI> asIRI(String key, String namespace) {
+        return this.validate(key).map(checkedKey -> LocalIRI.from(namespace, key));
     }
+
+
+
+
 }

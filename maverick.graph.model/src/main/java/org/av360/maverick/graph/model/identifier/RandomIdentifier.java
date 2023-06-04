@@ -31,7 +31,7 @@ public class RandomIdentifier extends LocalIRI implements LocalIdentifier {
                 .build();
     }
 
-    RandomIdentifier(String namespace) {
+    public RandomIdentifier(String namespace) {
         super(namespace);
         super.setLocalName(generateRandomKey());
     }

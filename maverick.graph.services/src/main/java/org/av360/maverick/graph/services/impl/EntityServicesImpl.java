@@ -7,6 +7,7 @@ import org.av360.maverick.graph.model.errors.requests.EntityNotFound;
 import org.av360.maverick.graph.model.events.EntityCreatedEvent;
 import org.av360.maverick.graph.model.events.EntityDeletedEvent;
 import org.av360.maverick.graph.model.rdf.LocalIRI;
+import org.av360.maverick.graph.model.rdf.Triples;
 import org.av360.maverick.graph.model.vocabulary.SDO;
 import org.av360.maverick.graph.services.EntityServices;
 import org.av360.maverick.graph.services.IdentifierServices;
@@ -17,7 +18,6 @@ import org.av360.maverick.graph.services.validators.DelegatingValidator;
 import org.av360.maverick.graph.store.EntityStore;
 import org.av360.maverick.graph.store.rdf.fragments.RdfEntity;
 import org.av360.maverick.graph.store.rdf.fragments.RdfTransaction;
-import org.av360.maverick.graph.store.rdf.fragments.TripleBag;
 import org.av360.maverick.graph.store.rdf.helpers.BindingsAccessor;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
@@ -207,8 +207,7 @@ public class EntityServicesImpl implements EntityServices {
 
     @Override
     public Mono<RdfEntity> findByKey(String entityKey, Authentication authentication) {
-        return identifierServices.validate(entityKey)
-                .flatMap(schemaServices::resolveLocalName)
+        return identifierServices.asIRI(entityKey)
                 .flatMap(entityIdentifier -> this.get(entityIdentifier, authentication, 1));
     }
 
@@ -246,12 +245,18 @@ public class EntityServicesImpl implements EntityServices {
 
     public Mono<IRI> resolveAndVerify(String key, Authentication authentication) {
         return this.identifierServices.asIRI(key)
+                .filterWhen(iri -> this.contains(iri, authentication))
+                .switchIfEmpty(Mono.error(new EntityNotFound(key)))
+                .doOnSuccess(res -> log.trace("Resolved entity key {} to qualified identifier {}", key, res.stringValue()));
+        /*
                 .flatMap(targetIri ->
                         this.contains(targetIri, authentication)
                                 .flatMap(exists -> {
                                     if (!exists) return Mono.error(new EntityNotFound(key));
                                     else return Mono.just(targetIri);
-                                }));
+                                }).doOnSuccess(res -> log.trace("Resolved entity key {} to qualified identifier {}", key, res.stringValue()))
+                ); */
+
     }
 
     @Override
@@ -277,7 +282,7 @@ public class EntityServicesImpl implements EntityServices {
     }
 
     @Override
-    public Mono<RdfTransaction> create(TripleBag triples, Map<String, String> parameters, Authentication authentication) {
+    public Mono<RdfTransaction> create(Triples triples, Map<String, String> parameters, Authentication authentication) {
         return this.prepareEntity(triples, parameters, new RdfTransaction(), authentication)
                 .flatMap(transaction -> entityStore.commit(transaction, authentication))
                 .doOnSuccess(transaction -> {
@@ -300,7 +305,7 @@ public class EntityServicesImpl implements EntityServices {
      */
     @Override
     @Deprecated
-    public Mono<RdfTransaction> linkEntityTo(String id, IRI predicate, TripleBag linkedEntities, Authentication authentication) {
+    public Mono<RdfTransaction> linkEntityTo(String id, IRI predicate, Triples linkedEntities, Authentication authentication) {
 
 
         /*
@@ -337,28 +342,28 @@ public class EntityServicesImpl implements EntityServices {
     /**
      * Make sure you store the transaction once you are finished
      */
-    protected Mono<RdfTransaction> prepareEntity(TripleBag triples, Map<String, String> parameters, RdfTransaction transaction, Authentication authentication) {
+    protected Mono<RdfTransaction> prepareEntity(Triples triples, Map<String, String> parameters, RdfTransaction transaction, Authentication authentication) {
         if (log.isTraceEnabled())
             log.trace("Validating and transforming {} statements for new entity. Parameters: {}", triples.streamStatements().count(), parameters.size() > 0 ? parameters : "none");
 
         // TODO: perform validation via sha
         // https://rdf4j.org/javadoc/3.2.0/org/eclipse/rdf4j/sail/shacl/ShaclSail.html
         return Mono.just(triples)
-
-                .flatMap(sts -> {
+                .map(Triples::getModel)
+                .flatMap(model -> {
                     /* validate */
-                    return validators.handle(this, sts, parameters);
+                    return validators.handle(this, model, parameters);
                 })
 
-                .flatMap(sts -> {
+                .flatMap(model -> {
                     /* transform */
-                    return transformers.handle(sts, parameters);
+                    return transformers.handle(model, parameters);
 
                     /* TODO: check if create of resource of given type is supported or is it delegated to connector */
 
                 })
 
-                .flatMap(sts -> entityStore.insert(sts.getModel(), transaction));
+                .flatMap(model -> entityStore.insert(model, transaction));
 
     }
 

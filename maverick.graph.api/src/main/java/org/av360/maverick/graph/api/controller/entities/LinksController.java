@@ -6,6 +6,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.NotImplementedException;
 import org.av360.maverick.graph.api.controller.AbstractController;
+import org.av360.maverick.graph.model.api.LinksAPI;
 import org.av360.maverick.graph.model.enums.RdfMimeTypes;
 import org.av360.maverick.graph.model.rdf.AnnotatedStatement;
 import org.av360.maverick.graph.services.EntityServices;
@@ -25,7 +26,7 @@ import reactor.core.publisher.Mono;
 @Slf4j(topic = "graph.ctrl.api.links")
 @SecurityRequirement(name = "api_key")
 @Tag(name = "Annotations")
-public class Links extends AbstractController {
+public class LinksController extends AbstractController implements LinksAPI {
 
 
     protected final ValueServices values;
@@ -34,12 +35,13 @@ public class Links extends AbstractController {
 
     protected final SchemaServices schemaServices;
 
-    public Links(ValueServices values, EntityServices entities, SchemaServices schemaServices) {
+    public LinksController(ValueServices values, EntityServices entities, SchemaServices schemaServices) {
         this.values = values;
         this.entities = entities;
         this.schemaServices = schemaServices;
     }
 
+    @Override
     @Operation(summary = "Returns all links of an entity.")
     @GetMapping(value = "/entities/{id:[\\w|\\d|\\-|\\_]+}/links",
             produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE})
@@ -48,6 +50,7 @@ public class Links extends AbstractController {
         return Flux.error(new NotImplementedException("Method has not been implemented yet."));
     }
 
+    @Override
     @Operation(summary = "Returns all links of the given type.")
     @GetMapping(value = "/entities/{id:[\\w|\\d|\\-|\\_]+}/links/{prefixedKey:[\\w|\\d]+\\.[\\w|\\d]+}",
             produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE})
@@ -63,6 +66,7 @@ public class Links extends AbstractController {
 
     }
 
+    @Override
     @Operation(summary = "Create edge to existing entity identified by target id (within the same application).",
             description = """
                     Creates an edge to an existing entity within the same graph (application) identified by the target identifier to link the two entities. An edge represents a relationship between 
@@ -91,6 +95,7 @@ public class Links extends AbstractController {
     }
 
 
+    @Override
     @Operation(summary = "Deletes edge to existing entity identified by target id.")
     @DeleteMapping(value = "/entities/{source_id:[\\w|\\d|\\-|\\_]+}/links/{prefixedKey:[\\w|\\d]+\\.[\\w|\\d]+}/{target_id:[\\w|\\d|-|_]+}", 
             produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE, MediaType.APPLICATION_JSON_VALUE})
@@ -116,6 +121,7 @@ public class Links extends AbstractController {
     }
 
 
+    @Override
     @Operation(summary = "Returns all links of the given type.", hidden = true)
     @PutMapping(value = "/entities/{id:[\\w|\\d|\\-|\\_]+}/links/{prefixedKey:[\\w|\\d]+\\.[\\w|\\d]+}",
             produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE, MediaType.APPLICATION_JSON_VALUE})

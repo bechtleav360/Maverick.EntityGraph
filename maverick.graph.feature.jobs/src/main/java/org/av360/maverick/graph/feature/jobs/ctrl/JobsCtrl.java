@@ -3,10 +3,7 @@ package org.av360.maverick.graph.feature.jobs.ctrl;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.api.controller.AbstractController;
-import org.av360.maverick.graph.feature.jobs.AssignInternalTypesJob;
-import org.av360.maverick.graph.feature.jobs.MergeDuplicatesJob;
-import org.av360.maverick.graph.feature.jobs.ReplaceObjectIdentifiersJob;
-import org.av360.maverick.graph.feature.jobs.ReplaceSubjectIdentifiersJob;
+import org.av360.maverick.graph.feature.jobs.*;
 import org.av360.maverick.graph.model.events.JobScheduledEvent;
 import org.av360.maverick.graph.model.security.AdminToken;
 import org.springframework.context.ApplicationEventPublisher;
@@ -70,6 +67,16 @@ public class JobsCtrl extends AbstractController {
         JobScheduledEvent event = new JobScheduledEvent(AssignInternalTypesJob.NAME, new AdminToken());
         eventPublisher.publishEvent(event);
         return Mono.empty();
+    }
+
+    @PostMapping(value = "/execute/export")
+    @ResponseStatus(HttpStatus.ACCEPTED)
+    Mono<Void> execExportJob() {
+        log.info("Request to execute job: Export application");
+        JobScheduledEvent event = new JobScheduledEvent(ExportApplicationJob.NAME, new AdminToken());
+        eventPublisher.publishEvent(event);
+        return Mono.empty();
+
     }
 
 

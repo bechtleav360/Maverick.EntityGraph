@@ -42,7 +42,6 @@ public class SecurityConfiguration {
                                                          ServerAuthenticationConverter authenticationConverter) {
         final ReactiveAuthenticationManager authenticationManagers = new ChainingAuthenticationManager(authenticationManager);
         final AuthenticationWebFilter authenticationWebFilter = new AuthenticationWebFilter(authenticationManagers);
-
         authenticationWebFilter.setServerAuthenticationConverter(authenticationConverter);
 
 
@@ -74,8 +73,13 @@ public class SecurityConfiguration {
 
     @Bean
     @ConditionalOnProperty(name = "application.security.enabled", havingValue = "false")
-    public SecurityWebFilterChain unsecureWebFilterChain(ServerHttpSecurity http) {
+    public SecurityWebFilterChain unsecureWebFilterChain(ServerHttpSecurity http, List<ReactiveAuthenticationManager> authenticationManager, ServerAuthenticationConverter authenticationConverter) {
+        final ReactiveAuthenticationManager authenticationManagers = new ChainingAuthenticationManager(authenticationManager);
+        final AuthenticationWebFilter authenticationWebFilter = new AuthenticationWebFilter(authenticationManagers);
+        authenticationWebFilter.setServerAuthenticationConverter(authenticationConverter);
+
         SecurityWebFilterChain build = http
+                .addFilterAt(authenticationWebFilter, SecurityWebFiltersOrder.AUTHENTICATION)
                 .authorizeExchange()
                 .anyExchange().permitAll()
                 .and()
@@ -90,11 +94,19 @@ public class SecurityConfiguration {
     }
 
 
+
+    @Bean
+    @ConditionalOnProperty(name = "application.security.enabled", havingValue = "false")
+    ServerAuthenticationConverter buildAnonymousAuthenticationConverter() {
+        return exchange -> {
+            RequestDetails details = RequestDetails.withRequest(exchange.getRequest());
+            return Mono.just(new GuestToken(details));
+        };
+    }
     @Bean
     @ConditionalOnProperty(name = "application.security.enabled", havingValue = "true")
     ServerAuthenticationConverter buildAuthenticationConverter() {
         return exchange -> {
-
             RequestDetails details = RequestDetails.withRequest(exchange.getRequest());
 
             List<String> apiKeys = exchange.getRequest().getHeaders().get(API_KEY_HEADER);
@@ -124,8 +136,6 @@ public class SecurityConfiguration {
                 ApiKeyAuthenticationToken apiKeyToken = new ApiKeyAuthenticationToken(details);
                 return Mono.just(apiKeyToken);
             }
-
-
         };
     }
 

@@ -45,12 +45,21 @@
             <scope>test</scope>
         </dependency>
 
-
+        <dependency>
+            <groupId>software.amazon.awssdk</groupId>
+            <artifactId>s3</artifactId>
+            <version>2.20.74</version>
+        </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.av360.maverick.graph</groupId>
+            <artifactId>graph-feature-applications</artifactId>
+        </dependency>
+
     </dependencies>
 
 </project>

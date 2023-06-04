@@ -3,7 +3,7 @@ package org.av360.maverick.graph.services.transformers;
 import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.services.EntityServices;
 import org.av360.maverick.graph.services.QueryServices;
-import org.av360.maverick.graph.store.rdf.fragments.TripleModel;
+import org.eclipse.rdf4j.model.Model;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
@@ -41,7 +41,7 @@ public class DelegatingTransformer implements Transformer {
     }
 
     @Override
-    public Mono<? extends TripleModel> handle(TripleModel triples, Map<String, String> parameters) {
+    public Mono<? extends Model> handle(Model triples, Map<String, String> parameters) {
         if (this.transformers == null) {
             log.trace("No transformers registered, skip.");
             return Mono.just(triples);

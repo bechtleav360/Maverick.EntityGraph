@@ -18,7 +18,7 @@ public interface ModelUpdates extends TripleStore {
      * @param model
      * @return
      */
-    Mono<Void> delete(Model model, Authentication authentication, GrantedAuthority requiredAuthority);
+    Mono<Void> delete(Model subject, Authentication authentication, GrantedAuthority requiredAuthority);
 
     /**
      * Stores the triples directly (without transaction context)

@@ -1,10 +1,23 @@
 package org.av360.maverick.graph.feature.applications.domain.model;
 
+import org.av360.maverick.graph.feature.applications.config.Globals;
+import org.av360.maverick.graph.model.vocabulary.Local;
 import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 
-public record Application(IRI iri, String label, String key, ApplicationFlags flags) {
+import java.io.Serializable;
+import java.util.Map;
+
+public record Application(IRI iri, String label, String key, ApplicationFlags flags, Map<String, Serializable> configuration) {
 
 
+
+    public static Application DEFAULT = new Application(
+                SimpleValueFactory.getInstance().createIRI(Local.Applications.NAMESPACE, "default"),
+                Globals.DEFAULT_APPLICATION_LABEL,
+                "default",
+                new ApplicationFlags(false, false),
+                Map.of());
 
 
 }

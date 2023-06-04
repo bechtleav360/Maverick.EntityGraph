@@ -4,7 +4,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.model.vocabulary.Local;
 import org.av360.maverick.graph.model.vocabulary.SDO;
 import org.av360.maverick.graph.services.transformers.Transformer;
-import org.av360.maverick.graph.store.rdf.fragments.TripleModel;
 import org.eclipse.rdf4j.model.*;
 import org.eclipse.rdf4j.model.impl.LinkedHashModel;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
@@ -48,17 +47,17 @@ public class InsertLocalTypes implements Transformer {
     }
 
     @Override
-    public Mono<? extends TripleModel> handle(TripleModel model, Map<String, String> parameters) {
-        Model result = new LinkedHashModel(model.getModel());
+    public Mono<? extends Model> handle(Model model, Map<String, String> parameters) {
+        Model result = new LinkedHashModel(model);
 
-        return Flux.fromIterable(Collections.unmodifiableSet(model.getModel().subjects()))
-                .filter(sub -> isNotIndividual(sub, model.getModel(), result))
-                .filter(sub -> isNotClassifier(sub, model.getModel(), result))
+        return Flux.fromIterable(Collections.unmodifiableSet(model.subjects()))
+                .filter(sub -> isNotIndividual(sub, model, result))
+                .filter(sub -> isNotClassifier(sub, model, result))
                 // .filter(sub -> isNotEmbedded(sub, model.getModel(), result))
                 .doOnNext(sub -> {
-                    log.warn("Subject with the following statements could not be identified for local type: \n {}", model.listStatements(sub, null, null));
+                    log.warn("Subject with the following statements could not be identified for local type: \n {}", model.getStatements(sub, null, null));
                 })
-                .then(Mono.just(new TripleModel(result)))
+                .then(Mono.just(result))
                 .doOnSubscribe(c -> log.debug("Check if internal types have to be added."))
                 .doFinally(signalType -> log.trace("Finished checks for internal types."));
     }

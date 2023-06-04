@@ -1,7 +1,7 @@
 package org.av360.maverick.graph.services.validators;
 
 import org.av360.maverick.graph.services.EntityServices;
-import org.av360.maverick.graph.store.rdf.fragments.TripleModel;
+import org.eclipse.rdf4j.model.Model;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
@@ -20,7 +20,7 @@ public class DelegatingValidator implements Validator {
     }
 
     @Override
-    public Mono<? extends TripleModel> handle(EntityServices entityServicesImpl, TripleModel triples, Map<String, String> parameters) {
+    public Mono<? extends Model> handle(EntityServices entityServicesImpl, Model triples, Map<String, String> parameters) {
         if (this.validators == null) return Mono.just(triples);
 
         return Flux.fromIterable(validators)

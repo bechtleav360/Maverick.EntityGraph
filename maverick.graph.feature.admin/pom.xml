@@ -22,6 +22,11 @@
             <artifactId>graph-api</artifactId>
             <scope>compile</scope>
         </dependency>
+        <dependency>
+            <groupId>software.amazon.awssdk</groupId>
+            <artifactId>s3</artifactId>
+            <version>2.20.37</version>
+        </dependency>
     </dependencies>
 
 

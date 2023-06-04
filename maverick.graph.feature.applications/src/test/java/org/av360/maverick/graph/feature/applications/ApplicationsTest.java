@@ -93,7 +93,7 @@ class ApplicationsTest extends ApplicationsTestsBase {
     @Test
     public void getApplication() {
 
-        super.printStart("Read application");
+        super.printStart("Read node");
 
         Responses.ApplicationResponse app = this.client.createApplication("test", new ApplicationFlags(false, true))
                 .expectStatus().isCreated()

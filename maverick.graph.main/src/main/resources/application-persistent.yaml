@@ -9,13 +9,19 @@ application:
     basic:
       enabled: false
   features:
+
     modules:
+      objects:
+        enabled: true
+        configuration:
+          mode: local
+          path: "D:/Graphen/entities/objects"
       applications:
         enabled: true
       admin:
         enabled: true
       jobs:
-        enabled: true
+        enabled: false
         scheduled:
           detectDuplicates: true
           replaceIdentifiers: true
@@ -58,10 +64,9 @@ logging:
     graph:
       jobs: DEBUG
       repo: TRACE
-      srvc: DEBUG
+      srvc: TRACE
       ctrl: DEBUG
-      feat:
-        admin: DEBUG
+      feat: TRACE
     org:
       eclipse:
         rdf4j: DEBUG
