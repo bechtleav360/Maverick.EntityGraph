@@ -54,7 +54,7 @@ public class StatementsEncoder implements Encoder<AnnotatedStatement> {
                 .from(inputStream)
                 .doOnSubscribe(c -> log.debug("Trying to write statements stream response with mimetype '{}'", mimeType != null ? mimeType.toString() : "unset"))
                 .map(namespaceAwareStatement -> (Statement) namespaceAwareStatement)
-                .buffer(5)
+                .buffer(50)
                 .flatMap(statements -> {
                     try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
                         RDFWriter writer = RdfUtils.getWriterFactory(mimeType).orElseThrow().getWriter(baos);

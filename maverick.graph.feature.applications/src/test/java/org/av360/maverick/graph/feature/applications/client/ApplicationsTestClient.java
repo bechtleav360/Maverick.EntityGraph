@@ -5,6 +5,8 @@ import org.av360.maverick.graph.feature.applications.domain.model.ApplicationFla
 import org.springframework.test.web.reactive.server.WebTestClient;
 import org.springframework.web.reactive.function.BodyInserters;
 
+import java.util.Map;
+
 public class ApplicationsTestClient {
 
     private final WebTestClient webClient;
@@ -16,7 +18,7 @@ public class ApplicationsTestClient {
 
     public WebTestClient.ResponseSpec createApplication(String label, ApplicationFlags flags) {
 
-        Requests.RegisterApplicationRequest req = new Requests.RegisterApplicationRequest(label, flags);
+        Requests.RegisterApplicationRequest req = new Requests.RegisterApplicationRequest(label, flags, Map.of());
 
         return webClient.post()
                 .uri("/api/applications")

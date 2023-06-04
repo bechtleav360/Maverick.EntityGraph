@@ -11,12 +11,13 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.api.controller.AbstractController;
+import org.av360.maverick.graph.model.api.EntitiesAPI;
 import org.av360.maverick.graph.model.enums.RdfMimeTypes;
 import org.av360.maverick.graph.model.rdf.AnnotatedStatement;
+import org.av360.maverick.graph.model.rdf.Triples;
 import org.av360.maverick.graph.services.EntityServices;
 import org.av360.maverick.graph.services.QueryServices;
 import org.av360.maverick.graph.services.SchemaServices;
-import org.av360.maverick.graph.store.rdf.fragments.TripleBag;
 import org.av360.maverick.graph.store.rdf.fragments.TripleModel;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.web.reactive.error.ErrorAttributes;
@@ -39,7 +40,7 @@ import java.util.Map;
 )
 @SecurityRequirement(name = "api_key")
 @Tag(name = "Entities")
-public class Entities extends AbstractController {
+public class EntitiesController extends AbstractController implements EntitiesAPI {
 
     protected final ObjectMapper objectMapper;
     protected final EntityServices entityServices;
@@ -47,13 +48,14 @@ public class Entities extends AbstractController {
 
     protected final SchemaServices schemaServices;
 
-    public Entities(ObjectMapper objectMapper, EntityServices graphService, QueryServices queryServices, SchemaServices schemaServices) {
+    public EntitiesController(ObjectMapper objectMapper, EntityServices graphService, QueryServices queryServices, SchemaServices schemaServices) {
         this.objectMapper = objectMapper;
         this.entityServices = graphService;
         this.queryServices = queryServices;
         this.schemaServices = schemaServices;
     }
 
+    @Override
     @Operation(summary = "Returns an entity with the given unique identifier. ")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "404", description = "Entity with the given identifier does not exist", content = {@Content(mediaType = "application/json", schema = @Schema(implementation = ErrorAttributes.class))})
@@ -73,6 +75,7 @@ public class Entities extends AbstractController {
 
     }
 
+    @Override
     @GetMapping(value = "/entities", produces = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.N3_VALUE})
     @ResponseStatus(HttpStatus.OK)
     public Flux<AnnotatedStatement> list(
@@ -88,11 +91,12 @@ public class Entities extends AbstractController {
     }
 
 
+    @Override
     @PostMapping(value = "/entities",
             consumes = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.N3_VALUE},
             produces = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.N3_VALUE})
     @ResponseStatus(HttpStatus.ACCEPTED)
-    public Flux<AnnotatedStatement> create(@RequestBody TripleBag request) {
+    public Flux<AnnotatedStatement> create(@RequestBody Triples request) {
         Assert.isTrue(request.getModel().size() > 0, "No statements in request detected.");
 
         return super.getAuthentication()
@@ -104,11 +108,12 @@ public class Entities extends AbstractController {
                 });
     }
 
+    @Override
     @PostMapping(value = "/entities/{id:[\\w|\\d|\\-|\\_]+}/{prefixedKey:[\\w|\\d]+\\.[\\w|\\d]+}",
             consumes = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE},
             produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE})
     @ResponseStatus(HttpStatus.CREATED)
-    public Flux<AnnotatedStatement> embed(@PathVariable String id, @PathVariable String prefixedKey, @RequestBody TripleBag value) {
+    public Flux<AnnotatedStatement> embed(@PathVariable String id, @PathVariable String prefixedKey, @RequestBody Triples value) {
 
         return super.getAuthentication()
                 .flatMap(authentication ->
@@ -123,6 +128,7 @@ public class Entities extends AbstractController {
     }
 
 
+    @Override
     @DeleteMapping(value = "/entities/{id:[\\w|\\d|\\-|\\_]+}",
             produces = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.N3_VALUE})
     @ResponseStatus(HttpStatus.OK)

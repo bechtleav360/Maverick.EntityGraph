@@ -1,5 +1,7 @@
 package org.av360.maverick.graph.feature.applications.api;
 
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
@@ -9,6 +11,9 @@ import org.av360.maverick.graph.feature.applications.api.dto.Responses;
 import org.av360.maverick.graph.feature.applications.domain.ApplicationsService;
 import org.av360.maverick.graph.feature.applications.domain.SubscriptionsService;
 import org.av360.maverick.graph.feature.applications.domain.errors.InvalidApplication;
+import org.av360.maverick.graph.model.rdf.AnnotatedStatement;
+import org.av360.maverick.graph.services.QueryServices;
+import org.av360.maverick.graph.store.RepositoryType;
 import org.springframework.http.HttpStatus;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
@@ -28,14 +33,17 @@ public class Applications extends AbstractController {
 
     private final SubscriptionsService subscriptionsService;
 
-    public Applications(ApplicationsService applicationsService, SubscriptionsService subscriptionsService) {
+    private final QueryServices queryServices;
+
+    public Applications(ApplicationsService applicationsService, SubscriptionsService subscriptionsService, QueryServices queryServices) {
 
         this.applicationsService = applicationsService;
         this.subscriptionsService = subscriptionsService;
+        this.queryServices = queryServices;
     }
 
 
-    //@ApiOperation(value = "Create a new application")
+    //@ApiOperation(value = "Create a new node")
     @PostMapping(value = "")
     @ResponseStatus(HttpStatus.CREATED)
     Mono<Responses.ApplicationResponse> createApplication(@RequestBody Requests.RegisterApplicationRequest request) {
@@ -43,13 +51,14 @@ public class Applications extends AbstractController {
 
         return super.getAuthentication()
                 .flatMap(authentication -> this.applicationsService.createApplication(request.label(), request.flags(), authentication))
-                .map(subscription ->
+                .map(application ->
                         new Responses.ApplicationResponse(
-                                subscription.key(),
-                                subscription.label(),
-                                subscription.flags()
+                                application.key(),
+                                application.label(),
+                                application.flags(),
+                                application.configuration()
                         )
-                ).doOnSubscribe(subscription -> log.info("Request to create a new application with the label '{}' and flags: {}", request.label(), request.flags()));
+                ).doOnSubscribe(subscription -> log.info("Request to create a new node with the label '{}' and flags: {}", request.label(), request.flags()));
     }
 
     //@ApiOperation(value = "List all applications")
@@ -58,39 +67,82 @@ public class Applications extends AbstractController {
     Flux<Responses.ApplicationResponse> listApplications() {
         return super.getAuthentication()
                 .flatMapMany(this.applicationsService::listApplications)
-                .map(subscription ->
-                        new Responses.ApplicationResponse(
-                                subscription.key(),
-                                subscription.label(),
-                                subscription.flags()
-                        )
-                ).doOnSubscribe(subscription -> log.info("Request to list all applications"));
-    }
-
-    @GetMapping(value = "/{applicationId}")
-    @ResponseStatus(HttpStatus.OK)
-    Mono<Responses.ApplicationResponse> getApplication(@PathVariable String applicationId) {
-        return super.getAuthentication()
-                .flatMap(auth -> this.applicationsService.getApplication(applicationId, auth))
                 .map(application ->
                         new Responses.ApplicationResponse(
                                 application.key(),
                                 application.label(),
-                                application.flags()
+                                application.flags(),
+                                application.configuration()
                         )
-                ).doOnSubscribe(subscription -> log.info("Request to get application with id '{}'", applicationId));
+                ).doOnSubscribe(subscription -> log.info("Request to list all applications"));
+    }
+
+    @GetMapping(value = "/{applicationKey}")
+    @ResponseStatus(HttpStatus.OK)
+    Mono<Responses.ApplicationResponse> getApplication(@PathVariable String applicationKey) {
+        return super.getAuthentication()
+                .flatMap(auth -> this.applicationsService.getApplication(applicationKey, auth))
+                .map(application ->
+                        new Responses.ApplicationResponse(
+                                application.key(),
+                                application.label(),
+                                application.flags(),
+                                application.configuration()
+                        )
+                ).doOnSubscribe(subscription -> log.info("Request to get node with id '{}'", applicationKey));
+    }
+
+
+    @PostMapping(value = "/{applicationKey}/configuration/{configurationKey}")
+    @ResponseStatus(HttpStatus.OK)
+    Mono<Responses.ApplicationResponse> createConfiguration(@PathVariable String applicationKey, @PathVariable String configurationKey, @RequestBody String value) {
+        return super.getAuthentication()
+                .flatMap(auth ->
+                        this.applicationsService.getApplication(applicationKey, auth)
+                                .flatMap(application -> this.applicationsService.createConfigurationItem(application, configurationKey, value, auth)))
+                .map(application ->
+                        new Responses.ApplicationResponse(
+                                application.key(),
+                                application.label(),
+                                application.flags(),
+                                application.configuration()
+                        )
+
+                ).doOnSubscribe(subscription -> log.info("Request to get node with id '{}'", applicationKey));
+    }
+
+    @DeleteMapping(value = "/{applicationKey}/configuration/{configurationKey}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    Mono<Responses.ApplicationResponse> deleteConfiguration(@PathVariable String applicationKey, @PathVariable String configurationKey) {
+        return super.getAuthentication()
+                .flatMap(auth ->
+                        this.applicationsService.getApplication(applicationKey, auth)
+                                .flatMap(application -> this.applicationsService.deleteConfigurationItem(application, configurationKey, auth)))
+                .then(this.getApplication(applicationKey))
+                .doOnSubscribe(subscription -> log.info("Request to get node with id '{}'", applicationKey));
+    }
+
+    @DeleteMapping(value = "/{applicationKey}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    Mono<Responses.ApplicationResponse> deleteApplication(@PathVariable String applicationKey) {
+        return super.getAuthentication()
+                .flatMap(auth ->
+                        this.applicationsService.getApplication(applicationKey, auth)
+                                .flatMap(application -> this.applicationsService.delete(application, auth)))
+                .then(this.getApplication(applicationKey))
+                .doOnSubscribe(subscription -> log.info("Request to get node with id '{}'", applicationKey));
     }
 
 
     //@ApiOperation(value = "Generate API Key")
-    @PostMapping(value = "/{applicationId}/subscriptions")
+    @PostMapping(value = "/{applicationKey}/subscriptions")
     @ResponseStatus(HttpStatus.CREATED)
-    Mono<Responses.ApiKeyWithApplicationResponse> generateKey(@PathVariable String applicationId, @RequestBody Requests.CreateApiKeyRequest request) {
-        Assert.isTrue(StringUtils.hasLength(applicationId), "Application ID  is a required parameter");
+    Mono<Responses.ApiKeyWithApplicationResponse> generateKey(@PathVariable String applicationKey, @RequestBody Requests.CreateApiKeyRequest request) {
+        Assert.isTrue(StringUtils.hasLength(applicationKey), "Application Key  is a required parameter");
         Assert.isTrue(StringUtils.hasLength(request.label()), "Name is a required parameter");
 
         return super.getAuthentication()
-                .flatMap(authentication -> this.subscriptionsService.createSubscription(applicationId, request.label(), authentication))
+                .flatMap(authentication -> this.subscriptionsService.createSubscription(applicationKey, request.label(), authentication))
                 .map(apiKey ->
                         new Responses.ApiKeyWithApplicationResponse(
                                 apiKey.key(),
@@ -99,41 +151,61 @@ public class Applications extends AbstractController {
                                 new Responses.ApplicationResponse(
                                         apiKey.application().key(),
                                         apiKey.application().label(),
-                                        apiKey.application().flags()
+                                        apiKey.application().flags(),
+                                        apiKey.application().configuration()
                                 )
                         )
-                ).doOnSubscribe(subscription -> log.info("Request to generate a new api key for an application"));
+                ).doOnSubscribe(subscription -> log.info("Request to generate a new api key for an node"));
 
     }
 
-    //@ApiOperation(value = "List registered API keys for application")
-    @GetMapping(value = "/{applicationId}/subscriptions")
+    //@ApiOperation(value = "List registered API keys for node")
+    @GetMapping(value = "/{applicationKey}/subscriptions")
     @ResponseStatus(HttpStatus.OK)
-    Flux<Responses.SubscriptionResponse> listSubscriptions(@PathVariable String applicationId) {
-        Assert.isTrue(StringUtils.hasLength(applicationId), "Application ID is a required parameter");
+    Flux<Responses.SubscriptionResponse> listSubscriptions(@PathVariable String applicationKey) {
+        Assert.isTrue(StringUtils.hasLength(applicationKey), "Application Key is a required parameter");
 
         return super.getAuthentication()
-                .flatMapMany(authentication -> this.subscriptionsService.listSubscriptionsForApplication(applicationId, authentication))
-                .switchIfEmpty(Mono.error(new InvalidApplication(applicationId)))
+                .flatMapMany(authentication -> this.subscriptionsService.listSubscriptionsForApplication(applicationKey, authentication))
+                .switchIfEmpty(Mono.error(new InvalidApplication(applicationKey)))
                 .map(subscription -> new Responses.SubscriptionResponse(subscription.key(), subscription.issueDate(), subscription.active()))
-                .doOnSubscribe(s -> log.info("Fetching all api keys for an application"));
+                .doOnSubscribe(s -> log.info("Fetching all api keys for an node"));
 
 
     }
 
 
     // @ApiOperation(value = "Revoke API Key")
-    @DeleteMapping(value = "/{applicationId}/subscriptions/{label}")
+    @DeleteMapping(value = "/{applicationKey}/subscriptions/{label}")
     @ResponseStatus(HttpStatus.NOT_FOUND)
-    Mono<Void> revokeToken(@PathVariable String applicationId, @PathVariable String label) {
+    Mono<Void> revokeToken(@PathVariable String applicationKey, @PathVariable String label) {
 
-        Assert.isTrue(StringUtils.hasLength(applicationId), "Subscription is a required parameter");
+        Assert.isTrue(StringUtils.hasLength(applicationKey), "Subscription is a required parameter");
         Assert.isTrue(StringUtils.hasLength(label), "Name is a required parameter");
 
         return super.getAuthentication()
-                .flatMapMany(authentication -> this.subscriptionsService.revokeToken(applicationId, label, authentication))
+                .flatMapMany(authentication -> this.subscriptionsService.revokeToken(applicationKey, label, authentication))
                 .then()
-                .doOnSubscribe(subscription -> log.info("Generating a new token for an application"));
+                .doOnSubscribe(subscription -> log.info("Generating a new token for an node"));
     }
+
+
+    @PostMapping(value = "/query", consumes = "text/plain", produces = {"text/turtle", "node/ld+json"})
+    @ResponseStatus(HttpStatus.ACCEPTED)
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(
+            description = "Sparql Construct Query",
+            content = @Content(examples = {
+                    @ExampleObject(name = "Query everything", value = "CONSTRUCT WHERE { ?s ?p ?o . } LIMIT 100")
+            })
+    )
+    Flux<AnnotatedStatement> query(@RequestBody String query) {
+        return getAuthentication()
+                .flatMapMany(authentication -> queryServices.queryGraph(query, authentication, RepositoryType.APPLICATION))
+                .doOnSubscribe(s -> {
+                    if (log.isDebugEnabled()) log.debug("Request to dump node graph");
+                });
+    }
+
+
 
 }

@@ -8,6 +8,8 @@ import org.av360.maverick.graph.feature.applications.config.Globals;
 import org.av360.maverick.graph.feature.applications.config.ReactiveApplicationContextHolder;
 import org.av360.maverick.graph.feature.applications.domain.model.Application;
 import org.av360.maverick.graph.feature.applications.security.SubscriptionToken;
+import org.av360.maverick.graph.model.errors.InsufficientPrivilegeException;
+import org.av360.maverick.graph.model.errors.InvalidConfiguration;
 import org.av360.maverick.graph.model.security.AdminToken;
 import org.av360.maverick.graph.model.security.Authorities;
 import org.av360.maverick.graph.model.security.RequestDetails;
@@ -17,7 +19,6 @@ import org.av360.maverick.graph.store.rdf4j.config.DefaultRepositoryBuilder;
 import org.eclipse.rdf4j.http.protocol.UnauthorizedException;
 import org.springframework.context.annotation.Primary;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
-import org.springframework.security.authentication.InsufficientAuthenticationException;
 import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -35,7 +36,7 @@ import java.util.Objects;
  * Replaces the @see DefaultRepositoryBuilder
  */
 @Component
-@Slf4j(topic = "graph.feat.app.repo.cfg.builder")
+@Slf4j(topic = "graph.feat.app.repo.builder")
 @Primary
 public class ApplicationRepositoryBuilder extends DefaultRepositoryBuilder {
 
@@ -46,7 +47,7 @@ public class ApplicationRepositoryBuilder extends DefaultRepositoryBuilder {
 
 
     /**
-     * Initializes the connection to a repository. Txhe connections are cached.
+     * Initializes the connection to a repository. The connections are cached.
      * <p>
      * We assert a valid and positive authentication at this point.
      *
@@ -56,9 +57,17 @@ public class ApplicationRepositoryBuilder extends DefaultRepositoryBuilder {
     @Override
     public Mono<LabeledRepository> buildRepository(TripleStore store, Authentication authentication) {
         return ReactiveApplicationContextHolder.getRequestedApplication()
+                .switchIfEmpty(Mono.just(Application.DEFAULT))
                 .flatMap(application -> {
                     try {
                         if(application.label().equalsIgnoreCase(Globals.DEFAULT_APPLICATION_LABEL)) {
+                            if(authentication.getDetails() != null
+                                    && authentication.getDetails() instanceof RequestDetails details
+                                    && details.headers().containsKey("X-APPLICATION")
+                                    && ! details.headers().get("X-APPLICATION").equalsIgnoreCase(Application.DEFAULT.label())
+                            ) {
+                                return Mono.error(new IOException("Application header provided, but not in context."));
+                            }
                             return super.buildRepository(store, authentication);
                         } else {
                             return Mono.just(this.buildRepository(store, authentication, application));
@@ -66,14 +75,8 @@ public class ApplicationRepositoryBuilder extends DefaultRepositoryBuilder {
                     } catch (IOException e) {
                         return Mono.error(e);
                     }
-                })
-
-                .switchIfEmpty(Mono.defer(() -> {
-                    if(authentication.getDetails() != null && authentication.getDetails() instanceof RequestDetails && ((RequestDetails) authentication.getDetails()).headers().containsKey("X-APPLICATION")) {
-                        return Mono.error(new IOException("Application header provided, but not in context."));
-                    }
-                    return super.buildRepository(store, authentication);
-                }));
+                }).switchIfEmpty(Mono.error(new InvalidConfiguration("Failed to build repository for type "+store.getRepositoryType())))
+                .doOnError(error -> log.error("Failed to build repository of type '{}' due to error: {}", store.getRepositoryType(), error.getMessage()));
     }
 
     public LabeledRepository buildRepository(TripleStore store, Authentication authentication, @NotNull Application requestedApplication) throws IOException {
@@ -101,7 +104,7 @@ public class ApplicationRepositoryBuilder extends DefaultRepositoryBuilder {
 
     private LabeledRepository resolveRepositoryForAnonymousAuthentication(TripleStore store, @NotNull Application requestedApplication) throws IOException {
         if (!requestedApplication.flags().isPublic())
-            throw new InsufficientAuthenticationException("Requested application does not exist or is not public.");
+            throw new InsufficientPrivilegeException("Requested application does not exist or is not public.");
 
         log.trace("Resolving public repository for application '{}' with anonymous authentication.", requestedApplication.label());
         return this.buildApplicationsRepository(store, requestedApplication);
@@ -111,7 +114,7 @@ public class ApplicationRepositoryBuilder extends DefaultRepositoryBuilder {
 
     private LabeledRepository resolveRepositoryForApplicationAuthentication(TripleStore store, Application requestedApplication, SubscriptionToken authentication) throws IOException {
         Assert.isTrue(Authorities.satisfies(Authorities.READER, authentication.getAuthorities()), "Missing authorization: " + Authorities.READER.getAuthority());
-        Assert.isTrue(authentication.getApplication().label().equalsIgnoreCase(requestedApplication.label()), "Subscription token is not configured for requested application " + requestedApplication);
+        Assert.isTrue(authentication.getApplication().label().equalsIgnoreCase(requestedApplication.label()), "Subscription token is not configured for requested node " + requestedApplication);
 
         log.trace("Resolving repository with application authentication.");
         return this.buildApplicationsRepository(store, requestedApplication);
@@ -119,7 +122,7 @@ public class ApplicationRepositoryBuilder extends DefaultRepositoryBuilder {
 
     private LabeledRepository resolveRepositoryForSystemAuthentication(TripleStore store, @NotNull Application requestedApplication, Authentication authentication) throws IOException {
         if (!Authorities.satisfies(Authorities.SYSTEM, authentication.getAuthorities()))
-            throw new InsufficientAuthenticationException("Authorization issue while resolving repository.");
+            throw new InsufficientPrivilegeException("Authorization issue while resolving repository.");
 
         log.trace("Resolving repository with admin authentication and additional subscription key.");
         return this.buildApplicationsRepository(store, requestedApplication);
@@ -131,7 +134,7 @@ public class ApplicationRepositoryBuilder extends DefaultRepositoryBuilder {
         meterRegistry.counter("graph.store.repository", "method", "access", "label", label).increment();
 
         if (!application.flags().isPersistent() || !StringUtils.hasLength(store.getDirectory())) {
-            log.debug("Initializing volatile {} repository for application '{}' [{}]", label, application.label(), application.key());
+            log.debug("Initializing volatile {} repository for node '{}' [{}]", label, application.label(), application.key());
             return super.getCache().get(label, s -> super.initializeVolatileRepository(label));
 
         } else {

@@ -1,17 +1,16 @@
 package org.av360.maverick.graph.store.rdf.fragments;
 
 import org.av360.maverick.graph.model.rdf.AnnotatedStatement;
+import org.av360.maverick.graph.model.rdf.Triples;
 import org.av360.maverick.graph.store.rdf.helpers.NamespacedModelBuilder;
 import org.eclipse.rdf4j.model.*;
-import org.eclipse.rdf4j.model.vocabulary.RDF;
 
-import java.io.Serializable;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
-public class TripleModel implements NamespaceAware, Serializable {
+public class TripleModel implements Triples {
 
     private NamespacedModelBuilder modelBuilder;
 
@@ -55,22 +54,7 @@ public class TripleModel implements NamespaceAware, Serializable {
     }
 
 
-    /**
-     * Returns a list of object identifiers, which are embedded (means there is another object (entity)
-     * within the model pointing to it
-     */
-    public Set<Resource> embeddedObjects() {
-        Set<Resource> result = new HashSet<>();
-        this.getModel().unmodifiable().objects().forEach(object -> {
-                    this.getModel().stream()
-                            .filter(statement -> statement.getObject().equals(object))
-                            .filter(statement -> !statement.getPredicate().equals(RDF.TYPE))
-                            .findFirst()
-                            .ifPresent(statement -> result.add(statement.getSubject()));
-                }
-        );
-        return result;
-    }
+
 
     public Map<Resource, Model> listFragments() {
         Map<Resource, Model> result = new HashMap<>();

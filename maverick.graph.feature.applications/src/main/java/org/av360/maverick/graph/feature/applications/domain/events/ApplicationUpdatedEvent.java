@@ -1,12 +1,22 @@
 package org.av360.maverick.graph.feature.applications.domain.events;
 
-import org.springframework.context.ApplicationEvent;
+import org.av360.maverick.graph.feature.applications.domain.model.Application;
 
-public abstract class ApplicationUpdatedEvent<T> extends ApplicationEvent {
+public class ApplicationUpdatedEvent extends GraphApplicationEvent {
 
-    public ApplicationUpdatedEvent(T source) {
-        super(source);
+    Application application;
+
+    public ApplicationUpdatedEvent(Application app) {
+        super(app.label());
+        this.application = app;
     }
 
-    public abstract String getLabel();
+    @Override
+    public String getLabel() {
+        return (String) this.getSource();
+    }
+
+    public Application getApplication() {
+        return this.application;
+    }
 }

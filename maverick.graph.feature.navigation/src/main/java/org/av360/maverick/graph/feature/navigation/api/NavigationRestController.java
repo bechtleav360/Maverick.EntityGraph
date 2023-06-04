@@ -26,11 +26,11 @@ import java.util.Objects;
 @RequestMapping(path = "/nav")
 @Order(1)
 @Slf4j
-public class Entrypoint extends AbstractController {
+public class NavigationRestController extends AbstractController {
 
     private final NavigationServices navigationServices;
 
-    public Entrypoint(NavigationServices navigationServices) {
+    public NavigationRestController(NavigationServices navigationServices) {
         this.navigationServices = navigationServices;
     }
 
@@ -97,8 +97,8 @@ public class Entrypoint extends AbstractController {
 
 
         return super.getAuthentication().flatMapMany(authentication -> this.navigationServices.browse(new HashMap<>(params.toSingleValueMap()), authentication));
-
-
     }
+
+
 
 }

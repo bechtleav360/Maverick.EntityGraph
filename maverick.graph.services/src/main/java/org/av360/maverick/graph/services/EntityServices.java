@@ -1,10 +1,10 @@
 package org.av360.maverick.graph.services;
 
 import jakarta.annotation.Nullable;
+import org.av360.maverick.graph.model.rdf.Triples;
 import org.av360.maverick.graph.store.EntityStore;
 import org.av360.maverick.graph.store.rdf.fragments.RdfEntity;
 import org.av360.maverick.graph.store.rdf.fragments.RdfTransaction;
-import org.av360.maverick.graph.store.rdf.fragments.TripleBag;
 import org.eclipse.rdf4j.model.IRI;
 import org.springframework.security.core.Authentication;
 import reactor.core.publisher.Flux;
@@ -72,9 +72,9 @@ public interface EntityServices {
      * @param authentication The current authentication
      * @return Transaction with affected statements
      */
-    Mono<RdfTransaction> create(TripleBag triples, Map<String, String> parameters, Authentication authentication);
+    Mono<RdfTransaction> create(Triples triples, Map<String, String> parameters, Authentication authentication);
 
-    Mono<RdfTransaction> linkEntityTo(String entityKey, IRI predicate, TripleBag linkedEntities, Authentication authentication);
+    Mono<RdfTransaction> linkEntityTo(String entityKey, IRI predicate, Triples linkedEntities, Authentication authentication);
 
     /**
      * Retrieves a complete entity representation (identifier, values and relations) from store.

@@ -4,7 +4,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.Triple;
 import org.av360.maverick.graph.model.identifier.ChecksumIdentifier;
 import org.av360.maverick.graph.services.transformers.Transformer;
-import org.av360.maverick.graph.store.rdf.fragments.TripleModel;
 import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Statement;
@@ -50,7 +49,7 @@ public class MergeDuplicates implements Transformer {
 
 
     @Override
-    public Mono<? extends TripleModel> handle(TripleModel model, Map<String, String> parameters) {
+    public Mono<? extends Model> handle(Model model, Map<String, String> parameters) {
 
         return Mono.just(model)
                 .doOnSubscribe(c -> log.debug("Check if linked entities already exist and merge if required."))
@@ -72,10 +71,22 @@ public class MergeDuplicates implements Transformer {
      *
      * @return true, if named embedded entities are in payload
      */
-    private boolean checkForEmbeddedNamedEntities(TripleModel triples) {
-        return triples.embeddedObjects()
-                .stream()
+    private boolean checkForEmbeddedNamedEntities(Model model) {
+        return referencedResourcesInModel(model).stream()
                 .anyMatch(object -> object.isIRI() && (!(object instanceof ChecksumIdentifier)));
+    }
+
+    private Set<Resource> referencedResourcesInModel(Model model) {
+        Set<Resource> result = new HashSet<>();
+        model.unmodifiable().objects().forEach(object -> {
+                    model.stream()
+                            .filter(statement -> statement.getObject().equals(object))
+                            .filter(statement -> !statement.getPredicate().equals(RDF.TYPE))
+                            .findFirst()
+                            .ifPresent(statement -> result.add(statement.getSubject()));
+                }
+        );
+        return result;
     }
 
     /**
@@ -83,12 +94,10 @@ public class MergeDuplicates implements Transformer {
      *
      * @return true, if anonymous embedded entities are in payload
      */
-    private boolean checkForEmbeddedAnonymousEntities(TripleModel triples) {
-        return triples.embeddedObjects()
+    private boolean checkForEmbeddedAnonymousEntities(Model triples) {
+        return referencedResourcesInModel(triples)
                 .stream()
                 .anyMatch(object -> object.isBNode() || object instanceof ChecksumIdentifier);
-
-
     }
 
 
@@ -106,9 +115,9 @@ public class MergeDuplicates implements Transformer {
      *
      * @param triples
      */
-    public Mono<TripleModel> mergeDuplicatedWithinModel(TripleModel triples) {
+    public Mono<Model> mergeDuplicatedWithinModel(Model triples) {
 
-        Model unmodifiable = new LinkedHashModel(triples.getModel()).unmodifiable();
+        Model unmodifiable = new LinkedHashModel(triples).unmodifiable();
 
         /*
             if ?obj <> ?anon
@@ -158,9 +167,9 @@ public class MergeDuplicates implements Transformer {
 
         }
         if(count == 0 && log.isTraceEnabled()) {
-            log.trace("{} anonymous embedded entities merged in model with {} statements", count, triples.streamStatements().count());
+            log.trace("{} anonymous embedded entities merged in model with {} statements", count, triples.size());
         } else {
-            log.debug("{} anonymous embedded entities merged in model with {} statements", count, triples.streamStatements().count());
+            log.debug("{} anonymous embedded entities merged in model with {} statements", count, triples.size());
         }
 
 
@@ -168,21 +177,21 @@ public class MergeDuplicates implements Transformer {
 
     }
 
-    public void reroute(TripleModel triples, Resource duplicateIdentifier, Resource originalIdentifier) {
+    public void reroute(Model triples, Resource duplicateIdentifier, Resource originalIdentifier) {
 
-        Model unmodifiable = new LinkedHashModel(triples.getModel()).unmodifiable();
+        Model unmodifiable = new LinkedHashModel(triples).unmodifiable();
 
         // remove all statement from the possibleDuplicate (since we keep the original)
-        unmodifiable.getStatements(duplicateIdentifier, null, null).forEach(statement -> triples.getModel().remove(statement));
+        unmodifiable.getStatements(duplicateIdentifier, null, null).forEach(triples::remove);
 
         // change link to from possibleDuplicate to original
         unmodifiable.getStatements(null, null, duplicateIdentifier).forEach(statement -> {
-            triples.getModel().remove(statement);
-            triples.getModel().add(statement.getSubject(), statement.getPredicate(), originalIdentifier);
+            triples.remove(statement);
+            triples.add(statement.getSubject(), statement.getPredicate(), originalIdentifier);
         });
 
         if (log.isTraceEnabled())
-            log.trace("{} statements in the model after rerouting", triples.streamStatements().count());
+            log.trace("{} statements in the model after rerouting", triples.size());
 
     }
 
@@ -194,7 +203,7 @@ public class MergeDuplicates implements Transformer {
      *
      * @param triples
      */
-    public Mono<TripleModel> checkIfLinkedNamedEntityExistsInGraph(TripleModel triples) {
+    public Mono<Model> checkIfLinkedNamedEntityExistsInGraph(Model triples) {
         log.trace("Checking for duplicates in graph skipped");
 
         return Mono.just(triples);

@@ -72,6 +72,10 @@ public class BindingsAccessor {
         return Optional.ofNullable(this.bindings.getValue(var));
     }
 
+    public Optional<Value> findValue(Variable var) {
+        return this.findValue(var.getVarName());
+    }
+
     public boolean asBoolean(Variable var) {
         return Literals.getBooleanValue(bindings.getValue(var.getVarName()), false);
     }

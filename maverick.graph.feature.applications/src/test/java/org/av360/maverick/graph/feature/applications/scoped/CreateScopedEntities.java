@@ -41,7 +41,7 @@ public class CreateScopedEntities  extends ApiTestsBase {
     @Test
     public void createEntity() {
         super.printStart("creating scoped entity");
-        client.createApplication("testApp", new ApplicationFlags(false, true, null, null, null))
+        client.createApplication("testApp", new ApplicationFlags(false, true))
                 .expectStatus().isCreated();
 
 

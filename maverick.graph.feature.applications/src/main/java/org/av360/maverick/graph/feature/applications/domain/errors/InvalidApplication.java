@@ -13,7 +13,7 @@ public class InvalidApplication extends InvalidRequest {
 
     @Override
     public String getMessage() {
-        return String.format("No application found for identifier or label '%s'", applicationId);
+        return String.format("No node found for identifier or label '%s'", applicationId);
     }
 
     @Override

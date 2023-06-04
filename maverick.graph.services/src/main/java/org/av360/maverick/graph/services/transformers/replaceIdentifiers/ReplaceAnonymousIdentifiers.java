@@ -1,10 +1,10 @@
 package org.av360.maverick.graph.services.transformers.replaceIdentifiers;
 
 import lombok.extern.slf4j.Slf4j;
-import org.av360.maverick.graph.model.identifier.IdentifierFactory;
 import org.av360.maverick.graph.model.identifier.LocalIdentifier;
 import org.av360.maverick.graph.model.vocabulary.Local;
 import org.av360.maverick.graph.model.vocabulary.SDO;
+import org.av360.maverick.graph.services.IdentifierServices;
 import org.av360.maverick.graph.services.transformers.Transformer;
 import org.av360.maverick.graph.store.rdf.fragments.TripleModel;
 import org.eclipse.rdf4j.model.*;
@@ -31,16 +31,13 @@ import java.util.stream.Collectors;
 @ConditionalOnProperty(name = "application.features.transformers.replaceAnonymousIdentifiers", havingValue = "true")
 public class ReplaceAnonymousIdentifiers extends AbstractIdentifierReplace implements Transformer  {
 
-    private final IdentifierFactory identifierFactory;
 
+    private final IdentifierServices identifierServices;
 
-    public ReplaceAnonymousIdentifiers(IdentifierFactory identifierFactory) {
-        this.identifierFactory = identifierFactory;
+    public ReplaceAnonymousIdentifiers(IdentifierServices identifierServices) {
+        this.identifierServices = identifierServices;
     }
 
-    public IdentifierFactory getIdentifierFactory() {
-        return identifierFactory;
-    }
 
 
     public Mono<TripleModel> handle(TripleModel triples, Map<String, String> parameters) {
@@ -81,13 +78,10 @@ public class ReplaceAnonymousIdentifiers extends AbstractIdentifierReplace imple
         LocalIdentifier identifier;
         if (charProp.isPresent() && entityType.isPresent()) {
             // we build the identifier from entity type and value
-            identifier = identifierFactory.createReproducibleIdentifier(Local.Entities.NS, entityType.get(), charProp.get());
-
+            return identifierServices.asReproducibleIRI(Local.Entities.NS, entityType.get(), charProp.get());
         } else {
-            identifier = identifierFactory.createRandomIdentifier(Local.Entities.NS);
+            return identifierServices.asRandomIRI(Local.Entities.NS);
         }
-
-        return Mono.just(identifier);
     }
 
     protected Optional<Value> findCharacteristicProperty(Resource subj, Model model) {

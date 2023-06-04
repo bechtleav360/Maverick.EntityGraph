@@ -43,7 +43,7 @@ public class DelegatingNavigationServices implements NavigationServices {
                         .flatMapMany(applicationsService::listApplications)
                         .collectList()
                         .flatMapMany(applications -> Flux.create(sink -> {
-                            IRI appsCollection = vf.createIRI(Local.URN_PREFIX, "ApplicationSet");
+                            IRI appsCollection = vf.createIRI(ResolvableUrlPrefix+"/api/applications");
                             IRI start = vf.createIRI(Local.NAMESPACE, "Start");
                             ModelBuilder builder = new ModelBuilder()
                                     .subject(appsCollection)
@@ -60,7 +60,7 @@ public class DelegatingNavigationServices implements NavigationServices {
                                 builder.subject(app)
                                         .add(ApplicationTerms.HAS_KEY, application.key())
                                         .add(ApplicationTerms.HAS_LABEL, application.label())
-                                        .add(HYDRA.ENTRYPOINT, String.format(ResolvableUrlPrefix+"?/api/s/%s/entities",  application.label()))
+                                        .add(HYDRA.ENTRYPOINT, "/api/s/%s/entities".formatted(application.label()))
                                         .add(appsCollection, HYDRA.MEMBER, app);
                             });
 
