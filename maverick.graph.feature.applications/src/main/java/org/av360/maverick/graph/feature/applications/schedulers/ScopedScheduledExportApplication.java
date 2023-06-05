@@ -22,7 +22,6 @@ import java.util.concurrent.ScheduledFuture;
 public class ScopedScheduledExportApplication implements ApplicationListener<ApplicationCreatedEvent> {
     public static final String CONFIG_KEY_EXPORT_FREQUENCY = "export_frequency";
     public static final String CONFIG_KEY_EXPORT_S3_HOST = "export_s3_host";
-
     public static final String CONFIG_KEY_EXPORT_S3_BUCKET = "export_s3_bucket";
 
     private final ApplicationEventPublisher eventPublisher;

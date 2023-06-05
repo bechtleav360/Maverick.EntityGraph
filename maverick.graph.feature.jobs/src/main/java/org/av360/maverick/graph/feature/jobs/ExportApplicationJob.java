@@ -5,10 +5,11 @@ import org.av360.maverick.graph.feature.applications.config.Globals;
 import org.av360.maverick.graph.feature.applications.config.ReactiveApplicationContextHolder;
 import org.av360.maverick.graph.feature.applications.domain.model.Application;
 import org.av360.maverick.graph.feature.applications.domain.model.ApplicationFlags;
+import org.av360.maverick.graph.feature.applications.schedulers.ScopedScheduledExportApplication;
 import org.av360.maverick.graph.model.entities.Job;
+import org.av360.maverick.graph.model.vocabulary.Local;
 import org.av360.maverick.graph.services.EntityServices;
-import org.eclipse.rdf4j.model.IRI;
-import org.eclipse.rdf4j.model.base.AbstractIRI;
+import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.rio.RDFFormat;
 import org.eclipse.rdf4j.rio.RDFWriter;
 import org.eclipse.rdf4j.rio.RDFWriterRegistry;
@@ -54,31 +55,25 @@ public class ExportApplicationJob implements Job {
     @Override
     public Mono<Void> run(Authentication authentication) {
         return ReactiveApplicationContextHolder.getRequestedApplication()
+                .defaultIfEmpty(
+                        new Application(
+                                SimpleValueFactory.getInstance().createIRI(Local.Applications.NAMESPACE, "default"),
+                                Globals.DEFAULT_APPLICATION_LABEL,
+                                "default",
+                                new ApplicationFlags(true, true),
+                                Map.of(
+                                        ScopedScheduledExportApplication.CONFIG_KEY_EXPORT_FREQUENCY, defaultExportFrequency,
+                                        ScopedScheduledExportApplication.CONFIG_KEY_EXPORT_S3_BUCKET, defaultS3BucketId,
+                                        ScopedScheduledExportApplication.CONFIG_KEY_EXPORT_S3_HOST, defaultS3Host
+                                )
+                        )
+                )
                 .flatMap(application -> {
                     S3AsyncClient s3Client = createS3Client(application.configuration().get(ScopedScheduledExportApplication.CONFIG_KEY_EXPORT_S3_HOST).toString());
                     return exportRdfStatements(authentication)
                             .flatMap(rdfString -> uploadRdfStringToS3(s3Client, rdfString, application)).then();
 
-                })
-                .switchIfEmpty(Mono.defer(() -> {
-                    Application defaultApplication =  new Application(
-                            SimpleValueFactory.getInstance().createIRI(Local.Applications.NAMESPACE, "default"),
-                            Globals.DEFAULT_APPLICATION_LABEL,
-                            "default",
-                            new ApplicationFlags(true, true),
-                            Map.of(
-                                    ScopedScheduledExportApplication.CONFIG_KEY_EXPORT_FREQUENCY, defaultExportFrequency,
-                                    ScopedScheduledExportApplication.CONFIG_KEY_EXPORT_S3_BUCKET, defaultS3BucketId,
-                                    ScopedScheduledExportApplication.CONFIG_KEY_EXPORT_S3_HOST, defaultS3Host
-                            )
-                    );
-
-
-                        S3AsyncClient s3Client = createS3Client(defaultApplication.configuration().get(ScopedScheduledExportApplication.CONFIG_KEY_EXPORT_S3_HOST).toString());
-                        return exportRdfStatements(authentication)
-                                .flatMap(rdfString -> uploadRdfStringToS3(s3Client, rdfString, defaultApplication)).then();
-
-                }));
+                });
     }
 
     private S3AsyncClient createS3Client(String s3Host) {
