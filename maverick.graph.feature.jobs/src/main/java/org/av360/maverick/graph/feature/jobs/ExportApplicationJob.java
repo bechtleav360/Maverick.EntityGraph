@@ -3,6 +3,7 @@ package org.av360.maverick.graph.feature.jobs;
 import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.feature.applications.config.Globals;
 import org.av360.maverick.graph.feature.applications.config.ReactiveApplicationContextHolder;
+import org.av360.maverick.graph.feature.applications.domain.ApplicationsService;
 import org.av360.maverick.graph.feature.applications.domain.model.Application;
 import org.av360.maverick.graph.feature.applications.domain.model.ApplicationFlags;
 import org.av360.maverick.graph.feature.applications.schedulers.ScopedScheduledExportApplication;
@@ -34,6 +35,8 @@ public class ExportApplicationJob implements Job {
 
     public static String NAME = "exportApplication";
     private final EntityServices entityServices;
+
+    private final ApplicationsService applicationsService;
     @Value("${application.features.modules.jobs.scheduled.exportApplication.defaultS3Host:}")
     private String defaultS3Host;
 
@@ -43,8 +46,9 @@ public class ExportApplicationJob implements Job {
     @Value("${application.features.modules.jobs.scheduled.exportApplication.defaultExportFrequency:}")
     private String defaultExportFrequency;
 
-    public ExportApplicationJob(EntityServices service) {
+    public ExportApplicationJob(EntityServices service, ApplicationsService applicationsService) {
         this.entityServices = service;
+        this.applicationsService = applicationsService;
     }
 
     @Override
@@ -54,7 +58,8 @@ public class ExportApplicationJob implements Job {
 
     @Override
     public Mono<Void> run(Authentication authentication) {
-        return ReactiveApplicationContextHolder.getRequestedApplication()
+        return ReactiveApplicationContextHolder.getRequestedApplicationLabel()
+                .flatMap(label -> applicationsService.getApplicationByLabel(label, authentication))
                 .flatMap(application -> {
                     S3AsyncClient s3Client = createS3Client(application.configuration().get(ScopedScheduledExportApplication.CONFIG_KEY_EXPORT_S3_HOST).toString());
                     return exportRdfStatements(authentication)

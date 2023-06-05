@@ -70,7 +70,7 @@ public class ResolveRepositoriesTest {
 
 
         Mono<LabeledRepository> mono = builder.buildRepository(entityStore, TestSecurityConfig.createAdminToken())
-                .contextWrite(ctx -> ctx.put(ReactiveApplicationContextHolder.CONTEXT_KEY, application));
+                .contextWrite(ctx -> ctx.put(ReactiveApplicationContextHolder.CONTEXT_APP_KEY, application));
 
 
         StepVerifier.create(mono).assertNext(Repository::isInitialized);
