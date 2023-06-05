@@ -56,14 +56,14 @@ public class ResolveRepositoriesTest {
 
     @Test
     public void buildAppEntityRepoWithTestAuthentication() throws IOException {
-        Application application = new Application(SimpleValueFactory.getInstance().createIRI("http://example.org/app"), "app", "123213", new ApplicationFlags(false, false, null, null, null));
+        Application application = new Application(SimpleValueFactory.getInstance().createIRI("http://example.org/app"), "app", "123213", new ApplicationFlags(false, false, null, null, null, null, null, null));
         Repository repository = builder.buildRepository(entityStore, TestSecurityConfig.createAuthenticationToken(), application);
         Assertions.assertTrue(repository.isInitialized());
     }
 
     @Test
     public void buildAppEntityRepoWithTestAuthenticationWithContext() throws IOException {
-        Application application = new Application(SimpleValueFactory.getInstance().createIRI("http://example.org/app"), "app", "123213", new ApplicationFlags(false, false, null, null, null));
+        Application application = new Application(SimpleValueFactory.getInstance().createIRI("http://example.org/app"), "app", "123213", new ApplicationFlags(false, false, null, null, null, null, null, null));
 
 
         Mono<LabeledRepository> mono = builder.buildRepository(entityStore, TestSecurityConfig.createAdminToken())

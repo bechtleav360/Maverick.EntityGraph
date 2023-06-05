@@ -27,7 +27,7 @@ import java.util.concurrent.TimeUnit;
  */
 @Slf4j(topic = "graph.jobs.identifiers")
 @Component
-@ConditionalOnProperty(name = "application.features.modules.jobs.scheduled.typeCoercion", havingValue = "true")
+@ConditionalOnProperty(name = "application.features.modules.jobs.scheduled.typeCoercion.enabled", havingValue = "true")
 public class ScheduledTypeCoercion  {
 
     private final ApplicationEventPublisher eventPublisher;
@@ -35,8 +35,8 @@ public class ScheduledTypeCoercion  {
         this.eventPublisher = eventPublisher;
     }
 
-    @Scheduled(initialDelay = 30, fixedRate = 600, timeUnit = TimeUnit.SECONDS)
-    // @Scheduled(initialDelay = 9, fixedRate = 20, timeUnit = TimeUnit.SECONDS)
+//    @Scheduled(initialDelay = 30, fixedRate = 600, timeUnit = TimeUnit.SECONDS)
+    @Scheduled(cron = "${application.features.modules.jobs.scheduled.typeCoercion.defaultFrequency:0 */5 * * * ?}")
     public void scheduled() {
         JobScheduledEvent event = new JobScheduledEvent(AssignInternalTypesJob.NAME, new AdminToken());
         eventPublisher.publishEvent(event);

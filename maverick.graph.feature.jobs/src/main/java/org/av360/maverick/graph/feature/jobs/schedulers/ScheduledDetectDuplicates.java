@@ -1,6 +1,7 @@
 package org.av360.maverick.graph.feature.jobs.schedulers;
 
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.feature.jobs.MergeDuplicatesJob;
 import org.av360.maverick.graph.model.events.JobScheduledEvent;
@@ -45,7 +46,7 @@ import java.util.concurrent.TimeUnit;
  */
 @Component
 @Slf4j(topic = "graph.jobs.duplicates")
-@ConditionalOnProperty(name = "application.features.modules.jobs.scheduled.detectDuplicates", havingValue = "true")
+@ConditionalOnProperty(name = "application.features.modules.jobs.scheduled.detectDuplicates.enabled", havingValue = "true")
 public class ScheduledDetectDuplicates  {
 
     private final ApplicationEventPublisher eventPublisher;
@@ -57,8 +58,8 @@ public class ScheduledDetectDuplicates  {
 
     // https://github.com/spring-projects/spring-framework/issues/23533
 
-    @Scheduled(initialDelay = 60, fixedRate = 600, timeUnit = TimeUnit.SECONDS)
-    // @Scheduled(initialDelay = 5, fixedRate = 20, timeUnit = TimeUnit.SECONDS)
+//    @Scheduled(initialDelay = 60, fixedRate = 600, timeUnit = TimeUnit.SECONDS)
+    @Scheduled(cron = "${application.features.modules.jobs.scheduled.detectDuplicates.defaultFrequency:0 */5 * * * ?}")
     public void checkForDuplicatesScheduled() {
         JobScheduledEvent event = new JobScheduledEvent(MergeDuplicatesJob.NAME, new AdminToken());
         eventPublisher.publishEvent(event);

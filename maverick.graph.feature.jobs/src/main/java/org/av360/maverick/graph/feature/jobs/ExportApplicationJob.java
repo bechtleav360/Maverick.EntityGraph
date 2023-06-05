@@ -33,14 +33,11 @@ public class ExportApplicationJob implements Job {
     public static String NAME = "exportApplication";
     private final EntityServices entityServices;
 
-    @Value("${application.features.modules.jobs.scheduled.exportApplication.defaultS3Host}")
+    @Value("${application.features.modules.jobs.scheduled.exportApplication.defaultS3Host:http://127.0.0.1:9000}")
     private String defaultS3Host;
 
-    @Value("${application.features.modules.jobs.scheduled.exportApplication.defaultS3BucketId}")
+    @Value("${application.features.modules.jobs.scheduled.exportApplication.defaultS3BucketId:test}")
     private String defaultS3BucketId;
-
-    @Value("${application.features.modules.jobs.scheduled.exportApplication.defaultExportFrequency}")
-    private String defaultExportFrequency;
 
     public ExportApplicationJob(EntityServices service) {
         this.entityServices = service;
@@ -54,32 +51,29 @@ public class ExportApplicationJob implements Job {
     @Override
     public Mono<Void> run(Authentication authentication) {
         return ReactiveApplicationContextHolder.getRequestedApplication()
+                .defaultIfEmpty(
+                        new Application(
+                                null,
+                                Globals.DEFAULT_APPLICATION_LABEL,
+                                "default",
+                                new ApplicationFlags(
+                                        true,
+                                        true,
+                                        null,
+                                        null,
+                                        null,
+                                        null,
+                                        defaultS3Host,
+                                        defaultS3BucketId
+                                )
+                        )
+                )
                 .flatMap(application -> {
                     S3AsyncClient s3Client = createS3Client(application.flags().s3Host());
                     return exportRdfStatements(authentication)
-                            .flatMap(rdfString -> uploadRdfStringToS3(s3Client, rdfString, application)).then();
-
-                })
-                .switchIfEmpty(Mono.defer(() -> {
-                    Application defaultApplication =  new Application(
-                            new IRI() {
-                                @Override
-                                public String getNamespace() {return null;}
-                                @Override
-                                public String getLocalName() {return null;}
-                                @Override
-                                public String stringValue() {return null;}
-                            },
-                            Globals.DEFAULT_APPLICATION_LABEL,
-                            "default",
-                            new ApplicationFlags(true, true, defaultS3Host, defaultS3BucketId, defaultExportFrequency));
-
-
-                        S3AsyncClient s3Client = createS3Client(defaultApplication.flags().s3Host());
-                        return exportRdfStatements(authentication)
-                                .flatMap(rdfString -> uploadRdfStringToS3(s3Client, rdfString, defaultApplication)).then();
-
-                }));
+                            .flatMap(rdfString -> uploadRdfStringToS3(s3Client, rdfString, application))
+                            .then();
+                });
     }
 
     private S3AsyncClient createS3Client(String s3Host) {

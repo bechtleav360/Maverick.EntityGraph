@@ -4,7 +4,7 @@ import org.av360.maverick.graph.feature.applications.domain.model.Application;
 
 public class ApplicationCreatedEvent extends ApplicationUpdatedEvent {
 
-    Application application;
+    private final Application application;
 
     public ApplicationCreatedEvent(Application app) {
         super(app.label());

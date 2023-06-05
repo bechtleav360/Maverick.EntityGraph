@@ -11,9 +11,13 @@ public class QueryVariables {
     public static final Variable varAppLabel = SparqlBuilder.var("appLabel");
     public static final Variable varAppFlagPersistent = SparqlBuilder.var("appPersistent");
     public static final Variable varAppFlagPublic = SparqlBuilder.var("appPublic");
+    public static final Variable varAppFlagDetectDuplicatesFrequency = SparqlBuilder.var("appDetectDuplicatesFrequency");
+    public static final Variable varAppFlagReplaceIdentifiersFrequency = SparqlBuilder.var("appReplaceIdentifiersFrequency");
+    public static final Variable varAppFlagTypeCoercionFrequency = SparqlBuilder.var("appTypeCoercionFrequency");
+    public static final Variable varAppFlagExportFrequency = SparqlBuilder.var("appExportFrequency");
     public static final Variable varAppFlagS3Host = SparqlBuilder.var("appS3Host");
     public static final Variable varAppFlagS3BucketId = SparqlBuilder.var("appS3BucketId");
-    public static final Variable varAppFlagExportFrequency = SparqlBuilder.var("appExportFrequency");
+
 
     public static final Variable varSubIri = SparqlBuilder.var("subNode");
     public static final Variable varSubKey = SparqlBuilder.var("subId");
@@ -55,9 +59,12 @@ public class QueryVariables {
                 new ApplicationFlags(
                         ba.asBoolean(varAppFlagPersistent),
                         ba.asBoolean(varAppFlagPublic),
+                        ba.asString(varAppFlagDetectDuplicatesFrequency),
+                        ba.asString(varAppFlagReplaceIdentifiersFrequency),
+                        ba.asString(varAppFlagTypeCoercionFrequency),
+                        ba.asString(varAppFlagExportFrequency),
                         ba.asString(varAppFlagS3Host),
-                        ba.asString(varAppFlagS3BucketId),
-                        ba.asString(varAppFlagExportFrequency)
+                        ba.asString(varAppFlagS3BucketId)
                 )
         );
     }
