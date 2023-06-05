@@ -2,7 +2,6 @@ package org.av360.maverick.graph.feature.applications.config;
 
 import jakarta.validation.constraints.NotNull;
 import org.av360.maverick.graph.feature.applications.domain.ApplicationsService;
-import org.av360.maverick.graph.model.security.AdminToken;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.util.Assert;
@@ -29,17 +28,24 @@ public class RequestedApplicationFilter implements WebFilter {
 
     @Override
     public Mono<Void> filter(@NotNull ServerWebExchange exchange, WebFilterChain chain) {
+
         try {
 
             // FIXME: remove repo request from filter, only extract label from path and store it as string. Let it handle downstream
 
-            Optional<String> requestedApplication = this.getRequestedApplication(exchange.getRequest());
-            //this.getRequestedApplicationFromPath(exchange.getRequest().getPath().toString());
-            return requestedApplication
+            // we only store the label in the context... writing the actual application into the context has to happen later
+
+            return this.getRequestedApplication(exchange.getRequest())
+                    .map(label -> chain.filter(exchange).contextWrite(context -> context.put(ReactiveApplicationContextHolder.CONTEXT_LABEL_KEY, label)))
+                    .orElseGet(() -> chain.filter(exchange));
+
+                        //this.getRequestedApplicationFromPath(exchange.getRequest().getPath().toString());
+            /* return requestedApplication
                     .map(label ->
                             this.subscriptionsService.getApplicationByLabel(label, new AdminToken())
-                                            .flatMap(application -> chain.filter(exchange).contextWrite(context -> context.put(ReactiveApplicationContextHolder.CONTEXT_KEY, application))))
+                                            .flatMap(application -> chain.filter(exchange).contextWrite(context -> context.put(ReactiveApplicationContextHolder.CONTEXT_APP_KEY, application))))
                     .orElseGet(() -> chain.filter(exchange));
+             */
         } catch (IOException e) {
             return Mono.error(e);
         }

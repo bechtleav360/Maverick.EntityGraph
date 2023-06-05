@@ -2,6 +2,7 @@ package org.av360.maverick.graph.feature.applications.security;
 
 import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.feature.applications.config.ReactiveApplicationContextHolder;
+import org.av360.maverick.graph.feature.applications.domain.ApplicationsService;
 import org.av360.maverick.graph.feature.applications.domain.SubscriptionsService;
 import org.av360.maverick.graph.feature.applications.domain.model.Application;
 import org.av360.maverick.graph.model.security.AdminToken;
@@ -39,8 +40,11 @@ public class ApplicationAuthenticationManager implements ReactiveAuthenticationM
 
     private final SubscriptionsService subscriptionsService;
 
-    public ApplicationAuthenticationManager(SubscriptionsService subscriptionsService1) {
+    private final ApplicationsService applicationsService;
+
+    public ApplicationAuthenticationManager(SubscriptionsService subscriptionsService1, ApplicationsService applicationsService) {
         this.subscriptionsService = subscriptionsService1;
+        this.applicationsService = applicationsService;
         log.trace("Activated Application Authentication Manager (checking subscription api keys)");
     }
 
@@ -52,7 +56,8 @@ public class ApplicationAuthenticationManager implements ReactiveAuthenticationM
         try {
             Assert.notNull(authentication, "Authentication is null in Authentication Manager");
 
-            return ReactiveApplicationContextHolder.getRequestedApplication()
+            return ReactiveApplicationContextHolder.getRequestedApplicationLabel()
+                    .flatMap(label -> this.applicationsService.getApplicationByLabel(label, authentication))
                     .flatMap(requestedApplication -> {
                         if (authentication instanceof AdminToken token) {
                             log.trace("Authentication has system authority and application scope '{}' requested.", requestedApplication.label());

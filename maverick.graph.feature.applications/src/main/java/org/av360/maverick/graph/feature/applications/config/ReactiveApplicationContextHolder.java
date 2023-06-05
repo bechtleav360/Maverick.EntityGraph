@@ -5,39 +5,42 @@ import org.av360.maverick.graph.feature.applications.domain.model.Application;
 import reactor.core.publisher.Mono;
 import reactor.util.context.Context;
 
-import java.util.concurrent.ExecutionException;
-
 @Slf4j(topic = "graph.feat.app.context")
 public class ReactiveApplicationContextHolder {
 
-    public static final Class<Application> CONTEXT_KEY = Application.class;
+    public record ApplicationLabel(String label) {}
+
+    public static final Class<ApplicationLabel> CONTEXT_LABEL_KEY = ApplicationLabel.class;
+
+
+    public static final Class<Application> CONTEXT_APP_KEY = Application.class;
 
     public static Mono<Application> getRequestedApplication() {
         return Mono.deferContextual(Mono::just)
-                .filter(ctx -> ctx.hasKey(CONTEXT_KEY))
-                .map(ctx -> ctx.get(CONTEXT_KEY))
+                .filter(ctx -> ctx.hasKey(CONTEXT_APP_KEY))
+                .map(ctx -> ctx.get(CONTEXT_APP_KEY))
                 .switchIfEmpty(Mono.empty())
-                .doOnError(error -> log.error("Failed to read node from context due to error: {}", error.getMessage()));
+                .doOnError(error -> log.error("Failed to read application from context due to error: {}", error.getMessage()));
 
     }
 
-    public static Application getRequestedApplicationBlocking() {
-        try {
-
-            Application block = getRequestedApplication().block();
-            Application application = getRequestedApplication()
-                    .map(app -> {
-                        return app;
-                    })
-                    .toFuture().get();
-            return application;
-        } catch (InterruptedException | ExecutionException e) {
-            throw new RuntimeException(e);
-        }
+    public static Mono<String> getRequestedApplicationLabel() {
+        return getRequestedApplication()
+                .map(Application::label)
+                .switchIfEmpty(Mono.deferContextual(Mono::just)
+                        .filter(ctx -> ctx.hasKey(CONTEXT_LABEL_KEY))
+                        .map(ctx -> ctx.get(CONTEXT_LABEL_KEY))
+                        .map(ApplicationLabel::label)
+                )
+                .switchIfEmpty(Mono.empty())
+                .doOnError(error -> log.error("Failed to read application label from context due to error: {}", error.getMessage()));
 
     }
+
+
 
     public static Context withApplication(Application requestedApplication) {
-        return Context.of(CONTEXT_KEY, requestedApplication);
+        return Context.of(CONTEXT_APP_KEY, requestedApplication);
     }
+
 }
