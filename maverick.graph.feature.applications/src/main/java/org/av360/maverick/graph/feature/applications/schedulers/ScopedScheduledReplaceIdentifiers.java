@@ -11,12 +11,10 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ApplicationListener;
 import org.springframework.scheduling.TaskScheduler;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.scheduling.support.CronTrigger;
 import org.springframework.stereotype.Component;
 
 import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
 
 /**
  * If we have any global identifiers (externally set) in the repo, we have to replace them with our internal identifiers.
@@ -36,6 +34,8 @@ import java.util.concurrent.TimeUnit;
 public class ScopedScheduledReplaceIdentifiers implements ApplicationListener<ApplicationCreatedEvent> {
 
     // FIXME: should not directly access the services
+
+    public static final String CONFIG_KEY_REPLACE_IDENTIFIERS_FREQUENCY = "replace_identifiers_frequency";
     private final ApplicationEventPublisher eventPublisher;
 
     private final ApplicationsService applicationsService;
@@ -57,7 +57,7 @@ public class ScopedScheduledReplaceIdentifiers implements ApplicationListener<Ap
                         JobScheduledEvent event = new ApplicationJobScheduledEvent("replaceSubjectIdentifiers", new AdminToken(), application);
                         eventPublisher.publishEvent(event);
                     };
-                    ScheduledFuture<?> scheduledFuture = taskScheduler.schedule(task, new CronTrigger(application.flags().replaceIdentifiersFrequency()));
+                    ScheduledFuture<?> scheduledFuture = taskScheduler.schedule(task, new CronTrigger(application.configuration().get(CONFIG_KEY_REPLACE_IDENTIFIERS_FREQUENCY).toString()));
                 }).subscribe();
     }
 
@@ -70,7 +70,7 @@ public class ScopedScheduledReplaceIdentifiers implements ApplicationListener<Ap
                         JobScheduledEvent jobEvent = new ApplicationJobScheduledEvent("replaceSubjectIdentifiers", new AdminToken(), event.getApplication());
                         eventPublisher.publishEvent(jobEvent);
                     };
-                    ScheduledFuture<?> scheduledFuture = taskScheduler.schedule(task, new CronTrigger(event.getApplication().flags().replaceIdentifiersFrequency()));
+                    ScheduledFuture<?> scheduledFuture = taskScheduler.schedule(task, new CronTrigger(event.getApplication().configuration().get(CONFIG_KEY_REPLACE_IDENTIFIERS_FREQUENCY).toString()));
 //                });
     }
 }

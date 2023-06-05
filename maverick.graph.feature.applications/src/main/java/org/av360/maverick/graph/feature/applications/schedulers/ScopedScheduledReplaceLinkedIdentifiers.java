@@ -11,12 +11,12 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ApplicationListener;
 import org.springframework.scheduling.TaskScheduler;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.scheduling.support.CronTrigger;
 import org.springframework.stereotype.Component;
 
 import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
+
+import static org.av360.maverick.graph.feature.applications.schedulers.ScopedScheduledReplaceIdentifiers.CONFIG_KEY_REPLACE_IDENTIFIERS_FREQUENCY;
 
 /**
  * If we have any global identifiers (externally set) in the repo, we have to replace them with our internal identifiers.
@@ -57,7 +57,7 @@ public class ScopedScheduledReplaceLinkedIdentifiers implements ApplicationListe
                         JobScheduledEvent event = new ApplicationJobScheduledEvent("replaceLinkedIdentifiers", new AdminToken(), application);
                         eventPublisher.publishEvent(event);
                     };
-                    ScheduledFuture<?> scheduledFuture = taskScheduler.schedule(task, new CronTrigger(application.flags().replaceIdentifiersFrequency()));
+                    ScheduledFuture<?> scheduledFuture = taskScheduler.schedule(task, new CronTrigger(application.configuration().get(CONFIG_KEY_REPLACE_IDENTIFIERS_FREQUENCY).toString()));
                 }).subscribe();
     }
 
@@ -69,7 +69,7 @@ public class ScopedScheduledReplaceLinkedIdentifiers implements ApplicationListe
                         JobScheduledEvent jobEvent = new ApplicationJobScheduledEvent("replaceLinkedIdentifiers", new AdminToken(), event.getApplication());
                         eventPublisher.publishEvent(jobEvent);
                     };
-                    ScheduledFuture<?> scheduledFuture = taskScheduler.schedule(task, new CronTrigger(event.getApplication().flags().replaceIdentifiersFrequency()));
+                    ScheduledFuture<?> scheduledFuture = taskScheduler.schedule(task, new CronTrigger(event.getApplication().configuration().get(CONFIG_KEY_REPLACE_IDENTIFIERS_FREQUENCY).toString()));
 //                });
     }
 

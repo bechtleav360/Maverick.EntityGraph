@@ -25,7 +25,7 @@ import java.util.concurrent.TimeUnit;
 @Component
 @ConditionalOnProperty(name = "application.features.modules.jobs.scheduled.typeCoercion.enabled", havingValue = "true")
 public class ScopedScheduledTypeCoercion implements ApplicationListener<ApplicationCreatedEvent> {
-
+    public static final String CONFIG_KEY_ASSIGN_INTERNAL_TYPES_FREQUENCY = "assign_internal_types_frequency";
     private final ApplicationEventPublisher eventPublisher;
     private final ApplicationsService applicationsService;
     private final TaskScheduler taskScheduler;
@@ -44,7 +44,7 @@ public class ScopedScheduledTypeCoercion implements ApplicationListener<Applicat
                         JobScheduledEvent event = new ApplicationJobScheduledEvent("typeCoercion", new AdminToken(), application);
                         eventPublisher.publishEvent(event);
                     };
-                    ScheduledFuture<?> scheduledFuture = taskScheduler.schedule(task, new CronTrigger(application.flags().typeCoercionFrequency()));
+                    ScheduledFuture<?> scheduledFuture = taskScheduler.schedule(task, new CronTrigger(application.configuration().get(CONFIG_KEY_ASSIGN_INTERNAL_TYPES_FREQUENCY).toString()));
                 }).subscribe();
     }
 
@@ -56,7 +56,7 @@ public class ScopedScheduledTypeCoercion implements ApplicationListener<Applicat
                         JobScheduledEvent jobEvent = new ApplicationJobScheduledEvent("typeCoercion", new AdminToken(), event.getApplication());
                         eventPublisher.publishEvent(jobEvent);
                     };
-                    ScheduledFuture<?> scheduledFuture = taskScheduler.schedule(task, new CronTrigger(event.getApplication().flags().typeCoercionFrequency()));
+                    ScheduledFuture<?> scheduledFuture = taskScheduler.schedule(task, new CronTrigger(event.getApplication().configuration().get(CONFIG_KEY_ASSIGN_INTERNAL_TYPES_FREQUENCY).toString()));
 //                });
     }
 

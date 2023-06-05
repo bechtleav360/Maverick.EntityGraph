@@ -55,6 +55,8 @@ import java.util.concurrent.TimeUnit;
 @ConditionalOnProperty(name = "application.features.modules.jobs.scheduled.detectDuplicates.enabled", havingValue = "true")
 public class ScopedScheduledDetectDuplicates implements ApplicationListener<ApplicationCreatedEvent> {
 
+    public static final String CONFIG_KEY_DETECT_DUPLICATES_FREQUENCY = "detect_duplicates_frequency";
+
     private final ApplicationEventPublisher eventPublisher;
 
     private final ApplicationsService applicationsService;
@@ -75,7 +77,7 @@ public class ScopedScheduledDetectDuplicates implements ApplicationListener<Appl
                         JobScheduledEvent event = new ApplicationJobScheduledEvent("detectDuplicates", new AdminToken(), application);
                         eventPublisher.publishEvent(event);
                     };
-                    ScheduledFuture<?> scheduledFuture = taskScheduler.schedule(task, new CronTrigger(application.flags().detectDuplicatesFrequency()));
+                    ScheduledFuture<?> scheduledFuture = taskScheduler.schedule(task, new CronTrigger(application.configuration().get(CONFIG_KEY_DETECT_DUPLICATES_FREQUENCY).toString()));
                 }).subscribe();
     }
 
@@ -87,7 +89,7 @@ public class ScopedScheduledDetectDuplicates implements ApplicationListener<Appl
                         JobScheduledEvent jobEvent = new ApplicationJobScheduledEvent("detectDuplicates", new AdminToken(), event.getApplication());
                         eventPublisher.publishEvent(jobEvent);
                     };
-                    ScheduledFuture<?> scheduledFuture = taskScheduler.schedule(task, new CronTrigger(event.getApplication().flags().detectDuplicatesFrequency()));
+                    ScheduledFuture<?> scheduledFuture = taskScheduler.schedule(task, new CronTrigger(event.getApplication().configuration().get(CONFIG_KEY_DETECT_DUPLICATES_FREQUENCY).toString()));
 //            });
     }
 }
