@@ -50,7 +50,7 @@ logging:
         admin: DEBUG
     org:
       eclipse:
-        rdf4j: TRACE
+        rdf4j: DEBUG
       springframework: INFO
 
 

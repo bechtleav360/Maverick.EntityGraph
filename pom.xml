@@ -239,6 +239,16 @@
                 <artifactId>caffeine</artifactId>
                 <version>3.1.6</version>
             </dependency>
+            <dependency>
+                <groupId>org.junit.platform</groupId>
+                <artifactId>junit-platform-suite-api</artifactId>
+                <version>1.9.3</version>
+            </dependency>
+            <dependency>
+                <groupId>org.junit.jupiter</groupId>
+                <artifactId>junit-jupiter-api</artifactId>
+                <version>5.9.3</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
     <build>

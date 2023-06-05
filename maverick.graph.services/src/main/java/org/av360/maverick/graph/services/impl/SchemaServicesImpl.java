@@ -1,10 +1,11 @@
 package org.av360.maverick.graph.services.impl;
 
+import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.model.errors.requests.UnknownPrefix;
 import org.av360.maverick.graph.model.rdf.LocalIRI;
+import org.av360.maverick.graph.model.vocabulary.*;
 import org.av360.maverick.graph.services.SchemaServices;
 import org.av360.maverick.graph.store.SchemaStore;
-import lombok.extern.slf4j.Slf4j;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Namespace;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
@@ -41,6 +42,50 @@ public class SchemaServicesImpl implements SchemaServices {
                 .filter(namespace -> namespace.getPrefix().equalsIgnoreCase(prefix))
                 .switchIfEmpty(Mono.error(new UnknownPrefix(prefix)))
                 .single();
+    }
+
+    @Override
+    public boolean isIndividualType(IRI iri) {
+        boolean res =
+                SDO.getIndividualTypes().contains(iri)
+                        || RDFS.getIndividualTypes().contains(iri)
+                        || DC.getIndividualTypes().contains(iri)
+                        || DCTERMS.getIndividualTypes().contains(iri)
+                        || SKOS.getIndividualTypes().contains(iri)
+                        || ICAL.getIndividualTypes().contains(iri)
+                        || ESCO.getIndividualTypes().contains(iri)
+                        || FOAF.getIndividualTypes().contains(iri)
+                ;
+        return res;
+
+    }
+
+    @Override
+    public boolean isClassifierType(IRI iri) {
+        return
+                SDO.getClassifierTypes().contains(iri)
+                        || RDFS.getClassifierTypes().contains(iri)
+                        || DC.getClassifierTypes().contains(iri)
+                        || DCTERMS.getClassifierTypes().contains(iri)
+                        || SKOS.getClassifierTypes().contains(iri)
+                        || ICAL.getClassifierTypes().contains(iri)
+                        || ESCO.getClassifierTypes().contains(iri)
+                        || FOAF.getClassifierTypes().contains(iri)
+                ;
+    }
+
+    @Override
+    public boolean isCharacteristicProperty(IRI iri) {
+        return
+                SDO.getCharacteristicProperties().contains(iri)
+                        || RDFS.getCharacteristicProperties().contains(iri)
+                        || DC.getCharacteristicProperties().contains(iri)
+                        || DCTERMS.getCharacteristicProperties().contains(iri)
+                        || SKOS.getCharacteristicProperties().contains(iri)
+                        || ICAL.getCharacteristicProperties().contains(iri)
+                        || ESCO.getCharacteristicProperties().contains(iri)
+                        || FOAF.getCharacteristicProperties().contains(iri)
+        ;
     }
 
     protected String[] splitPrefixedIdentifier(String prefixedKey) {

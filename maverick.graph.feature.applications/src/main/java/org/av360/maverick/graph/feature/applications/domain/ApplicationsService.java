@@ -112,10 +112,10 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
                 .then(Mono.just(application))
                 .doOnSuccess(app -> {
                     this.eventPublisher.publishEvent(new ApplicationCreatedEvent(app));
-                    log.debug("Created node with key '{}' and label '{}'", app.key(), app.label());
+                    log.debug("Created application with key '{}' and label '{}'", app.key(), app.label());
                 })
 
-                .doOnSubscribe(StreamsLogger.debug(log, "Creating a new node with label '{}' and persistence set to '{}' ", label, flags.isPersistent()));
+                .doOnSubscribe(StreamsLogger.debug(log, "Creating a new application with label '{}' and persistence set to '{}' ", label, flags.isPersistent()));
 
         return this.getApplicationByLabel(label, authentication)
                 .onErrorResume(throwable -> throwable instanceof InvalidApplication, throwable -> applicationMono);

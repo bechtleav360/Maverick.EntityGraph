@@ -26,7 +26,7 @@ import java.util.stream.Collectors;
  * Systems wishing to skolemise bNodes, and expose those skolem constants to external systems (e.g. in query results) SHOULD mint a "fresh" (globally unique) URI for each bNode.
  * All systems performing skolemisation SHOULD do so in a way that they can recognise the constants once skolemised, and map back to the source bNodes where possible.
  */
-@Slf4j(topic = "graph.srvc.transformer.id.anon")
+@Slf4j(topic = "graph.srvc.transformer.identifiers.anonymous")
 @Component
 @ConditionalOnProperty(name = "application.features.transformers.replaceAnonymousIdentifiers", havingValue = "true")
 public class ReplaceAnonymousIdentifiers extends AbstractIdentifierReplace implements Transformer  {
@@ -48,15 +48,15 @@ public class ReplaceAnonymousIdentifiers extends AbstractIdentifierReplace imple
         return this.buildIdentifierMappings(triples)
                 .collect(Collectors.toSet())
                 .flatMap(mappings -> replaceIdentifiers(mappings, triples))
-                .doOnNext(mappings -> {
+                .doOnSuccess(mappings -> {
                     if(mappings.size() > 0) {
                         log.debug("Replaced anonymous identifiers in incoming model with local identifiers.");
-                        mappings.forEach(mapping -> log.trace("Mapping from {} to {}", mapping.oldIdentifier().stringValue(), mapping.newIdentifier().stringValue()));
+                        mappings.forEach(mapping -> log.trace("Mapped: [{}] > [{}]", mapping.oldIdentifier().stringValue(), mapping.newIdentifier().stringValue()));
                     }
                 })
                 .then(Mono.just(triples))
-                .doOnSubscribe(c -> log.debug("Check if model contains replaceable anonymous identifiers"))
-                .doFinally(signalType -> log.trace("Finished checks for anonymous identifiers"));
+                .doOnSubscribe(c -> log.debug("(Start) Checking if model contains replaceable anonymous identifiers"))
+                .doFinally(signalType -> log.trace("(End) Finished checks for anonymous identifiers"));
     }
 
     public Flux<IdentifierMapping> buildIdentifierMappings(Model model) {

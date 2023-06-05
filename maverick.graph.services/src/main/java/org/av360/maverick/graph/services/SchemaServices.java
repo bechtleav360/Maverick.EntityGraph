@@ -25,4 +25,10 @@ public interface SchemaServices {
     Mono<IRI> resolveLocalName(String name);
 
     Mono<Namespace> getNamespaceFor(String prefix);
+
+    boolean isIndividualType(IRI iri);
+
+    boolean isClassifierType(IRI iri);
+
+    boolean isCharacteristicProperty(IRI iri);
 }
