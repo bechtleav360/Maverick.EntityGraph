@@ -4,7 +4,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.model.vocabulary.Local;
 import org.av360.maverick.graph.model.vocabulary.SDO;
 import org.av360.maverick.graph.services.transformers.Transformer;
-import org.av360.maverick.graph.store.rdf.fragments.TripleModel;
 import org.eclipse.rdf4j.model.*;
 import org.eclipse.rdf4j.model.impl.LinkedHashModel;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
@@ -24,6 +23,9 @@ public class InsertLocalTypes implements Transformer {
     static Set<IRI> characteristicProperties = new HashSet<>();
 
     static Set<IRI> classifierTypes = new HashSet<>();
+
+
+    static Set<IRI> embeddedTypes = new HashSet<>();
     static ValueFactory valueFactory = SimpleValueFactory.getInstance();
 
     static {
@@ -37,20 +39,25 @@ public class InsertLocalTypes implements Transformer {
         classifierTypes.add(SDO.DEFINED_TERM);
         classifierTypes.add(SKOS.CONCEPT);
         classifierTypes.add(SDO.CATEGORY_CODE);
+
+        embeddedTypes.add(SDO.PROPERTY_VALUE);
+        embeddedTypes.add(SDO.QUANTITATIVE_VALUE);
+        embeddedTypes.add(SDO.STRUCTURED_VALUE);
+
     }
 
     @Override
-    public Mono<? extends TripleModel> handle(TripleModel model, Map<String, String> parameters) {
-        Model result = new LinkedHashModel(model.getModel());
+    public Mono<? extends Model> handle(Model model, Map<String, String> parameters) {
+        Model result = new LinkedHashModel(model);
 
-        return Flux.fromIterable(Collections.unmodifiableSet(model.getModel().subjects()))
-                .filter(sub -> isNotIndividual(sub, model.getModel(), result))
-                .filter(sub -> isNotClassifier(sub, model.getModel(), result))
+        return Flux.fromIterable(Collections.unmodifiableSet(model.subjects()))
+                .filter(sub -> isNotIndividual(sub, model, result))
+                .filter(sub -> isNotClassifier(sub, model, result))
                 // .filter(sub -> isNotEmbedded(sub, model.getModel(), result))
                 .doOnNext(sub -> {
-                    log.warn("Subject with the following statements could not be identified for local type: \n {}", model.listStatements(sub, null, null));
+                    log.warn("Subject with the following statements could not be identified for local type: \n {}", model.getStatements(sub, null, null));
                 })
-                .then(Mono.just(new TripleModel(result)))
+                .then(Mono.just(result))
                 .doOnSubscribe(c -> log.debug("Check if internal types have to be added."))
                 .doFinally(signalType -> log.trace("Finished checks for internal types."));
     }
@@ -82,7 +89,7 @@ public class InsertLocalTypes implements Transformer {
         Optional<IRI> classifier = classifierTypes.stream().filter(iri -> fragment.contains(subject, RDF.TYPE, iri)).findFirst();
         Optional<IRI> named = fragment.predicates().stream().filter(iri -> iri.getLocalName().matches("(?i).*(name|title|label|id|key|code).*")).findFirst();
         if ((cp.isEmpty() && named.isEmpty()) && classifier.isEmpty()) {
-            Statement statement = valueFactory.createStatement(subject, RDF.TYPE, Local.Entities.EMBEDDED);
+            Statement statement = valueFactory.createStatement(subject, RDF.TYPE, Local.Entities.TYPE_EMBEDDED);
             log.trace("Fragment for subject '{}' typed as Embedded.", subject);
             return Optional.of(statement);
         } else return Optional.empty();
@@ -95,7 +102,7 @@ public class InsertLocalTypes implements Transformer {
         Optional<IRI> named = fragment.predicates().stream().filter(iri -> iri.getLocalName().matches("(?i).*(name|title|label|id|key|code).*")).findFirst();
 
         if ((cp.isPresent() || named.isPresent()) && classifier.isEmpty()) {
-            Statement statement = valueFactory.createStatement(subject, RDF.TYPE, Local.Entities.INDIVIDUAL);
+            Statement statement = valueFactory.createStatement(subject, RDF.TYPE, Local.Entities.TYPE_INDIVIDUAL);
             log.trace("Fragment for subject '{}' typed as Individual.", subject);
             return Optional.of(statement);
         } else {
@@ -111,7 +118,7 @@ public class InsertLocalTypes implements Transformer {
     private Optional<Statement>  handleClassifier(Resource subject, Model fragment) {
         Optional<IRI> cp = classifierTypes.stream().filter(iri -> fragment.contains(subject, RDF.TYPE, iri)).findFirst();
         if (cp.isPresent()) {
-            Statement statement = valueFactory.createStatement(subject, RDF.TYPE, Local.Entities.CLASSIFIER);
+            Statement statement = valueFactory.createStatement(subject, RDF.TYPE, Local.Entities.TYPE_CLASSIFIER);
             log.trace("Fragment for subject {} typed as Classifier.", subject);
             return Optional.of(statement);
         } else return Optional.empty();

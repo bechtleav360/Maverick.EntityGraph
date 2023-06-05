@@ -4,18 +4,23 @@
 
 application:
   security:
-    enabled: true
+    enabled: false
     apiKey: "123"
     basic:
       enabled: false
   features:
     modules:
+      objects:
+        enabled: false
+        configuration:
+          mode: local
+          path: "D:/Graphen/entities/objects"
       applications:
         enabled: true
       admin:
-        enabled: true
+        enabled: false
       jobs:
-        enabled: true
+        enabled: false
         scheduled:
           detectDuplicates:
             enabled: true

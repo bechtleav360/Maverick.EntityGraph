@@ -2,14 +2,16 @@ package org.av360.maverick.graph.feature.applications.api.dto;
 
 import org.av360.maverick.graph.feature.applications.domain.model.ApplicationFlags;
 
+import java.io.Serializable;
 import java.util.List;
+import java.util.Map;
 
 /**
  * @see "https://dev.to/brunooliveira/practical-java-16-using-jackson-to-serialize-records-4og4"
  */
 public class Responses {
 
-    public record ApplicationResponse(String key, String label, ApplicationFlags flags) {
+    public record ApplicationResponse(String key, String label, ApplicationFlags flags, Map<String, Serializable> configuration) {
 
     }
 

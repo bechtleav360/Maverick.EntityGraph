@@ -25,19 +25,22 @@ import software.amazon.awssdk.services.s3.model.PutObjectResponse;
 import java.io.StringWriter;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
+import java.util.Map;
 
 @Service
-@Slf4j(topic = "graph.jobs.exports")
+@Slf4j(topic = "graph.feat.jobs.exports")
 public class ExportApplicationJob implements Job {
 
     public static String NAME = "exportApplication";
     private final EntityServices entityServices;
-
-    @Value("${application.features.modules.jobs.scheduled.exportApplication.defaultS3Host:http://127.0.0.1:9000}")
+    @Value("${application.features.modules.jobs.scheduled.exportApplication.defaultS3Host:}")
     private String defaultS3Host;
 
-    @Value("${application.features.modules.jobs.scheduled.exportApplication.defaultS3BucketId:test}")
+    @Value("${application.features.modules.jobs.scheduled.exportApplication.defaultS3BucketId:}")
     private String defaultS3BucketId;
+
+    @Value("${application.features.modules.jobs.scheduled.exportApplication.defaultExportFrequency:}")
+    private String defaultExportFrequency;
 
     public ExportApplicationJob(EntityServices service) {
         this.entityServices = service;
@@ -51,29 +54,31 @@ public class ExportApplicationJob implements Job {
     @Override
     public Mono<Void> run(Authentication authentication) {
         return ReactiveApplicationContextHolder.getRequestedApplication()
-                .defaultIfEmpty(
-                        new Application(
-                                null,
-                                Globals.DEFAULT_APPLICATION_LABEL,
-                                "default",
-                                new ApplicationFlags(
-                                        true,
-                                        true,
-                                        null,
-                                        null,
-                                        null,
-                                        null,
-                                        defaultS3Host,
-                                        defaultS3BucketId
-                                )
-                        )
-                )
                 .flatMap(application -> {
-                    S3AsyncClient s3Client = createS3Client(application.flags().s3Host());
+                    S3AsyncClient s3Client = createS3Client(application.configuration().get(ScopedScheduledExportApplication.CONFIG_KEY_EXPORT_S3_HOST).toString());
                     return exportRdfStatements(authentication)
-                            .flatMap(rdfString -> uploadRdfStringToS3(s3Client, rdfString, application))
-                            .then();
-                });
+                            .flatMap(rdfString -> uploadRdfStringToS3(s3Client, rdfString, application)).then();
+
+                })
+                .switchIfEmpty(Mono.defer(() -> {
+                    Application defaultApplication =  new Application(
+                            SimpleValueFactory.getInstance().createIRI(Local.Applications.NAMESPACE, "default"),
+                            Globals.DEFAULT_APPLICATION_LABEL,
+                            "default",
+                            new ApplicationFlags(true, true),
+                            Map.of(
+                                    ScopedScheduledExportApplication.CONFIG_KEY_EXPORT_FREQUENCY, defaultExportFrequency,
+                                    ScopedScheduledExportApplication.CONFIG_KEY_EXPORT_S3_BUCKET, defaultS3BucketId,
+                                    ScopedScheduledExportApplication.CONFIG_KEY_EXPORT_S3_HOST, defaultS3Host
+                            )
+                    );
+
+
+                        S3AsyncClient s3Client = createS3Client(defaultApplication.configuration().get(ScopedScheduledExportApplication.CONFIG_KEY_EXPORT_S3_HOST).toString());
+                        return exportRdfStatements(authentication)
+                                .flatMap(rdfString -> uploadRdfStringToS3(s3Client, rdfString, defaultApplication)).then();
+
+                }));
     }
 
     private S3AsyncClient createS3Client(String s3Host) {
@@ -98,7 +103,7 @@ public class ExportApplicationJob implements Job {
 
     private Mono<PutObjectResponse> uploadRdfStringToS3(S3AsyncClient s3Client, String rdfString, Application application) {
         PutObjectRequest putObjectRequest = PutObjectRequest.builder()
-                .bucket(application.flags().s3BucketId())
+                .bucket(application.configuration().get(ScopedScheduledExportApplication.CONFIG_KEY_EXPORT_S3_BUCKET).toString())
                 .key(application.label() + ".txt")
                 .build();
         return Mono.fromCompletionStage(s3Client.putObject(

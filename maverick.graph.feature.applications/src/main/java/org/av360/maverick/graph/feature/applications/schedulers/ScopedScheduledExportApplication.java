@@ -20,6 +20,11 @@ import java.util.concurrent.ScheduledFuture;
 @Slf4j(topic = "graph.jobs.exports")
 @ConditionalOnProperty(name = "application.features.modules.jobs.scheduled.exportApplication.enabled", havingValue = "true")
 public class ScopedScheduledExportApplication implements ApplicationListener<ApplicationCreatedEvent> {
+    public static final String CONFIG_KEY_EXPORT_FREQUENCY = "export_frequency";
+    public static final String CONFIG_KEY_EXPORT_S3_HOST = "export_s3_host";
+
+    public static final String CONFIG_KEY_EXPORT_S3_BUCKET = "export_s3_bucket";
+
     private final ApplicationEventPublisher eventPublisher;
     private final ApplicationsService applicationsService;
 
@@ -35,23 +40,38 @@ public class ScopedScheduledExportApplication implements ApplicationListener<App
     public void initializeScheduledJobs() {
         applicationsService.listApplications(new AdminToken())
                 .doOnNext(application -> {
+                    if (!application.configuration().containsKey(CONFIG_KEY_EXPORT_FREQUENCY)) return;
+
+
                     Runnable task = () -> {
                         JobScheduledEvent event = new ApplicationJobScheduledEvent("exportApplication", new AdminToken(), application);
+                        System.out.println("Exporting application: " + application.label());
                         eventPublisher.publishEvent(event);
                     };
-                    ScheduledFuture<?> scheduledFuture = taskScheduler.schedule(task, new CronTrigger(application.flags().exportFrequency()));
+
+                    ScheduledFuture<?> scheduledFuture = taskScheduler.schedule(task, new CronTrigger(application.configuration().get(CONFIG_KEY_EXPORT_FREQUENCY).toString()));
                 }).subscribe();
     }
+
+//    @Scheduled(cron = "* * * * * *")
+//    public void scheduled() {
+//        applicationsService.listApplications(new AdminToken())
+//                .doOnNext(node -> {
+//                    JobScheduledEvent event = new ApplicationJobScheduledEvent("exportApplication", new AdminToken(), node);
+//                    eventPublisher.publishEvent(event);
+//                }).subscribe();
+//    }
 
     @Override
     public void onApplicationEvent(ApplicationCreatedEvent event) {
 //        applicationsService.getApplication(event.getApplication(), new AdminToken())
 //                .subscribe(newApplication -> {
-                    Runnable task = () -> {
-                        JobScheduledEvent jobEvent = new ApplicationJobScheduledEvent("exportApplication", new AdminToken(), event.getApplication());
-                        eventPublisher.publishEvent(jobEvent);
-                    };
-                    ScheduledFuture<?> scheduledFuture = taskScheduler.schedule(task, new CronTrigger(event.getApplication().flags().exportFrequency()));
+        if (!event.getApplication().configuration().containsKey(CONFIG_KEY_EXPORT_FREQUENCY)) return;
+        Runnable task = () -> {
+            JobScheduledEvent jobEvent = new ApplicationJobScheduledEvent("exportApplication", new AdminToken(), event.getApplication());
+            eventPublisher.publishEvent(jobEvent);
+        };
+        ScheduledFuture<?> scheduledFuture = taskScheduler.schedule(task, new CronTrigger(event.getApplication().configuration().get(CONFIG_KEY_EXPORT_FREQUENCY).toString()));
 //                });
     }
 }

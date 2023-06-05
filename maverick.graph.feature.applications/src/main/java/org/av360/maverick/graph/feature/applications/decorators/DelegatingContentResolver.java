@@ -1,0 +1,70 @@
+package org.av360.maverick.graph.feature.applications.decorators;
+
+import lombok.extern.slf4j.Slf4j;
+import org.av360.maverick.graph.feature.applications.config.ReactiveApplicationContextHolder;
+import org.av360.maverick.graph.feature.applications.security.SubscriptionToken;
+import org.av360.maverick.graph.model.enums.ConfigurationItemKeys;
+import org.av360.maverick.graph.model.errors.InsufficientPrivilegeException;
+import org.av360.maverick.graph.model.security.Authorities;
+import org.av360.maverick.graph.services.ContentLocationResolverService;
+import org.eclipse.rdf4j.model.IRI;
+import org.springframework.security.core.Authentication;
+import reactor.core.publisher.Mono;
+
+import javax.annotation.Nullable;
+import java.nio.file.Path;
+
+@Slf4j(topic = "graph.feat.app")
+public class DelegatingContentResolver implements ContentLocationResolverService {
+    private final ContentLocationResolverService delegate;
+
+    public DelegatingContentResolver(ContentLocationResolverService delegate) {
+        this.delegate = delegate;
+    }
+
+
+
+    @Override
+    public Mono<ContentLocation> resolveContentLocation(IRI entityID, IRI contentId, String filename, @Nullable String language, Authentication authentication) {
+        return ReactiveApplicationContextHolder.getRequestedApplication()
+                .flatMap(application -> {
+                    if (application.flags().isPublic() && ! Authorities.satisfies(Authorities.READER, authentication.getAuthorities())) {
+                        String msg = String.format("Required authority '%s' for resolving uri for filename '%s' and entity '%s' not met in authentication with authorities '%s'", Authorities.READER, filename, entityID, authentication.getAuthorities());
+                        return Mono.error(new InsufficientPrivilegeException(msg));
+                    } else if (! application.flags().isPublic() && authentication instanceof SubscriptionToken subscriptionToken) {
+                        // TODO: check if authentication is of type
+                        if(! subscriptionToken.getApplication().key().equalsIgnoreCase(application.key())) {
+                            String msg = String.format("Required authority '%s' for resolving uri for filename '%s' and entity '%s' not met in authentication with authorities '%s'", Authorities.READER, filename, entityID, authentication.getAuthorities());
+                            return Mono.error(new InsufficientPrivilegeException(msg));
+                        }
+                    }
+
+                    String contentDir = delegate.getDefaultBaseDirectory();
+                    if(application.configuration().containsKey(ConfigurationItemKeys.LOCAL_CONTENT_PATH.toString())) {
+                        contentDir = application.configuration().get(ConfigurationItemKeys.LOCAL_CONTENT_PATH.toString()).toString();
+                    }
+
+                    return this.resolvePath(contentDir, entityID.getLocalName(), filename, language)
+                            .map(path -> new ContentLocation(path.toUri(), "/content/s/%s/%s".formatted(application.label(), this.normalizeLocalname(contentId))));
+
+
+                })
+                .switchIfEmpty(delegate.resolveContentLocation(entityID, contentId, filename, language, authentication));
+
+    }
+
+    private String normalizeLocalname(IRI entityId) {
+        String result =  entityId.getLocalName().substring(entityId.getLocalName().indexOf('.')+1);
+        return result;
+    }
+
+    @Override
+    public Mono<Path> resolvePath(String baseDirectory, String entityKey, String filename,  @Nullable String language) {
+        return delegate.resolvePath(baseDirectory, entityKey, filename, language);
+    }
+
+    @Override
+    public String getDefaultBaseDirectory() {
+        return delegate.getDefaultBaseDirectory();
+    }
+}

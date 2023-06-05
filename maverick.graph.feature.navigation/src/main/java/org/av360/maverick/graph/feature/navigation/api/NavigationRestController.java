@@ -18,6 +18,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 import reactor.core.publisher.Flux;
 
 import java.net.URI;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
@@ -25,11 +26,11 @@ import java.util.Objects;
 @RequestMapping(path = "/nav")
 @Order(1)
 @Slf4j
-public class Entrypoint extends AbstractController {
+public class NavigationRestController extends AbstractController {
 
     private final NavigationServices navigationServices;
 
-    public Entrypoint(NavigationServices navigationServices) {
+    public NavigationRestController(NavigationServices navigationServices) {
         this.navigationServices = navigationServices;
     }
 
@@ -37,8 +38,8 @@ public class Entrypoint extends AbstractController {
 
     @GetMapping(produces = MediaType.TEXT_HTML_VALUE)
     @ResponseStatus(HttpStatus.OK)
-    public Flux<AnnotatedStatement> start(WebSession session) {
-        return super.getAuthentication().flatMapMany(auth -> this.navigationServices.start(auth, session));
+    public Flux<AnnotatedStatement> start() {
+        return super.getAuthentication().flatMapMany(this.navigationServices::start);
     }
 
     @GetMapping(value = "/node", produces = MediaType.TEXT_HTML_VALUE)
@@ -91,13 +92,13 @@ public class Entrypoint extends AbstractController {
 
     @GetMapping(value = "/api", produces = MediaType.TEXT_HTML_VALUE)
     @ResponseStatus(HttpStatus.OK)
-    public Flux<Statement> wrap(@RequestParam MultiValueMap<String, String> params, @RequestHeader Map<String, String> headers, WebSession session) {
+    public Flux<Statement> wrap(@RequestParam MultiValueMap<String, String> params, @RequestHeader Map<String, String> headers) {
         log.info("Request to navigate to params {}", params);
 
 
-        return super.getAuthentication().flatMapMany(authentication -> this.navigationServices.browse(params, authentication, session));
-
-
+        return super.getAuthentication().flatMapMany(authentication -> this.navigationServices.browse(new HashMap<>(params.toSingleValueMap()), authentication));
     }
+
+
 
 }

@@ -3,10 +3,11 @@ package org.av360.maverick.graph.services.impl;
 import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.model.rdf.AnnotatedStatement;
 import org.av360.maverick.graph.services.QueryServices;
-import org.av360.maverick.graph.store.EntityStore;
 import org.av360.maverick.graph.store.RepositoryType;
+import org.av360.maverick.graph.store.behaviours.Searchable;
 import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.query.QueryLanguage;
+import org.eclipse.rdf4j.query.parser.ParsedTupleQuery;
 import org.eclipse.rdf4j.query.parser.QueryParser;
 import org.eclipse.rdf4j.query.parser.QueryParserUtil;
 import org.eclipse.rdf4j.sparqlbuilder.core.query.ConstructQuery;
@@ -16,18 +17,24 @@ import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
+
 
 @Service
 @Slf4j(topic = "graph.srvc.query")
 public class QueryServicesImpl implements QueryServices {
 
-    private final EntityStore entityStore;
+    private final Map<RepositoryType, Searchable> stores;
+
 
 
     private final QueryParser queryParser;
 
-    public QueryServicesImpl(EntityStore graph) {
-        this.entityStore = graph;
+    public QueryServicesImpl(Set<Searchable> searchables) {
+        this.stores = new HashMap<>();
+        searchables.forEach(searchable -> stores.put(searchable.getRepositoryType(), searchable));
 
         queryParser = QueryParserUtil.createParser(QueryLanguage.SPARQL);
     }
@@ -37,27 +44,20 @@ public class QueryServicesImpl implements QueryServices {
     public Flux<BindingSet> queryValues(String query, Authentication authentication, RepositoryType repositoryType) {
         return Mono.just(query)
                 .map(q -> queryParser.parseQuery(query, null))
-                .flatMapMany(ptq -> this.entityStore.query(query, authentication))
-                .doOnSubscribe(subscription -> {
-                    if (log.isTraceEnabled())
-                        log.trace("Running select query in {}: {}", this.entityStore.getRepositoryType(), query.replace('\n', ' ').trim());
-                });
+                .filter(parsedQuery -> parsedQuery instanceof ParsedTupleQuery)
+                .flatMapMany(parsedQuery -> this.stores.get(repositoryType).query(query, authentication));
     }
 
     @Override
     public Flux<BindingSet> queryValues(SelectQuery query, Authentication authentication, RepositoryType repositoryType) {
-        return this.entityStore.query(query.getQueryString(), authentication)
-                .doOnSubscribe(subscription -> {
-                    if (log.isTraceEnabled())
-                        log.trace("Running select query in {}:  {}", repositoryType, query.getQueryString().replace('\n', ' ').trim());
-                });
+        return this.stores.get(repositoryType).query(query.getQueryString(), authentication);
     }
 
     @Override
     public Flux<AnnotatedStatement> queryGraph(String queryStr, Authentication authentication, RepositoryType repositoryType) {
         return Mono.just(queryStr)
                 .map(q -> queryParser.parseQuery(queryStr, null))
-                .flatMapMany(ptq -> this.entityStore.construct(queryStr, authentication))
+                .flatMapMany(ptq -> this.stores.get(repositoryType).construct(queryStr, authentication))
                 .doOnSubscribe(subscription -> {
                     if (log.isTraceEnabled())
                         log.trace("Running construct query in {}: {}", repositoryType, queryStr);
@@ -66,7 +66,7 @@ public class QueryServicesImpl implements QueryServices {
     }
 
     public Flux<AnnotatedStatement> queryGraph(ConstructQuery query, Authentication authentication, RepositoryType repositoryType) {
-        return this.entityStore.construct(query.getQueryString(), authentication)
+        return this.stores.get(repositoryType).construct(query.getQueryString(), authentication)
                 .doOnSubscribe(subscription -> {
                     if (log.isTraceEnabled())
                         log.trace("Running construct query in {}: {}", repositoryType, query.getQueryString().replace('\n', ' ').trim());

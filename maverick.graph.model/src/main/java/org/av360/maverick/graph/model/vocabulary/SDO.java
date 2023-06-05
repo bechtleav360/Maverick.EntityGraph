@@ -17,9 +17,22 @@ public class SDO {
     public static final String PREFIX = "sdo";
     public static final Namespace NS = new SimpleNamespace(PREFIX, NAMESPACE);
 
+    public static final IRI IN_LANGUAGE = vf.createIRI(NAMESPACE, "inLanguage");
+    public static final IRI CONTENT_LOCATION = vf.createIRI(NAMESPACE, "contentLocation");
+    public static final IRI SUBJECT_OF = vf.createIRI(NAMESPACE, "subjectOf");
+    public static final IRI CONTENT_URL = vf.createIRI(NAMESPACE, "contentUrl");
+    public static final IRI CONTENT_SIZE = vf.createIRI(NAMESPACE, "contentSize");
+    public static final IRI UPLOAD_DATE = vf.createIRI(NAMESPACE, "uploadDate");
+    public static final IRI NAME = vf.createIRI(NAMESPACE, "name");
+    public static final IRI MEDIA_OBJECT = vf.createIRI(NAMESPACE, "MediaObject");
     public static final IRI DEFINED_TERM = vf.createIRI(NAMESPACE, "DefinedTerm");
     public static final IRI VIDEO_OBJECT = vf.createIRI(NAMESPACE, "VideoObject");
 
+    public static final IRI PROPERTY_VALUE = vf.createIRI(NAMESPACE, "PropertyValue");
+
+    public static final IRI STRUCTURED_VALUE = vf.createIRI(NAMESPACE, "StructuredValue");
+
+    public static final IRI QUANTITATIVE_VALUE = vf.createIRI(NAMESPACE, "QuantitativeValue");
     public static final IRI CREATIVE_WORK = vf.createIRI(NAMESPACE, "CreativeWork");;
     public static final IRI HAS_DEFINED_TERM = vf.createIRI(NAMESPACE, "hasDefinedTerm");
     public static final IRI IDENTIFIER = vf.createIRI(NAMESPACE, "identifier");

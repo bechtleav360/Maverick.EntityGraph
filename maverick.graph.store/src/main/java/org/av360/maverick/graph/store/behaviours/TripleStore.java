@@ -44,7 +44,11 @@ public interface TripleStore {
 
     Flux<IRI> types(Resource subj, Authentication authentication, GrantedAuthority requiredAuthority);
 
-    Flux<RdfTransaction> commit(Collection<RdfTransaction> transactions, Authentication authentication, GrantedAuthority requiredAuthority);
+    Flux<RdfTransaction> commit(Collection<RdfTransaction> transactions, Authentication authentication, GrantedAuthority requiredAuthority, boolean merge);
+
+    default Flux<RdfTransaction> commit(Collection<RdfTransaction> transactions, Authentication authentication, GrantedAuthority requiredAuthority) {
+        return this.commit(transactions, authentication, requiredAuthority, false);
+    }
 
     default Flux<RdfTransaction> commit(List<RdfTransaction> transactions, Authentication authentication) {
         return this.commit(transactions, authentication, Authorities.CONTRIBUTOR);

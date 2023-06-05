@@ -9,7 +9,7 @@ import javax.annotation.Nullable;
 
 
 /**
- * An authentication based on a registered application (identified by the api key in the request header)
+ * An authentication based on a registered node (identified by the api key in the request header)
  */
 public class SubscriptionToken extends ApiKeyAuthenticationToken {
 

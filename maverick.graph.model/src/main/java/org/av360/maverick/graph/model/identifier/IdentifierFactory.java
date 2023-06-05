@@ -4,7 +4,7 @@ import org.eclipse.rdf4j.model.Namespace;
 
 import java.io.Serializable;
 
-public interface IdentifierFactory {
+interface IdentifierFactory {
 
     LocalIdentifier createRandomIdentifier(String namespace);
 

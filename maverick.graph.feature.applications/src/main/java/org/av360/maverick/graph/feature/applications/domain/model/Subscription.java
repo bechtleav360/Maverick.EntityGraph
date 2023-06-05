@@ -3,7 +3,7 @@ package org.av360.maverick.graph.feature.applications.domain.model;
 import org.eclipse.rdf4j.model.IRI;
 
 /**
- * A subscription is valid for a specific application
+ * A subscription is valid for a specific node
  * @param iri
  * @param label
  * @param key

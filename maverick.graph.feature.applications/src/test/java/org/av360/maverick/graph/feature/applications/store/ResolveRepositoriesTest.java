@@ -21,6 +21,7 @@ import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
 import java.io.IOException;
+import java.util.Map;
 
 @SpringBootTest
 @ContextConfiguration(classes = TestRepositoryConfig.class)
@@ -56,14 +57,16 @@ public class ResolveRepositoriesTest {
 
     @Test
     public void buildAppEntityRepoWithTestAuthentication() throws IOException {
-        Application application = new Application(SimpleValueFactory.getInstance().createIRI("http://example.org/app"), "app", "123213", new ApplicationFlags(false, false, null, null, null, null, null, null));
+        // TODO: replace with s3 params
+        Application application = new Application(SimpleValueFactory.getInstance().createIRI("http://example.org/app"), "app", "123213", new ApplicationFlags(false, false), Map.of());
         Repository repository = builder.buildRepository(entityStore, TestSecurityConfig.createAuthenticationToken(), application);
         Assertions.assertTrue(repository.isInitialized());
     }
 
     @Test
     public void buildAppEntityRepoWithTestAuthenticationWithContext() throws IOException {
-        Application application = new Application(SimpleValueFactory.getInstance().createIRI("http://example.org/app"), "app", "123213", new ApplicationFlags(false, false, null, null, null, null, null, null));
+        // TODO: replace with s3 params
+        Application application = new Application(SimpleValueFactory.getInstance().createIRI("http://example.org/app"), "app", "123213", new ApplicationFlags(false, false), Map.of());
 
 
         Mono<LabeledRepository> mono = builder.buildRepository(entityStore, TestSecurityConfig.createAdminToken())

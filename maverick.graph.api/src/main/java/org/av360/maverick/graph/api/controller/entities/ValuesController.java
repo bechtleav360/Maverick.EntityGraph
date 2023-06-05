@@ -6,6 +6,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.NotImplementedException;
 import org.av360.maverick.graph.api.controller.AbstractController;
+import org.av360.maverick.graph.model.api.ValuesAPI;
 import org.av360.maverick.graph.model.enums.RdfMimeTypes;
 import org.av360.maverick.graph.model.rdf.AnnotatedStatement;
 import org.av360.maverick.graph.services.EntityServices;
@@ -26,20 +27,20 @@ import javax.annotation.Nullable;
 @Slf4j(topic = "graph.ctrl.api.values")
 @SecurityRequirement(name = "api_key")
 @Tag(name = "Annotations")
-public class Values extends AbstractController {
+public class ValuesController extends AbstractController implements ValuesAPI {
 
 
     protected final ValueServices values;
 
     protected final EntityServices entities;
-
     protected final SchemaServices schemaServices;
 
-    public Values(ValueServices values, EntityServices entities, SchemaServices schemaServices) {
+    public ValuesController(ValueServices values, EntityServices entities, SchemaServices schemaServices) {
         this.values = values;
         this.entities = entities;
         this.schemaServices = schemaServices;
     }
+    @Override
     @Operation(summary = "Returns a list of value property of the selected entity.  ")
     @GetMapping(value = "/entities/{id:[\\w|\\d|\\-|\\_]+}/values",
             produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE, MediaType.APPLICATION_JSON_VALUE})
@@ -51,8 +52,9 @@ public class Values extends AbstractController {
 
 
     //  @ApiOperation(value = "Sets a value for an entity. Replaces an existing value. ")
+    @Override
     @PostMapping(value = "/entities/{id:[\\w|\\d|\\-|\\_]+}/values/{prefixedKey:[\\w|\\d]+\\.[\\w|\\d|\\-|\\_]+}",
-            consumes = MediaType.TEXT_PLAIN_VALUE,
+            consumes = {MediaType.TEXT_PLAIN_VALUE},
             produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE})
     @ResponseStatus(HttpStatus.OK)
     public Flux<AnnotatedStatement> create(@PathVariable String id, @PathVariable String prefixedKey, @RequestBody String value, @Nullable @RequestParam(required = false) String lang) {
@@ -69,6 +71,7 @@ public class Values extends AbstractController {
     }
 
 
+    @Override
     @Operation(summary = "Create or update multiple value properties for the selected entity.")
     @PostMapping(value = "/entities/{id:[\\w|\\d|\\-|\\_]+}/values",
             produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE, MediaType.APPLICATION_JSON_VALUE})
@@ -77,6 +80,7 @@ public class Values extends AbstractController {
         return Flux.error(new NotImplementedException("Updating multiple values has not been implemented yet."));
     }
 
+    @Override
     @Operation(summary = "Removes a property value.")
     @DeleteMapping(value = "/entities/{id:[\\w|\\d|\\-|\\_]+}/values/{prefixedKey:[\\w|\\d]+\\.[\\w|\\d]+}",
             produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE})

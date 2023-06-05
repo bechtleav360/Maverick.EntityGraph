@@ -1,6 +1,7 @@
 package org.av360.maverick.graph.api.config;
 
 import lombok.extern.slf4j.Slf4j;
+import org.av360.maverick.graph.model.errors.InsufficientPrivilegeException;
 import org.av360.maverick.graph.model.errors.InvalidRequest;
 import org.av360.maverick.graph.model.errors.store.InvalidEntityModel;
 import org.eclipse.rdf4j.query.MalformedQueryException;
@@ -39,7 +40,11 @@ public class GlobalExceptionHandler extends DefaultErrorAttributes {
             errorAttributes.replace("error", HttpStatus.BAD_REQUEST.getReasonPhrase());
             errorAttributes.remove("exception");
             errorAttributes.remove("trace");
-        } else if (error instanceof InvalidRequest requestError) {
+        } else if (error instanceof InsufficientPrivilegeException requestError) {
+            errorAttributes.remove("exception");
+            errorAttributes.remove("trace");
+        }
+        else if (error instanceof InvalidRequest requestError) {
             errorAttributes.replace("status", requestError.getStatusCode().value());
             errorAttributes.replace("error", requestError.getReasonPhrase());
             errorAttributes.remove("exception");
@@ -66,6 +71,7 @@ public class GlobalExceptionHandler extends DefaultErrorAttributes {
         } else if (error instanceof SecurityException) {
             errorAttributes.replace("status", HttpStatus.UNAUTHORIZED.value());
             errorAttributes.replace("error", HttpStatus.UNAUTHORIZED.getReasonPhrase());
+            errorAttributes.put("reason", error.getMessage());
             errorAttributes.remove("exception");
             errorAttributes.remove("trace");
         } else if (error instanceof AuthenticationException) {

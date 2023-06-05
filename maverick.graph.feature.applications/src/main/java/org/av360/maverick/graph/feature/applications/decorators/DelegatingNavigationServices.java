@@ -12,36 +12,38 @@ import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.util.ModelBuilder;
 import org.eclipse.rdf4j.model.vocabulary.HYDRA;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.ReactiveSecurityContextHolder;
 import org.springframework.security.core.context.SecurityContext;
-import org.springframework.util.MultiValueMap;
-import org.springframework.web.server.WebSession;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.util.Map;
 import java.util.Set;
+
 public class DelegatingNavigationServices implements NavigationServices {
     private final NavigationServices delegate;
-    private final ApplicationsService applicationsService;
+    private ApplicationsService applicationsService;
     private final SimpleValueFactory vf;
 
     public DelegatingNavigationServices(NavigationServices delegate, ApplicationsService applicationsService) {
-        this.delegate = delegate;
         this.applicationsService = applicationsService;
+        this.delegate = delegate;
         this.vf = SimpleValueFactory.getInstance();
     }
 
-    public Flux<AnnotatedStatement> start(Authentication authentication, WebSession session) {
+    @Override
+    public Flux<AnnotatedStatement> start(Authentication authentication) {
 
 
-        return delegate.start(authentication, session).mergeWith(
+        return delegate.start(authentication).mergeWith(
                 ReactiveSecurityContextHolder.getContext().map(SecurityContext::getAuthentication)
                         .switchIfEmpty(Mono.just(new GuestToken()))
                         .flatMapMany(applicationsService::listApplications)
                         .collectList()
                         .flatMapMany(applications -> Flux.create(sink -> {
-                            IRI appsCollection = vf.createIRI(Local.URN_PREFIX, "ApplicationSet");
+                            IRI appsCollection = vf.createIRI(ResolvableUrlPrefix+"/api/applications");
                             IRI start = vf.createIRI(Local.NAMESPACE, "Start");
                             ModelBuilder builder = new ModelBuilder()
                                     .subject(appsCollection)
@@ -58,7 +60,7 @@ public class DelegatingNavigationServices implements NavigationServices {
                                 builder.subject(app)
                                         .add(ApplicationTerms.HAS_KEY, application.key())
                                         .add(ApplicationTerms.HAS_LABEL, application.label())
-                                        .add(HYDRA.ENTRYPOINT, String.format(ResolvableUrlPrefix+"?/api/s/%s/entities",  application.label()))
+                                        .add(HYDRA.ENTRYPOINT, "/api/s/%s/entities".formatted(application.label()))
                                         .add(appsCollection, HYDRA.MEMBER, app);
                             });
 
@@ -71,7 +73,23 @@ public class DelegatingNavigationServices implements NavigationServices {
     }
 
     @Override
-    public Flux<AnnotatedStatement> browse(MultiValueMap<String, String> params, Authentication authentication, WebSession session) {
-        return delegate.browse(params, authentication, session);
+    public Flux<AnnotatedStatement> list(Map<String, String> requestParams, Authentication authentication) {
+        return delegate.list(requestParams, authentication);
+    }
+
+    @Override
+    public Flux<AnnotatedStatement> browse(Map<String, String> params, Authentication authentication) {
+        return delegate.browse(params, authentication);
+    }
+
+    @Override
+    public IRI generateResolvableIRI(String path, Map<String, String> params) {
+        return delegate.generateResolvableIRI(path, params);
+    }
+
+
+    @Autowired
+    public void setApplicationsService(ApplicationsService applicationsService) {
+        this.applicationsService = applicationsService;
     }
 }

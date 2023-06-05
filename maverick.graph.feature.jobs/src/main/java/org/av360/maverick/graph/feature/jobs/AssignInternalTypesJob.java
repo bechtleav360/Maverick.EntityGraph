@@ -3,7 +3,7 @@ package org.av360.maverick.graph.feature.jobs;
 
 import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.model.entities.Job;
-import org.av360.maverick.graph.model.errors.requests.InvalidConfiguration;
+import org.av360.maverick.graph.model.errors.InvalidConfiguration;
 import org.av360.maverick.graph.model.vocabulary.Local;
 import org.av360.maverick.graph.model.vocabulary.Transactions;
 import org.av360.maverick.graph.services.EntityServices;
@@ -118,9 +118,9 @@ public class AssignInternalTypesJob implements Job {
                     FILTER NOT EXISTS { ?entity a <%s> . }
                     FILTER NOT EXISTS { ?entity a <%s> . }
                     FILTER NOT EXISTS { ?entity a <%s> . }
-                } LIMIT 1000
+                } LIMIT 10000
                 """;
-        String query = String.format(tpl, Local.Entities.INDIVIDUAL, Local.Entities.CLASSIFIER, Local.Entities.EMBEDDED);
+        String query = String.format(tpl, Local.Entities.TYPE_INDIVIDUAL, Local.Entities.TYPE_CLASSIFIER, Local.Entities.TYPE_EMBEDDED);
         return this.queryServices.queryValues(query, authentication)
                 .map(bindings -> bindings.getValue("entity"))
                 .filter(Value::isResource)
