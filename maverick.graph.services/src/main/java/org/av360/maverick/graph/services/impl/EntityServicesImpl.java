@@ -376,6 +376,8 @@ public class EntityServicesImpl implements EntityServices {
     protected void setTransformers(DelegatingTransformer transformers) {
         this.transformers = transformers;
         this.transformers.registerEntityService(this);
+        this.transformers.registerSchemaService(this.schemaServices);
+        this.transformers.registerQueryService(this.queryServices);
     }
 
 

@@ -60,15 +60,15 @@ public class StatementsDecoder implements Decoder<Triples> {
         return DataBufferUtils.join(publisher)
                 .flatMap(dataBuffer -> {
 
-                    log.debug("Trying to parse payload of mimetype '{}'", mimeType.toString());
+
                     RDFParser parser = RdfUtils.getParserFactory(mimeType).orElseThrow().getParser();
                     TriplesCollector handler = RdfUtils.getTriplesCollector();
 
                     try (InputStream is = dataBuffer.asInputStream(true)) {
                         parser.setRDFHandler(handler);
                         parser.parse(is);
-                        log.trace("Parsing of payload with mimetype '{}' completed", mimeType);
-                        return Mono.just(handler.getModel());
+                        log.debug("Parsed payload of mimetype '{}' with {} statements", mimeType.toString(), handler.getTriples().getModel().size());
+                        return Mono.just(handler.getTriples());
                     } catch (Exception e) {
                         log.warn("Failed to parse request of mimetype '{}'", mimeType);
                         return Mono.error(e);

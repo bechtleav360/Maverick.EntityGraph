@@ -18,7 +18,7 @@ import reactor.core.publisher.Mono;
 import java.util.*;
 import java.util.stream.Collectors;
 
-@Slf4j(topic = "graph.srvc.transformer.deduplication")
+@Slf4j(topic = "graph.srvc.trans.dedup")
 @Component
 /**
  * Checks whether duplicates exist in the incoming model. Does not check within the repository (this is delegated to a

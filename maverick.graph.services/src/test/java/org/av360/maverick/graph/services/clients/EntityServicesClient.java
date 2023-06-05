@@ -2,13 +2,13 @@ package org.av360.maverick.graph.services.clients;
 
 import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.model.rdf.AnnotatedStatement;
+import org.av360.maverick.graph.model.rdf.Triples;
 import org.av360.maverick.graph.model.security.Authorities;
 import org.av360.maverick.graph.services.EntityServices;
 import org.av360.maverick.graph.services.QueryServices;
 import org.av360.maverick.graph.store.EntityStore;
 import org.av360.maverick.graph.store.rdf.fragments.RdfEntity;
 import org.av360.maverick.graph.store.rdf.fragments.RdfTransaction;
-import org.av360.maverick.graph.store.rdf.fragments.TripleBag;
 import org.av360.maverick.graph.store.rdf.helpers.RdfUtils;
 import org.av360.maverick.graph.store.rdf.helpers.TriplesCollector;
 import org.av360.maverick.graph.tests.config.TestSecurityConfig;
@@ -117,7 +117,7 @@ public class EntityServicesClient {
         return this.entityServices.list(TestSecurityConfig.createAuthenticationToken(), 100, 0).collectList();
     }
 
-    private Mono<TripleBag> parse(Publisher<DataBuffer> publisher, RDFFormat format) {
+    private Mono<Triples> parse(Publisher<DataBuffer> publisher, RDFFormat format) {
 
         return DataBufferUtils.join(publisher)
                 .flatMap(dataBuffer -> {
@@ -127,7 +127,7 @@ public class EntityServicesClient {
                     try (InputStream is = dataBuffer.asInputStream(true)) {
                         parser.setRDFHandler(handler);
                         parser.parse(is);
-                        return Mono.just(handler.getModel());
+                        return Mono.just(handler.getTriples());
                     } catch (Exception e) {
                         return Mono.error(e);
                     }

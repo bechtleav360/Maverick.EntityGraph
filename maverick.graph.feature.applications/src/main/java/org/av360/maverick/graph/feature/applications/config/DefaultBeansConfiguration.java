@@ -35,6 +35,7 @@ public class DefaultBeansConfiguration implements BeanPostProcessor {
         else if(bean instanceof ContentLocationResolverService delegate) {
             return new DelegatingContentResolver(delegate, this.applicationsService);
         }
+
         else return bean;
     }
 

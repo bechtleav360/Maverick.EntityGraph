@@ -1,19 +1,17 @@
 package org.av360.maverick.graph.feature.applications.store;
 
 import lombok.extern.slf4j.Slf4j;
-import org.av360.maverick.graph.feature.applications.config.ReactiveApplicationContextHolder;
 import org.av360.maverick.graph.feature.applications.domain.model.Application;
-import org.av360.maverick.graph.feature.applications.domain.model.ApplicationFlags;
+import org.av360.maverick.graph.model.security.AdminToken;
 import org.av360.maverick.graph.store.EntityStore;
 import org.av360.maverick.graph.store.rdf.LabeledRepository;
 import org.av360.maverick.graph.tests.config.TestRepositoryConfig;
 import org.av360.maverick.graph.tests.config.TestSecurityConfig;
-import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.repository.Repository;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.event.RecordApplicationEvents;
@@ -21,7 +19,6 @@ import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
 import java.io.IOException;
-import java.util.Map;
 
 @SpringBootTest
 @ContextConfiguration(classes = TestRepositoryConfig.class)
@@ -38,39 +35,50 @@ public class ResolveRepositoriesTest {
 
     @Test
     public void buildEntityRepoWithTestAuthentication() throws IOException {
-        Repository repository = builder.buildRepository(entityStore, TestSecurityConfig.createAuthenticationToken()).block();
-        Assertions.assertTrue(repository.isInitialized());
+        Mono<LabeledRepository> mono = builder.buildRepository(entityStore, TestSecurityConfig.createAuthenticationToken());
+        StepVerifier.create(mono).assertNext(Repository::isInitialized);
     }
 
     @Test
     public void buildEntityRepoWithAdminAuthentication() throws IOException {
-        Repository repository = builder.buildRepository(entityStore, TestSecurityConfig.createAdminToken()).block();
-        Assertions.assertTrue(repository.isInitialized());
+        Mono<LabeledRepository> mono = builder.buildRepository(entityStore, TestSecurityConfig.createAdminToken());
+        StepVerifier.create(mono).assertNext(Repository::isInitialized);
     }
 
     @Test
     public void buildEntityRepoWithAnonAuthentication() throws IOException {
-        Repository repository = builder.buildRepository(entityStore, TestSecurityConfig.createAnonymousToken()).block();
-        Assertions.assertTrue(repository.isInitialized());
+        Mono<LabeledRepository> mono = builder.buildRepository(entityStore, TestSecurityConfig.createAnonymousToken());
+        StepVerifier.create(mono).assertNext(Repository::isInitialized);
 
     }
 
     @Test
     public void buildAppEntityRepoWithTestAuthentication() throws IOException {
         // TODO: replace with s3 params
-        Application application = new Application(SimpleValueFactory.getInstance().createIRI("http://example.org/app"), "app", "123213", new ApplicationFlags(false, false), Map.of());
-        Repository repository = builder.buildRepository(entityStore, TestSecurityConfig.createAuthenticationToken(), application);
-        Assertions.assertTrue(repository.isInitialized());
+
+        TestingAuthenticationToken token = TestSecurityConfig.createAuthenticationToken();
+        TestSecurityConfig.addConfigurationDetail(token, Application.CONFIG_KEYS.LABEL, "app");
+        TestSecurityConfig.addConfigurationDetail(token, Application.CONFIG_KEYS.KEY, "123213");
+        TestSecurityConfig.addConfigurationDetail(token, Application.CONFIG_KEYS.FLAG_PUBLIC, "false");
+        TestSecurityConfig.addConfigurationDetail(token, Application.CONFIG_KEYS.FLAG_PERSISTENT, "false");
+
+
+        Mono<LabeledRepository> mono = builder.buildRepository(entityStore, token);
+        StepVerifier.create(mono).assertNext(Repository::isInitialized);
+
     }
 
     @Test
     public void buildAppEntityRepoWithTestAuthenticationWithContext() throws IOException {
         // TODO: replace with s3 params
-        Application application = new Application(SimpleValueFactory.getInstance().createIRI("http://example.org/app"), "app", "123213", new ApplicationFlags(false, false), Map.of());
 
+        AdminToken token = TestSecurityConfig.createAdminToken();
+        TestSecurityConfig.addConfigurationDetail(token, Application.CONFIG_KEYS.LABEL, "app");
+        TestSecurityConfig.addConfigurationDetail(token, Application.CONFIG_KEYS.KEY, "123213");
+        TestSecurityConfig.addConfigurationDetail(token, Application.CONFIG_KEYS.FLAG_PUBLIC, "false");
+        TestSecurityConfig.addConfigurationDetail(token, Application.CONFIG_KEYS.FLAG_PERSISTENT, "false");
 
-        Mono<LabeledRepository> mono = builder.buildRepository(entityStore, TestSecurityConfig.createAdminToken())
-                .contextWrite(ctx -> ctx.put(ReactiveApplicationContextHolder.CONTEXT_APP_KEY, application));
+        Mono<LabeledRepository> mono = builder.buildRepository(entityStore, token);
 
 
         StepVerifier.create(mono).assertNext(Repository::isInitialized);

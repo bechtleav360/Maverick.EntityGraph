@@ -2,50 +2,37 @@ package org.av360.maverick.graph.services.transformers.types;
 
 import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.model.vocabulary.Local;
-import org.av360.maverick.graph.model.vocabulary.SDO;
 import org.av360.maverick.graph.services.SchemaServices;
 import org.av360.maverick.graph.services.transformers.Transformer;
 import org.eclipse.rdf4j.model.*;
 import org.eclipse.rdf4j.model.impl.LinkedHashModel;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
-import org.eclipse.rdf4j.model.vocabulary.*;
+import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.Map;
+import java.util.Optional;
 import java.util.stream.StreamSupport;
 
-@Slf4j(topic = "graph.srvc.transformer.coercion")
+@Slf4j(topic = "graph.srvc.trans.types")
 @Component
 @ConditionalOnProperty(name = "application.features.transformers.typeCoercion", havingValue = "true")
 public class AssignLocalTypes implements Transformer {
 
-    static Set<IRI> characteristicProperties = new HashSet<>();
 
+    private SchemaServices schemaServices;
 
-    private final SchemaServices schemaServices;
-
-    static Set<IRI> embeddedTypes = new HashSet<>();
     static ValueFactory valueFactory = SimpleValueFactory.getInstance();
 
-    static {
-        characteristicProperties.add(DC.IDENTIFIER);
-        characteristicProperties.add(DCTERMS.IDENTIFIER);
-        characteristicProperties.add(RDFS.LABEL);
-        characteristicProperties.add(SKOS.PREF_LABEL);
-        characteristicProperties.add(SDO.IDENTIFIER);
 
-
-        embeddedTypes.add(SDO.PROPERTY_VALUE);
-        embeddedTypes.add(SDO.QUANTITATIVE_VALUE);
-        embeddedTypes.add(SDO.STRUCTURED_VALUE);
-
-    }
-
-    public AssignLocalTypes(SchemaServices schemaServices) {
+    @Override
+    public void registerSchemaService(SchemaServices schemaServices) {
         this.schemaServices = schemaServices;
+
     }
 
     @Override
@@ -60,7 +47,7 @@ public class AssignLocalTypes implements Transformer {
                     log.warn("Subject with the following statements could not be identified for local type: \n {}", model.stream().toList());
                 })
                 .then(Mono.just(result))
-                .doOnSubscribe(c -> log.debug("Check if internal types have to be added."))
+                .doOnSubscribe(c -> log.debug("Checking if internal types have to be added."))
                 .doFinally(signalType -> log.trace("Finished checks for internal types."));
     }
 

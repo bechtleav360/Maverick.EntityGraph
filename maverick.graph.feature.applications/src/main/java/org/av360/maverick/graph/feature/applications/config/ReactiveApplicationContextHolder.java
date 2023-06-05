@@ -12,7 +12,6 @@ public class ReactiveApplicationContextHolder {
 
     public static final Class<ApplicationLabel> CONTEXT_LABEL_KEY = ApplicationLabel.class;
 
-
     public static final Class<Application> CONTEXT_APP_KEY = Application.class;
 
     public static Mono<Application> getRequestedApplication() {
@@ -25,16 +24,29 @@ public class ReactiveApplicationContextHolder {
     }
 
     public static Mono<String> getRequestedApplicationLabel() {
-        return getRequestedApplication()
-                .map(Application::label)
-                .switchIfEmpty(Mono.deferContextual(Mono::just)
-                        .filter(ctx -> ctx.hasKey(CONTEXT_LABEL_KEY))
-                        .map(ctx -> ctx.get(CONTEXT_LABEL_KEY))
-                        .map(ApplicationLabel::label)
-                )
+        return Mono.deferContextual(Mono::just)
+                .filter(ctx -> ctx.hasKey(CONTEXT_LABEL_KEY))
+                .map(ctx -> ctx.get(CONTEXT_LABEL_KEY))
+                .map(ApplicationLabel::label)
                 .switchIfEmpty(Mono.empty())
                 .doOnError(error -> log.error("Failed to read application label from context due to error: {}", error.getMessage()));
-
+        /*
+        return getRequestedApplication()
+                .map(Application::label)
+                .switchIfEmpty(
+                        Mono.deferContextual(Mono::just)
+                            .filter(ctx -> ctx.hasKey(CONTEXT_LABEL_KEY))
+                            .flatMap(ctx ->
+                                    ctx.<String>getOrEmpty(CONTEXT_LABEL_KEY)
+                                            .map(Mono::just)
+                                            .orElseGet(Mono::empty))
+                )
+                .switchIfEmpty(Mono.just(""))
+                .map(obj -> {
+                    return obj;
+                })
+                .doOnError(error -> log.error("Failed to read application label from context due to error: {}", error.getMessage()));
+*/
     }
 
 

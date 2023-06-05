@@ -1,5 +1,6 @@
 package org.av360.maverick.graph.store.rdf.helpers;
 
+import org.av360.maverick.graph.model.rdf.Triples;
 import org.av360.maverick.graph.store.rdf.fragments.TripleBag;
 import org.eclipse.rdf4j.common.exception.RDF4JException;
 import org.eclipse.rdf4j.model.IRI;
@@ -17,7 +18,7 @@ public class TriplesCollector extends AbstractRDFInserter {
     }
 
 
-    public TripleBag getModel() {
+    public Triples getTriples() {
         return model;
     }
 

@@ -298,7 +298,8 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
         return this.listApplications(authentication)
                 .filter(application -> application.label().equalsIgnoreCase(applicationLabel))
                 .switchIfEmpty(Mono.error(new InvalidApplication(applicationLabel)))
-                .single();
+                .single()
+                .doOnSubscribe(StreamsLogger.trace(log, "Loading application with label '{}'", applicationLabel));
     }
 
 

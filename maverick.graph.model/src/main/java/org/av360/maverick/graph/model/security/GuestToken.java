@@ -3,7 +3,6 @@ package org.av360.maverick.graph.model.security;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 
 import java.util.List;
-import java.util.Map;
 
 public class GuestToken extends AnonymousAuthenticationToken {
 
@@ -13,6 +12,6 @@ public class GuestToken extends AnonymousAuthenticationToken {
     }
 
     public GuestToken() {
-        this(new RequestDetails(null, Map.of(), Map.of()));
+        this(new RequestDetails());
     }
 }

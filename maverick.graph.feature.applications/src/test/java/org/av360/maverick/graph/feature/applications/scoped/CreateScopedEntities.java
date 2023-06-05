@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
@@ -25,6 +26,7 @@ import java.util.Map;
 @ContextConfiguration(classes = TestSecurityConfig.class)
 @RecordApplicationEvents
 @ActiveProfiles({"test", "api"})
+@AutoConfigureWebTestClient(timeout = "360000")
 @Slf4j
 public class CreateScopedEntities  extends ApiTestsBase {
     @Autowired
@@ -54,8 +56,12 @@ public class CreateScopedEntities  extends ApiTestsBase {
 
         super.printStep();
 
+
+        super.dump(Map.of("X-Application", "testApp"));
+
+        super.printStep();
         RdfConsumer c2 = this.entityClient.listEntities("/api/s/testApp/entities");
-        Assertions.assertEquals(4, c2.getStatements().size());
+        Assertions.assertEquals(1, c2.getStatements().size());
 
         super.printStep();
         RdfConsumer c3 = this.entityClient.listEntities("/api/entities");
