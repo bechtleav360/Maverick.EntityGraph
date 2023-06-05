@@ -40,14 +40,13 @@ application:
 
 logging:
   level:
-    root: DEBUG
+    root: INFO
     graph:
       jobs: DEBUG
       repo: TRACE
-      srvc: DEBUG
-      ctrl: DEBUG
-      feat:
-        admin: DEBUG
+      srvc: TRACE
+      ctrl: TRACE
+      feat: TRACE
     org:
       eclipse:
         rdf4j: DEBUG

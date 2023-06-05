@@ -134,7 +134,7 @@ public class ApplicationRepositoryBuilder extends DefaultRepositoryBuilder {
         meterRegistry.counter("graph.store.repository", "method", "access", "label", label).increment();
 
         if (!application.flags().isPersistent() || !StringUtils.hasLength(store.getDirectory())) {
-            log.debug("Initializing volatile {} repository for node '{}' [{}]", label, application.label(), application.key());
+            log.debug("Resolving in-memory {} repository for node '{}' [{}]", label, application.label(), application.key());
             return super.getCache().get(label, s -> super.initializeVolatileRepository(label));
 
         } else {

@@ -19,6 +19,8 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.event.RecordApplicationEvents;
 import org.springframework.test.web.reactive.server.WebTestClient;
 
+import java.util.Map;
+
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ContextConfiguration(classes = TestSecurityConfig.class)
 @RecordApplicationEvents
@@ -48,7 +50,7 @@ public class CreateScopedEntities  extends ApiTestsBase {
         Resource file = new ClassPathResource("requests/create-valid.jsonld");
 
         super.printStep();
-        RdfConsumer c1 = this.entityClient.createEntity(file, "/api/s/testApp/entities");
+        RdfConsumer c1 = this.entityClient.createEntity(file, "/api/entities", Map.of("X-Application", "testApp"));
 
         super.printStep();
 

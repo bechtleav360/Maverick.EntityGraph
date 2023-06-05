@@ -129,10 +129,11 @@ public abstract class AbstractStore implements TripleStore, Statements, ModelUpd
                 getLogger().trace("Query: {} ", query.replace('\n', ' ').trim());
 
                 TupleQuery q = connection.prepareTupleQuery(QueryLanguage.SPARQL, query);
-                if (getLogger().isTraceEnabled())
-                    getLogger().trace("Querying repository '{}'", connection.getRepository());
+
                 try (TupleQueryResult result = q.evaluate()) {
                     Set<BindingSet> collect = result.stream().collect(Collectors.toSet());
+                    if (getLogger().isTraceEnabled())
+                        getLogger().trace("Query resulted in {} bindings in repository '{}'", collect.size(), connection.getRepository());
                     return collect;
                 } finally {
                     connection.close();
