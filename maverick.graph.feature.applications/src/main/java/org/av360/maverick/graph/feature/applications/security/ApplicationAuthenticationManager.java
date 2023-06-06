@@ -1,8 +1,13 @@
+
+
 package org.av360.maverick.graph.feature.applications.security;
 
 import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.feature.applications.config.ReactiveApplicationContextHolder;
+import org.av360.maverick.graph.feature.applications.config.RequestedApplicationFilter;
+import org.av360.maverick.graph.feature.applications.domain.ApplicationsService;
 import org.av360.maverick.graph.feature.applications.domain.SubscriptionsService;
+import org.av360.maverick.graph.feature.applications.domain.errors.InvalidApplication;
 import org.av360.maverick.graph.feature.applications.domain.model.Application;
 import org.av360.maverick.graph.model.security.AdminToken;
 import org.av360.maverick.graph.model.security.ApiKeyAuthenticationToken;
@@ -39,10 +44,15 @@ public class ApplicationAuthenticationManager implements ReactiveAuthenticationM
 
     private final SubscriptionsService subscriptionsService;
 
-    public ApplicationAuthenticationManager(SubscriptionsService subscriptionsService1) {
+    private final ApplicationsService applicationsService;
+
+    public ApplicationAuthenticationManager(SubscriptionsService subscriptionsService1, ApplicationsService applicationsService) {
         this.subscriptionsService = subscriptionsService1;
+        this.applicationsService = applicationsService;
         log.trace("Activated Application Authentication Manager (checking subscription api keys)");
     }
+
+
 
 
 
@@ -52,7 +62,12 @@ public class ApplicationAuthenticationManager implements ReactiveAuthenticationM
         try {
             Assert.notNull(authentication, "Authentication is null in Authentication Manager");
 
-            return ReactiveApplicationContextHolder.getRequestedApplication()
+            return ReactiveApplicationContextHolder.getRequestedApplicationLabel()
+                    .switchIfEmpty(this.checkPath(authentication))
+                    .filter(StringUtils::hasLength)
+                    .flatMap(label -> this.applicationsService.getApplicationByLabel(label, authentication)
+                            .switchIfEmpty(Mono.error(new InvalidApplication(label))))
+                    .flatMap(app -> this.addRequestedApplicationToAuthentication(app, authentication))
                     .flatMap(requestedApplication -> {
                         if (authentication instanceof AdminToken token) {
                             log.trace("Authentication has system authority and application scope '{}' requested.", requestedApplication.label());
@@ -73,6 +88,41 @@ public class ApplicationAuthenticationManager implements ReactiveAuthenticationM
             log.error("Failed to handle application authentication with error: '{}'", e.getMessage());
             return Mono.error(e);
         }
+    }
+
+    private Mono<String> checkPath(Authentication authentication) {
+        log.warn("Application label not found in thread context, verifying in request details within authentication.");
+        if(authentication.getDetails() instanceof RequestDetails requestDetails) {
+            try {
+                Optional<String> requestedApplication = RequestedApplicationFilter.getRequestedApplication(requestDetails.getPath(), requestDetails.getHeaders(), requestDetails.getParameter());
+                return requestedApplication.map(Mono::just).orElseGet(Mono::empty);
+
+            } catch (IOException e) {
+                return Mono.error(e);
+            }
+        }
+        return Mono.empty();
+    }
+
+    /**
+     * We need to transport some configuration parameters downstream to the repository builders (and we don't want to use
+     * the context, that's too brittle.
+     *
+     * @param application
+     * @param authentication
+     * @return
+     */
+    private Mono<Application> addRequestedApplicationToAuthentication(Application application, Authentication authentication) {
+        if(authentication.getDetails() instanceof RequestDetails requestDetails) {
+            requestDetails.setConfiguration(Application.CONFIG_KEYS.KEY, application.key());
+            requestDetails.setConfiguration(Application.CONFIG_KEYS.LABEL.name(), application.label());
+            requestDetails.setConfiguration(Application.CONFIG_KEYS.FLAG_PERSISTENT.name(), "%s".formatted(application.flags().isPersistent()));
+            requestDetails.setConfiguration(Application.CONFIG_KEYS.FLAG_PUBLIC.name(), "%s".formatted(application.flags().isPublic()));
+        } else {
+            log.error("An application was requested, but no request details in the authentication object of type {}", authentication.getClass());
+        }
+        return Mono.just(application);
+
     }
 
     private Mono<Authentication> defaultFallback(Authentication authentication) {
@@ -172,15 +222,15 @@ public class ApplicationAuthenticationManager implements ReactiveAuthenticationM
      * @throws IOException if path is invalid
      */
     private Optional<String> getScopeFromPath(RequestDetails requestDetails) throws IOException {
-        Assert.isTrue(StringUtils.hasLength(requestDetails.path()), "Empty path in request details");
+        Assert.isTrue(StringUtils.hasLength(requestDetails.getPath()), "Empty path in request details");
 
-        String[] split = requestDetails.path().split("/");
+        String[] split = requestDetails.getPath().split("/");
         for (int i = 0; i < split.length; i++) {
             if (split[i].equalsIgnoreCase("sc")) {
                 if (split.length > i + 1) {
                     return Optional.of(split[i + 1]);
                 } else {
-                    throw new IOException("Invalid path in request, missing scope label: " + requestDetails.path());
+                    throw new IOException("Invalid path in request, missing scope label: " + requestDetails.getPath());
                 }
             }
         }

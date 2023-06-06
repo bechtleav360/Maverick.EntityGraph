@@ -10,6 +10,9 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import org.springframework.web.reactive.function.BodyInserters;
 
+import java.util.List;
+import java.util.Map;
+
 public abstract class ApiTestsBase extends TestsBase {
 
 
@@ -21,8 +24,7 @@ public abstract class ApiTestsBase extends TestsBase {
     }
 
 
-
-    protected void dump() {
+    protected void dump(Map<String, String> headers) {
 
         CsvConsumer csvConsumer = new CsvConsumer();
         webClient
@@ -30,6 +32,7 @@ public abstract class ApiTestsBase extends TestsBase {
                 .uri("/api/query/select")
                 .contentType(MediaType.parseMediaType("text/plain"))
                 .accept(MediaType.parseMediaType("text/csv"))
+                .headers(c -> headers.forEach((k,v) -> c.put(k, List.of(v))))
                 .body(BodyInserters.fromValue("SELECT DISTINCT * WHERE { ?s ?p ?o }"))
                 .exchange()
                 .expectStatus().isAccepted()
@@ -38,6 +41,10 @@ public abstract class ApiTestsBase extends TestsBase {
 
         System.out.println(csvConsumer.getAsString());
 
+    }
+
+    protected void dump() {
+        this.dump(Map.of());
     }
 
 

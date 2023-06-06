@@ -22,14 +22,20 @@ application:
       jobs:
         enabled: false
         scheduled:
-          detectDuplicates: true
-          replaceIdentifiers: true
-          typeCoercion: true
+          detectDuplicates:
+            enabled: true
+            defaultFrequency: "0 */5 * * * ?"
+          replaceIdentifiers:
+            enabled: true
+            defaultFrequency: "0 */5 * * * ?"
+          typeCoercion:
+            enabled: true
+            defaultFrequency: "0 */5 * * * ?"
           exportApplication:
             enabled: true
+            defaultFrequency: "0 */5 * * * ?"
             defaultS3Host: "http://127.0.0.1:9000"
             defaultS3BucketId: "test"
-            defaultExportFrequency: "0 0 * * * *"
       navigation:
         enabled: true
     transformers:
@@ -39,7 +45,19 @@ application:
       typeCoercion: true
     validators:
       checkRequiredType: true
-
+#  storage:
+#    vocabularies:
+#      persistent: true
+#      path: "C:/Graphen/vocabularies"
+#    system:
+#      persistent: true
+#      path: "C:/Graphen/system"
+#    entities:
+#      persistent: true
+#      path: "C:/Graphen/entities"
+#    transactions:
+#      persistent: true
+#      path: "C:/Graphen/transactions"
 
 
 

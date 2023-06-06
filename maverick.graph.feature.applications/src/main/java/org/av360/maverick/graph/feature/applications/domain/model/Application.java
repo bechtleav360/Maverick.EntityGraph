@@ -8,16 +8,24 @@ import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import java.io.Serializable;
 import java.util.Map;
 
-public record Application(IRI iri, String label, String key, ApplicationFlags flags, Map<String, Serializable> configuration) {
+public record Application(IRI iri, String label, String key, ApplicationFlags flags,
+                          Map<String, Serializable> configuration) {
 
+    public enum CONFIG_KEYS {
+        IDENTIFIER,
+        LABEL,
+        KEY,
+        FLAG_PUBLIC,
+        FLAG_PERSISTENT
+    }
 
 
     public static Application DEFAULT = new Application(
-                SimpleValueFactory.getInstance().createIRI(Local.Applications.NAMESPACE, "default"),
-                Globals.DEFAULT_APPLICATION_LABEL,
-                "default",
-                new ApplicationFlags(false, false),
-                Map.of());
+            SimpleValueFactory.getInstance().createIRI(Local.Applications.NAMESPACE, "default"),
+            Globals.DEFAULT_APPLICATION_LABEL,
+            "default",
+            new ApplicationFlags(false, false),
+            Map.of());
 
 
 }

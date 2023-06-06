@@ -1,4 +1,4 @@
-package org.av360.maverick.graph.api.security.config;
+package org.av360.maverick.graph.api.config;
 
 import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.api.security.ext.ChainingAuthenticationManager;
@@ -30,7 +30,7 @@ import static org.av360.maverick.graph.model.security.ApiKeyAuthenticationToken.
 
 @Configuration
 @EnableWebFluxSecurity
-@Profile("! test")
+@Profile("! test")  // see TestSecurityConfig in Test Module
 @Slf4j(topic = "graph.ctrl.cfg.sec")
 public class SecurityConfiguration {
 
@@ -66,6 +66,8 @@ public class SecurityConfiguration {
                 .formLogin().disable()
                 .logout().disable()
                 .build();
+
+
 
         log.info("Security is enabled and was configured to secure all requests.");
         return build;

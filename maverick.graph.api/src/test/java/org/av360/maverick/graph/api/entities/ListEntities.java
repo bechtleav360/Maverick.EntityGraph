@@ -35,6 +35,7 @@ public class ListEntities extends ApiTestsBase {
 
     @Test
     public void listEntities() {
+        super.printStart("list Entities");
         Resource file = new ClassPathResource("requests/create-valid_many.jsonld");
         webClient.post()
                 .uri("/api/entities")
@@ -43,6 +44,7 @@ public class ListEntities extends ApiTestsBase {
                 .exchange()
                 .expectStatus().isAccepted();
 
+        super.printStep();
         RdfConsumer rdfConsumer = new RdfConsumer(RDFFormat.JSONLD);
         webClient.get()
                 .uri("/api/entities")

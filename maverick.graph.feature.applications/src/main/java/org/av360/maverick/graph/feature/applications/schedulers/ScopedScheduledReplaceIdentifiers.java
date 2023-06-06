@@ -1,16 +1,20 @@
 package org.av360.maverick.graph.feature.applications.schedulers;
 
+import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.feature.applications.domain.ApplicationsService;
+import org.av360.maverick.graph.feature.applications.domain.events.ApplicationCreatedEvent;
 import org.av360.maverick.graph.feature.applications.domain.events.ApplicationJobScheduledEvent;
 import org.av360.maverick.graph.model.events.JobScheduledEvent;
 import org.av360.maverick.graph.model.security.AdminToken;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.context.ApplicationListener;
+import org.springframework.scheduling.TaskScheduler;
+import org.springframework.scheduling.support.CronTrigger;
 import org.springframework.stereotype.Component;
 
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.ScheduledFuture;
 
 /**
  * If we have any global identifiers (externally set) in the repo, we have to replace them with our internal identifiers.
@@ -26,31 +30,47 @@ import java.util.concurrent.TimeUnit;
  */
 @Slf4j(topic = "graph.jobs.identifiers")
 @Component
-@ConditionalOnProperty(name = "application.features.modules.jobs.scheduled.replaceIdentifiers", havingValue = "true")
-public class ScopedScheduledReplaceIdentifiers {
+@ConditionalOnProperty(name = "application.features.modules.jobs.scheduled.replaceIdentifiers.enabled", havingValue = "true")
+public class ScopedScheduledReplaceIdentifiers implements ApplicationListener<ApplicationCreatedEvent> {
 
     // FIXME: should not directly access the services
+
+    public static final String CONFIG_KEY_REPLACE_IDENTIFIERS_FREQUENCY = "replace_identifiers_frequency";
     private final ApplicationEventPublisher eventPublisher;
 
     private final ApplicationsService applicationsService;
 
-    public ScopedScheduledReplaceIdentifiers(ApplicationEventPublisher eventPublisher, ApplicationsService applicationsService) {
+    private final TaskScheduler taskScheduler;
+
+    public ScopedScheduledReplaceIdentifiers(ApplicationEventPublisher eventPublisher, ApplicationsService applicationsService, TaskScheduler taskScheduler) {
         this.eventPublisher = eventPublisher;
         this.applicationsService = applicationsService;
+        this.taskScheduler = taskScheduler;
     }
 
 
-    @Scheduled(initialDelay = 300, fixedRate = 600, timeUnit = TimeUnit.SECONDS)
-    //@Scheduled(initialDelay = 13, fixedRate = 20, timeUnit = TimeUnit.SECONDS)
-    public void checkForGlobalIdentifiersScheduled() {
-
-
+    @PostConstruct
+    public void initializeScheduledJobs() {
         applicationsService.listApplications(new AdminToken())
                 .doOnNext(application -> {
-                    JobScheduledEvent event = new ApplicationJobScheduledEvent("replaceSubjectIdentifiers", new AdminToken(), application);
-                    eventPublisher.publishEvent(event);
+                    Runnable task = () -> {
+                        JobScheduledEvent event = new ApplicationJobScheduledEvent("replaceSubjectIdentifiers", new AdminToken(), application);
+                        eventPublisher.publishEvent(event);
+                    };
+                    ScheduledFuture<?> scheduledFuture = taskScheduler.schedule(task, new CronTrigger(application.configuration().get(CONFIG_KEY_REPLACE_IDENTIFIERS_FREQUENCY).toString()));
                 }).subscribe();
-
     }
 
+
+    @Override
+    public void onApplicationEvent(ApplicationCreatedEvent event) {
+//        applicationsService.getApplication(event.getApplication(), new AdminToken())
+//                .subscribe(newApplication -> {
+                    Runnable task = () -> {
+                        JobScheduledEvent jobEvent = new ApplicationJobScheduledEvent("replaceSubjectIdentifiers", new AdminToken(), event.getApplication());
+                        eventPublisher.publishEvent(jobEvent);
+                    };
+                    ScheduledFuture<?> scheduledFuture = taskScheduler.schedule(task, new CronTrigger(event.getApplication().configuration().get(CONFIG_KEY_REPLACE_IDENTIFIERS_FREQUENCY).toString()));
+//                });
+    }
 }

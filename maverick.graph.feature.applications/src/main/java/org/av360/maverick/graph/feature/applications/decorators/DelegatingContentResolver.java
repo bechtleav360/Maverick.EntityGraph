@@ -2,6 +2,7 @@ package org.av360.maverick.graph.feature.applications.decorators;
 
 import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.feature.applications.config.ReactiveApplicationContextHolder;
+import org.av360.maverick.graph.feature.applications.domain.ApplicationsService;
 import org.av360.maverick.graph.feature.applications.security.SubscriptionToken;
 import org.av360.maverick.graph.model.enums.ConfigurationItemKeys;
 import org.av360.maverick.graph.model.errors.InsufficientPrivilegeException;
@@ -17,16 +18,19 @@ import java.nio.file.Path;
 @Slf4j(topic = "graph.feat.app")
 public class DelegatingContentResolver implements ContentLocationResolverService {
     private final ContentLocationResolverService delegate;
+    private final ApplicationsService applicationsService;
 
-    public DelegatingContentResolver(ContentLocationResolverService delegate) {
+    public DelegatingContentResolver(ContentLocationResolverService delegate, ApplicationsService applicationsService) {
         this.delegate = delegate;
+        this.applicationsService = applicationsService;
     }
 
 
 
     @Override
     public Mono<ContentLocation> resolveContentLocation(IRI entityID, IRI contentId, String filename, @Nullable String language, Authentication authentication) {
-        return ReactiveApplicationContextHolder.getRequestedApplication()
+        return ReactiveApplicationContextHolder.getRequestedApplicationLabel()
+                .flatMap(applicationsLabel -> applicationsService.getApplicationByLabel(applicationsLabel, authentication))
                 .flatMap(application -> {
                     if (application.flags().isPublic() && ! Authorities.satisfies(Authorities.READER, authentication.getAuthorities())) {
                         String msg = String.format("Required authority '%s' for resolving uri for filename '%s' and entity '%s' not met in authentication with authorities '%s'", Authorities.READER, filename, entityID, authentication.getAuthorities());

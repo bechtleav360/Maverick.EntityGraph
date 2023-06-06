@@ -30,6 +30,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -175,6 +176,16 @@ public class BufferedStatementsEncoder implements Encoder<Statement> {
                 else {
                     path = parts[0];
                 }
+
+                // Fallback (probably only for Mockrequests)
+
+                    try {
+                        if(requestURI.toString().startsWith("/")) {
+                            requestURI = new URI("http://example.com%s".formatted(requestURI));
+                        }
+                    } catch (URISyntaxException e) {
+                        throw new RuntimeException(e);
+                    }
 
                 String uri = UriComponentsBuilder.fromUri(requestURI).replacePath(path).replaceQuery("").build().toUriString();
                 return (T) vf.createIRI(uri);

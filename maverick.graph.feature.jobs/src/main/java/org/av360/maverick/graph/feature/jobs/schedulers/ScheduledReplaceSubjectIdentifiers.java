@@ -17,7 +17,7 @@ import java.util.concurrent.TimeUnit;
  */
 @Slf4j(topic = "graph.jobs.identifiers")
 @Component
-@ConditionalOnProperty(name = "application.features.modules.jobs.scheduled.replaceIdentifiers", havingValue = "true")
+@ConditionalOnProperty(name = "application.features.modules.jobs.scheduled.replaceIdentifiers.enabled", havingValue = "true")
 public class ScheduledReplaceSubjectIdentifiers {
 
     // FIXME: should not directly access the services
@@ -28,8 +28,8 @@ public class ScheduledReplaceSubjectIdentifiers {
     }
 
 
-    @Scheduled(initialDelay = 120, fixedRate = 600, timeUnit = TimeUnit.SECONDS)
-    // @Scheduled(initialDelay = 7, fixedRate = 20, timeUnit = TimeUnit.SECONDS)
+//    @Scheduled(initialDelay = 120, fixedRate = 600, timeUnit = TimeUnit.SECONDS)
+    @Scheduled(cron = "${application.features.modules.jobs.scheduled.replaceIdentifiers.defaultFrequency:0 */5 * * * ?}")
     public void checkForGlobalIdentifiersScheduled() {
         JobScheduledEvent event = new JobScheduledEvent(ReplaceObjectIdentifiersJob.NAME, new AdminToken());
         eventPublisher.publishEvent(event);

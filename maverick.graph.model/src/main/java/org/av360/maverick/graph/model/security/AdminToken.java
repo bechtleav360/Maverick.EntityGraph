@@ -1,7 +1,5 @@
 package org.av360.maverick.graph.model.security;
 
-import java.util.Map;
-
 public class AdminToken extends ApiKeyAuthenticationToken {
 
     public AdminToken(RequestDetails details) {
@@ -11,6 +9,6 @@ public class AdminToken extends ApiKeyAuthenticationToken {
     }
 
     public AdminToken() {
-        this(new RequestDetails(null, Map.of(), Map.of()));
+        this(new RequestDetails());
     }
 }

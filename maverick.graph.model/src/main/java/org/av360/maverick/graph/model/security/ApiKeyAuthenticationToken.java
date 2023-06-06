@@ -21,7 +21,7 @@ public class ApiKeyAuthenticationToken implements Authentication {
 
 
     public ApiKeyAuthenticationToken() {
-        this(new RequestDetails(null, Map.of(), Map.of()));
+        this(new RequestDetails());
     }
 
     public ApiKeyAuthenticationToken(RequestDetails details) {
@@ -39,7 +39,7 @@ public class ApiKeyAuthenticationToken implements Authentication {
     }
 
     public Optional<String> getApiKey() {
-        return Optional.ofNullable(Objects.requireNonNull(this.getDetails()).headers().get(API_KEY_HEADER));
+        return Optional.ofNullable(Objects.requireNonNull(this.getDetails()).getHeaders().get(API_KEY_HEADER));
     }
 
     @Override

@@ -33,8 +33,9 @@ public class DefaultBeansConfiguration implements BeanPostProcessor {
             return new DelegatingIdentifierServices(delegate);
         }
         else if(bean instanceof ContentLocationResolverService delegate) {
-            return new DelegatingContentResolver(delegate);
+            return new DelegatingContentResolver(delegate, this.applicationsService);
         }
+
         else return bean;
     }
 

@@ -3,6 +3,7 @@ package org.av360.maverick.graph.services.transformers;
 import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.services.EntityServices;
 import org.av360.maverick.graph.services.QueryServices;
+import org.av360.maverick.graph.services.SchemaServices;
 import org.eclipse.rdf4j.model.Model;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -24,6 +25,12 @@ public class DelegatingTransformer implements Transformer {
     }
 
 
+    @Override
+    public void registerSchemaService(SchemaServices schemaServices) {
+        getRegisteredTransformers().forEach(transformer -> transformer.registerSchemaService(schemaServices));
+    }
+
+    @Override
     public void registerEntityService(EntityServices entityServicesImpl) {
         getRegisteredTransformers().forEach(transformer -> transformer.registerEntityService(entityServicesImpl));
     }
@@ -48,10 +55,7 @@ public class DelegatingTransformer implements Transformer {
         }
 
         return Flux.fromIterable(transformers)
-                .reduce(Mono.just(triples), (modelMono, transformer) ->
-                        modelMono
-                                .map(model -> transformer.handle(model, parameters))
-                                .flatMap(mono -> mono))
-                .flatMap(mono -> mono);
+                .reduce(Mono.just(triples), (modelMono, transformer) -> modelMono.map(model -> transformer.handle(model, parameters))
+                        .flatMap(mono -> mono)).flatMap(mono -> mono);
     }
 }

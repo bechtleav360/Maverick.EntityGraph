@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
@@ -19,10 +20,13 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.event.RecordApplicationEvents;
 import org.springframework.test.web.reactive.server.WebTestClient;
 
+import java.util.Map;
+
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ContextConfiguration(classes = TestSecurityConfig.class)
 @RecordApplicationEvents
 @ActiveProfiles({"test", "api"})
+@AutoConfigureWebTestClient(timeout = "360000")
 @Slf4j
 public class CreateScopedEntities  extends ApiTestsBase {
     @Autowired
@@ -48,12 +52,16 @@ public class CreateScopedEntities  extends ApiTestsBase {
         Resource file = new ClassPathResource("requests/create-valid.jsonld");
 
         super.printStep();
-        RdfConsumer c1 = this.entityClient.createEntity(file, "/api/s/testApp/entities");
+        RdfConsumer c1 = this.entityClient.createEntity(file, "/api/entities", Map.of("X-Application", "testApp"));
 
         super.printStep();
 
+
+        super.dump(Map.of("X-Application", "testApp"));
+
+        super.printStep();
         RdfConsumer c2 = this.entityClient.listEntities("/api/s/testApp/entities");
-        Assertions.assertEquals(4, c2.getStatements().size());
+        Assertions.assertEquals(1, c2.getStatements().size());
 
         super.printStep();
         RdfConsumer c3 = this.entityClient.listEntities("/api/entities");

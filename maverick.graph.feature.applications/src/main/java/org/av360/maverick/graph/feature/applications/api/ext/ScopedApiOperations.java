@@ -20,6 +20,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import javax.annotation.Nullable;
+import java.util.Objects;
 
 /**
  * Supports links where the scope is encoded in the path in the form
@@ -50,7 +51,7 @@ public class ScopedApiOperations extends AbstractController {
 
     private final ContentApi contentCtrl;
 
-    public ScopedApiOperations(DetailsAPI defaultCtrl, EntitiesAPI entitiesCtrl, ValuesAPI valuesCtrl, LinksAPI linksCtrl, ContentApi contentCtrl) {
+    public ScopedApiOperations(DetailsAPI defaultCtrl, EntitiesAPI entitiesCtrl, ValuesAPI valuesCtrl, LinksAPI linksCtrl, @Nullable ContentApi contentCtrl) {
         this.detailsCtrl = defaultCtrl;
         this.entitiesCtrl = entitiesCtrl;
         this.valuesCtrl = valuesCtrl;
@@ -122,6 +123,9 @@ public class ScopedApiOperations extends AbstractController {
 
     @ResponseStatus(HttpStatus.OK)
     Mono<ResponseEntity<Flux<DataBuffer>>> getContent(@PathVariable String label, @PathVariable String id) {
+        if (Objects.isNull(this.contentCtrl)) {
+            return Mono.just(ResponseEntity.noContent().build());
+        }
         return this.contentCtrl.download(id);
     }
 

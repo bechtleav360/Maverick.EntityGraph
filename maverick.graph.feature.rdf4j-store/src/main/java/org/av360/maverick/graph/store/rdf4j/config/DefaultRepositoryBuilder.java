@@ -104,7 +104,8 @@ public class DefaultRepositoryBuilder implements RepositoryBuilder {
         LabeledRepository repository = null;
 
         if (authentication instanceof TestingAuthenticationToken) {
-            repository = this.buildDefaultRepository(store, "test");
+            // default repository always get the default label (also in test mode)
+            repository = this.buildDefaultRepository(store, "default");
         }
         else if (authentication instanceof ApiKeyAuthenticationToken) {
             repository = this.buildDefaultRepository(store, "default");

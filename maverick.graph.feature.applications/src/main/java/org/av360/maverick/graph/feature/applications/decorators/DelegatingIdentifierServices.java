@@ -38,8 +38,8 @@ public class DelegatingIdentifierServices implements IdentifierServices {
     public Mono<String> validate(String identifier) {
         if(identifier.contains(".")) return Mono.just(identifier);
 
-        return ReactiveApplicationContextHolder.getRequestedApplication()
-                .map(application -> String.format("%s.%s", application.label(), identifier))
+        return ReactiveApplicationContextHolder.getRequestedApplicationLabel()
+                .map(label -> String.format("%s.%s", label, identifier))
                 .switchIfEmpty(delegate.validate(identifier));
 
     }

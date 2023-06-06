@@ -16,6 +16,7 @@ import org.springframework.web.reactive.function.BodyInserters;
 import reactor.core.publisher.Mono;
 
 import java.io.StringWriter;
+import java.util.Map;
 import java.util.Objects;
 
 public class TestEntitiesClient {
@@ -68,10 +69,10 @@ public class TestEntitiesClient {
     }
 
     public RdfConsumer createEntity(Resource file) {
-        return this.createEntity(file, "/api/entities");
+        return this.createEntity(file, "/api/entities", Map.of());
     }
 
-    public RdfConsumer createEntity(Resource file, String path) {
+    public RdfConsumer createEntity(Resource file, String path, Map<String, String> headersMap) {
         RDFFormat format = getFormatFromExt(file);
         RdfConsumer rdfConsumer = new RdfConsumer(format, true);
 
@@ -80,6 +81,7 @@ public class TestEntitiesClient {
                 .contentType(RdfUtils.getMediaType(format))
                 .accept(RdfUtils.getMediaType(format))
                 .body(BodyInserters.fromResource(file))
+                .headers(headers -> headersMap.forEach(headers::add))
                 .header("X-API-KEY", "test")
                 .exchange()
                 .expectStatus().isAccepted()
