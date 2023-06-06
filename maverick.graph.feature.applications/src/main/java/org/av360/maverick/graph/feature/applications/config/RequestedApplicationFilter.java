@@ -2,7 +2,7 @@ package org.av360.maverick.graph.feature.applications.config;
 
 import jakarta.validation.constraints.NotNull;
 import lombok.extern.slf4j.Slf4j;
-import org.av360.maverick.graph.feature.applications.domain.ApplicationsService;
+import org.av360.maverick.graph.model.security.RequestDetails;
 import org.av360.maverick.graph.model.util.PreAuthenticationWebFilter;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.server.reactive.ServerHttpRequest;
@@ -24,10 +24,8 @@ import java.util.Optional;
 public class RequestedApplicationFilter implements PreAuthenticationWebFilter {
 
 
-    private final ApplicationsService subscriptionsService;
 
-    public RequestedApplicationFilter(ApplicationsService subscriptionsService) {
-        this.subscriptionsService = subscriptionsService;
+    public RequestedApplicationFilter() {
     }
 
     @Override
@@ -35,14 +33,12 @@ public class RequestedApplicationFilter implements PreAuthenticationWebFilter {
 
         try {
 
-            // FIXME: remove repo request from filter, only extract label from path and store it as string. Let it handle downstream
 
             // we only store the label in the context... writing the actual application into the context has to happen later
-
-            return getRequestedApplication(exchange.getRequest())
+            return getRequestedApplicationFromRequest(exchange.getRequest())
                     .map(label ->   {
-                        log.trace("Extracted requested application '{}' from request.", label);
-                        return chain.filter(exchange).contextWrite(context -> context.put(ReactiveApplicationContextHolder.CONTEXT_LABEL_KEY, new ReactiveApplicationContextHolder.ApplicationLabel(label)));
+                        log.trace("Extracted requested application '{}' from request and storing it in session context.", label);
+                        return chain.filter(exchange).contextWrite(context -> context.put(ReactiveApplicationContextHolder.CONTEXT_LABEL_KEY, label));
 
                     })
                     .orElseGet(() -> chain.filter(exchange));
@@ -61,13 +57,15 @@ public class RequestedApplicationFilter implements PreAuthenticationWebFilter {
     }
 
 
-    private Optional<String> getRequestedApplication(ServerHttpRequest request) throws IOException {
-        return getRequestedApplication(request.getPath().toString(), request.getHeaders().toSingleValueMap(), request.getQueryParams().toSingleValueMap());
-
-
+    private Optional<String> getRequestedApplicationFromRequest(ServerHttpRequest request) throws IOException {
+        return getRequestedApplicationFromRequest(request.getPath().toString(), request.getHeaders().toSingleValueMap(), request.getQueryParams().toSingleValueMap());
     }
 
-    public static Optional<String> getRequestedApplication(String path, Map<String, String> headers, Map<String, String> queryParams) throws IOException {
+    public static Optional<String> getRequestedApplicationFromRequestDetails(RequestDetails request) throws IOException {
+        return new RequestedApplicationFilter().getRequestedApplicationFromRequest(request.getPath(), request.getHeaders(), request.getParameter());
+    }
+
+    public Optional<String> getRequestedApplicationFromRequest(String path, Map<String, String> headers, Map<String, String> queryParams) throws IOException {
         // header OR path (path wins)
         Optional<String> fromHeader = getRequestedApplicationFromHeaders(headers);
         Optional<String> fromPath = getRequestedApplicationFromPath(path);
@@ -81,12 +79,12 @@ public class RequestedApplicationFilter implements PreAuthenticationWebFilter {
 
     }
 
-    public static Optional<String> getRequestedApplicationFromHeaders(Map<String, String> headers) {
+    public Optional<String> getRequestedApplicationFromHeaders(Map<String, String> headers) {
         return headers.containsKey(Globals.HEADER_APPLICATION_LABEL) ? Optional.ofNullable(headers.get(Globals.HEADER_APPLICATION_LABEL)) : Optional.empty();
     }
 
-    public static Optional<String> getRequestedApplicationFromQueryParam(Map<String, String> queryParams) {
-        return Optional.ofNullable(queryParams.get("s"));
+    public Optional<String> getRequestedApplicationFromQueryParam(Map<String, String> queryParams) {
+        return Optional.ofNullable(queryParams.get("s")).or(() -> Optional.ofNullable(queryParams.get("S")));
     }
 
     /**
@@ -96,7 +94,7 @@ public class RequestedApplicationFilter implements PreAuthenticationWebFilter {
      * @return scope if available
      * @throws IOException if path is invalid
      */
-    public static Optional<String> getRequestedApplicationFromPath(String path) throws IOException {
+    public Optional<String> getRequestedApplicationFromPath(String path) throws IOException {
         Assert.isTrue(StringUtils.hasLength(path), "Empty path in request details");
 
         String[] split = path.split("/");

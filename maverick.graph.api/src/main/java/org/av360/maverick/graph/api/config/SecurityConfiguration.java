@@ -6,6 +6,7 @@ import org.av360.maverick.graph.model.security.ApiKeyAuthenticationToken;
 import org.av360.maverick.graph.model.security.Authorities;
 import org.av360.maverick.graph.model.security.GuestToken;
 import org.av360.maverick.graph.model.security.RequestDetails;
+import org.av360.maverick.graph.model.util.PreAuthenticationWebFilter;
 import org.springframework.boot.actuate.autoconfigure.security.reactive.EndpointRequest;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
@@ -35,66 +36,71 @@ import static org.av360.maverick.graph.model.security.ApiKeyAuthenticationToken.
 public class SecurityConfiguration {
 
 
+    @SuppressWarnings("Convert2MethodRef")
     @Bean
     @ConditionalOnProperty(name = "application.security.enabled", havingValue = "true")
     public SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity http,
                                                          List<ReactiveAuthenticationManager> authenticationManager,
-                                                         ServerAuthenticationConverter authenticationConverter) {
+                                                         ServerAuthenticationConverter authenticationConverter,
+                                                         List<PreAuthenticationWebFilter> preFilterList) {
         final ReactiveAuthenticationManager authenticationManagers = new ChainingAuthenticationManager(authenticationManager);
         final AuthenticationWebFilter authenticationWebFilter = new AuthenticationWebFilter(authenticationManagers);
         authenticationWebFilter.setServerAuthenticationConverter(authenticationConverter);
 
 
-        SecurityWebFilterChain build = http
-                .authorizeExchange()
 
-                .pathMatchers(HttpMethod.GET, "/api/**").hasAnyAuthority(Authorities.SYSTEM.getAuthority(), Authorities.APPLICATION.getAuthority(), Authorities.CONTRIBUTOR.getAuthority(), Authorities.READER.getAuthority())
-                .pathMatchers(HttpMethod.HEAD, "/api/**").hasAnyAuthority(Authorities.SYSTEM.getAuthority(), Authorities.APPLICATION.getAuthority(), Authorities.CONTRIBUTOR.getAuthority(), Authorities.READER.getAuthority())
-                .pathMatchers(HttpMethod.DELETE, "/api/**").hasAnyAuthority(Authorities.SYSTEM.getAuthority(), Authorities.APPLICATION.getAuthority(), Authorities.CONTRIBUTOR.getAuthority())
-                .pathMatchers(HttpMethod.POST, "/api/**").hasAnyAuthority(Authorities.SYSTEM.getAuthority(), Authorities.APPLICATION.getAuthority(), Authorities.CONTRIBUTOR.getAuthority())
-                .pathMatchers("/api/admin/**").hasAnyAuthority(Authorities.SYSTEM.getAuthority(), Authorities.APPLICATION.getAuthority())
-                .pathMatchers(HttpMethod.GET, "/swagger-ui/*").permitAll()
-                .pathMatchers(HttpMethod.GET, "/nav").permitAll()
-                .matchers(EndpointRequest.to("env", "logfile", "loggers", "metrics", "scheduledTasks")).hasAuthority(Authorities.SYSTEM.getAuthority())
-                .matchers(EndpointRequest.to("health", "info")).permitAll()
 
-                .anyExchange().permitAll()
-                .and()
-                .addFilterAt(authenticationWebFilter, SecurityWebFiltersOrder.AUTHENTICATION)
-                .httpBasic().disable()
-                .csrf().disable()
-                .formLogin().disable()
-                .logout().disable()
-                .build();
+        preFilterList.forEach(preFilter -> http.addFilterBefore(preFilter, SecurityWebFiltersOrder.AUTHENTICATION));
+        http.addFilterAt(authenticationWebFilter, SecurityWebFiltersOrder.AUTHENTICATION);
+        http.httpBasic(spec -> spec.disable());
+        http.csrf(spec -> spec.disable());
+        http.formLogin(spec -> spec.disable());
+        http.logout(spec -> spec.disable());
+
+
+        http.authorizeExchange(spec ->
+                spec.pathMatchers(HttpMethod.GET, "/api/**").hasAnyAuthority(Authorities.SYSTEM.getAuthority(), Authorities.APPLICATION.getAuthority(), Authorities.CONTRIBUTOR.getAuthority(), Authorities.READER.getAuthority())
+                        .pathMatchers(HttpMethod.GET, "/api/**").hasAnyAuthority(Authorities.SYSTEM.getAuthority(), Authorities.APPLICATION.getAuthority(), Authorities.CONTRIBUTOR.getAuthority(), Authorities.READER.getAuthority())
+                        .pathMatchers(HttpMethod.HEAD, "/api/**").hasAnyAuthority(Authorities.SYSTEM.getAuthority(), Authorities.APPLICATION.getAuthority(), Authorities.CONTRIBUTOR.getAuthority(), Authorities.READER.getAuthority())
+                        .pathMatchers(HttpMethod.DELETE, "/api/**").hasAnyAuthority(Authorities.SYSTEM.getAuthority(), Authorities.APPLICATION.getAuthority(), Authorities.CONTRIBUTOR.getAuthority())
+                        .pathMatchers(HttpMethod.POST, "/api/**").hasAnyAuthority(Authorities.SYSTEM.getAuthority(), Authorities.APPLICATION.getAuthority(), Authorities.CONTRIBUTOR.getAuthority())
+                        .pathMatchers("/api/admin/**").hasAnyAuthority(Authorities.SYSTEM.getAuthority(), Authorities.APPLICATION.getAuthority())
+                        .pathMatchers(HttpMethod.GET, "/swagger-ui/*").permitAll()
+                        .pathMatchers(HttpMethod.GET, "/nav").permitAll()
+                        .matchers(EndpointRequest.to("env", "logfile", "loggers", "metrics", "scheduledTasks")).hasAuthority(Authorities.SYSTEM.getAuthority())
+                        .matchers(EndpointRequest.to("health", "info")).permitAll()
+                        .anyExchange().permitAll()
+        );
+
+
 
 
 
         log.info("Security is enabled and was configured to secure all requests.");
-        return build;
+        return http.build();
     }
 
+    @SuppressWarnings("Convert2MethodRef")
     @Bean
     @ConditionalOnProperty(name = "application.security.enabled", havingValue = "false")
-    public SecurityWebFilterChain unsecureWebFilterChain(ServerHttpSecurity http, List<ReactiveAuthenticationManager> authenticationManager, ServerAuthenticationConverter authenticationConverter) {
+    public SecurityWebFilterChain unsecureWebFilterChain(ServerHttpSecurity http, List<ReactiveAuthenticationManager> authenticationManager, ServerAuthenticationConverter authenticationConverter, List<PreAuthenticationWebFilter> preFilterList) {
         final ReactiveAuthenticationManager authenticationManagers = new ChainingAuthenticationManager(authenticationManager);
         final AuthenticationWebFilter authenticationWebFilter = new AuthenticationWebFilter(authenticationManagers);
         authenticationWebFilter.setServerAuthenticationConverter(authenticationConverter);
 
-        SecurityWebFilterChain build = http
-                .addFilterAt(authenticationWebFilter, SecurityWebFiltersOrder.AUTHENTICATION)
-                .authorizeExchange()
-                .anyExchange().permitAll()
-                .and()
-                .httpBasic().disable()
-                .csrf().disable()
-                .formLogin().disable()
-                .logout().disable()
-                .build();
+
+        preFilterList.forEach(preFilter -> http.addFilterBefore(preFilter, SecurityWebFiltersOrder.AUTHENTICATION));
+        http.addFilterAt(authenticationWebFilter, SecurityWebFiltersOrder.AUTHENTICATION);
+        http.authorizeExchange(spec -> spec.anyExchange().permitAll());
+        http.httpBasic(spec -> spec.disable());
+        http.csrf(spec -> spec.disable());
+        http.formLogin(spec -> spec.disable());
+        http.logout(spec -> spec.disable());
+
 
         log.info("Security is disabled.");
-        return build;
+        return http.build();
     }
-
 
 
     @Bean
@@ -105,6 +111,7 @@ public class SecurityConfiguration {
             return Mono.just(new GuestToken(details));
         };
     }
+
     @Bean
     @ConditionalOnProperty(name = "application.security.enabled", havingValue = "true")
     ServerAuthenticationConverter buildAuthenticationConverter() {
@@ -114,13 +121,13 @@ public class SecurityConfiguration {
             List<String> apiKeys = exchange.getRequest().getHeaders().get(API_KEY_HEADER);
             if (apiKeys == null || apiKeys.size() == 0) {
 
-                if(exchange.getRequest().getPath().value().startsWith("/api")) {
+                if (exchange.getRequest().getPath().value().startsWith("/api")) {
                     log.trace("API Request to path '{}' without an API Key Header", exchange.getRequest().getPath().value());
                     AnonymousAuthenticationToken anonymous = new GuestToken(details);
                     return Mono.just(anonymous);
                 }
 
-                if(exchange.getRequest().getPath().value().startsWith("/actuator")) {
+                if (exchange.getRequest().getPath().value().startsWith("/actuator")) {
                     log.trace("API Request to path '{}' without an API Key Header", exchange.getRequest().getPath().value());
                     // lets fallback to the standard authentication (basic) (for actuators and others)
                     ServerHttpBasicAuthenticationConverter basicAuthenticationConverter = new ServerHttpBasicAuthenticationConverter();
@@ -128,9 +135,7 @@ public class SecurityConfiguration {
                         ((UsernamePasswordAuthenticationToken) authentication).setDetails(details);
                         return authentication;
                     });
-                }
-
-                else {
+                } else {
                     return Mono.just(new GuestToken(details));
                 }
             } else {

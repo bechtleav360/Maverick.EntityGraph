@@ -43,7 +43,7 @@ public class ScopedScheduledExportApplication implements ApplicationListener<App
 
 
                     Runnable task = () -> {
-                        JobScheduledEvent event = new ApplicationJobScheduledEvent("exportApplication", new AdminToken(), application);
+                        JobScheduledEvent event = new ApplicationJobScheduledEvent("exportApplication", new AdminToken(), application.label());
                         System.out.println("Exporting application: " + application.label());
                         eventPublisher.publishEvent(event);
                     };
@@ -67,7 +67,7 @@ public class ScopedScheduledExportApplication implements ApplicationListener<App
 //                .subscribe(newApplication -> {
         if (!event.getApplication().configuration().containsKey(CONFIG_KEY_EXPORT_FREQUENCY)) return;
         Runnable task = () -> {
-            JobScheduledEvent jobEvent = new ApplicationJobScheduledEvent("exportApplication", new AdminToken(), event.getApplication());
+            JobScheduledEvent jobEvent = new ApplicationJobScheduledEvent("exportApplication", new AdminToken(), event.getApplication().label());
             eventPublisher.publishEvent(jobEvent);
         };
         ScheduledFuture<?> scheduledFuture = taskScheduler.schedule(task, new CronTrigger(event.getApplication().configuration().get(CONFIG_KEY_EXPORT_FREQUENCY).toString()));

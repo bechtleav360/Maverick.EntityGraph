@@ -54,7 +54,7 @@ public class ScopedScheduledReplaceLinkedIdentifiers implements ApplicationListe
         applicationsService.listApplications(new AdminToken())
                 .doOnNext(application -> {
                     Runnable task = () -> {
-                        JobScheduledEvent event = new ApplicationJobScheduledEvent("replaceLinkedIdentifiers", new AdminToken(), application);
+                        JobScheduledEvent event = new ApplicationJobScheduledEvent("replaceLinkedIdentifiers", new AdminToken(), application.label());
                         eventPublisher.publishEvent(event);
                     };
                     ScheduledFuture<?> scheduledFuture = taskScheduler.schedule(task, new CronTrigger(application.configuration().get(CONFIG_KEY_REPLACE_IDENTIFIERS_FREQUENCY).toString()));
@@ -66,7 +66,7 @@ public class ScopedScheduledReplaceLinkedIdentifiers implements ApplicationListe
 //        applicationsService.getApplication(event.getApplication(), new AdminToken())
 //                .subscribe(newApplication -> {
                     Runnable task = () -> {
-                        JobScheduledEvent jobEvent = new ApplicationJobScheduledEvent("replaceLinkedIdentifiers", new AdminToken(), event.getApplication());
+                        JobScheduledEvent jobEvent = new ApplicationJobScheduledEvent("replaceLinkedIdentifiers", new AdminToken(), event.getApplication().label());
                         eventPublisher.publishEvent(jobEvent);
                     };
                     ScheduledFuture<?> scheduledFuture = taskScheduler.schedule(task, new CronTrigger(event.getApplication().configuration().get(CONFIG_KEY_REPLACE_IDENTIFIERS_FREQUENCY).toString()));

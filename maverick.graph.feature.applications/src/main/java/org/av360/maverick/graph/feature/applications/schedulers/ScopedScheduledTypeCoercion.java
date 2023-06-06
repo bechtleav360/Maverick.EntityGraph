@@ -11,12 +11,10 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ApplicationListener;
 import org.springframework.scheduling.TaskScheduler;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.scheduling.support.CronTrigger;
 import org.springframework.stereotype.Component;
 
 import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
 
 /**
  * @see Sch
@@ -41,7 +39,7 @@ public class ScopedScheduledTypeCoercion implements ApplicationListener<Applicat
         applicationsService.listApplications(new AdminToken())
                 .doOnNext(application -> {
                     Runnable task = () -> {
-                        JobScheduledEvent event = new ApplicationJobScheduledEvent("typeCoercion", new AdminToken(), application);
+                        JobScheduledEvent event = new ApplicationJobScheduledEvent("typeCoercion", new AdminToken(), application.label());
                         eventPublisher.publishEvent(event);
                     };
                     ScheduledFuture<?> scheduledFuture = taskScheduler.schedule(task, new CronTrigger(application.configuration().get(CONFIG_KEY_ASSIGN_INTERNAL_TYPES_FREQUENCY).toString()));
@@ -53,7 +51,7 @@ public class ScopedScheduledTypeCoercion implements ApplicationListener<Applicat
 //        applicationsService.getApplication(event.getApplication(), new AdminToken())
 //                .subscribe(newApplication -> {
                     Runnable task = () -> {
-                        JobScheduledEvent jobEvent = new ApplicationJobScheduledEvent("typeCoercion", new AdminToken(), event.getApplication());
+                        JobScheduledEvent jobEvent = new ApplicationJobScheduledEvent("typeCoercion", new AdminToken(), event.getApplication().label());
                         eventPublisher.publishEvent(jobEvent);
                     };
                     ScheduledFuture<?> scheduledFuture = taskScheduler.schedule(task, new CronTrigger(event.getApplication().configuration().get(CONFIG_KEY_ASSIGN_INTERNAL_TYPES_FREQUENCY).toString()));
