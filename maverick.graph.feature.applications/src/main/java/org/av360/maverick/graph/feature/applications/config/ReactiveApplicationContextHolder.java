@@ -10,13 +10,14 @@ public class ReactiveApplicationContextHolder {
 
     public record ApplicationLabel(String label) {}
 
-    public static final Class<String> CONTEXT_LABEL_KEY = String.class;
+    public static final String CONTEXT_LABEL_KEY = "application.label";
 
 
     public static Mono<String> getRequestedApplicationLabel() {
         return Mono.deferContextual(Mono::just)
                 .filter(ctx -> ctx.hasKey(CONTEXT_LABEL_KEY))
-                .map(ctx -> ctx.get(CONTEXT_LABEL_KEY))
+                .map(ctx -> ctx.get(CONTEXT_LABEL_KEY).toString())
+                .map(label -> label)
                 .switchIfEmpty(Mono.empty())
                 .doOnError(error -> log.error("Failed to read application label from context due to error: {}", error.getMessage()));
 

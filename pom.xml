@@ -36,7 +36,7 @@
 
     <description>Provides access to the graph through json-ld api</description>
     <properties>
-        <revision>0.2.7</revision>
+        <revision>0.2.7.1</revision>
         <maven.compiler.source>${java.version}</maven.compiler.source>
         <maven.compiler.target>${java.version}</maven.compiler.target>
         <java.version>17</java.version>
