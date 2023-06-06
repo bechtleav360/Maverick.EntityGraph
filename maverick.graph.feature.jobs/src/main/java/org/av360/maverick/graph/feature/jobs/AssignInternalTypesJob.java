@@ -11,6 +11,7 @@ import org.av360.maverick.graph.services.QueryServices;
 import org.av360.maverick.graph.services.transformers.types.AssignLocalTypes;
 import org.av360.maverick.graph.store.TransactionsStore;
 import org.av360.maverick.graph.store.rdf.fragments.RdfTransaction;
+import org.av360.maverick.graph.store.rdf.helpers.MergingModelCollector;
 import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Value;
@@ -68,11 +69,12 @@ public class AssignInternalTypesJob implements Job {
         if(Objects.isNull(this.localTypesTransformer)) return Mono.error(new InvalidConfiguration("Type Coercion Transformer is disabled"));
 
 
+
         return this.findCandidates(authentication)
                 .doOnNext(res -> log.trace("Convert type of resource with id '{}'", res.stringValue()))
                 .flatMap(res -> this.loadFragment(authentication, res))
-                .flatMap(localTypesTransformer::getStatements)
-                .collect(new ModelCollector())
+                .flatMap(localTypesTransformer::handle)
+                .collect(new MergingModelCollector())
                 .doOnNext(model -> log.trace("Collected {} statements for new types", model.size()))
                 .flatMap(model -> this.entityServices.getStore().insert(model, new RdfTransaction()))
                 .flatMapMany(trx -> this.entityServices.getStore().commit(trx, authentication))

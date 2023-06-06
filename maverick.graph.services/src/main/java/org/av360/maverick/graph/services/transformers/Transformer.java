@@ -12,6 +12,10 @@ public interface Transformer {
 
     Mono<? extends Model> handle(Model model, Map<String, String> parameters);
 
+    default Mono<? extends Model> handle(Model model) {
+        return this.handle(model, Map.of());
+    }
+
 
     default void registerEntityService(EntityServices entityServices) {}
 

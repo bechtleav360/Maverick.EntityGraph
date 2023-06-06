@@ -10,7 +10,7 @@ import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.repository.util.AbstractRDFInserter;
 
 public class TriplesCollector extends AbstractRDFInserter {
-    private final TripleBag model;
+    private final Triples model;
 
     public TriplesCollector() {
         super(SimpleValueFactory.getInstance());
@@ -24,12 +24,12 @@ public class TriplesCollector extends AbstractRDFInserter {
 
     @Override
     protected void addNamespace(String prefix, String name) throws RDF4JException {
-        this.model.getBuilder().setNamespace(prefix, name);
+        this.model.getModel().setNamespace(prefix, name);
     }
 
     @Override
     protected void addStatement(Resource subj, IRI pred, Value obj, Resource ctxt) throws RDF4JException {
-        this.model.getBuilder().add(subj, pred, obj);
+        this.model.getModel().add(subj, pred, obj);
 
     }
 }

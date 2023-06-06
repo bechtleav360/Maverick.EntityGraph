@@ -51,16 +51,7 @@ public class AssignLocalTypes implements Transformer {
                 .doFinally(signalType -> log.trace("Finished checks for internal types."));
     }
 
-    public Flux<Statement> getStatements(Model model) {
-        return Flux.create(sink -> {
-            model.subjects().forEach(subj -> {
-                this.handleIndividual(subj, model).ifPresent(sink::next);
-                this.handleClassifier(subj, model).ifPresent(sink::next);
-                this.handleEmbedded(subj, model).ifPresent(sink::next);
-            });
-            sink.complete();
-        });
-    }
+
 
     private boolean assignEmbedded(Resource subject, Model fragment, Model model) {
         Optional<Statement> statement = this.handleEmbedded(subject, fragment);
@@ -73,16 +64,17 @@ public class AssignLocalTypes implements Transformer {
         return statement.map(model::add).isEmpty();
     }
 
+    private boolean assignShared(Resource subject, Model fragment, Model model) {
+        Optional<Statement> statement = this.handleClassifier(subject, fragment);
+        return statement.map(model::add).isEmpty();
+    }
+
     private Optional<Statement> handleEmbedded(Resource subject, Model fragment) {
 
         // only check if it has a type definition
-        Optional<IRI> type = StreamSupport.stream(fragment.getStatements(subject, RDF.TYPE, null).spliterator(), true)
-                .map(Statement::getObject)
-                .filter(Value::isIRI)
-                .map(value -> (IRI) value)
-                .findFirst();
+        boolean hasTypeDefinition = hasTypeDefinition(subject, fragment);
 
-        if (type.isPresent()) {
+        if (hasTypeDefinition) {
             Statement statement = valueFactory.createStatement(subject, RDF.TYPE, Local.Entities.TYPE_EMBEDDED);
             log.trace("Fragment for subject '{}' typed as Embedded.", subject);
             return Optional.of(statement);
@@ -90,30 +82,20 @@ public class AssignLocalTypes implements Transformer {
 
     }
 
+
+
     private Optional<Statement> handleIndividual(Resource subject, Model fragment) {
 
-        // Check one: check if this fragment has a type definition known to be an individual
-        Optional<IRI> individualsType = StreamSupport.stream(fragment.getStatements(subject, RDF.TYPE, null).spliterator(), true)
-                .map(Statement::getObject)
-                .filter(Value::isIRI)
-                .map(value -> (IRI) value)
-                .filter(this.schemaServices::isIndividualType)
-                .findFirst();
+        // Check 1: check if this fragment has a type definition known to be an individual
+        boolean hasIndividualsType = hasIndividualsType(subject, fragment);
 
-        // Check two: check if this fragment has at least one known characteristic property
-        Optional<IRI> characteristicProperty = individualsType.isPresent() ? Optional.empty() :
-                StreamSupport.stream(fragment.getStatements(subject, null, null).spliterator(), true)
-                        .map(Statement::getPredicate)
-                        .filter(Value::isIRI)
-                        .map(value -> (IRI) value)
-                        .filter(this.schemaServices::isIndividualType)
-                        .findFirst();
+        // Check 2: check if this fragment has at least one known characteristic y (but is not a classifier)
+        boolean hasCharacteristicProperty = hasIndividualsType || (hasCharacteristicProperty(subject, fragment) && ! hasClassifierType(subject, fragment));
 
         // Check three: check if this fragment has a property matching a specific pattern (denoting a characteristic property)
-        Optional<IRI> named = (individualsType.isPresent() || characteristicProperty.isPresent()) ? Optional.empty() :
-                fragment.predicates().stream().filter(iri -> iri.getLocalName().matches("(?i).*(name|title|label|id|key|code).*")).findFirst();
+        boolean hasNamingProperty = (hasIndividualsType || hasCharacteristicProperty) || (hasPropertyMatchingPattern(fragment) && ! hasClassifierType(subject, fragment));
 
-        if (individualsType.isPresent() || characteristicProperty.isPresent() || named.isPresent()) {
+        if (hasIndividualsType || hasCharacteristicProperty || hasNamingProperty) {
             Statement statement = valueFactory.createStatement(subject, RDF.TYPE, Local.Entities.TYPE_INDIVIDUAL);
             log.trace("Fragment for subject '{}' typed as Individual.", subject);
             return Optional.of(statement);
@@ -122,26 +104,55 @@ public class AssignLocalTypes implements Transformer {
         }
     }
 
-    private boolean assignShared(Resource subject, Model fragment, Model model) {
-        Optional<Statement> statement = this.handleClassifier(subject, fragment);
-        return statement.map(model::add).isEmpty();
-    }
-
     private Optional<Statement> handleClassifier(Resource subject, Model fragment) {
         // Check one: check if this fragment has a type definition known to be a classifier
-        Optional<IRI> individualsType = StreamSupport.stream(fragment.getStatements(subject, RDF.TYPE, null).spliterator(), true)
-                .map(Statement::getObject)
-                .filter(Value::isIRI)
-                .map(value -> (IRI) value)
-                .filter(this.schemaServices::isClassifierType)
-                .findFirst();
+        boolean hasClassifierType = this.hasClassifierType(subject, fragment);
 
-        if (individualsType.isPresent()) {
+        if (hasClassifierType) {
             Statement statement = valueFactory.createStatement(subject, RDF.TYPE, Local.Entities.TYPE_CLASSIFIER);
             log.trace("Fragment for subject {} typed as Classifier.", subject);
             return Optional.of(statement);
         } else return Optional.empty();
     }
+
+    private boolean hasPropertyMatchingPattern(Model fragment) {
+        return fragment.predicates().stream().anyMatch(iri -> iri.getLocalName().matches("(?i).*(name|title|label|id|key|code).*"));
+    }
+
+    private boolean hasClassifierType(Resource subject, Model fragment) {
+        return StreamSupport.stream(fragment.getStatements(subject, RDF.TYPE, null).spliterator(), true)
+                .map(Statement::getObject)
+                .filter(Value::isIRI)
+                .map(value -> (IRI) value)
+                .anyMatch(this.schemaServices::isClassifierType);
+    }
+
+    private boolean hasTypeDefinition(Resource subject, Model fragment) {
+        return StreamSupport.stream(fragment.getStatements(subject, RDF.TYPE, null).spliterator(), true)
+                .map(Statement::getObject)
+                .filter(Value::isIRI)
+                .map(value -> (IRI) value)
+                .findFirst()
+                .isPresent();
+    }
+
+    private boolean hasIndividualsType(Resource subject, Model fragment) {
+        return StreamSupport.stream(fragment.getStatements(subject, RDF.TYPE, null).spliterator(), true)
+                .map(Statement::getObject)
+                .filter(Value::isIRI)
+                .map(value -> (IRI) value)
+                .anyMatch(this.schemaServices::isIndividualType);
+    }
+
+    private boolean hasCharacteristicProperty(Resource subject, Model fragment) {
+        return StreamSupport.stream(fragment.getStatements(subject, null, null).spliterator(), true)
+                .map(Statement::getPredicate)
+                .filter(Value::isIRI)
+                .anyMatch(this.schemaServices::isCharacteristicProperty);
+    }
+
+
+
 
 
 }

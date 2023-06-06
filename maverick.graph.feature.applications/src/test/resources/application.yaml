@@ -13,11 +13,20 @@ application:
       enabled: false
   features:
     modules:
-      applications: true
-      admin: false
-    schedulers:
-      detectDuplicates: true
-      replaceGlobalIdentifiers: true
+      applications:
+        enabled: true
+      admin:
+        enabled: false
+      navigation:
+        enabled: false
+      objects:
+        enabled: false
+      jobs:
+        enabled: true
+        scheduled:
+          detectDuplicates: false
+          replaceIdentifiers: false
+          typeCoercion: false
     transformers:
       replaceGlobalIdentifiers: true
       replaceAnonymousIdentifiers: true

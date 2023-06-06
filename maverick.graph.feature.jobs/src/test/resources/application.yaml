@@ -1,6 +1,9 @@
-#spring:
-#  datasource:
-#    url: jdbc:h2:file:/data/demo
+spring:
+  profiles:
+    active: test
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.security.SecurityAutoConfiguration
 
 application:
   security:
@@ -10,14 +13,31 @@ application:
       enabled: false
   features:
     modules:
-      applications: false
-      admin: true
+      applications:
+        enabled: false
+      admin:
+        enabled: true
+      navigation:
+        enabled: false
+      objects:
+        enabled: false
       jobs:
         enabled: true
         scheduled:
-          detectDuplicates: false
-          replaceIdentifiers: false
-          typeCoercion: false
+          detectDuplicates:
+            enabled: true
+            defaultFrequency: "0 */5 * * * ?"
+          replaceIdentifiers:
+            enabled: true
+            defaultFrequency: "0 */5 * * * ?"
+          typeCoercion:
+            enabled: true
+            defaultFrequency: "0 */5 * * * ?"
+          exportApplication:
+            enabled: true
+            defaultFrequency: "0 */5 * * * ?"
+            defaultS3Host: "http://127.0.0.1:9000"
+            defaultS3BucketId: "test"
     transformers:
       replaceGlobalIdentifiers: true
       replaceAnonymousIdentifiers: true
@@ -36,23 +56,22 @@ application:
       persistent: false
       path: ~
 
-spring:
-  profiles:
-    active: test
-  autoconfigure:
-    exclude:
-      - org.springframework.boot.autoconfigure.security.SecurityAutoConfiguration
 
-storage:
-  default:
-    path: ""
 
 
 logging:
   level:
-    graph: TRACE
+    root: INFO
+    graph:
+      jobs: TRACE
+      repo: TRACE
+      srvc: TRACE
+      ctrl: TRACE
+      feat:
+        admin: TRACE
     org:
-      av360: TRACE
+      eclipse:
+        rdf4j: DEBUG
       springframework:
         security: INFO
 
