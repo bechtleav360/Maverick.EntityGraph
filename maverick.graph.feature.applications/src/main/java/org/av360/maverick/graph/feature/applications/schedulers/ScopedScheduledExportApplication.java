@@ -26,7 +26,6 @@ import java.util.concurrent.ScheduledFuture;
 @ConditionalOnProperty(name = "application.features.modules.jobs.scheduled.exportApplication.enabled", havingValue = "true")
 public class ScopedScheduledExportApplication {
     public static final String CONFIG_KEY_EXPORT_FREQUENCY = "export_frequency";
-
     public static final String CONFIG_KEY_EXPORT_LOCAL_PATH = "export_local_path";
     public static final String CONFIG_KEY_EXPORT_S3_HOST = "export_s3_host";
     public static final String CONFIG_KEY_EXPORT_S3_BUCKET = "export_s3_bucket";

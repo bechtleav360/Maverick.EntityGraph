@@ -117,7 +117,8 @@ public class ExportApplicationJob implements Job {
             Files.writeString(
                     Paths.get(
                             application.configuration().get(ScopedScheduledExportApplication.CONFIG_KEY_EXPORT_LOCAL_PATH).toString(),
-                            application.label() + ".txt"),
+                            application.label() + ".txt"
+                    ),
                     rdfString,
                     StandardCharsets.UTF_8);
             return null;
