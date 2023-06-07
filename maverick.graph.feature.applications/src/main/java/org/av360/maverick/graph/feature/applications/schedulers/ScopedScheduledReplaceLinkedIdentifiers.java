@@ -6,6 +6,8 @@ import org.av360.maverick.graph.feature.applications.domain.ApplicationsService;
 import org.av360.maverick.graph.feature.applications.domain.events.ApplicationCreatedEvent;
 import org.av360.maverick.graph.feature.applications.domain.events.ApplicationDeletedEvent;
 import org.av360.maverick.graph.feature.applications.domain.events.ApplicationJobScheduledEvent;
+import org.av360.maverick.graph.feature.applications.domain.events.ApplicationUpdatedEvent;
+import org.av360.maverick.graph.feature.applications.domain.model.Application;
 import org.av360.maverick.graph.model.events.JobScheduledEvent;
 import org.av360.maverick.graph.model.security.AdminToken;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -54,43 +56,49 @@ public class ScopedScheduledReplaceLinkedIdentifiers {
         this.taskScheduler = taskScheduler;
     }
 
+    private void _scheduleRunnableTask(Application application) {
+        if (!application.configuration().containsKey(CONFIG_KEY_REPLACE_IDENTIFIERS_FREQUENCY)) return;
+
+        Runnable task = () -> {
+            JobScheduledEvent event = new ApplicationJobScheduledEvent("replaceSubjectIdentifiers", new AdminToken(), application);
+            eventPublisher.publishEvent(event);
+        };
+
+        ScheduledFuture<?> scheduledFuture = taskScheduler.schedule(task, new CronTrigger(application.configuration().get(CONFIG_KEY_REPLACE_IDENTIFIERS_FREQUENCY).toString()));
+        scheduledTasks.put(application.label(), scheduledFuture);
+    }
+
+    private void _deleteScheduledTask(String applicationLabel, boolean mayInterruptIfRunning) {
+        ScheduledFuture<?> scheduledFuture = scheduledTasks.get(applicationLabel);
+        if (scheduledFuture != null) {
+            scheduledFuture.cancel(mayInterruptIfRunning);
+            scheduledTasks.remove(applicationLabel);
+        }
+    }
 
     @PostConstruct
     public void initializeScheduledJobs() {
-        applicationsService.listApplications(new AdminToken())
-                .doOnNext(application -> {
-                    if (!application.configuration().containsKey(CONFIG_KEY_REPLACE_IDENTIFIERS_FREQUENCY)) return;
-
-                    Runnable task = () -> {
-                        JobScheduledEvent event = new ApplicationJobScheduledEvent("replaceLinkedIdentifiers", new AdminToken(), application);
-                        eventPublisher.publishEvent(event);
-                    };
-                    ScheduledFuture<?> scheduledFuture = taskScheduler.schedule(task, new CronTrigger(application.configuration().get(CONFIG_KEY_REPLACE_IDENTIFIERS_FREQUENCY).toString()));
-                    scheduledTasks.put(application.label(), scheduledFuture);
-                }).subscribe();
+        applicationsService.listApplications(new AdminToken()).doOnNext(this::_scheduleRunnableTask).subscribe();
     }
 
     @EventListener
     public void handleApplicationCreated(ApplicationCreatedEvent event) {
 //        applicationsService.getApplication(event.getApplication(), new AdminToken())
 //                .subscribe(newApplication -> {
-                    if (!event.getApplication().configuration().containsKey(CONFIG_KEY_REPLACE_IDENTIFIERS_FREQUENCY)) return;
-
-                    Runnable task = () -> {
-                        JobScheduledEvent jobEvent = new ApplicationJobScheduledEvent("replaceLinkedIdentifiers", new AdminToken(), event.getApplication());
-                        eventPublisher.publishEvent(jobEvent);
-                    };
-                    ScheduledFuture<?> scheduledFuture = taskScheduler.schedule(task, new CronTrigger(event.getApplication().configuration().get(CONFIG_KEY_REPLACE_IDENTIFIERS_FREQUENCY).toString()));
-                    scheduledTasks.put(event.getApplication().label(), scheduledFuture);
+                        _scheduleRunnableTask(event.getApplication());
 //                });
     }
 
     @EventListener
+    public void handleApplicationUpdated(ApplicationUpdatedEvent event) {
+        _deleteScheduledTask(event.getApplication().label(), false);
+        _scheduleRunnableTask(event.getApplication());
+    }
+
+
+
+    @EventListener
     public void handleApplicationDeleted(ApplicationDeletedEvent event) {
-        ScheduledFuture<?> scheduledFuture = scheduledTasks.get(event.getApplicationLabel());
-        if (scheduledFuture != null) {
-            scheduledFuture.cancel(true);
-            scheduledTasks.remove(event.getApplicationLabel());
-        }
+        _deleteScheduledTask(event.getApplicationLabel(), true);
     }
 }
