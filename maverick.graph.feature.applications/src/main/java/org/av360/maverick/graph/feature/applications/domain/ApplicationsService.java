@@ -78,7 +78,7 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
      * @param authentication Current authentication information
      * @return New node as mono
      */
-    public Mono<Application> createApplication(String label, ApplicationFlags flags, Authentication authentication) {
+    public Mono<Application> createApplication(String label, ApplicationFlags flags, Map<String, Serializable> configuration, Authentication authentication) {
 
         LocalIdentifier subject = IdentifierServices.createRandomIdentifier(Local.Applications.NAMESPACE);
 
@@ -87,7 +87,7 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
                 label,
                 subject.getLocalName(),
                 flags,
-                Map.of()
+                configuration
         );
 
         // store node

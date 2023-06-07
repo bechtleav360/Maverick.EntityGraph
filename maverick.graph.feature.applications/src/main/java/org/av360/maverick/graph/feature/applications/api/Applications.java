@@ -50,7 +50,7 @@ public class Applications extends AbstractController {
         Assert.notNull(request.label(), "Label must be set in request");
 
         return super.getAuthentication()
-                .flatMap(authentication -> this.applicationsService.createApplication(request.label(), request.flags(), authentication))
+                .flatMap(authentication -> this.applicationsService.createApplication(request.label(), request.flags(), request.configuration(), authentication))
                 .map(application ->
                         new Responses.ApplicationResponse(
                                 application.key(),

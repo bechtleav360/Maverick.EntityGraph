@@ -4,7 +4,7 @@
 
 application:
   security:
-    enabled: false
+    enabled: true
     apiKey: "123"
     basic:
       enabled: false
