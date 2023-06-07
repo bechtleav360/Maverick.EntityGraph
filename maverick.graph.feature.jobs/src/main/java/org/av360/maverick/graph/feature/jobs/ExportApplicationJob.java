@@ -60,31 +60,23 @@ public class ExportApplicationJob implements Job {
     public Mono<Void> run(Authentication authentication) {
         return ReactiveApplicationContextHolder.getRequestedApplicationLabel()
                 .flatMap(label -> applicationsService.getApplicationByLabel(label, authentication))
+                .defaultIfEmpty(new Application(
+                        SimpleValueFactory.getInstance().createIRI(Local.Applications.NAMESPACE, "default"),
+                        Globals.DEFAULT_APPLICATION_LABEL,
+                        "default",
+                        new ApplicationFlags(true, true),
+                        Map.of(
+                                ScopedScheduledExportApplication.CONFIG_KEY_EXPORT_FREQUENCY, defaultExportFrequency,
+                                ScopedScheduledExportApplication.CONFIG_KEY_EXPORT_S3_BUCKET, defaultS3BucketId,
+                                ScopedScheduledExportApplication.CONFIG_KEY_EXPORT_S3_HOST, defaultS3Host
+                        )
+                ))
                 .flatMap(application -> {
                     S3AsyncClient s3Client = createS3Client(application.configuration().get(ScopedScheduledExportApplication.CONFIG_KEY_EXPORT_S3_HOST).toString());
                     return exportRdfStatements(authentication)
                             .flatMap(rdfString -> uploadRdfStringToS3(s3Client, rdfString, application)).then();
 
-                })
-                .switchIfEmpty(Mono.defer(() -> {
-                    Application defaultApplication =  new Application(
-                            SimpleValueFactory.getInstance().createIRI(Local.Applications.NAMESPACE, "default"),
-                            Globals.DEFAULT_APPLICATION_LABEL,
-                            "default",
-                            new ApplicationFlags(true, true),
-                            Map.of(
-                                    ScopedScheduledExportApplication.CONFIG_KEY_EXPORT_FREQUENCY, defaultExportFrequency,
-                                    ScopedScheduledExportApplication.CONFIG_KEY_EXPORT_S3_BUCKET, defaultS3BucketId,
-                                    ScopedScheduledExportApplication.CONFIG_KEY_EXPORT_S3_HOST, defaultS3Host
-                            )
-                    );
-
-
-                        S3AsyncClient s3Client = createS3Client(defaultApplication.configuration().get(ScopedScheduledExportApplication.CONFIG_KEY_EXPORT_S3_HOST).toString());
-                        return exportRdfStatements(authentication)
-                                .flatMap(rdfString -> uploadRdfStringToS3(s3Client, rdfString, defaultApplication)).then();
-
-                }));
+                });
     }
 
     private S3AsyncClient createS3Client(String s3Host) {
