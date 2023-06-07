@@ -75,6 +75,7 @@ public class ExportApplicationJob implements Job {
                         new ApplicationFlags(true, true),
                         Map.of(
                                 ScopedScheduledExportApplication.CONFIG_KEY_EXPORT_FREQUENCY, defaultExportFrequency,
+                                ScopedScheduledExportApplication.CONFIG_KEY_EXPORT_LOCAL_PATH, defaultLocalPath,
                                 ScopedScheduledExportApplication.CONFIG_KEY_EXPORT_S3_BUCKET, defaultS3BucketId,
                                 ScopedScheduledExportApplication.CONFIG_KEY_EXPORT_S3_HOST, defaultS3Host
                         )
@@ -82,7 +83,7 @@ public class ExportApplicationJob implements Job {
                 .flatMap(application -> {
                     if (defaultLocalPath != null && !defaultLocalPath.isEmpty()) {
                         return exportRdfStatements(authentication)
-                                .flatMap(rdfString -> saveRdfStringToLocalPath(rdfString, application.label())).then();
+                                .flatMap(rdfString -> saveRdfStringToLocalPath(rdfString, application)).then();
                     } else {
                         S3AsyncClient s3Client = createS3Client(application.configuration().get(ScopedScheduledExportApplication.CONFIG_KEY_EXPORT_S3_HOST).toString());
                         return exportRdfStatements(authentication)
@@ -111,9 +112,14 @@ public class ExportApplicationJob implements Job {
                 });
     }
 
-    private Mono<Void> saveRdfStringToLocalPath(String rdfString, String applicationLabel) {
+    private Mono<Void> saveRdfStringToLocalPath(String rdfString, Application application) {
         return Mono.fromCallable(() -> {
-            Files.writeString(Paths.get(defaultLocalPath, applicationLabel + ".txt"), rdfString, StandardCharsets.UTF_8);
+            Files.writeString(
+                    Paths.get(
+                            application.configuration().get(ScopedScheduledExportApplication.CONFIG_KEY_EXPORT_LOCAL_PATH).toString(),
+                            application.label() + ".txt"),
+                    rdfString,
+                    StandardCharsets.UTF_8);
             return null;
         }).subscribeOn(Schedulers.boundedElastic()).then();
     }
