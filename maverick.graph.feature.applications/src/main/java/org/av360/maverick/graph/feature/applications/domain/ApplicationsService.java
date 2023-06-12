@@ -37,6 +37,7 @@ import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import javax.annotation.Nullable;
 import java.io.Serializable;
 import java.util.Map;
 import java.util.Objects;
@@ -101,10 +102,7 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
         modelBuilder.add(ApplicationTerms.IS_PUBLIC, flags.isPublic());
 
         application.configuration().forEach((key, value) -> {
-            LocalIdentifier configNode = IdentifierServices.createRandomIdentifier(Local.Applications.NAMESPACE);
-            modelBuilder.add(configNode, ApplicationTerms.CONFIG_KEY, key);
-            modelBuilder.add(configNode, ApplicationTerms.CONFIG_VALUE, value);
-            modelBuilder.add(application.iri(), ApplicationTerms.HAS_CONFIGURATION, configNode);
+            this.buildConfigurationItem(key, value, application.iri(), modelBuilder);
         });
 
 
@@ -123,17 +121,24 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
 
     }
 
+    private ModelBuilder buildConfigurationItem(String configKey, Serializable configValue, IRI applicationIdentifier, @Nullable ModelBuilder builder) {
+        if(Objects.isNull(builder)) builder = new ModelBuilder();
+
+        LocalIdentifier configNode = IdentifierServices.createRandomIdentifier(Local.Applications.NAMESPACE);
+        builder.add(configNode, RDF.TYPE, ApplicationTerms.CONFIGURATION_ITEM);
+        builder.add(configNode, ApplicationTerms.CONFIG_KEY, configKey);
+        builder.add(configNode, ApplicationTerms.CONFIG_VALUE, configValue.toString());
+        builder.add(configNode, ApplicationTerms.CONFIG_FOR, applicationIdentifier);
+
+        return builder;
+    }
+
     public Mono<Application> createConfigurationItem(Application application, String configKey, Serializable configValue, Authentication authentication) {
         this.assertUpdatePrivilege(application, authentication);
 
-        ModelBuilder modelBuilder = new ModelBuilder();
-        LocalIdentifier configNode = IdentifierServices.createRandomIdentifier(Local.Applications.NAMESPACE);
-        modelBuilder.add(configNode, RDF.TYPE, ApplicationTerms.CONFIGURATION_ITEM);
-        modelBuilder.add(configNode, ApplicationTerms.CONFIG_KEY, configKey);
-        modelBuilder.add(configNode, ApplicationTerms.CONFIG_VALUE, configValue);
-        modelBuilder.add(configNode, ApplicationTerms.CONFIG_FOR, application.iri());
+        ModelBuilder m = this.buildConfigurationItem(configKey, configValue, application.iri(), null);
 
-        return this.applicationsStore.insert(modelBuilder.build(), authentication, Authorities.CONTRIBUTOR)
+        return this.applicationsStore.insert(m.build(), authentication, Authorities.CONTRIBUTOR)
                 .then(this.getApplication(application.key(), authentication))
                 .doOnSuccess(app -> {
                     this.eventPublisher.publishEvent(new ApplicationUpdatedEvent(app));
