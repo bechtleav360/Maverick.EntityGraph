@@ -37,6 +37,7 @@ import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import javax.annotation.Nullable;
 import java.io.Serializable;
 import java.util.Map;
 import java.util.Objects;
@@ -78,7 +79,7 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
      * @param authentication Current authentication information
      * @return New node as mono
      */
-    public Mono<Application> createApplication(String label, ApplicationFlags flags, Authentication authentication) {
+    public Mono<Application> createApplication(String label, ApplicationFlags flags, Map<String, Serializable> configuration, Authentication authentication) {
 
         LocalIdentifier subject = IdentifierServices.createRandomIdentifier(Local.Applications.NAMESPACE);
 
@@ -87,7 +88,7 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
                 label,
                 subject.getLocalName(),
                 flags,
-                Map.of()
+                configuration
         );
 
         // store node
@@ -101,10 +102,7 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
         modelBuilder.add(ApplicationTerms.IS_PUBLIC, flags.isPublic());
 
         application.configuration().forEach((key, value) -> {
-            LocalIdentifier configNode = IdentifierServices.createRandomIdentifier(Local.Applications.NAMESPACE);
-            modelBuilder.add(configNode, ApplicationTerms.CONFIG_KEY, key);
-            modelBuilder.add(configNode, ApplicationTerms.CONFIG_VALUE, value);
-            modelBuilder.add(application.iri(), ApplicationTerms.HAS_CONFIGURATION, configNode);
+            this.buildConfigurationItem(key, value, application.iri(), modelBuilder);
         });
 
 
@@ -123,17 +121,24 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
 
     }
 
+    private ModelBuilder buildConfigurationItem(String configKey, Serializable configValue, IRI applicationIdentifier, @Nullable ModelBuilder builder) {
+        if(Objects.isNull(builder)) builder = new ModelBuilder();
+
+        LocalIdentifier configNode = IdentifierServices.createRandomIdentifier(Local.Applications.NAMESPACE);
+        builder.add(configNode, RDF.TYPE, ApplicationTerms.CONFIGURATION_ITEM);
+        builder.add(configNode, ApplicationTerms.CONFIG_KEY, configKey);
+        builder.add(configNode, ApplicationTerms.CONFIG_VALUE, configValue.toString());
+        builder.add(configNode, ApplicationTerms.CONFIG_FOR, applicationIdentifier);
+
+        return builder;
+    }
+
     public Mono<Application> createConfigurationItem(Application application, String configKey, Serializable configValue, Authentication authentication) {
         this.assertUpdatePrivilege(application, authentication);
 
-        ModelBuilder modelBuilder = new ModelBuilder();
-        LocalIdentifier configNode = IdentifierServices.createRandomIdentifier(Local.Applications.NAMESPACE);
-        modelBuilder.add(configNode, RDF.TYPE, ApplicationTerms.CONFIGURATION_ITEM);
-        modelBuilder.add(configNode, ApplicationTerms.CONFIG_KEY, configKey);
-        modelBuilder.add(configNode, ApplicationTerms.CONFIG_VALUE, configValue);
-        modelBuilder.add(configNode, ApplicationTerms.CONFIG_FOR, application.iri());
+        ModelBuilder m = this.buildConfigurationItem(configKey, configValue, application.iri(), null);
 
-        return this.applicationsStore.insert(modelBuilder.build(), authentication, Authorities.CONTRIBUTOR)
+        return this.applicationsStore.insert(m.build(), authentication, Authorities.CONTRIBUTOR)
                 .then(this.getApplication(application.key(), authentication))
                 .doOnSuccess(app -> {
                     this.eventPublisher.publishEvent(new ApplicationUpdatedEvent(app));
@@ -151,7 +156,7 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
                         .andHas(ApplicationTerms.CONFIG_VALUE, QueryVariables.varConfigValue)
                         .and(QueryVariables.varNodeConfigurationItem.has(ApplicationTerms.CONFIG_FOR, application.iri()))
                 );
-        Flux<IRI> nodesToDelete = this.applicationsStore.query(listConfigurationItemsQuery, authentication, Authorities.SYSTEM)
+        Flux<IRI> nodesToDelete = this.applicationsStore.query(listConfigurationItemsQuery, authentication, Authorities.APPLICATION)
                 .map(BindingsAccessor::new)
                 .map(ba -> ba.findValue(QueryVariables.varNodeConfigurationItem))
                 .filter(Optional::isPresent)
@@ -159,7 +164,7 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
                 .map(opt -> (IRI) opt.get());
         return nodesToDelete.flatMap(configNode -> this.applicationsStore.listStatements(configNode, null, null, authentication, Authorities.SYSTEM))
                 .map(LinkedHashModel::new)
-                .flatMap(model -> this.applicationsStore.delete(model, authentication, Authorities.SYSTEM))
+                .flatMap(model -> this.applicationsStore.delete(model, authentication, Authorities.APPLICATION))
                 .collectList()
                 .then()
                 .doOnSuccess(res -> {
@@ -187,17 +192,19 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
     public Mono<Void> delete(Application application, Authentication auth) {
         assertUpdatePrivilege(application, auth);
 
-        return Mono.zip(
-                        this.listConfigurationItems(application, auth).flatMap(configurationItem -> this.deleteConfigurationItem(application, configurationItem.key(), auth)).collectList().then(),
-                        this.applicationsStore.listStatements(application.iri(), null, null, auth, Authorities.READER)
-                                .map(LinkedHashModel::new)
-                                .flatMap(model -> this.applicationsStore.delete(model, auth, Authorities.APPLICATION))
-
-                ).then()
+        return this.listConfigurationItems(application, auth)
+                .flatMap(configurationItem -> this.deleteConfigurationItem(application, configurationItem.key(), auth)).collectList()
+                .doOnSuccess(suc -> log.trace("Deleted all configuration item statements for application with label '{}'", application.label()))
+                .then( this.applicationsStore.listStatements(application.iri(), null, null, auth, Authorities.READER))
+                .flatMap(statements -> this.applicationsStore.delete(statements, auth, Authorities.APPLICATION))
+                .doOnSuccess(suc -> log.trace("Deleted all application statements for application with label '{}'", application.label()))
+                .then()
                 .doOnSuccess(res -> {
                     this.eventPublisher.publishEvent(new ApplicationDeletedEvent(application.label()));
                     log.debug("Deleted application with label '{}'", application.label());
                 });
+
+
     }
 
     public Mono<Application> getApplication(String applicationKey, Authentication authentication) {

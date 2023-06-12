@@ -4,7 +4,7 @@
 
 application:
   security:
-    enabled: false
+    enabled: true
     apiKey: "123"
     basic:
       enabled: false
@@ -18,7 +18,7 @@ application:
       applications:
         enabled: true
       admin:
-        enabled: false
+        enabled: true
       jobs:
         enabled: false
         scheduled:
@@ -34,6 +34,7 @@ application:
           exportApplication:
             enabled: true
             defaultFrequency: "0 */5 * * * ?"
+            defaultLocalPath: "C:/Exports"
             defaultS3Host: "http://127.0.0.1:9000"
             defaultS3BucketId: "test"
       navigation:
@@ -69,8 +70,7 @@ logging:
       repo: TRACE
       srvc: TRACE
       ctrl: TRACE
-      feat:
-        admin: TRACE
+      feat: TRACE
     org:
       eclipse:
         rdf4j: DEBUG

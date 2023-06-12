@@ -180,7 +180,9 @@ public abstract class AbstractStore implements TripleStore, Statements, ModelUpd
                 Resource[] contexts = model.contexts().toArray(new Resource[0]);
                 connection.remove(model, contexts);
                 connection.commit();
+                getLogger().trace("Deleted {} statements from repository '{}'", model.size(), connection.getRepository());
             } catch (Exception e) {
+                getLogger().error("Error while deleting {} statements from repository '{}'", model.size(), connection.getRepository());
                 connection.rollback();
                 throw e;
             }

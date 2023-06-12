@@ -18,6 +18,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 import software.amazon.awssdk.core.async.AsyncRequestBody;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
@@ -27,6 +28,8 @@ import software.amazon.awssdk.services.s3.model.PutObjectResponse;
 import java.io.StringWriter;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.Map;
 
 @Service
@@ -37,14 +40,19 @@ public class ExportApplicationJob implements Job {
     private final EntityServices entityServices;
 
     private final ApplicationsService applicationsService;
+
+    @Value("${application.features.modules.jobs.scheduled.exportApplication.defaultExportFrequency:}")
+    private String defaultExportFrequency;
+
+    @Value("${application.features.modules.jobs.scheduled.exportApplication.defaultLocalPath:}")
+    private String defaultLocalPath;
+
     @Value("${application.features.modules.jobs.scheduled.exportApplication.defaultS3Host:}")
     private String defaultS3Host;
 
     @Value("${application.features.modules.jobs.scheduled.exportApplication.defaultS3BucketId:}")
     private String defaultS3BucketId;
 
-    @Value("${application.features.modules.jobs.scheduled.exportApplication.defaultExportFrequency:}")
-    private String defaultExportFrequency;
 
     public ExportApplicationJob(EntityServices service, ApplicationsService applicationsService) {
         this.entityServices = service;
@@ -60,31 +68,28 @@ public class ExportApplicationJob implements Job {
     public Mono<Void> run(Authentication authentication) {
         return ReactiveApplicationContextHolder.getRequestedApplicationLabel()
                 .flatMap(label -> applicationsService.getApplicationByLabel(label, authentication))
+                .defaultIfEmpty(new Application(
+                        SimpleValueFactory.getInstance().createIRI(Local.Applications.NAMESPACE, "default"),
+                        Globals.DEFAULT_APPLICATION_LABEL,
+                        "default",
+                        new ApplicationFlags(true, true),
+                        Map.of(
+                                ScopedScheduledExportApplication.CONFIG_KEY_EXPORT_FREQUENCY, defaultExportFrequency,
+                                ScopedScheduledExportApplication.CONFIG_KEY_EXPORT_LOCAL_PATH, defaultLocalPath,
+                                ScopedScheduledExportApplication.CONFIG_KEY_EXPORT_S3_BUCKET, defaultS3BucketId,
+                                ScopedScheduledExportApplication.CONFIG_KEY_EXPORT_S3_HOST, defaultS3Host
+                        )
+                ))
                 .flatMap(application -> {
-                    S3AsyncClient s3Client = createS3Client(application.configuration().get(ScopedScheduledExportApplication.CONFIG_KEY_EXPORT_S3_HOST).toString());
-                    return exportRdfStatements(authentication)
-                            .flatMap(rdfString -> uploadRdfStringToS3(s3Client, rdfString, application)).then();
-
-                })
-                .switchIfEmpty(Mono.defer(() -> {
-                    Application defaultApplication =  new Application(
-                            SimpleValueFactory.getInstance().createIRI(Local.Applications.NAMESPACE, "default"),
-                            Globals.DEFAULT_APPLICATION_LABEL,
-                            "default",
-                            new ApplicationFlags(true, true),
-                            Map.of(
-                                    ScopedScheduledExportApplication.CONFIG_KEY_EXPORT_FREQUENCY, defaultExportFrequency,
-                                    ScopedScheduledExportApplication.CONFIG_KEY_EXPORT_S3_BUCKET, defaultS3BucketId,
-                                    ScopedScheduledExportApplication.CONFIG_KEY_EXPORT_S3_HOST, defaultS3Host
-                            )
-                    );
-
-
-                        S3AsyncClient s3Client = createS3Client(defaultApplication.configuration().get(ScopedScheduledExportApplication.CONFIG_KEY_EXPORT_S3_HOST).toString());
+                    if (defaultLocalPath != null && !defaultLocalPath.isEmpty()) {
                         return exportRdfStatements(authentication)
-                                .flatMap(rdfString -> uploadRdfStringToS3(s3Client, rdfString, defaultApplication)).then();
-
-                }));
+                                .flatMap(rdfString -> saveRdfStringToLocalPath(rdfString, application)).then();
+                    } else {
+                        S3AsyncClient s3Client = createS3Client(application.configuration().get(ScopedScheduledExportApplication.CONFIG_KEY_EXPORT_S3_HOST).toString());
+                        return exportRdfStatements(authentication)
+                                .flatMap(rdfString -> uploadRdfStringToS3(s3Client, rdfString, application)).then();
+                    }
+                });
     }
 
     private S3AsyncClient createS3Client(String s3Host) {
@@ -105,6 +110,19 @@ public class ExportApplicationJob implements Job {
 
                     return stringWriter.toString();
                 });
+    }
+
+    private Mono<Void> saveRdfStringToLocalPath(String rdfString, Application application) {
+        return Mono.fromCallable(() -> {
+            Files.writeString(
+                    Paths.get(
+                            application.configuration().get(ScopedScheduledExportApplication.CONFIG_KEY_EXPORT_LOCAL_PATH).toString(),
+                            application.label() + ".txt"
+                    ),
+                    rdfString,
+                    StandardCharsets.UTF_8);
+            return null;
+        }).subscribeOn(Schedulers.boundedElastic()).then();
     }
 
     private Mono<PutObjectResponse> uploadRdfStringToS3(S3AsyncClient s3Client, String rdfString, Application application) {

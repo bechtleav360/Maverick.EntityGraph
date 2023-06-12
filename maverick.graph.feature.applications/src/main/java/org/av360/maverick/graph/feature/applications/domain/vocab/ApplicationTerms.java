@@ -23,9 +23,6 @@ public class ApplicationTerms {
     public static final IRI IS_PUBLIC = LocalIRI.from(NAMESPACE, "isPublic");
 
     public static final IRI HAS_CONFIGURATION = LocalIRI.from(NAMESPACE, "hasConfiguration");
-    public static final IRI HAS_S3HOST = LocalIRI.from(NAMESPACE, "HasS3Host");
-    public static final IRI HAS_S3BUCKETID = LocalIRI.from(NAMESPACE, "HasS3BucketId");
-    public static final IRI HAS_EXPORT_FREQUENCY = LocalIRI.from(NAMESPACE, "HasExportFrequency");
     public static final IRI CONFIG_KEY = LocalIRI.from(NAMESPACE, "key");
 
     public static final IRI CONFIG_VALUE = LocalIRI.from(NAMESPACE, "val");
