@@ -4,7 +4,7 @@ import org.av360.maverick.graph.feature.applications.decorators.DelegatingConten
 import org.av360.maverick.graph.feature.applications.decorators.DelegatingIdentifierServices;
 import org.av360.maverick.graph.feature.applications.decorators.DelegatingJobsService;
 import org.av360.maverick.graph.feature.applications.decorators.DelegatingNavigationServices;
-import org.av360.maverick.graph.feature.applications.domain.ApplicationsService;
+import org.av360.maverick.graph.feature.applications.services.ApplicationsService;
 import org.av360.maverick.graph.services.ContentLocationResolverService;
 import org.av360.maverick.graph.services.IdentifierServices;
 import org.av360.maverick.graph.services.JobSchedulingService;

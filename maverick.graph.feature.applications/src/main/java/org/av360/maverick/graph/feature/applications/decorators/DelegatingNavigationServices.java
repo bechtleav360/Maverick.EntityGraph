@@ -1,7 +1,7 @@
 package org.av360.maverick.graph.feature.applications.decorators;
 
-import org.av360.maverick.graph.feature.applications.domain.ApplicationsService;
-import org.av360.maverick.graph.feature.applications.domain.vocab.ApplicationTerms;
+import org.av360.maverick.graph.feature.applications.services.ApplicationsService;
+import org.av360.maverick.graph.feature.applications.services.vocab.ApplicationTerms;
 import org.av360.maverick.graph.model.rdf.AnnotatedStatement;
 import org.av360.maverick.graph.model.security.GuestToken;
 import org.av360.maverick.graph.model.vocabulary.Local;

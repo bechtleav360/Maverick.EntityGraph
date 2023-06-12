@@ -1,7 +1,7 @@
 package org.av360.maverick.graph.feature.applications.api.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
-import org.av360.maverick.graph.feature.applications.domain.model.ApplicationFlags;
+import org.av360.maverick.graph.feature.applications.services.model.ApplicationFlags;
 
 import java.io.Serializable;
 import java.util.Map;

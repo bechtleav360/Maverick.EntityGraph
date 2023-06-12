@@ -1,7 +1,7 @@
 package org.av360.maverick.graph.feature.applications.security;
 
-import org.av360.maverick.graph.feature.applications.domain.model.Application;
-import org.av360.maverick.graph.feature.applications.domain.model.Subscription;
+import org.av360.maverick.graph.feature.applications.services.model.Application;
+import org.av360.maverick.graph.feature.applications.services.model.Subscription;
 import org.av360.maverick.graph.model.security.AdminToken;
 import org.av360.maverick.graph.model.security.ApiKeyAuthenticationToken;
 

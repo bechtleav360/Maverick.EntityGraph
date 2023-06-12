@@ -72,6 +72,8 @@
             <artifactId>graph-store-rdf4j</artifactId>
             <scope>test</scope>
         </dependency>
+
+
         <dependency>
             <groupId>com.apicatalog</groupId>
             <artifactId>titanium-json-ld</artifactId>

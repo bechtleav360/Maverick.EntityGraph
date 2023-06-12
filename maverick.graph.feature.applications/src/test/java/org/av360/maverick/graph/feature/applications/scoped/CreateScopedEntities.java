@@ -2,7 +2,7 @@ package org.av360.maverick.graph.feature.applications.scoped;
 
 import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.feature.applications.client.ApplicationsTestClient;
-import org.av360.maverick.graph.feature.applications.domain.model.ApplicationFlags;
+import org.av360.maverick.graph.feature.applications.services.model.ApplicationFlags;
 import org.av360.maverick.graph.tests.clients.TestEntitiesClient;
 import org.av360.maverick.graph.tests.config.TestSecurityConfig;
 import org.av360.maverick.graph.tests.util.ApiTestsBase;

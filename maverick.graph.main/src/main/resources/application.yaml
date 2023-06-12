@@ -11,7 +11,7 @@ application:
   features:
     modules:
       objects:
-        enabled: false
+        enabled: true
         configuration:
           mode: local
           path: "/var/data/objects"

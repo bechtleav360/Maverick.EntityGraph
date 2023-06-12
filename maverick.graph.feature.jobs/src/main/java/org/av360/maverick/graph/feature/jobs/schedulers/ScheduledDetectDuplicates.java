@@ -1,7 +1,6 @@
 package org.av360.maverick.graph.feature.jobs.schedulers;
 
 
-import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.feature.jobs.MergeDuplicatesJob;
 import org.av360.maverick.graph.model.events.JobScheduledEvent;
@@ -10,8 +9,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
-
-import java.util.concurrent.TimeUnit;
 
 /**
  * Regular check for duplicates in the entity stores.

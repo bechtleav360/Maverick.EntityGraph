@@ -1,12 +1,12 @@
 package org.av360.maverick.graph.feature.applications.schedulers;
 
 import jakarta.annotation.PostConstruct;
-import org.av360.maverick.graph.feature.applications.domain.ApplicationsService;
-import org.av360.maverick.graph.feature.applications.domain.events.ApplicationCreatedEvent;
-import org.av360.maverick.graph.feature.applications.domain.events.ApplicationDeletedEvent;
-import org.av360.maverick.graph.feature.applications.domain.events.ApplicationJobScheduledEvent;
-import org.av360.maverick.graph.feature.applications.domain.events.ApplicationUpdatedEvent;
-import org.av360.maverick.graph.feature.applications.domain.model.Application;
+import org.av360.maverick.graph.feature.applications.services.ApplicationsService;
+import org.av360.maverick.graph.feature.applications.services.events.ApplicationCreatedEvent;
+import org.av360.maverick.graph.feature.applications.services.events.ApplicationDeletedEvent;
+import org.av360.maverick.graph.feature.applications.services.events.ApplicationJobScheduledEvent;
+import org.av360.maverick.graph.feature.applications.services.events.ApplicationUpdatedEvent;
+import org.av360.maverick.graph.feature.applications.services.model.Application;
 import org.av360.maverick.graph.model.events.JobScheduledEvent;
 import org.av360.maverick.graph.model.security.AdminToken;
 import org.springframework.beans.factory.annotation.Autowired;

@@ -1,9 +1,9 @@
 package org.av360.maverick.graph.tests.config;
 
 import lombok.extern.slf4j.Slf4j;
+import org.av360.maverick.graph.model.context.RequestDetails;
 import org.av360.maverick.graph.model.security.AdminToken;
 import org.av360.maverick.graph.model.security.Authorities;
-import org.av360.maverick.graph.model.security.RequestDetails;
 import org.av360.maverick.graph.model.util.PreAuthenticationWebFilter;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.test.context.TestConfiguration;

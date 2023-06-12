@@ -9,8 +9,6 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
-import java.util.concurrent.TimeUnit;
-
 /**
  * After the object identifiers have been replaced, this job is responsible to replace also the objects pointing to the
  * old object identifiers with the new identifiers. The latter are stored in a property.

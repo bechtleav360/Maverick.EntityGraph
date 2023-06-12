@@ -2,8 +2,8 @@ package org.av360.maverick.graph.feature.applications.decorators;
 
 import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.feature.applications.config.ReactiveApplicationContextHolder;
-import org.av360.maverick.graph.feature.applications.domain.ApplicationsService;
 import org.av360.maverick.graph.feature.applications.security.SubscriptionToken;
+import org.av360.maverick.graph.feature.applications.services.ApplicationsService;
 import org.av360.maverick.graph.model.enums.ConfigurationItemKeys;
 import org.av360.maverick.graph.model.errors.InsufficientPrivilegeException;
 import org.av360.maverick.graph.model.security.Authorities;

@@ -1,7 +1,7 @@
 package org.av360.maverick.graph.feature.applications.decorators;
 
 import org.av360.maverick.graph.feature.applications.config.ReactiveApplicationContextHolder;
-import org.av360.maverick.graph.feature.applications.domain.events.ApplicationJobScheduledEvent;
+import org.av360.maverick.graph.feature.applications.services.events.ApplicationJobScheduledEvent;
 import org.av360.maverick.graph.model.events.JobScheduledEvent;
 import org.av360.maverick.graph.services.JobSchedulingService;
 import org.springframework.security.core.Authentication;
