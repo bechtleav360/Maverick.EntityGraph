@@ -13,7 +13,6 @@ import org.av360.maverick.graph.model.events.JobScheduledEvent;
 import org.av360.maverick.graph.model.security.AdminToken;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.context.ApplicationListener;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.scheduling.support.CronTrigger;
@@ -79,7 +78,7 @@ public class ScopedScheduledDetectDuplicates  {
         if (!application.configuration().containsKey(CONFIG_KEY_DETECT_DUPLICATES_FREQUENCY)) return;
 
         Runnable task = () -> {
-            JobScheduledEvent jobEvent = new ApplicationJobScheduledEvent("detectDuplicates", new AdminToken(), application);
+            JobScheduledEvent jobEvent = new ApplicationJobScheduledEvent("detectDuplicates", new AdminToken(), application.label());
             eventPublisher.publishEvent(jobEvent);
         };
 

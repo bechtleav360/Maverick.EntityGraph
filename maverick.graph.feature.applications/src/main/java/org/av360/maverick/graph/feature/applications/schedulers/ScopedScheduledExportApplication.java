@@ -46,7 +46,7 @@ public class ScopedScheduledExportApplication {
         if (!application.configuration().containsKey(CONFIG_KEY_EXPORT_FREQUENCY)) return;
 
         Runnable task = () -> {
-            JobScheduledEvent event = new ApplicationJobScheduledEvent("exportApplication", new AdminToken(), application);
+            JobScheduledEvent event = new ApplicationJobScheduledEvent("exportApplication", new AdminToken(), application.label());
             eventPublisher.publishEvent(event);
         };
 
