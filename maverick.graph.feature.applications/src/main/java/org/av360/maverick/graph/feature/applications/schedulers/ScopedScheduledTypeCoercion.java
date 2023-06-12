@@ -12,17 +12,14 @@ import org.av360.maverick.graph.model.events.JobScheduledEvent;
 import org.av360.maverick.graph.model.security.AdminToken;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.context.ApplicationListener;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.TaskScheduler;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.scheduling.support.CronTrigger;
 import org.springframework.stereotype.Component;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
 
 /**
  * @see Sch
@@ -48,7 +45,7 @@ public class ScopedScheduledTypeCoercion {
         if (!application.configuration().containsKey(CONFIG_KEY_ASSIGN_INTERNAL_TYPES_FREQUENCY)) return;
 
         Runnable task = () -> {
-            JobScheduledEvent event = new ApplicationJobScheduledEvent("assignInternalTypes", new AdminToken(), application);
+            JobScheduledEvent event = new ApplicationJobScheduledEvent("assignInternalTypes", new AdminToken(), application.label());
             eventPublisher.publishEvent(event);
         };
 
