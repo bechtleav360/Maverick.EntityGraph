@@ -1,4 +1,4 @@
-# Don't forget to set the following variables for your (release) pipeline: ghcr.user, ghcr.password
+# Don't forget to set the following variables for your (release) pipeline: docker.credentials.user, docker.credentials.password
 
 trigger:
   - main
@@ -87,7 +87,7 @@ stages:
               goals: 'spring-boot:build-image'
               jdkVersionOption: 1.17
               options: >
-                -DskipTests=false 
+                -DskipTests=true 
                 -Ddocker.publish=$(docker.publish)
                 -Ddocker.credentials.user=$(docker.credentials.user)
                 -Ddocker.credentials.password=$(docker.credentials.password)

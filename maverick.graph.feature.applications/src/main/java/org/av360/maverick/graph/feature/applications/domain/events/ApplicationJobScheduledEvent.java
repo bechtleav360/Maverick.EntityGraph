@@ -1,28 +1,27 @@
 package org.av360.maverick.graph.feature.applications.domain.events;
 
 import org.av360.maverick.graph.feature.applications.config.ReactiveApplicationContextHolder;
-import org.av360.maverick.graph.feature.applications.domain.model.Application;
 import org.av360.maverick.graph.model.events.JobScheduledEvent;
 import org.springframework.security.core.Authentication;
 import reactor.util.context.Context;
 
 public class ApplicationJobScheduledEvent extends JobScheduledEvent {
-    private final Application requestedApplication;
+    private final String requestedApplicationLabel;
 
-    public ApplicationJobScheduledEvent(String label, Authentication authentication, Application requestedApplication) {
+    public ApplicationJobScheduledEvent(String label, Authentication authentication, String requestedApplicationLabel) {
         super(label, authentication);
-        this.requestedApplication = requestedApplication;
+        this.requestedApplicationLabel = requestedApplicationLabel;
     }
 
     @Override
     public Context buildContext(Context ctx) {
-        ctx = ctx.putAll(ReactiveApplicationContextHolder.withApplication(this.requestedApplication).readOnly());
+        ctx = ctx.putAll(ReactiveApplicationContextHolder.withApplicationLabel(requestedApplicationLabel).readOnly());
         return super.buildContext(ctx);
     }
 
     @Override
     public String getScope() {
-        return this.requestedApplication.label();
+        return requestedApplicationLabel;
     }
 
 }

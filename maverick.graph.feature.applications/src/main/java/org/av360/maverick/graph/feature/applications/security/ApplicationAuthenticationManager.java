@@ -94,7 +94,7 @@ public class ApplicationAuthenticationManager implements ReactiveAuthenticationM
         log.warn("Application label not found in thread context, verifying in request details within authentication.");
         if(authentication.getDetails() instanceof RequestDetails requestDetails) {
             try {
-                Optional<String> requestedApplication = RequestedApplicationFilter.getRequestedApplication(requestDetails.getPath(), requestDetails.getHeaders(), requestDetails.getParameter());
+                Optional<String> requestedApplication = RequestedApplicationFilter.getRequestedApplicationFromRequestDetails(requestDetails);
                 return requestedApplication.map(Mono::just).orElseGet(Mono::empty);
 
             } catch (IOException e) {
