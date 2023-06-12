@@ -89,7 +89,7 @@ public class Applications extends AbstractController {
                                 application.flags(),
                                 application.configuration()
                         )
-                ).doOnSubscribe(subscription -> log.info("Request to get node with id '{}'", applicationKey));
+                ).doOnSubscribe(subscription -> log.info("Request to get application with id '{}'", applicationKey));
     }
 
 
@@ -108,7 +108,7 @@ public class Applications extends AbstractController {
                                 application.configuration()
                         )
 
-                ).doOnSubscribe(subscription -> log.info("Request to get node with id '{}'", applicationKey));
+                ).doOnSubscribe(subscription -> log.info("Request to get configuration key '{}' for application with id '{}'", configurationKey, applicationKey));
     }
 
     @DeleteMapping(value = "/{applicationKey}/configuration/{configurationKey}")
@@ -119,18 +119,17 @@ public class Applications extends AbstractController {
                         this.applicationsService.getApplication(applicationKey, auth)
                                 .flatMap(application -> this.applicationsService.deleteConfigurationItem(application, configurationKey, auth)))
                 .then(this.getApplication(applicationKey))
-                .doOnSubscribe(subscription -> log.info("Request to get node with id '{}'", applicationKey));
+                .doOnSubscribe(subscription -> log.info("Request to delete configuration key '{}' for application with id '{}'", configurationKey, applicationKey));
     }
 
     @DeleteMapping(value = "/{applicationKey}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    Mono<Responses.ApplicationResponse> deleteApplication(@PathVariable String applicationKey) {
+    Mono<Void> deleteApplication(@PathVariable String applicationKey) {
         return super.getAuthentication()
                 .flatMap(auth ->
                         this.applicationsService.getApplication(applicationKey, auth)
                                 .flatMap(application -> this.applicationsService.delete(application, auth)))
-                .then(this.getApplication(applicationKey))
-                .doOnSubscribe(subscription -> log.info("Request to get node with id '{}'", applicationKey));
+                .doOnSubscribe(subscription -> log.info("Request to delete application with id '{}'", applicationKey));
     }
 
 

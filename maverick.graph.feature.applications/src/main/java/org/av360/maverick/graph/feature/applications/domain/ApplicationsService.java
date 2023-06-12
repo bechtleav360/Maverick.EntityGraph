@@ -156,7 +156,7 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
                         .andHas(ApplicationTerms.CONFIG_VALUE, QueryVariables.varConfigValue)
                         .and(QueryVariables.varNodeConfigurationItem.has(ApplicationTerms.CONFIG_FOR, application.iri()))
                 );
-        Flux<IRI> nodesToDelete = this.applicationsStore.query(listConfigurationItemsQuery, authentication, Authorities.SYSTEM)
+        Flux<IRI> nodesToDelete = this.applicationsStore.query(listConfigurationItemsQuery, authentication, Authorities.APPLICATION)
                 .map(BindingsAccessor::new)
                 .map(ba -> ba.findValue(QueryVariables.varNodeConfigurationItem))
                 .filter(Optional::isPresent)
@@ -164,7 +164,7 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
                 .map(opt -> (IRI) opt.get());
         return nodesToDelete.flatMap(configNode -> this.applicationsStore.listStatements(configNode, null, null, authentication, Authorities.SYSTEM))
                 .map(LinkedHashModel::new)
-                .flatMap(model -> this.applicationsStore.delete(model, authentication, Authorities.SYSTEM))
+                .flatMap(model -> this.applicationsStore.delete(model, authentication, Authorities.APPLICATION))
                 .collectList()
                 .then()
                 .doOnSuccess(res -> {
@@ -192,17 +192,19 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
     public Mono<Void> delete(Application application, Authentication auth) {
         assertUpdatePrivilege(application, auth);
 
-        return Mono.zip(
-                        this.listConfigurationItems(application, auth).flatMap(configurationItem -> this.deleteConfigurationItem(application, configurationItem.key(), auth)).collectList().then(),
-                        this.applicationsStore.listStatements(application.iri(), null, null, auth, Authorities.READER)
-                                .map(LinkedHashModel::new)
-                                .flatMap(model -> this.applicationsStore.delete(model, auth, Authorities.APPLICATION))
-
-                ).then()
+        return this.listConfigurationItems(application, auth)
+                .flatMap(configurationItem -> this.deleteConfigurationItem(application, configurationItem.key(), auth)).collectList()
+                .doOnSuccess(suc -> log.trace("Deleted all configuration item statements for application with label '{}'", application.label()))
+                .then( this.applicationsStore.listStatements(application.iri(), null, null, auth, Authorities.READER))
+                .flatMap(statements -> this.applicationsStore.delete(statements, auth, Authorities.APPLICATION))
+                .doOnSuccess(suc -> log.trace("Deleted all application statements for application with label '{}'", application.label()))
+                .then()
                 .doOnSuccess(res -> {
                     this.eventPublisher.publishEvent(new ApplicationDeletedEvent(application.label()));
                     log.debug("Deleted application with label '{}'", application.label());
                 });
+
+
     }
 
     public Mono<Application> getApplication(String applicationKey, Authentication authentication) {
