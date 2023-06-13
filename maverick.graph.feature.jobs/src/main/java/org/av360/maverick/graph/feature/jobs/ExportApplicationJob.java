@@ -7,6 +7,7 @@ import org.av360.maverick.graph.feature.applications.schedulers.ScopedScheduledE
 import org.av360.maverick.graph.feature.applications.services.ApplicationsService;
 import org.av360.maverick.graph.feature.applications.services.model.Application;
 import org.av360.maverick.graph.feature.applications.services.model.ApplicationFlags;
+import org.av360.maverick.graph.model.context.SessionContext;
 import org.av360.maverick.graph.model.entities.Job;
 import org.av360.maverick.graph.model.vocabulary.Local;
 import org.av360.maverick.graph.services.EntityServices;
@@ -15,7 +16,6 @@ import org.eclipse.rdf4j.rio.RDFFormat;
 import org.eclipse.rdf4j.rio.RDFWriter;
 import org.eclipse.rdf4j.rio.RDFWriterRegistry;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
@@ -65,9 +65,9 @@ public class ExportApplicationJob implements Job {
     }
 
     @Override
-    public Mono<Void> run(Authentication authentication) {
+    public Mono<Void> run(SessionContext ctx) {
         return ReactiveApplicationContextHolder.getRequestedApplicationLabel()
-                .flatMap(label -> applicationsService.getApplicationByLabel(label, authentication))
+                .flatMap(label -> applicationsService.getApplicationByLabel(label, ctx))
                 .defaultIfEmpty(new Application(
                         SimpleValueFactory.getInstance().createIRI(Local.Applications.NAMESPACE, "default"),
                         Globals.DEFAULT_APPLICATION_LABEL,
@@ -82,11 +82,11 @@ public class ExportApplicationJob implements Job {
                 ))
                 .flatMap(application -> {
                     if (defaultLocalPath != null && !defaultLocalPath.isEmpty()) {
-                        return exportRdfStatements(authentication)
+                        return exportRdfStatements(ctx)
                                 .flatMap(rdfString -> saveRdfStringToLocalPath(rdfString, application)).then();
                     } else {
                         S3AsyncClient s3Client = createS3Client(application.configuration().get(ScopedScheduledExportApplication.CONFIG_KEY_EXPORT_S3_HOST).toString());
-                        return exportRdfStatements(authentication)
+                        return exportRdfStatements(ctx)
                                 .flatMap(rdfString -> uploadRdfStringToS3(s3Client, rdfString, application)).then();
                     }
                 });
@@ -99,8 +99,8 @@ public class ExportApplicationJob implements Job {
                 .build();
     }
 
-    private Mono<String> exportRdfStatements(Authentication authentication) {
-        return this.entityServices.getStore().listStatements(null, null, null, authentication)
+    private Mono<String> exportRdfStatements(SessionContext ctx) {
+        return this.entityServices.getStore().listStatements(null, null, null, ctx)
                 .map(statements -> {
                     StringWriter stringWriter = new StringWriter();
                     RDFWriter writer = RDFWriterRegistry.getInstance().get(RDFFormat.TURTLE).get().getWriter(stringWriter);
@@ -117,7 +117,7 @@ public class ExportApplicationJob implements Job {
             Files.writeString(
                     Paths.get(
                             application.configuration().get(ScopedScheduledExportApplication.CONFIG_KEY_EXPORT_LOCAL_PATH).toString(),
-                            application.label() + ".txt"
+                            application.label() + ".ttl"
                     ),
                     rdfString,
                     StandardCharsets.UTF_8);

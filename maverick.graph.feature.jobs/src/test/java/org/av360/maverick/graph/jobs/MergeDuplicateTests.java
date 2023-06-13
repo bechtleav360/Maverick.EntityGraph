@@ -91,7 +91,7 @@ public class MergeDuplicateTests extends TestsBase  {
         log.info("---------- Running test: Create embedded with shared items in separate requests ---------- ");
         Mono<RdfTransaction> tx1 = entityServicesClient.importFileMono(new ClassPathResource("requests/create-valid_multipleWithEmbedded.ttl")).doOnSubscribe(sub -> log.trace("-------- 1"));
         Mono<RdfTransaction> tx2 = entityServicesClient.importFileMono(new ClassPathResource("requests/create-valid_withEmbedded.ttl")).doOnSubscribe(sub -> log.trace("-------- 2"));
-        Mono<Void> scheduler = this.scheduledDetectDuplicates.checkForDuplicates(RDFS.LABEL, TestSecurityConfig.createAuthenticationToken()).doOnSubscribe(sub -> log.trace("-------- 3"));
+        Mono<Void> scheduler = this.scheduledDetectDuplicates.checkForDuplicates(RDFS.LABEL, TestSecurityConfig.createTestContext()).doOnSubscribe(sub -> log.trace("-------- 3"));
         Mono<Model> getAll = entityServicesClient.getModel();
 
         StepVerifier.create(

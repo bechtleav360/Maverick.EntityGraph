@@ -1,7 +1,8 @@
-package org.av360.maverick.graph.feature.objects.domain;
+package org.av360.maverick.graph.feature.objects.services;
 
 import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.feature.objects.model.LocalStorageDetails;
+import org.av360.maverick.graph.model.context.SessionContext;
 import org.av360.maverick.graph.model.enums.UriSchemes;
 import org.av360.maverick.graph.model.vocabulary.Local;
 import org.av360.maverick.graph.model.vocabulary.SDO;
@@ -18,7 +19,6 @@ import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.core.io.buffer.DataBufferUtils;
 import org.springframework.core.io.buffer.DefaultDataBufferFactory;
-import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import reactor.core.publisher.Flux;
@@ -57,8 +57,8 @@ public class FileServices {
         dataBufferFactory = new DefaultDataBufferFactory();
     }
 
-    public Mono<RdfTransaction> store(String entityKey, Flux<DataBuffer> bytes, String prefixedPoperty, String filename, @Nullable String language, Authentication authentication) {
-        return entityServices.resolveAndVerify(entityKey, authentication)
+    public Mono<RdfTransaction> store(String entityKey, Flux<DataBuffer> bytes, String prefixedPoperty, String filename, @Nullable String language, SessionContext ctx) {
+        return entityServices.resolveAndVerify(entityKey, ctx)
                 .flatMap(entityId -> Mono.zip(
                         Mono.just(new LocalStorageDetails().setEntityId(entityId).setFilename(filename).setLanguage(language)),
                         identifierServices.asReproducibleIRI(Local.Entities.NS, entityId.getLocalName(), filename),
@@ -66,7 +66,7 @@ public class FileServices {
                 ))
                 .flatMap(pair -> Mono.zip(
                         Mono.just(pair.getT1().setFileId(pair.getT2()).setProperty(pair.getT3())),
-                        filePathResolver.resolveContentLocation(pair.getT1().getEntityId(), pair.getT1().getIdentifier(), pair.getT1().getFilename(), pair.getT1().getLanguage(), authentication)
+                        filePathResolver.resolveContentLocation(pair.getT1().getEntityId(), pair.getT1().getIdentifier(), pair.getT1().getFilename(), pair.getT1().getLanguage(), ctx)
                 )
                 )
                 .map(pair -> {
@@ -101,16 +101,16 @@ public class FileServices {
                     }
 
 
-                    return valueServices.insertEmbedded(sd.getEntityId(), sd.getProperty(), sd.getIdentifier(), builder.build(), authentication);
+                    return valueServices.insertEmbedded(sd.getEntityId(), sd.getProperty(), sd.getIdentifier(), builder.build(), ctx);
                 });
 
     }
 
 
-    public Mono<FileAccessResult> read(String contentKey, Authentication authentication) {
-        return entityServices.resolveAndVerify(contentKey, authentication)
+    public Mono<FileAccessResult> read(String contentKey, SessionContext ctx) {
+        return entityServices.resolveAndVerify(contentKey, ctx)
                 .flatMap(contentId -> Mono.zip(
-                        this.entityServices.get(contentId, authentication),
+                        this.entityServices.get(contentId, ctx),
                         Mono.just(contentId)
                 )).flatMap(pair -> {
                     RdfEntity embedded = pair.getT1();
@@ -119,7 +119,7 @@ public class FileServices {
                     IRI entityId = embedded.findDistinctValue(contentID, SDO.SUBJECT_OF).filter(Value::isIRI).map(value -> (IRI) value).orElseThrow();
                     String name = embedded.findDistinctValue(contentID, SDO.NAME).filter(Value::isLiteral).map(value -> (Literal) value).map(Value::stringValue).orElseThrow();
                     String lang = embedded.findDistinctValue(contentID, SDO.IN_LANGUAGE).filter(Value::isLiteral).map(value -> (Literal) value).map(Value::stringValue).orElse("");
-                    return filePathResolver.resolveContentLocation(entityId, contentID, name, lang, authentication);
+                    return filePathResolver.resolveContentLocation(entityId, contentID, name, lang, ctx);
                 })
                 .doOnNext(contentLocation -> log.debug("Loading file with id '{}' stored in uri '{}'", contentKey, contentLocation.storageURI()))
                 .flatMap(contentLocation -> {

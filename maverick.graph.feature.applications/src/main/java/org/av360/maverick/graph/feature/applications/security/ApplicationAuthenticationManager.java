@@ -10,6 +10,7 @@ import org.av360.maverick.graph.feature.applications.services.SubscriptionsServi
 import org.av360.maverick.graph.feature.applications.services.errors.InvalidApplication;
 import org.av360.maverick.graph.feature.applications.services.model.Application;
 import org.av360.maverick.graph.model.context.RequestDetails;
+import org.av360.maverick.graph.model.context.SessionContext;
 import org.av360.maverick.graph.model.security.AdminToken;
 import org.av360.maverick.graph.model.security.ApiKeyAuthenticationToken;
 import org.av360.maverick.graph.model.security.Authorities;
@@ -65,7 +66,7 @@ public class ApplicationAuthenticationManager implements ReactiveAuthenticationM
             return ReactiveApplicationContextHolder.getRequestedApplicationLabel()
                     .switchIfEmpty(this.checkPath(authentication))
                     .filter(StringUtils::hasLength)
-                    .flatMap(label -> this.applicationsService.getApplicationByLabel(label, authentication)
+                    .flatMap(label -> this.applicationsService.getApplicationByLabel(label, new SessionContext().withAuthentication(authentication))
                             .switchIfEmpty(Mono.error(new InvalidApplication(label))))
                     .flatMap(app -> this.addRequestedApplicationToAuthentication(app, authentication))
                     .flatMap(requestedApplication -> {
@@ -150,7 +151,7 @@ public class ApplicationAuthenticationManager implements ReactiveAuthenticationM
     protected Mono<? extends ApiKeyAuthenticationToken> checkSubscriptionKey(ApiKeyAuthenticationToken token) {
         if (token instanceof AdminToken) return Mono.just(token);
 
-        return this.subscriptionsService.getSubscription(token.getApiKey().orElseThrow(), token)
+        return this.subscriptionsService.getSubscription(token.getApiKey().orElseThrow(), new SessionContext().withAuthentication(token))
                 .map(subscription -> {
                     SubscriptionToken subscriptionToken = SubscriptionToken.fromApiKeyAuthentication(token, subscription, subscription.application());
                     subscriptionToken.setRequestedApplication(subscription.application());
@@ -164,7 +165,7 @@ public class ApplicationAuthenticationManager implements ReactiveAuthenticationM
     protected Mono<? extends ApiKeyAuthenticationToken> checkSubscriptionKeyForRequestedApplication(ApiKeyAuthenticationToken token, Application requestedApplication) {
         if (token instanceof AdminToken) return Mono.just(token);
 
-        return this.subscriptionsService.getSubscription(token.getApiKey().orElseThrow(), token)
+        return this.subscriptionsService.getSubscription(token.getApiKey().orElseThrow(), new SessionContext().withAuthentication(token))
                 .map(subscription -> {
 
                     SubscriptionToken st = SubscriptionToken.fromApiKeyAuthentication(token, subscription, subscription.application());

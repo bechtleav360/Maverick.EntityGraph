@@ -19,7 +19,7 @@ public class ApplicationsTestsBase extends ApiTestsBase  {
 
     @Override
     protected void resetRepository() {
-        StepVerifier.create(this.applicationsStore.reset(TestSecurityConfig.createAuthenticationToken(), Authorities.SYSTEM)).verifyComplete();
+        StepVerifier.create(this.applicationsStore.reset(TestSecurityConfig.createTestContext(), Authorities.SYSTEM)).verifyComplete();
 
         super.resetRepository();
     }

@@ -1,6 +1,7 @@
 package org.av360.maverick.graph.feature.navigation.domain.impl;
 
 import org.av360.maverick.graph.api.config.ReactiveRequestUriContextHolder;
+import org.av360.maverick.graph.model.context.SessionContext;
 import org.av360.maverick.graph.model.rdf.AnnotatedStatement;
 import org.av360.maverick.graph.model.vocabulary.Local;
 import org.av360.maverick.graph.model.vocabulary.SDO;
@@ -17,7 +18,6 @@ import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.model.vocabulary.RDFS;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
-import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import reactor.core.publisher.Flux;
@@ -36,20 +36,18 @@ public class NavigationServicesImpl implements NavigationServices {
 
 
     @Override
-    public Flux<AnnotatedStatement> start(Authentication authentication) {
+    public Flux<AnnotatedStatement> start(SessionContext ctx) {
         return ReactiveRequestUriContextHolder.getURI()
                 .map(requestUrl -> {
 
                     ModelBuilder builder = new ModelBuilder();
-
-
 
                     Resource root = vf.createIRI(Local.URN_PREFIX, "nav");
                     Resource swaggerLink = vf.createIRI(Local.URN_PREFIX, "explorer");
                     Resource openApiLink = vf.createIRI(Local.URN_PREFIX, "specification"); //v3/api-docs
 
                     /*
-                    if(authentication.getDetails() instanceof RequestDetails details) {
+                    if(ctx.getDetails() instanceof RequestDetails details) {
                         this.sessionHistory.add(session.getId(), details.path());
                         this.sessionHistory.previous(session.getId()).map(path -> builder.add(root, HYDRA.PREVIOUS, "?"+path));
                     }
@@ -87,12 +85,12 @@ public class NavigationServicesImpl implements NavigationServices {
 
 
     @Override
-    public Flux<AnnotatedStatement> browse(Map<String, String> params, Authentication authentication) {
+    public Flux<AnnotatedStatement> browse(Map<String, String> params, SessionContext ctx) {
         if (params.containsKey("entities")) {
             if (params.get("entities").equalsIgnoreCase("list"))
-                return this.list(params, authentication);
+                return this.list(params, ctx);
             else if (StringUtils.hasLength(params.get("entities"))) {
-                return this.entityServices.find(params.get("entities"), null, authentication).flatMapIterable(TripleModel::asStatements);
+                return this.entityServices.find(params.get("entities"), null, ctx).flatMapIterable(TripleModel::asStatements);
             }
         }
 
@@ -102,7 +100,7 @@ public class NavigationServicesImpl implements NavigationServices {
 
 
 
-    public Flux<AnnotatedStatement> list(Map<String, String> params, Authentication authentication) {
+    public Flux<AnnotatedStatement> list(Map<String, String> params, SessionContext ctx) {
         Integer limit = Optional.ofNullable(params.get("limit")).map(Integer::parseInt).orElse(20);
         Integer offset = Optional.ofNullable(params.get("offset")).map(Integer::parseInt).orElse(0);
         params.put("limit", limit.toString());
@@ -110,7 +108,7 @@ public class NavigationServicesImpl implements NavigationServices {
 
 
 
-        return this.entityServices.list(authentication, limit, offset)
+        return this.entityServices.list(limit, offset, ctx)
                 .collectList()
                 .map(list -> {
                     ModelBuilder builder = new ModelBuilder();

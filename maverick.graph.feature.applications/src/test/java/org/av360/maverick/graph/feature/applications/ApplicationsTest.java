@@ -4,9 +4,9 @@ import org.av360.maverick.graph.feature.applications.api.dto.Responses;
 import org.av360.maverick.graph.feature.applications.client.ApplicationsTestClient;
 import org.av360.maverick.graph.feature.applications.config.ApplicationsTestsBase;
 import org.av360.maverick.graph.feature.applications.services.model.ApplicationFlags;
-import org.av360.maverick.graph.model.security.AdminToken;
+import org.av360.maverick.graph.model.context.SessionContext;
+import org.av360.maverick.graph.model.enums.RepositoryType;
 import org.av360.maverick.graph.services.QueryServices;
-import org.av360.maverick.graph.store.RepositoryType;
 import org.av360.maverick.graph.tests.config.TestSecurityConfig;
 import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.sparqlbuilder.core.SparqlBuilder;
@@ -106,7 +106,7 @@ class ApplicationsTest extends ApplicationsTestsBase {
         Variable p = SparqlBuilder.var("p");
         Variable o = SparqlBuilder.var("o");
         SelectQuery q = Queries.SELECT(s, p, o).all().where(s.has(p, o));
-        List<BindingSet> block = this.queryServices.queryValues(q, new AdminToken(), RepositoryType.APPLICATION).collectList().block();
+        List<BindingSet> block = this.queryServices.queryValues(q, new SessionContext().withSystemAuthentication(), RepositoryType.APPLICATION).collectList().block();
 
         super.printStep();
         this.client.getApplication(app.key())

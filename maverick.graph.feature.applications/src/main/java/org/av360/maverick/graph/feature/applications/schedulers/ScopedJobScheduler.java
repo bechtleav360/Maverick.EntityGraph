@@ -7,8 +7,8 @@ import org.av360.maverick.graph.feature.applications.services.events.Application
 import org.av360.maverick.graph.feature.applications.services.events.ApplicationJobScheduledEvent;
 import org.av360.maverick.graph.feature.applications.services.events.ApplicationUpdatedEvent;
 import org.av360.maverick.graph.feature.applications.services.model.Application;
+import org.av360.maverick.graph.model.context.SessionContext;
 import org.av360.maverick.graph.model.events.JobScheduledEvent;
-import org.av360.maverick.graph.model.security.AdminToken;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
@@ -42,7 +42,7 @@ public abstract class ScopedJobScheduler {
 
     @PostConstruct
     public void initializeScheduledJobs() {
-        applicationsService.listApplications(new AdminToken()).doOnNext(this::scheduleRunnableTask).subscribe();
+        applicationsService.listApplications(new SessionContext().withSystemAuthentication()).doOnNext(this::scheduleRunnableTask).subscribe();
     }
 
     protected void scheduleRunnableTask(Application application) {
@@ -50,7 +50,7 @@ public abstract class ScopedJobScheduler {
                 application.configuration().get(getFrequencyConfigurationKey()).toString() : getDefaultFrequency();
 
         Runnable task = () -> {
-            JobScheduledEvent event = new ApplicationJobScheduledEvent(getJobLabel(), new AdminToken(), application.label());
+            JobScheduledEvent event = new ApplicationJobScheduledEvent(getJobLabel(), new SessionContext().withSystemAuthentication().withEnvironment().setScope(application.label()), application.label());
             eventPublisher.publishEvent(event);
         };
 

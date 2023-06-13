@@ -7,7 +7,6 @@ import org.av360.maverick.graph.store.EntityStore;
 import org.av360.maverick.graph.store.rdf.fragments.RdfEntity;
 import org.av360.maverick.graph.store.rdf.fragments.RdfTransaction;
 import org.eclipse.rdf4j.model.IRI;
-import org.springframework.security.core.Authentication;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -45,7 +44,7 @@ public interface EntityServices {
      * @param offset
      * @return
      */
-     Flux<RdfEntity> list(SessionContext ctx, int limit, int offset);
+     Flux<RdfEntity> list(int limit, int offset, SessionContext ctx);
 
     /**
      * Deletes an entity with all its values from the store.
@@ -92,7 +91,7 @@ public interface EntityServices {
 
     Mono<RdfEntity> find(String entityKey, @Nullable String property, SessionContext ctx);
 
-    Mono<Boolean> contains(IRI entityIri, Authentication authentication);
+    Mono<Boolean> contains(IRI entityIri, SessionContext ctx);
 
     Mono<IRI> resolveAndVerify(String entityKey, SessionContext ctx);
 

@@ -7,12 +7,12 @@ import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import lombok.extern.slf4j.Slf4j;
+import org.av360.maverick.graph.model.context.SessionContext;
+import org.av360.maverick.graph.model.enums.RepositoryType;
 import org.av360.maverick.graph.model.security.ApiKeyAuthenticationToken;
 import org.av360.maverick.graph.store.RepositoryBuilder;
-import org.av360.maverick.graph.store.RepositoryType;
 import org.av360.maverick.graph.store.behaviours.TripleStore;
 import org.av360.maverick.graph.store.rdf.LabeledRepository;
-import org.eclipse.rdf4j.http.protocol.UnauthorizedException;
 import org.eclipse.rdf4j.repository.RepositoryException;
 import org.eclipse.rdf4j.repository.base.RepositoryWrapper;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
@@ -95,30 +95,26 @@ public class DefaultRepositoryBuilder implements RepositoryBuilder {
      * @throws IOException If repository cannot be found
      */
     @Override
-    public Mono<LabeledRepository> buildRepository(TripleStore store, Authentication authentication) {
-        if (Objects.isNull(authentication))
-            throw new IllegalArgumentException("Failed to resolve repository due to missing authentication");
-        if (!authentication.isAuthenticated())
-            throw new UnauthorizedException("Authentication is set to 'false' within the " + authentication.getClass().getSimpleName());
-
+    public Mono<LabeledRepository> buildRepository(TripleStore store, SessionContext ctx) {
         LabeledRepository repository = null;
 
-        if (authentication instanceof TestingAuthenticationToken) {
+
+        if (ctx.getAuthenticationOrThrow() instanceof TestingAuthenticationToken) {
             // default repository always get the default label (also in test mode)
             repository = this.buildDefaultRepository(store, "default");
         }
-        else if (authentication instanceof ApiKeyAuthenticationToken) {
+        else if (ctx.getAuthenticationOrThrow() instanceof ApiKeyAuthenticationToken) {
             repository = this.buildDefaultRepository(store, "default");
         }
-        else if (authentication instanceof AnonymousAuthenticationToken) {
+        else if (ctx.getAuthenticationOrThrow() instanceof AnonymousAuthenticationToken) {
             repository = this.buildDefaultRepository(store, "default");
         }
-        else if (authentication instanceof UsernamePasswordAuthenticationToken) {
+        else if (ctx.getAuthenticationOrThrow() instanceof UsernamePasswordAuthenticationToken) {
             repository = this.buildDefaultRepository(store, "default");
         }
 
         try {
-            return Mono.just(this.validateRepository(repository, store, authentication));
+            return Mono.just(this.validateRepository(repository, store, ctx.getAuthenticationOrThrow()));
         } catch (IOException e) {
             return Mono.error(e);
         }

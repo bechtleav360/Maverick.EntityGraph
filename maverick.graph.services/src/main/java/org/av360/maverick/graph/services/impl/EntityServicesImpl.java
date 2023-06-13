@@ -35,7 +35,6 @@ import org.eclipse.rdf4j.sparqlbuilder.core.query.Queries;
 import org.eclipse.rdf4j.sparqlbuilder.core.query.SelectQuery;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import reactor.core.publisher.Flux;
@@ -139,71 +138,6 @@ public class EntityServicesImpl implements EntityServices {
                         return Mono.error(e);
                     }
                 });
-
-        /*
-        Variable idVariable = SparqlBuilder.var("id");
-        Variable typeVariable = SparqlBuilder.var("type");
-        Variable l1 = SparqlBuilder.var("l1");
-        Variable l2 = SparqlBuilder.var("l2");
-        Variable l3 = SparqlBuilder.var("l3");
-        Variable l4 = SparqlBuilder.var("l4");
-
-        SparqlBuilder.select()
-
-
-
-
-        // TriplePattern resPattern = idVariable.isA(typeVariable).andHas(SDO.TITLE, l1).andHas(RDFS.LABEL, l2).andHas(DCTERMS.TITLE, l3).andHas(SKOS.PREF_LABEL, l4);
-        GraphPattern wherePattern = idVariable.isA(Local.Entities.INDIVIDUAL)
-                .andIsA(typeVariable)
-                .and(idVariable.has(RDFS.LABEL, l1).optional())
-                .and(idVariable.has(DCTERMS.TITLE, l2).optional())
-                .and(idVariable.has(SDO.TITLE, l3).optional())
-                .and(idVariable.has(SKOS.PREF_LABEL, l4).optional());
-        SelectQuery q = Queries.SELECT(idVariable, typeVariable, l1, l2, l3, l4).where(wherePattern).limit(limit).offset(offset);
-        this.queryServices.queryValues(q, authentication)
-                .map(BindingsAccessor::new)
-                .map(bnd -> {
-                    ModelBuilder builder = new ModelBuilder();
-                    builder.subject(bnd.asIRI(idVariable));
-                    builder.
-                })
-        */
-        /*
-
-         ConstructQuery q = Queries.CONSTRUCT(resPattern).where(wherePattern).limit(limit).offset(offset);
-
-
-        final Resource[] current = {null};
-        return this.queryServices.queryGraph(q, authentication)
-                .bufferUntil(annotatedStatement -> {
-                    if (annotatedStatement.getSubject() == current[0]) return true;
-                    else {
-                        current[0] = annotatedStatement.getSubject();
-                        return false;
-                    }
-                })
-                .map(statements -> {
-                    RdfEntity rdfEntity = new RdfEntity(current[0]);
-                    rdfEntity.getModel().addAll(statements);
-                    return rdfEntity;
-                });
-                */
-        /*
-        return this.queryServices.queryValues(query.getQueryString(), authentication)
-                .map(bindings -> {
-                    Value value = bindings.getValue(idVariable.getVarName());
-                    if(! value.isIRI()) return;
-
-                    RdfEntity rdfEntity = new RdfEntity((IRI) value);
-                    rdfEntity.getBuilder().subject()
-
-
-                })
-                .filter(Value::isIRI)
-                .map(value -> (IRI) value)
-                .flatMap(id -> this.entityStore.getEntity(id, authentication, 0));
-         */
     }
 
     @Override
@@ -221,10 +155,10 @@ public class EntityServicesImpl implements EntityServices {
         SelectQuery query = Queries.SELECT(idVariable).where(
                 idVariable.has(predicate, identifierLit));
 
-        return this.entityStore.query(query.getQueryString(), authentication)
+        return this.entityStore.query(query.getQueryString(), ctx)
                 .next()
                 .map(bindings -> bindings.getValue(idVariable.getVarName()))
-                .flatMap(id -> this.entityStore.getEntity((Resource) id, authentication, 1))
+                .flatMap(id -> this.entityStore.getEntity((Resource) id, 1, ctx))
                 .switchIfEmpty(Mono.error(new EntityNotFound(identifier)));
     }
 
@@ -240,7 +174,7 @@ public class EntityServicesImpl implements EntityServices {
 
     @Override
     public Mono<Boolean> contains(IRI entityIri, SessionContext ctx) {
-        return entityStore.exists(entityIri, authentication);
+        return entityStore.exists(entityIri, ctx);
     }
 
 
@@ -251,7 +185,7 @@ public class EntityServicesImpl implements EntityServices {
                 .doOnSuccess(res -> log.trace("Resolved entity key {} to qualified identifier {}", key, res.stringValue()));
         /*
                 .flatMap(targetIri ->
-                        this.contains(targetIri, authentication)
+                        this.contains(targetIri, ctx)
                                 .flatMap(exists -> {
                                     if (!exists) return Mono.error(new EntityNotFound(key));
                                     else return Mono.just(targetIri);
@@ -268,9 +202,9 @@ public class EntityServicesImpl implements EntityServices {
 
     @Override
     public Mono<RdfTransaction> remove(IRI entityIri, SessionContext ctx) {
-        return this.entityStore.listStatements(entityIri, null, null, authentication)
+        return this.entityStore.listStatements(entityIri, null, null, ctx)
                 .flatMap(statements -> this.entityStore.removeStatements(statements, new RdfTransaction()))
-                .flatMap(trx -> this.entityStore.commit(trx, authentication))
+                .flatMap(trx -> this.entityStore.commit(trx, ctx))
                 .doOnSuccess(transaction -> {
                     eventPublisher.publishEvent(new EntityDeletedEvent(transaction));
                 });
@@ -284,8 +218,8 @@ public class EntityServicesImpl implements EntityServices {
 
     @Override
     public Mono<RdfTransaction> create(Triples triples, Map<String, String> parameters,  SessionContext ctx) {
-        return this.prepareEntity(triples, parameters, new RdfTransaction(), ctx)
-                .flatMap(transaction -> entityStore.commit(transaction, authentication))
+        return this.prepareEntity(triples, parameters, new RdfTransaction())
+                .flatMap(transaction -> entityStore.commit(transaction, ctx))
                 .doOnSuccess(transaction -> {
                     eventPublisher.publishEvent(new EntityCreatedEvent(transaction));
                     // TODO: throw event for every entity in payload
@@ -316,7 +250,7 @@ public class EntityServicesImpl implements EntityServices {
          */
         return this.identifierServices.asIRI(id)
                 .flatMap(iri -> {
-                    return this.entityStore.getEntity(iri, authentication, 0)
+                    return this.entityStore.getEntity(iri, 0, ctx)
                             .switchIfEmpty(Mono.error(new EntityNotFound(id)))
 
                             /* store the new entities */
@@ -333,7 +267,7 @@ public class EntityServicesImpl implements EntityServices {
                                 return transaction;
 
                             })
-                            .flatMap(trx -> this.entityStore.commit(trx, authentication));
+                            .flatMap(trx -> this.entityStore.commit(trx, ctx));
 
 
                     // FIXME: we should separate by entities (and have them as individual transactions)
@@ -383,20 +317,20 @@ public class EntityServicesImpl implements EntityServices {
 
 
     /* for testing only */
-    public Mono<Boolean> valueIsSet(IRI identifier, IRI predicate, Authentication authentication) {
-        return this.entityStore.listStatements(identifier, predicate, null, authentication)
+    public Mono<Boolean> valueIsSet(IRI identifier, IRI predicate, SessionContext ctx) {
+        return this.entityStore.listStatements(identifier, predicate, null, ctx)
                 .hasElement();
     }
 
     /* for testing only */
-    public Mono<Boolean> valueIsSet(String id, String predicatePrefix, String predicateKey, Authentication authentication) {
+    public Mono<Boolean> valueIsSet(String id, String predicatePrefix, String predicateKey, SessionContext ctx) {
         LocalIRI entityIdentifier = LocalIRI.withDefaultNamespace(id);
 
         return this.identifierServices.asIRI(id)
                 .flatMap(iri ->
                         schemaServices.getNamespaceFor(predicatePrefix)
                                 .map(ns -> LocalIRI.withDefinedNamespace(ns, predicateKey))
-                                .flatMap(predicate -> this.valueIsSet(entityIdentifier, predicate, authentication))
+                                .flatMap(predicate -> this.valueIsSet(entityIdentifier, predicate, ctx))
                 );
 
     }

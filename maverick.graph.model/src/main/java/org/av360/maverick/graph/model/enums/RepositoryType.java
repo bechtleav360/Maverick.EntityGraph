@@ -1,4 +1,4 @@
-package org.av360.maverick.graph.store;
+package org.av360.maverick.graph.model.enums;
 
 public enum RepositoryType {
     ENTITIES,

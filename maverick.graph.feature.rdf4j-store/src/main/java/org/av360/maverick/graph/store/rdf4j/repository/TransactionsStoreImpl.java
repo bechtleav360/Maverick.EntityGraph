@@ -1,13 +1,13 @@
 package org.av360.maverick.graph.store.rdf4j.repository;
 
 import lombok.extern.slf4j.Slf4j;
-import org.av360.maverick.graph.store.RepositoryType;
+import org.av360.maverick.graph.model.context.SessionContext;
+import org.av360.maverick.graph.model.enums.RepositoryType;
 import org.av360.maverick.graph.store.TransactionsStore;
 import org.av360.maverick.graph.store.rdf.fragments.RdfTransaction;
 import org.av360.maverick.graph.store.rdf4j.repository.util.AbstractStore;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
@@ -27,14 +27,14 @@ public class TransactionsStoreImpl extends AbstractStore implements Transactions
     }
 
     @Override
-    public Mono<RdfTransaction> store(RdfTransaction transaction, Authentication authentication, GrantedAuthority requiredAuthority) {
-        return this.store(List.of(transaction), authentication, requiredAuthority).singleOrEmpty();
+    public Mono<RdfTransaction> store(RdfTransaction transaction, SessionContext ctx, GrantedAuthority requiredAuthority) {
+        return this.store(List.of(transaction), ctx, requiredAuthority).singleOrEmpty();
     }
 
 
     @Override
-    public Flux<RdfTransaction> store(Collection<RdfTransaction> transactions, Authentication authentication, GrantedAuthority requiredAuthority) {
-        return this.applyManyWithConnection(authentication, requiredAuthority, connection -> {
+    public Flux<RdfTransaction> store(Collection<RdfTransaction> transactions, SessionContext ctx, GrantedAuthority requiredAuthority) {
+        return this.applyManyWithConnection(ctx, requiredAuthority, connection -> {
             transactions.forEach(trx -> {
                 try {
                     connection.begin();

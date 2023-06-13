@@ -4,6 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.feature.applications.config.ReactiveApplicationContextHolder;
 import org.av360.maverick.graph.feature.applications.security.SubscriptionToken;
 import org.av360.maverick.graph.feature.applications.services.ApplicationsService;
+import org.av360.maverick.graph.model.context.SessionContext;
 import org.av360.maverick.graph.model.enums.ConfigurationItemKeys;
 import org.av360.maverick.graph.model.errors.InsufficientPrivilegeException;
 import org.av360.maverick.graph.model.security.Authorities;
@@ -28,20 +29,31 @@ public class DelegatingContentResolver implements ContentLocationResolverService
 
 
     @Override
-    public Mono<ContentLocation> resolveContentLocation(IRI entityID, IRI contentId, String filename, @Nullable String language, Authentication authentication) {
+    public Mono<ContentLocation> resolveContentLocation(IRI entityID, IRI contentId, String filename, @Nullable String language, SessionContext ctx) {
         return ReactiveApplicationContextHolder.getRequestedApplicationLabel()
-                .flatMap(applicationsLabel -> applicationsService.getApplicationByLabel(applicationsLabel, authentication))
+                .flatMap(applicationsLabel -> applicationsService.getApplicationByLabel(applicationsLabel, ctx))
                 .flatMap(application -> {
-                    if (application.flags().isPublic() && ! Authorities.satisfies(Authorities.READER, authentication.getAuthorities())) {
-                        String msg = String.format("Required authority '%s' for resolving uri for filename '%s' and entity '%s' not met in authentication with authorities '%s'", Authorities.READER, filename, entityID, authentication.getAuthorities());
-                        return Mono.error(new InsufficientPrivilegeException(msg));
-                    } else if (! application.flags().isPublic() && authentication instanceof SubscriptionToken subscriptionToken) {
-                        // TODO: check if authentication is of type
-                        if(! subscriptionToken.getApplication().key().equalsIgnoreCase(application.key())) {
+
+
+                    try {
+                        Authentication authentication = ctx.getAuthenticationOrThrow();
+
+
+                        if (application.flags().isPublic() && ! Authorities.satisfies(Authorities.READER, authentication.getAuthorities())) {
                             String msg = String.format("Required authority '%s' for resolving uri for filename '%s' and entity '%s' not met in authentication with authorities '%s'", Authorities.READER, filename, entityID, authentication.getAuthorities());
-                            return Mono.error(new InsufficientPrivilegeException(msg));
+                            throw new InsufficientPrivilegeException(msg);
+                        } else if (! application.flags().isPublic() && ctx.getAuthentication().isPresent() && authentication instanceof SubscriptionToken subscriptionToken) {
+                            // TODO: check if authentication is of type
+                            if(! subscriptionToken.getApplication().key().equalsIgnoreCase(application.key())) {
+                                String msg = String.format("Required authority '%s' for resolving uri for filename '%s' and entity '%s' not met in authentication with authorities '%s'", Authorities.READER, filename, entityID, authentication.getAuthorities());
+                                throw new InsufficientPrivilegeException(msg);
+                            }
                         }
+                    } catch (Exception e) {
+                        return Mono.error(e);
                     }
+
+
 
                     String contentDir = delegate.getDefaultBaseDirectory();
                     if(application.configuration().containsKey(ConfigurationItemKeys.LOCAL_CONTENT_PATH.toString())) {
@@ -53,7 +65,7 @@ public class DelegatingContentResolver implements ContentLocationResolverService
 
 
                 })
-                .switchIfEmpty(delegate.resolveContentLocation(entityID, contentId, filename, language, authentication));
+                .switchIfEmpty(delegate.resolveContentLocation(entityID, contentId, filename, language, ctx));
 
     }
 

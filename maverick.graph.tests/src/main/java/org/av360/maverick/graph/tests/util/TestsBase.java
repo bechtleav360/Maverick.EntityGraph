@@ -1,6 +1,7 @@
 package org.av360.maverick.graph.tests.util;
 
 import lombok.extern.slf4j.Slf4j;
+import org.av360.maverick.graph.model.context.SessionContext;
 import org.av360.maverick.graph.model.security.Authorities;
 import org.av360.maverick.graph.store.EntityStore;
 import org.av360.maverick.graph.store.TransactionsStore;
@@ -14,7 +15,6 @@ import org.eclipse.rdf4j.rio.RDFFormat;
 import org.eclipse.rdf4j.rio.RDFWriter;
 import org.eclipse.rdf4j.rio.Rio;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.authentication.TestingAuthenticationToken;
 import reactor.core.publisher.Hooks;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
@@ -77,9 +77,9 @@ public abstract class TestsBase {
     }
 
     protected void resetRepository() {
-        TestingAuthenticationToken token = TestSecurityConfig.createAuthenticationToken();
-        Mono<Void> r1 = this.entityStore.reset(token, Authorities.SYSTEM)
-                .then(this.transactionsStore.reset(token, Authorities.SYSTEM));
+        SessionContext ctx = TestSecurityConfig.createTestContext();
+        Mono<Void> r1 = this.entityStore.reset(ctx, Authorities.SYSTEM)
+                .then(this.transactionsStore.reset(ctx, Authorities.SYSTEM));
 
         StepVerifier.create(r1).verifyComplete();
     }

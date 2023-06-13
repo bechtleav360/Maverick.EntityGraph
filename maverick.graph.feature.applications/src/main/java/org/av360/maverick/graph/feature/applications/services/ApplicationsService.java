@@ -16,6 +16,7 @@ import org.av360.maverick.graph.feature.applications.services.model.Configuratio
 import org.av360.maverick.graph.feature.applications.services.model.QueryVariables;
 import org.av360.maverick.graph.feature.applications.services.vocab.ApplicationTerms;
 import org.av360.maverick.graph.feature.applications.store.ApplicationsStore;
+import org.av360.maverick.graph.model.context.SessionContext;
 import org.av360.maverick.graph.model.errors.InconsistentModelException;
 import org.av360.maverick.graph.model.errors.InsufficientPrivilegeException;
 import org.av360.maverick.graph.model.identifier.LocalIdentifier;
@@ -32,7 +33,6 @@ import org.eclipse.rdf4j.sparqlbuilder.core.query.Queries;
 import org.eclipse.rdf4j.sparqlbuilder.core.query.SelectQuery;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ApplicationListener;
-import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -79,7 +79,7 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
      * @param authentication Current authentication information
      * @return New node as mono
      */
-    public Mono<Application> createApplication(String label, ApplicationFlags flags, Map<String, Serializable> configuration, Authentication authentication) {
+    public Mono<Application> createApplication(String label, ApplicationFlags flags, Map<String, Serializable> configuration, SessionContext ctx) {
 
         LocalIdentifier subject = IdentifierServices.createRandomIdentifier(Local.Applications.NAMESPACE);
 
@@ -106,7 +106,7 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
         });
 
 
-        Mono<Application> applicationMono = this.applicationsStore.insert(modelBuilder.build(), authentication, Authorities.SYSTEM)
+        Mono<Application> applicationMono = this.applicationsStore.insert(modelBuilder.build(), ctx, Authorities.SYSTEM)
                 .then(Mono.just(application))
                 .doOnSuccess(app -> {
                     this.eventPublisher.publishEvent(new ApplicationCreatedEvent(app));
@@ -115,7 +115,7 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
 
                 .doOnSubscribe(StreamsLogger.debug(log, "Creating a new application with label '{}' and persistence set to '{}' ", label, flags.isPersistent()));
 
-        return this.getApplicationByLabel(label, authentication)
+        return this.getApplicationByLabel(label, ctx)
                 .onErrorResume(throwable -> throwable instanceof InvalidApplication, throwable -> applicationMono);
 
 
@@ -133,13 +133,13 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
         return builder;
     }
 
-    public Mono<Application> createConfigurationItem(Application application, String configKey, Serializable configValue, Authentication authentication) {
-        this.assertUpdatePrivilege(application, authentication);
+    public Mono<Application> createConfigurationItem(Application application, String configKey, Serializable configValue, SessionContext ctx) {
+        this.assertUpdatePrivilege(application, ctx);
 
         ModelBuilder m = this.buildConfigurationItem(configKey, configValue, application.iri(), null);
 
-        return this.applicationsStore.insert(m.build(), authentication, Authorities.CONTRIBUTOR)
-                .then(this.getApplication(application.key(), authentication))
+        return this.applicationsStore.insert(m.build(), ctx, Authorities.CONTRIBUTOR)
+                .then(this.getApplication(application.key(), ctx))
                 .doOnSuccess(app -> {
                     this.eventPublisher.publishEvent(new ApplicationUpdatedEvent(app));
                     log.debug("Updated configuration key '{}' of node with label '{}'", app.key(), app.label());
@@ -147,8 +147,8 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
                 .doOnSubscribe(StreamsLogger.debug(log, "Updating configuration key '{}' for node with label '{}'", configKey, application.label()));
     }
 
-    public Mono<Void> deleteConfigurationItem(Application application, String configurationKey, Authentication authentication) {
-        this.assertUpdatePrivilege(application, authentication);
+    public Mono<Void> deleteConfigurationItem(Application application, String configurationKey, SessionContext ctx) {
+        this.assertUpdatePrivilege(application, ctx);
 
         SelectQuery listConfigurationItemsQuery = Queries.SELECT()
                 .where(QueryVariables.varNodeConfigurationItem.isA(ApplicationTerms.CONFIGURATION_ITEM)
@@ -156,15 +156,15 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
                         .andHas(ApplicationTerms.CONFIG_VALUE, QueryVariables.varConfigValue)
                         .and(QueryVariables.varNodeConfigurationItem.has(ApplicationTerms.CONFIG_FOR, application.iri()))
                 );
-        Flux<IRI> nodesToDelete = this.applicationsStore.query(listConfigurationItemsQuery, authentication, Authorities.APPLICATION)
+        Flux<IRI> nodesToDelete = this.applicationsStore.query(listConfigurationItemsQuery, ctx, Authorities.APPLICATION)
                 .map(BindingsAccessor::new)
                 .map(ba -> ba.findValue(QueryVariables.varNodeConfigurationItem))
                 .filter(Optional::isPresent)
                 .filter(opt -> opt.get().isIRI())
                 .map(opt -> (IRI) opt.get());
-        return nodesToDelete.flatMap(configNode -> this.applicationsStore.listStatements(configNode, null, null, authentication, Authorities.SYSTEM))
+        return nodesToDelete.flatMap(configNode -> this.applicationsStore.listStatements(configNode, null, null, ctx, Authorities.SYSTEM))
                 .map(LinkedHashModel::new)
-                .flatMap(model -> this.applicationsStore.delete(model, authentication, Authorities.APPLICATION))
+                .flatMap(model -> this.applicationsStore.delete(model, ctx, Authorities.APPLICATION))
                 .collectList()
                 .then()
                 .doOnSuccess(res -> {
@@ -173,8 +173,8 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
                 });
     }
 
-    public Flux<ConfigurationItem> listConfigurationItems(Application application, Authentication authentication) {
-        assertReadPrivilege(application, authentication);
+    public Flux<ConfigurationItem> listConfigurationItems(Application application, SessionContext ctx) {
+        assertReadPrivilege(application, ctx);
 
         SelectQuery listConfigurationItemsQuery = Queries.SELECT()
                 .where(QueryVariables.varNodeConfigurationItem.isA(ApplicationTerms.CONFIGURATION_ITEM)
@@ -182,14 +182,14 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
                         .andHas(ApplicationTerms.CONFIG_VALUE, QueryVariables.varConfigValue)
                         .and(QueryVariables.varNodeConfigurationItem.has(ApplicationTerms.CONFIG_FOR, application.iri()))
                 );
-        return this.applicationsStore.query(listConfigurationItemsQuery, authentication, Authorities.READER)
+        return this.applicationsStore.query(listConfigurationItemsQuery, ctx, Authorities.READER)
                 .map(BindingsAccessor::new)
                 .flatMap(QueryVariables::buildConfigurationItemFromBindings);
 
     }
 
 
-    public Mono<Void> delete(Application application, Authentication auth) {
+    public Mono<Void> delete(Application application, SessionContext auth) {
         assertUpdatePrivilege(application, auth);
 
         return this.listConfigurationItems(application, auth)
@@ -207,13 +207,13 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
 
     }
 
-    public Mono<Application> getApplication(String applicationKey, Authentication authentication) {
+    public Mono<Application> getApplication(String applicationKey, SessionContext ctx) {
 
         Application cached = this.caching_enabled ? this.cache.getIfPresent(applicationKey) : null;
         Mono<Application> response = null;
         if (Objects.isNull(cached)) {
             // rebuild cache
-            response = this.listApplications(authentication)
+            response = this.listApplications(ctx)
                     .filter(application -> {
                         boolean res = application.key().equalsIgnoreCase(applicationKey);
                         return res;
@@ -224,35 +224,35 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
             response =  Mono.just(cached);
         }
 
-        return response.filter(application -> verifyReadingPrivilege(application, authentication));
+        return response.filter(application -> verifyReadingPrivilege(application, ctx));
     }
 
 
-    private boolean verifyReadingPrivilege(Application requestedApplication, Authentication authentication) {
+    private boolean verifyReadingPrivilege(Application requestedApplication, SessionContext ctx) {
         boolean isPublic = requestedApplication.flags().isPublic();
-        boolean isSubscriber = (authentication instanceof SubscriptionToken subscriptionToken) && (subscriptionToken.getApplication().key().equalsIgnoreCase(requestedApplication.key()));
-        boolean isAdmin = Authorities.satisfies(Authorities.SYSTEM, authentication.getAuthorities());
+        boolean isSubscriber = (ctx.getAuthenticationOrThrow() instanceof SubscriptionToken subscriptionToken) && (subscriptionToken.getApplication().key().equalsIgnoreCase(requestedApplication.key()));
+        boolean isAdmin = Authorities.satisfies(Authorities.SYSTEM, ctx.getAuthenticationOrThrow().getAuthorities());
 
         return isPublic || isSubscriber || isAdmin;
     }
 
-    private void assertUpdatePrivilege(Application requestedApplication, Authentication authentication) {
-        if(! this.verifyUpdatePrivilege(requestedApplication, authentication)) throw new InsufficientPrivilegeException("Unknown application or insufficient privilege.");
+    private void assertUpdatePrivilege(Application requestedApplication, SessionContext ctx) {
+        if(! this.verifyUpdatePrivilege(requestedApplication, ctx)) throw new InsufficientPrivilegeException("Unknown application or insufficient privilege.");
     }
-    private void assertReadPrivilege(Application requestedApplication, Authentication authentication) {
-        if(! this.verifyReadingPrivilege(requestedApplication, authentication)) throw new InsufficientPrivilegeException("Unknown application or insufficient privilege.");
+    private void assertReadPrivilege(Application requestedApplication, SessionContext ctx) {
+        if(! this.verifyReadingPrivilege(requestedApplication, ctx)) throw new InsufficientPrivilegeException("Unknown application or insufficient privilege.");
     }
 
-    private boolean verifyUpdatePrivilege(Application requestedApplication, Authentication authentication) {
-        boolean isApplicationAdmin = (authentication instanceof SubscriptionToken subscriptionToken)
+    private boolean verifyUpdatePrivilege(Application requestedApplication, SessionContext ctx) {
+        boolean isApplicationAdmin = (ctx.getAuthenticationOrThrow() instanceof SubscriptionToken subscriptionToken)
                 && (subscriptionToken.getApplication().key().equalsIgnoreCase(requestedApplication.key()))
-                && Authorities.satisfies(Authorities.APPLICATION, authentication.getAuthorities());
-        boolean isAdmin = Authorities.satisfies(Authorities.SYSTEM, authentication.getAuthorities());
+                && Authorities.satisfies(Authorities.APPLICATION, ctx.getAuthenticationOrThrow().getAuthorities());
+        boolean isAdmin = Authorities.satisfies(Authorities.SYSTEM, ctx.getAuthenticationOrThrow().getAuthorities());
 
         return isApplicationAdmin || isAdmin;
     }
 
-    public Flux<Application> listApplications(Authentication authentication) {
+    public Flux<Application> listApplications(SessionContext ctx) {
 
         if (!this.caching_enabled || this.cache.asMap().isEmpty()) {
 
@@ -271,12 +271,12 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
                     );
 
             return Mono.zip(
-                            this.applicationsStore.query(listApplicationsQuery, authentication, Authorities.READER)
+                            this.applicationsStore.query(listApplicationsQuery, ctx, Authorities.READER)
                                     .map(BindingsAccessor::new)
                                     .flatMap(QueryVariables::buildApplicationFromBindings)
                                     .collectList()
                             ,
-                            this.applicationsStore.query(listConfigurationItemsQuery, authentication, Authorities.READER)
+                            this.applicationsStore.query(listConfigurationItemsQuery, ctx, Authorities.READER)
                                     .map(BindingsAccessor::new)
                                     .flatMap(QueryVariables::buildConfigurationItemFromBindings)
                                     .collectList()
@@ -292,17 +292,17 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
                         return Flux.fromIterable(applications.values());
                     })
                     .doOnNext(application -> this.cache.put(application.key(), application))
-                    .filter(application -> verifyReadingPrivilege(application, authentication))
+                    .filter(application -> verifyReadingPrivilege(application, ctx))
                     .doOnSubscribe(StreamsLogger.debug(log, "Loading all applications from repository."));
         } else {
-            return Flux.fromIterable(this.cache.asMap().values()).filter(application -> verifyReadingPrivilege(application, authentication));
+            return Flux.fromIterable(this.cache.asMap().values()).filter(application -> verifyReadingPrivilege(application, ctx));
         }
     }
 
-    public Mono<Application> getApplicationByLabel(String applicationLabel, Authentication authentication) {
+    public Mono<Application> getApplicationByLabel(String applicationLabel, SessionContext ctx) {
         if (applicationLabel.equalsIgnoreCase(Globals.DEFAULT_APPLICATION_LABEL)) return Mono.empty();
 
-        return this.listApplications(authentication)
+        return this.listApplications(ctx)
                 .filter(application -> application.label().equalsIgnoreCase(applicationLabel))
                 .switchIfEmpty(Mono.error(new InvalidApplication(applicationLabel)))
                 .single()

@@ -33,8 +33,8 @@ public class JobsCtrl extends AbstractController {
     @ResponseStatus(HttpStatus.OK)
     Mono<Void> execDeduplicationJob() {
 
-        return super.getAuthentication()
-                .flatMap(authentication -> this.jobsService.scheduleJob(MergeDuplicatesJob.NAME, authentication))
+        return super.acquireContext()
+                .flatMap(ctx -> this.jobsService.scheduleJob(MergeDuplicatesJob.NAME, ctx))
                 .doOnSubscribe(subscription -> log.info("Request to execute job: Deduplication"));
     }
 
@@ -42,16 +42,16 @@ public class JobsCtrl extends AbstractController {
     @ResponseStatus(HttpStatus.ACCEPTED)
     Mono<Void> execReplaceSubjectIdentifiersJob() {
 
-        return super.getAuthentication()
-                .flatMap(authentication -> this.jobsService.scheduleJob(ReplaceSubjectIdentifiersJob.NAME, authentication))
+        return super.acquireContext()
+                .flatMap(ctx -> this.jobsService.scheduleJob(ReplaceSubjectIdentifiersJob.NAME, ctx))
                 .doOnSubscribe(subscription -> log.info("Request to execute job: Replace subject identifiers"));
     }
 
     @PostMapping(value = "/execute/normalize/objectIdentifiers")
     @ResponseStatus(HttpStatus.ACCEPTED)
     Mono<Void> execReplaceObjectIdentifiersJob() {
-        return super.getAuthentication()
-                .flatMap(authentication -> this.jobsService.scheduleJob(ReplaceObjectIdentifiersJob.NAME, authentication))
+        return super.acquireContext()
+                .flatMap(ctx -> this.jobsService.scheduleJob(ReplaceObjectIdentifiersJob.NAME, ctx))
                 .doOnSubscribe(subscription -> log.info("Request to execute job: Replace object identifiers"));
 
     }
@@ -60,8 +60,8 @@ public class JobsCtrl extends AbstractController {
     @PostMapping(value = "/execute/coercion")
     @ResponseStatus(HttpStatus.OK)
     Mono<Void> execCoercionJob() {
-        return super.getAuthentication()
-                .flatMap(authentication -> this.jobsService.scheduleJob(AssignInternalTypesJob.NAME, authentication))
+        return super.acquireContext()
+                .flatMap(ctx -> this.jobsService.scheduleJob(AssignInternalTypesJob.NAME, ctx))
                 .doOnSubscribe(subscription -> log.info("Request to execute job: Infer types"));
 
     }
@@ -69,8 +69,8 @@ public class JobsCtrl extends AbstractController {
     @PostMapping(value = "/execute/export")
     @ResponseStatus(HttpStatus.ACCEPTED)
     Mono<Void> execExportJob() {
-        return super.getAuthentication()
-                .flatMap(authentication -> this.jobsService.scheduleJob(ExportApplicationJob.NAME, authentication))
+        return super.acquireContext()
+                .flatMap(ctx -> this.jobsService.scheduleJob(ExportApplicationJob.NAME, ctx))
                 .doOnSubscribe(subscription -> log.info("Request to execute job: Export application"));
 
     }

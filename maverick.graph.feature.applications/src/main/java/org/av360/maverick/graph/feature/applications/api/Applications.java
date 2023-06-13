@@ -11,9 +11,9 @@ import org.av360.maverick.graph.feature.applications.api.dto.Responses;
 import org.av360.maverick.graph.feature.applications.services.ApplicationsService;
 import org.av360.maverick.graph.feature.applications.services.SubscriptionsService;
 import org.av360.maverick.graph.feature.applications.services.errors.InvalidApplication;
+import org.av360.maverick.graph.model.enums.RepositoryType;
 import org.av360.maverick.graph.model.rdf.AnnotatedStatement;
 import org.av360.maverick.graph.services.QueryServices;
-import org.av360.maverick.graph.store.RepositoryType;
 import org.springframework.http.HttpStatus;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
@@ -51,8 +51,8 @@ public class Applications extends AbstractController {
         Assert.isTrue(request.label().matches("^[a-z0-9_-]*$"), "Only lowercase characters, numbers, '_' and '-' are allowed in the label.");
 
 
-        return super.getAuthentication()
-                .flatMap(authentication -> this.applicationsService.createApplication(request.label(), request.flags(), request.configuration(), authentication))
+        return super.acquireContext()
+                .flatMap(ctx -> this.applicationsService.createApplication(request.label(), request.flags(), request.configuration(), ctx))
                 .map(application ->
                         new Responses.ApplicationResponse(
                                 application.key(),
@@ -67,7 +67,7 @@ public class Applications extends AbstractController {
     @GetMapping(value = "")
     @ResponseStatus(HttpStatus.OK)
     Flux<Responses.ApplicationResponse> listApplications() {
-        return super.getAuthentication()
+        return super.acquireContext()
                 .flatMapMany(this.applicationsService::listApplications)
                 .map(application ->
                         new Responses.ApplicationResponse(
@@ -82,8 +82,8 @@ public class Applications extends AbstractController {
     @GetMapping(value = "/{applicationKey}")
     @ResponseStatus(HttpStatus.OK)
     Mono<Responses.ApplicationResponse> getApplication(@PathVariable String applicationKey) {
-        return super.getAuthentication()
-                .flatMap(auth -> this.applicationsService.getApplication(applicationKey, auth))
+        return super.acquireContext()
+                .flatMap(context -> this.applicationsService.getApplication(applicationKey, context))
                 .map(application ->
                         new Responses.ApplicationResponse(
                                 application.key(),
@@ -98,10 +98,10 @@ public class Applications extends AbstractController {
     @PostMapping(value = "/{applicationKey}/configuration/{configurationKey}")
     @ResponseStatus(HttpStatus.OK)
     Mono<Responses.ApplicationResponse> createConfiguration(@PathVariable String applicationKey, @PathVariable String configurationKey, @RequestBody String value) {
-        return super.getAuthentication()
-                .flatMap(auth ->
-                        this.applicationsService.getApplication(applicationKey, auth)
-                                .flatMap(application -> this.applicationsService.createConfigurationItem(application, configurationKey, value, auth)))
+        return super.acquireContext()
+                .flatMap(ctx ->
+                        this.applicationsService.getApplication(applicationKey, ctx)
+                                .flatMap(application -> this.applicationsService.createConfigurationItem(application, configurationKey, value, ctx)))
                 .map(application ->
                         new Responses.ApplicationResponse(
                                 application.key(),
@@ -116,10 +116,10 @@ public class Applications extends AbstractController {
     @DeleteMapping(value = "/{applicationKey}/configuration/{configurationKey}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     Mono<Responses.ApplicationResponse> deleteConfiguration(@PathVariable String applicationKey, @PathVariable String configurationKey) {
-        return super.getAuthentication()
-                .flatMap(auth ->
-                        this.applicationsService.getApplication(applicationKey, auth)
-                                .flatMap(application -> this.applicationsService.deleteConfigurationItem(application, configurationKey, auth)))
+        return super.acquireContext()
+                .flatMap(ctx ->
+                        this.applicationsService.getApplication(applicationKey, ctx)
+                                .flatMap(application -> this.applicationsService.deleteConfigurationItem(application, configurationKey, ctx)))
                 .then(this.getApplication(applicationKey))
                 .doOnSubscribe(subscription -> log.info("Request to delete configuration key '{}' for application with id '{}'", configurationKey, applicationKey));
     }
@@ -127,10 +127,10 @@ public class Applications extends AbstractController {
     @DeleteMapping(value = "/{applicationKey}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     Mono<Void> deleteApplication(@PathVariable String applicationKey) {
-        return super.getAuthentication()
-                .flatMap(auth ->
-                        this.applicationsService.getApplication(applicationKey, auth)
-                                .flatMap(application -> this.applicationsService.delete(application, auth)))
+        return super.acquireContext()
+                .flatMap(ctx ->
+                        this.applicationsService.getApplication(applicationKey, ctx)
+                                .flatMap(application -> this.applicationsService.delete(application, ctx)))
                 .doOnSubscribe(subscription -> log.info("Request to delete application with id '{}'", applicationKey));
     }
 
@@ -142,8 +142,8 @@ public class Applications extends AbstractController {
         Assert.isTrue(StringUtils.hasLength(applicationKey), "Application Key  is a required parameter");
         Assert.isTrue(StringUtils.hasLength(request.label()), "Name is a required parameter");
 
-        return super.getAuthentication()
-                .flatMap(authentication -> this.subscriptionsService.createSubscription(applicationKey, request.label(), authentication))
+        return super.acquireContext()
+                .flatMap(ctx -> this.subscriptionsService.createSubscription(applicationKey, request.label(), ctx))
                 .map(apiKey ->
                         new Responses.ApiKeyWithApplicationResponse(
                                 apiKey.key(),
@@ -166,8 +166,8 @@ public class Applications extends AbstractController {
     Flux<Responses.SubscriptionResponse> listSubscriptions(@PathVariable String applicationKey) {
         Assert.isTrue(StringUtils.hasLength(applicationKey), "Application Key is a required parameter");
 
-        return super.getAuthentication()
-                .flatMapMany(authentication -> this.subscriptionsService.listSubscriptionsForApplication(applicationKey, authentication))
+        return super.acquireContext()
+                .flatMapMany(ctx -> this.subscriptionsService.listSubscriptionsForApplication(applicationKey, ctx))
                 .switchIfEmpty(Mono.error(new InvalidApplication(applicationKey)))
                 .map(subscription -> new Responses.SubscriptionResponse(subscription.key(), subscription.issueDate(), subscription.active()))
                 .doOnSubscribe(s -> log.info("Fetching all api keys for an node"));
@@ -184,8 +184,8 @@ public class Applications extends AbstractController {
         Assert.isTrue(StringUtils.hasLength(applicationKey), "Subscription is a required parameter");
         Assert.isTrue(StringUtils.hasLength(label), "Name is a required parameter");
 
-        return super.getAuthentication()
-                .flatMapMany(authentication -> this.subscriptionsService.revokeToken(applicationKey, label, authentication))
+        return super.acquireContext()
+                .flatMapMany(ctx -> this.subscriptionsService.revokeToken(applicationKey, label, ctx))
                 .then()
                 .doOnSubscribe(subscription -> log.info("Generating a new token for an node"));
     }
@@ -200,8 +200,8 @@ public class Applications extends AbstractController {
             })
     )
     Flux<AnnotatedStatement> query(@RequestBody String query) {
-        return getAuthentication()
-                .flatMapMany(authentication -> queryServices.queryGraph(query, authentication, RepositoryType.APPLICATION))
+        return acquireContext()
+                .flatMapMany(ctx -> queryServices.queryGraph(query, ctx, RepositoryType.APPLICATION))
                 .doOnSubscribe(s -> {
                     if (log.isDebugEnabled()) log.debug("Request to dump node graph");
                 });

@@ -34,8 +34,8 @@ public class Queries extends AbstractController {
     @ResponseStatus(HttpStatus.ACCEPTED)
     public Flux<BindingSet> queryBindings(@RequestBody String query) {
 
-        return getAuthentication()
-                .flatMapMany(authentication -> queryServices.queryValues(query, authentication))
+        return super.acquireContext()
+                .flatMapMany(ctx -> queryServices.queryValues(query, ctx))
                 .doOnSubscribe(s -> {
                     if (log.isDebugEnabled()) log.debug("Request to search graph with tuples query: {}", query);
                 });
@@ -52,8 +52,8 @@ public class Queries extends AbstractController {
     )
     public Flux<AnnotatedStatement> queryStatements(@RequestBody String query) {
 
-        return getAuthentication()
-                .flatMapMany(authentication -> queryServices.queryGraph(query, authentication))
+        return acquireContext()
+                .flatMapMany(ctx -> queryServices.queryGraph(query, ctx))
                 .doOnSubscribe(s -> {
                     if (log.isDebugEnabled()) log.debug("Request to search graph with construct query: {}", query);
                 });

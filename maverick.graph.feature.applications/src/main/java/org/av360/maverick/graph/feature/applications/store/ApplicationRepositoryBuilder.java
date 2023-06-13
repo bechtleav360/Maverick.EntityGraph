@@ -6,6 +6,7 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.av360.maverick.graph.feature.applications.security.SubscriptionToken;
 import org.av360.maverick.graph.feature.applications.services.model.Application.CONFIG_KEYS;
 import org.av360.maverick.graph.model.context.RequestDetails;
+import org.av360.maverick.graph.model.context.SessionContext;
 import org.av360.maverick.graph.model.errors.InsufficientPrivilegeException;
 import org.av360.maverick.graph.model.security.AdminToken;
 import org.av360.maverick.graph.model.security.Authorities;
@@ -52,22 +53,23 @@ public class ApplicationRepositoryBuilder extends DefaultRepositoryBuilder {
      * @throws IOException if repository cannot be resolved
      */
     @Override
-    public Mono<LabeledRepository> buildRepository(TripleStore store, Authentication authentication) {
+    public Mono<LabeledRepository> buildRepository(TripleStore store, SessionContext context) {
             try {
-                Assert.notNull(authentication, "Failed to resolve repository due to missing authentication");
+                Authentication authentication = context.getAuthenticationOrThrow();
+
                 Assert.notNull(authentication.getDetails(), "No details object in authentication of type: %s".formatted(authentication.getClass()));
                 Assert.isTrue(authentication.getDetails() instanceof RequestDetails, "Details object in authentication of class %s of wrong type: %s".formatted(authentication.getClass(), authentication.getDetails()));
                 if (!authentication.isAuthenticated()) throw new UnauthorizedException("Authentication is set to 'false' within the " + authentication.getClass().getSimpleName());
 
                 Map<String, String> configuration = ((RequestDetails) authentication.getDetails()).getConfiguration();
                 if(configuration.isEmpty() || ! configuration.containsKey(CONFIG_KEYS.LABEL.toString())) {
-                    return super.buildRepository(store, authentication);
+                    return super.buildRepository(store, context);
                 }
                 String appLabel = configuration.get(CONFIG_KEYS.LABEL.toString());
                 if (StringUtils.hasLength(appLabel)) {
                     return this.buildApplicationRepository(store, authentication, configuration);
                 } else {
-                    return super.buildRepository(store, authentication);
+                    return super.buildRepository(store, context);
                 }
 
             } catch (Exception e) {

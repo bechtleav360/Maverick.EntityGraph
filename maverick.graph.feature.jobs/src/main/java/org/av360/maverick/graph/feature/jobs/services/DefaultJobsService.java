@@ -1,9 +1,9 @@
 package org.av360.maverick.graph.feature.jobs.services;
 
+import org.av360.maverick.graph.model.context.SessionContext;
 import org.av360.maverick.graph.model.events.JobScheduledEvent;
 import org.av360.maverick.graph.services.JobSchedulingService;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
@@ -17,8 +17,8 @@ public class DefaultJobsService implements JobSchedulingService {
     }
 
     @Override
-    public Mono<Void> scheduleJob(String name, Authentication authentication) {
-        JobScheduledEvent event = new JobScheduledEvent(name, authentication);
+    public Mono<Void> scheduleJob(String name, SessionContext ctx) {
+        JobScheduledEvent event = new JobScheduledEvent(name, ctx);
         return this.publish(event);
 
     }

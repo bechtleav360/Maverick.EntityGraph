@@ -2,7 +2,7 @@ package org.av360.maverick.graph.feature.applications.store;
 
 import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.feature.applications.services.model.Application;
-import org.av360.maverick.graph.model.security.AdminToken;
+import org.av360.maverick.graph.model.context.SessionContext;
 import org.av360.maverick.graph.store.EntityStore;
 import org.av360.maverick.graph.store.rdf.LabeledRepository;
 import org.av360.maverick.graph.tests.config.TestRepositoryConfig;
@@ -11,7 +11,6 @@ import org.eclipse.rdf4j.repository.Repository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.event.RecordApplicationEvents;
@@ -35,19 +34,19 @@ public class ResolveRepositoriesTest {
 
     @Test
     public void buildEntityRepoWithTestAuthentication() throws IOException {
-        Mono<LabeledRepository> mono = builder.buildRepository(entityStore, TestSecurityConfig.createAuthenticationToken());
+        Mono<LabeledRepository> mono = builder.buildRepository(entityStore, TestSecurityConfig.createTestContext());
         StepVerifier.create(mono).assertNext(Repository::isInitialized);
     }
 
     @Test
     public void buildEntityRepoWithAdminAuthentication() throws IOException {
-        Mono<LabeledRepository> mono = builder.buildRepository(entityStore, TestSecurityConfig.createAdminToken());
+        Mono<LabeledRepository> mono = builder.buildRepository(entityStore, TestSecurityConfig.createAdminContext());
         StepVerifier.create(mono).assertNext(Repository::isInitialized);
     }
 
     @Test
     public void buildEntityRepoWithAnonAuthentication() throws IOException {
-        Mono<LabeledRepository> mono = builder.buildRepository(entityStore, TestSecurityConfig.createAnonymousToken());
+        Mono<LabeledRepository> mono = builder.buildRepository(entityStore, TestSecurityConfig.createAnonymousContext());
         StepVerifier.create(mono).assertNext(Repository::isInitialized);
 
     }
@@ -56,14 +55,14 @@ public class ResolveRepositoriesTest {
     public void buildAppEntityRepoWithTestAuthentication() throws IOException {
         // TODO: replace with s3 params
 
-        TestingAuthenticationToken token = TestSecurityConfig.createAuthenticationToken();
-        TestSecurityConfig.addConfigurationDetail(token, Application.CONFIG_KEYS.LABEL, "app");
-        TestSecurityConfig.addConfigurationDetail(token, Application.CONFIG_KEYS.KEY, "123213");
-        TestSecurityConfig.addConfigurationDetail(token, Application.CONFIG_KEYS.FLAG_PUBLIC, "false");
-        TestSecurityConfig.addConfigurationDetail(token, Application.CONFIG_KEYS.FLAG_PERSISTENT, "false");
+        SessionContext ctx = TestSecurityConfig.createTestContext();
+        TestSecurityConfig.addConfigurationDetail(ctx, Application.CONFIG_KEYS.LABEL, "app");
+        TestSecurityConfig.addConfigurationDetail(ctx, Application.CONFIG_KEYS.KEY, "123213");
+        TestSecurityConfig.addConfigurationDetail(ctx, Application.CONFIG_KEYS.FLAG_PUBLIC, "false");
+        TestSecurityConfig.addConfigurationDetail(ctx, Application.CONFIG_KEYS.FLAG_PERSISTENT, "false");
 
 
-        Mono<LabeledRepository> mono = builder.buildRepository(entityStore, token);
+        Mono<LabeledRepository> mono = builder.buildRepository(entityStore, ctx);
         StepVerifier.create(mono).assertNext(Repository::isInitialized);
 
     }
@@ -72,13 +71,13 @@ public class ResolveRepositoriesTest {
     public void buildAppEntityRepoWithTestAuthenticationWithContext() throws IOException {
         // TODO: replace with s3 params
 
-        AdminToken token = TestSecurityConfig.createAdminToken();
-        TestSecurityConfig.addConfigurationDetail(token, Application.CONFIG_KEYS.LABEL, "app");
-        TestSecurityConfig.addConfigurationDetail(token, Application.CONFIG_KEYS.KEY, "123213");
-        TestSecurityConfig.addConfigurationDetail(token, Application.CONFIG_KEYS.FLAG_PUBLIC, "false");
-        TestSecurityConfig.addConfigurationDetail(token, Application.CONFIG_KEYS.FLAG_PERSISTENT, "false");
+        SessionContext ctx = TestSecurityConfig.createAdminContext();
+        TestSecurityConfig.addConfigurationDetail(ctx, Application.CONFIG_KEYS.LABEL, "app");
+        TestSecurityConfig.addConfigurationDetail(ctx, Application.CONFIG_KEYS.KEY, "123213");
+        TestSecurityConfig.addConfigurationDetail(ctx, Application.CONFIG_KEYS.FLAG_PUBLIC, "false");
+        TestSecurityConfig.addConfigurationDetail(ctx, Application.CONFIG_KEYS.FLAG_PERSISTENT, "false");
 
-        Mono<LabeledRepository> mono = builder.buildRepository(entityStore, token);
+        Mono<LabeledRepository> mono = builder.buildRepository(entityStore, ctx);
 
 
         StepVerifier.create(mono).assertNext(Repository::isInitialized);

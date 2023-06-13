@@ -58,7 +58,7 @@ class CheckGlobalIdentifiersTest extends TestsBase {
         Mono<Model> readModelMono = entityServicesClient.getModel().doOnSubscribe(sub -> super.printStep());
 
 
-        Flux<RdfTransaction> actionMono = scheduled.checkForExternalSubjectIdentifiers(TestSecurityConfig.createAuthenticationToken()).doOnSubscribe(sub -> super.printStep());
+        Flux<RdfTransaction> actionMono = scheduled.checkForExternalSubjectIdentifiers(TestSecurityConfig.createTestContext()).doOnSubscribe(sub -> super.printStep());
 
         StepVerifier.create(importMono.then(readModelMono))
                 .assertNext(md -> {

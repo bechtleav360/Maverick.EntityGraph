@@ -1,5 +1,6 @@
 package org.av360.maverick.graph.model.context;
 
+import org.av360.maverick.graph.model.security.AdminToken;
 import org.springframework.security.core.Authentication;
 
 import java.util.Objects;
@@ -16,15 +17,24 @@ public class SessionContext {
 
 
     public Optional<RequestDetails> getRequestDetails() {
-        return Optional.of(this.requestDetails);
+        return Optional.ofNullable(this.requestDetails);
     }
 
-    public Optional<Environment> getEnvironment() {
-        return Optional.of(this.environment);
+    public Environment getEnvironment() {
+        return Objects.isNull(this.environment) ? new Environment(this) : this.environment;
+    }
+
+    public Environment withEnvironment() {
+        return this.getEnvironment();
     }
 
     public Optional<Authentication> getAuthentication() {
         return Optional.of(this.authentication);
+    }
+
+    public Authentication getAuthenticationOrThrow() {
+        if(this.authentication == null) throw new SecurityException("Missing authentication in request");
+        else return this.authentication;
     }
 
     public Scope getScope() {
@@ -53,7 +63,14 @@ public class SessionContext {
 
 
 
-    public String toString() {
-        return "SessionContext(requestDetails=" + this.getRequestDetails() + ", environment=" + this.getEnvironment() + ", authentication=" + this.getAuthentication() + ", scope=" + this.getScope() + ")";
+
+    public SessionContext withSystemAuthentication() {
+        this.authentication = new AdminToken();
+        return this;
+    }
+
+    public SessionContext withAuthentication(Authentication authentication) {
+        this.authentication = authentication;
+        return this;
     }
 }

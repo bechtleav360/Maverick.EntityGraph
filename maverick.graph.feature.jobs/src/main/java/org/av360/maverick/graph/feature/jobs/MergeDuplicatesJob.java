@@ -2,6 +2,7 @@ package org.av360.maverick.graph.feature.jobs;
 
 
 import lombok.extern.slf4j.Slf4j;
+import org.av360.maverick.graph.model.context.SessionContext;
 import org.av360.maverick.graph.model.entities.Job;
 import org.av360.maverick.graph.model.vocabulary.SDO;
 import org.av360.maverick.graph.services.EntityServices;
@@ -20,7 +21,6 @@ import org.eclipse.rdf4j.sparqlbuilder.core.SparqlBuilder;
 import org.eclipse.rdf4j.sparqlbuilder.core.Variable;
 import org.eclipse.rdf4j.sparqlbuilder.core.query.Queries;
 import org.eclipse.rdf4j.sparqlbuilder.core.query.SelectQuery;
-import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -97,27 +97,27 @@ public class MergeDuplicatesJob implements Job {
         this.valueFactory = SimpleValueFactory.getInstance();
     }
 
-    public Mono<Void> run(Authentication authentication) {
-        return this.checkForDuplicates(RDFS.LABEL, authentication)
-                .then(this.checkForDuplicates(SDO.IDENTIFIER, authentication))
-                .then(this.checkForDuplicates(SKOS.PREF_LABEL, authentication))
-                .then(this.checkForDuplicates(DCTERMS.IDENTIFIER, authentication))
-                .then(this.checkForDuplicates(SDO.TERM_CODE, authentication))
-                .then(this.checkForDuplicates(DC.IDENTIFIER, authentication));
+    public Mono<Void> run(SessionContext ctx) {
+        return this.checkForDuplicates(RDFS.LABEL, ctx)
+                .then(this.checkForDuplicates(SDO.IDENTIFIER, ctx))
+                .then(this.checkForDuplicates(SKOS.PREF_LABEL, ctx))
+                .then(this.checkForDuplicates(DCTERMS.IDENTIFIER, ctx))
+                .then(this.checkForDuplicates(SDO.TERM_CODE, ctx))
+                .then(this.checkForDuplicates(DC.IDENTIFIER, ctx));
 
     }
 
-    public Mono<Void> checkForDuplicates(IRI characteristicProperty, Authentication authentication) {
-        return this.findCandidates(characteristicProperty, authentication)
+    public Mono<Void> checkForDuplicates(IRI characteristicProperty, SessionContext ctx) {
+        return this.findCandidates(characteristicProperty, ctx)
                 .map(candidate -> {
                     log.trace("There are multiple entities with shared type '{}' and label '{}'", candidate.type(), candidate.sharedValue());
                     return candidate;
                 })
                 .flatMap(candidate ->
-                        this.findDuplicates(candidate, authentication)
+                        this.findDuplicates(candidate, ctx)
                                 .doOnNext(duplicate -> log.trace("Entity '{}' identified as duplicate. Another item exists with property {} and value {} .", duplicate.id(), candidate.sharedProperty(), candidate.sharedValue()))
                                 .collectList()
-                                .flatMap(duplicates -> this.mergeDuplicates(duplicates, authentication)))
+                                .flatMap(duplicates -> this.mergeDuplicates(duplicates, ctx)))
                 .doOnSubscribe(sub -> log.trace("Checking duplicates sharing the same characteristic property <{}>", characteristicProperty))
                 .doOnComplete(() -> log.debug("Completed checking for duplicates sharing the same characteristic property <{}>", characteristicProperty))
                 .thenEmpty(Mono.empty());
@@ -125,7 +125,7 @@ public class MergeDuplicatesJob implements Job {
     }
 
 
-    private Flux<Duplicate> findDuplicates(DuplicateCandidate duplicate, Authentication authentication) {
+    private Flux<Duplicate> findDuplicates(DuplicateCandidate duplicate, SessionContext ctx) {
 
         /*
         select ?thing where {
@@ -141,7 +141,7 @@ public class MergeDuplicatesJob implements Job {
                 idVariable.has(duplicate.sharedProperty(), this.valueFactory.createLiteral(duplicate.sharedValue()))
         );
 
-        return this.queryServices.queryValues(findDuplicates, authentication)
+        return this.queryServices.queryValues(findDuplicates, ctx)
                 .doOnSubscribe(subscription -> log.trace("Retrieving all duplicates of same type with value '{}' for property '{}' ", duplicate.sharedValue, duplicate.sharedProperty))
                 .flatMap(bindings -> {
                     Value id = bindings.getValue(idVariable.getVarName());
@@ -168,10 +168,10 @@ public class MergeDuplicatesJob implements Job {
      * c) keep the duplicate with most details as original
      *
      * @param duplicates
-     * @param authentication
+     * @param ctx
      * @return
      */
-    private Mono<Void> mergeDuplicates(List<Duplicate> duplicates, Authentication authentication) {
+    private Mono<Void> mergeDuplicates(List<Duplicate> duplicates, SessionContext ctx) {
         if (duplicates.isEmpty()) return Mono.empty();
 
         TreeSet<Duplicate> orderedDuplicates = new TreeSet<>(duplicates);
@@ -183,25 +183,25 @@ public class MergeDuplicatesJob implements Job {
         return Flux.fromIterable(deletionCandidates)
                 .doOnSubscribe(subscription -> log.trace("Trying to merge all duplicates, keeping entity '{}' as original", original.id()))
                 .flatMap(duplicate ->
-                        this.findStatementsPointingToDuplicate(duplicate, authentication)
-                                .flatMap(mislinkedStatement -> this.relinkEntity(mislinkedStatement.subject(), mislinkedStatement.predicate(), mislinkedStatement.object(), original.id(), authentication))
+                        this.findStatementsPointingToDuplicate(duplicate, ctx)
+                                .flatMap(mislinkedStatement -> this.relinkEntity(mislinkedStatement.subject(), mislinkedStatement.predicate(), mislinkedStatement.object(), original.id(), ctx))
                                 .doOnNext(trx -> log.info("Relinking completed in Transaction {}", trx.getIdentifier()))
                                 .map(transaction -> duplicate)
                 )
                 .flatMap(duplicate ->
-                        this.removeDuplicate(duplicate.id(), authentication)
+                        this.removeDuplicate(duplicate.id(), ctx)
                                 .doOnNext(trx -> log.info("Removed duplicate entity with identifier '{}' in transaction '{}'", duplicate.id(), trx.getIdentifier()))
                 )
                 .then();
     }
 
 
-    private Mono<RdfTransaction> removeDuplicate(IRI object, Authentication authentication) {
-        return this.entityServices.remove(object, authentication);
+    private Mono<RdfTransaction> removeDuplicate(IRI object, SessionContext ctx) {
+        return this.entityServices.remove(object, ctx);
     }
 
-    private Mono<RdfTransaction> relinkEntity(IRI subject, IRI predicate, Value object, Value id, Authentication authentication) {
-        return this.valueServices.replace(subject, predicate, object, id, authentication);
+    private Mono<RdfTransaction> relinkEntity(IRI subject, IRI predicate, Value object, Value id, SessionContext ctx) {
+        return this.valueServices.replace(subject, predicate, object, id, ctx);
     }
 
 
@@ -209,15 +209,15 @@ public class MergeDuplicatesJob implements Job {
      * Runs the query:   SELECT * WHERE { ?sub ?pre <duplicate id> }. to find all entities pointing to the identified duplicate entity (with the goal to reroute those statements to the original)
      *
      * @param duplicate,      the identified duplicate
-     * @param authentication, auth info
+     * @param ctx, auth info
      * @return the statements pointing to the duplicate (as Flux)
      */
-    private Flux<MislinkedStatement> findStatementsPointingToDuplicate(Duplicate duplicate, Authentication authentication) {
+    private Flux<MislinkedStatement> findStatementsPointingToDuplicate(Duplicate duplicate, SessionContext ctx) {
         Variable subject = SparqlBuilder.var("s");
         Variable predicate = SparqlBuilder.var("p");
 
         SelectQuery query = Queries.SELECT(subject, predicate).where(subject.has(predicate, duplicate.id()));
-        return queryServices.queryValues(query, authentication)
+        return queryServices.queryValues(query, ctx)
                 .doOnSubscribe(subscription -> log.trace("Retrieving all statements pointing to duplicate with id '{}'", duplicate.id()))
                 .flatMap(binding -> {
                     Value pVal = binding.getValue(predicate.getVarName());
@@ -233,7 +233,7 @@ public class MergeDuplicatesJob implements Job {
 
 
 
-    private Flux<DuplicateCandidate> findCandidates(IRI sharedProperty, Authentication authentication) {
+    private Flux<DuplicateCandidate> findCandidates(IRI sharedProperty, SessionContext ctx) {
 
         /*
         select ?type ?shared where {
@@ -255,7 +255,7 @@ public class MergeDuplicatesJob implements Job {
                 ).groupBy(sharedValue, type).having(Expressions.gt(Expressions.count(thing), 1)).limit(10);
 
 
-        return queryServices.queryValues(findDuplicates, authentication)
+        return queryServices.queryValues(findDuplicates, ctx)
                 .map(binding -> {
                     Value sharedValueVal = binding.getValue(sharedValue.getVarName());
                     Value typeVal = binding.getValue(type.getVarName());

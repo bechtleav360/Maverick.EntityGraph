@@ -65,8 +65,8 @@ public class EntitiesController extends AbstractController implements EntitiesAP
     @ResponseStatus(HttpStatus.OK)
     public Flux<AnnotatedStatement> read(@PathVariable String id, @RequestParam(required = false) @Nullable String property) {
 
-        return super.getAuthentication()
-                .flatMap(authentication -> entityServices.find(id, property, authentication))
+        return super.acquireContext()
+                .flatMap(ctx -> entityServices.find(id, property, ctx))
                 .flatMapIterable(TripleModel::asStatements)
                 .doOnSubscribe(s -> {
                     if (log.isDebugEnabled()) log.debug("Request to read entity with id: {}", id);
@@ -82,8 +82,8 @@ public class EntitiesController extends AbstractController implements EntitiesAP
             @RequestParam(value = "limit", defaultValue = "100") Integer limit,
             @RequestParam(value = "offset", defaultValue = "0") Integer offset) {
 
-        return super.getAuthentication()
-                .flatMapMany(authentication -> entityServices.list(authentication, limit, offset))
+        return super.acquireContext()
+                .flatMapMany(ctx -> entityServices.list(limit, offset, ctx))
                 .flatMapIterable(TripleModel::asStatements)
                 .doOnSubscribe(s -> {
                     if (log.isDebugEnabled()) log.debug("Request to list entities");
@@ -99,8 +99,8 @@ public class EntitiesController extends AbstractController implements EntitiesAP
     public Flux<AnnotatedStatement> create(@RequestBody Triples request) {
         Assert.isTrue(request.getModel().size() > 0, "No statements in request detected.");
 
-        return super.getAuthentication()
-                .flatMap(authentication -> entityServices.create(request, Map.of(), authentication))
+        return super.acquireContext()
+                .flatMap(ctx -> entityServices.create(request, Map.of(), ctx))
                 .flatMapIterable(TripleModel::asStatements)
                 .doOnSubscribe(s -> {
                     if (log.isDebugEnabled()) log.debug("Request to create a new Entity");
@@ -115,10 +115,10 @@ public class EntitiesController extends AbstractController implements EntitiesAP
     @ResponseStatus(HttpStatus.CREATED)
     public Flux<AnnotatedStatement> embed(@PathVariable String id, @PathVariable String prefixedKey, @RequestBody Triples value) {
 
-        return super.getAuthentication()
-                .flatMap(authentication ->
+        return super.acquireContext()
+                .flatMap(ctx ->
                         schemaServices.resolvePrefixedName(prefixedKey)
-                                .flatMap(predicate -> entityServices.linkEntityTo(id, predicate, value, authentication))
+                                .flatMap(predicate -> entityServices.linkEntityTo(id, predicate, value, ctx))
                 )
                 .flatMapIterable(TripleModel::asStatements)
                 .doOnSubscribe(s -> {
@@ -133,8 +133,8 @@ public class EntitiesController extends AbstractController implements EntitiesAP
             produces = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.N3_VALUE})
     @ResponseStatus(HttpStatus.OK)
     public Flux<AnnotatedStatement> delete(@PathVariable String id) {
-        return super.getAuthentication()
-                .flatMap(authentication -> entityServices.remove(id, authentication))
+        return super.acquireContext()
+                .flatMap(ctx -> entityServices.remove(id, ctx))
                 .flatMapIterable(TripleModel::asStatements)
                 .doOnSubscribe(s -> {
                     if (log.isDebugEnabled()) log.debug("Delete an Entity");
@@ -142,79 +142,4 @@ public class EntitiesController extends AbstractController implements EntitiesAP
                 });
     }
 
-
-
-
-    /* //
-    @ApiOperation(value = "Update entity", tags = {"v3", "entity"})
-    @PutMapping(value = "",
-                consumes = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.N3_VALUE},
-                produces = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.N3_VALUE})
-        @ResponseStatus(HttpStatus.ACCEPTED)
-        Flux<NamespaceAwareStatement> updateValue(@RequestBody Incoming request) {
-            Assert.isTrue(request.getModel().size() > 0, "No statements in request detected.");
-
-            return super.getAuthentication()
-                    .flatMap(authentication ->  entityServices.createEntity(request, Map.of(), authentication))
-                    .flatMapIterable(AbstractModel::asStatements)
-                    .doOnSubscribe(s -> {
-                        if (log.isDebugEnabled()) log.debug("Create a new Entity");
-                        if (log.isTraceEnabled()) log.trace("Payload: \n {}", request.toString());
-                    });
-        }
-    */
-
-    /*
-    @ApiOperation(value = "Read entity with type coercion", tags = {"v4", "entity"})
-    @GetMapping("/{prefixedType:[\\w|\\d]+\\.[\\w|\\d]+}/{id:[\\w|\\d|-]+}")
-    @ResponseStatus(HttpStatus.OK)
-    Mono<ServerResponse> readWithType(@PathVariable String prefixedType, @PathVariable String id);
-
-    @ApiOperation(value = "Read entity by example", tags = {"v1", "entity"})
-    @PostMapping("/{id}")
-    @ResponseStatus(HttpStatus.OK)
-    Mono<ServerResponse> readByExample(@RequestBody ObjectNode frame);
-
-    @ApiOperation(value = "List entities by type", tags = {"v2", "entity"})
-    @GetMapping("/{prefixedType:[\\w|\\d]+\\.[\\w|\\d]+}")
-    @ResponseStatus(HttpStatus.OK)
-    Mono<ServerResponse> listEntities(@RequestParam String page, @RequestParam int count);
-
-    @ApiOperation(value = "Create entity with type", tags = {"v3", "entity"})
-    @PostMapping("/{prefixedType}")
-    @ResponseStatus(HttpStatus.CREATED)
-    Mono<ServerResponse> createEntityWithType(@RequestBody String frame);
-
-    @ApiOperation(value = "Delete entity", tags = {"v2", "entity"})
-    @DeleteMapping("/{id}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    Mono<ServerResponse> deleteEntity(@PathVariable String id);
-
-    @ApiOperation(value = "Update entity", tags = {"v3", "entity"})
-    @PutMapping("/{id}")
-    @ResponseStatus(HttpStatus.OK)
-    Mono<ServerResponse> patchEntity(@PathVariable String id);
-
-    @ApiOperation(value = "Update value", tags = {"v3", "entity"})
-    @PutMapping("/{id}/{prefixedKey}")
-    @ResponseStatus(HttpStatus.OK)
-    Mono<ServerResponse> updateValue(@PathVariable String id, @PathVariable String prefixedKey);
-
-    @ApiOperation(value = "Read value or embedded object", tags = {"v2", "entity"})
-    @GetMapping("/{id}/{prefixedKey}")
-    @ResponseStatus(HttpStatus.OK)
-    Mono<ServerResponse> readValue(@PathVariable String id, @PathVariable String prefixedKey);
-
-
-    @ApiOperation(value = "Annotate value or relation", tags = {"v2", "entity"})
-    @PutMapping("/{id}/{prefixedKey}")
-    @ResponseStatus(HttpStatus.CREATED)
-    Mono<ServerResponse> addAnnotations(@PathVariable String id, @PathVariable String prefixedKey);
-
-    @ApiOperation(value = "Delete value or relation", tags = {"v2", "entity"})
-    @DeleteMapping("/{id}/{prefixedKey}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    Mono<ServerResponse> deleteValue(@PathVariable String id, @PathVariable String prefixedKey);
-
-     */
 }

@@ -1,7 +1,7 @@
 package org.av360.maverick.graph.services;
 
+import org.av360.maverick.graph.model.context.SessionContext;
 import org.eclipse.rdf4j.model.IRI;
-import org.springframework.security.core.Authentication;
 import reactor.core.publisher.Mono;
 
 import javax.annotation.Nullable;
@@ -20,5 +20,5 @@ public interface ContentLocationResolverService {
     String getDefaultBaseDirectory();
     record ContentLocation(URI storageURI, String apiPath) {}
 
-    Mono<ContentLocation> resolveContentLocation(IRI entityId, IRI contentId, String filename, @Nullable String language, Authentication authentication);
+    Mono<ContentLocation> resolveContentLocation(IRI entityId, IRI contentId, String filename, @Nullable String language, SessionContext ctx);
 }

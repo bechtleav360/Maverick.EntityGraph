@@ -1,15 +1,15 @@
 package org.av360.maverick.graph.store.rdf4j.repository;
 
 import lombok.extern.slf4j.Slf4j;
+import org.av360.maverick.graph.model.context.SessionContext;
+import org.av360.maverick.graph.model.enums.RepositoryType;
 import org.av360.maverick.graph.store.EntityStore;
-import org.av360.maverick.graph.store.RepositoryType;
 import org.av360.maverick.graph.store.rdf.fragments.RdfEntity;
 import org.av360.maverick.graph.store.rdf4j.repository.util.AbstractStore;
 import org.eclipse.rdf4j.model.*;
 import org.eclipse.rdf4j.model.util.ModelCollector;
 import org.eclipse.rdf4j.repository.RepositoryResult;
 import org.slf4j.Logger;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
@@ -29,12 +29,12 @@ public class EntityStoreImpl extends AbstractStore implements EntityStore {
     }
 
 
-    public Mono<RdfEntity> getEntity(Resource id, Authentication authentication, GrantedAuthority requiredAuthority) {
-        return this.getEntity(id, authentication, requiredAuthority, 1);
+    public Mono<RdfEntity> getEntity(Resource id, SessionContext ctx, GrantedAuthority requiredAuthority) {
+        return this.getEntity(id, ctx, requiredAuthority, 1);
     }
 
-    public Mono<RdfEntity> getEntity(Resource id, Authentication authentication, GrantedAuthority requiredAuthority, int includeNeighborsLevel) {
-        return this.applyWithConnection(authentication, requiredAuthority, connection -> {
+    public Mono<RdfEntity> getEntity(Resource id, SessionContext ctx, GrantedAuthority requiredAuthority, int includeNeighborsLevel) {
+        return this.applyWithConnection(ctx, requiredAuthority, connection -> {
             log.trace("Loading entity with id '{}' from repository {}", id, connection.getRepository().toString());
 
             try (RepositoryResult<Statement> statements = connection.getStatements(id, null, null)) {

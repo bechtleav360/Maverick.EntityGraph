@@ -56,7 +56,7 @@ class TestConvertAnonymousIdentifiers extends TestsBase {
         Mono<Model> read2 = entityServicesClient.getModel().doOnNext(model -> super.printModel(model, RDFFormat.TURTLE)).doOnSubscribe(sub -> super.printStep());
 
 
-        Mono<Void> jobMono = scheduled.run(TestSecurityConfig.createAuthenticationToken()).doOnSubscribe(sub -> super.printStep());
+        Mono<Void> jobMono = scheduled.run(TestSecurityConfig.createTestContext()).doOnSubscribe(sub -> super.printStep());
 
         StepVerifier.create(importMono.then(read1))
                 .assertNext(md -> Assertions.assertTrue(md.subjects().size() > 0)).verifyComplete();
@@ -85,7 +85,7 @@ class TestConvertAnonymousIdentifiers extends TestsBase {
         Mono<Model> read2 = entityServicesClient.getModel().doOnNext(model -> super.printModel(model, RDFFormat.TURTLE)).doOnSubscribe(sub -> super.printStep());
 
 
-        Mono<Void> jobMono = scheduled.run(TestSecurityConfig.createAuthenticationToken()).doOnSubscribe(sub -> super.printStep());
+        Mono<Void> jobMono = scheduled.run(TestSecurityConfig.createTestContext()).doOnSubscribe(sub -> super.printStep());
 
         StepVerifier.create(importMono.then(read1))
                 .assertNext(md -> Assertions.assertTrue(md.subjects().size() > 0)).verifyComplete();
@@ -110,7 +110,7 @@ class TestConvertAnonymousIdentifiers extends TestsBase {
         Mono<Model> read2 = entityServicesClient.getModel().doOnNext(model -> super.printModel(model, RDFFormat.TURTLE)).doOnSubscribe(sub -> super.printStep());
 
 
-        Mono<Void> jobMono = scheduled.run(TestSecurityConfig.createAuthenticationToken()).doOnSubscribe(sub -> super.printStep());
+        Mono<Void> jobMono = scheduled.run(TestSecurityConfig.createTestContext()).doOnSubscribe(sub -> super.printStep());
 
         StepVerifier.create(importMono.then(read1))
                 .assertNext(md -> Assertions.assertTrue(md.subjects().size() > 0)).verifyComplete();
@@ -135,7 +135,7 @@ class TestConvertAnonymousIdentifiers extends TestsBase {
         Mono<Model> read2 = entityServicesClient.getModel().doOnNext(model -> super.printModel(model, RDFFormat.TURTLE)).doOnSubscribe(sub -> super.printStep());
 
 
-        Mono<Void> jobMono = scheduled.run(TestSecurityConfig.createAuthenticationToken()).doOnSubscribe(sub -> super.printStep());
+        Mono<Void> jobMono = scheduled.run(TestSecurityConfig.createTestContext()).doOnSubscribe(sub -> super.printStep());
 
         StepVerifier.create(importMono.then(read1))
                 .assertNext(md -> {

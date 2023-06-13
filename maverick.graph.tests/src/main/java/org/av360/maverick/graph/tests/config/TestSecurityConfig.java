@@ -2,7 +2,7 @@ package org.av360.maverick.graph.tests.config;
 
 import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.model.context.RequestDetails;
-import org.av360.maverick.graph.model.security.AdminToken;
+import org.av360.maverick.graph.model.context.SessionContext;
 import org.av360.maverick.graph.model.security.Authorities;
 import org.av360.maverick.graph.model.util.PreAuthenticationWebFilter;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -16,7 +16,6 @@ import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
 import org.springframework.security.config.web.server.SecurityWebFiltersOrder;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.web.server.SecurityWebFilterChain;
 import org.springframework.security.web.server.authentication.AuthenticationWebFilter;
 import org.springframework.security.web.server.authentication.ServerAuthenticationConverter;
@@ -32,8 +31,8 @@ import java.util.List;
 public class TestSecurityConfig {
 
 
-    public static void addConfigurationDetail(Authentication token, Serializable key, String value) {
-        ((RequestDetails) token.getDetails()).setConfiguration(key, value);
+    public static void addConfigurationDetail(SessionContext context, Serializable key, String value) {
+        ((RequestDetails) context.getAuthenticationOrThrow().getDetails()).setConfiguration(key, value);
     }
 
     @Bean
@@ -62,7 +61,7 @@ public class TestSecurityConfig {
     ServerAuthenticationConverter buildTestingAuthenticationConverter() {
         return exchange -> {
             RequestDetails details = RequestDetails.withRequest(exchange.getRequest());
-            TestingAuthenticationToken testingAuthenticationToken = createAuthenticationToken();
+            TestingAuthenticationToken testingAuthenticationToken = (TestingAuthenticationToken) createTestContext().getAuthentication().get();
             testingAuthenticationToken.setDetails(details);
             return Mono.just(testingAuthenticationToken);
         };
@@ -71,20 +70,21 @@ public class TestSecurityConfig {
 
 
 
-    public static TestingAuthenticationToken createAuthenticationToken() {
+    public static SessionContext createTestContext() {
         TestingAuthenticationToken testingAuthenticationToken = new TestingAuthenticationToken("test", "test", List.of(Authorities.SYSTEM));
         testingAuthenticationToken.setDetails(new RequestDetails().setPath("/api/entities"));
-        return testingAuthenticationToken;
+
+        return new SessionContext().setAuthentication(testingAuthenticationToken);
     }
 
-    public static AdminToken createAdminToken() {
-        return new AdminToken();
+    public static SessionContext createAdminContext() {
+        return new SessionContext().withSystemAuthentication();
     }
 
-    public static AnonymousAuthenticationToken createAnonymousToken() {
+    public static SessionContext createAnonymousContext() {
         AnonymousAuthenticationToken token = new AnonymousAuthenticationToken("key", "anonymous", List.of(Authorities.GUEST));
         token.setDetails(new RequestDetails().setPath("/api/entities"));
-        return token;
+        return new SessionContext().withAuthentication(token);
     }
     /*
     @Bean

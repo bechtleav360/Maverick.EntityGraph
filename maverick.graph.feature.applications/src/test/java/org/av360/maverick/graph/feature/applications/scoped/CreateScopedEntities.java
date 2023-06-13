@@ -45,22 +45,22 @@ public class CreateScopedEntities  extends ApiTestsBase {
     @Test
     public void createEntity() {
         super.printStart("creating scoped entity");
-        client.createApplication("testApp", new ApplicationFlags(false, true))
+        client.createApplication("test_app", new ApplicationFlags(false, true))
                 .expectStatus().isCreated();
 
 
         Resource file = new ClassPathResource("requests/create-valid.jsonld");
 
         super.printStep();
-        RdfConsumer c1 = this.entityClient.createEntity(file, "/api/entities", Map.of("X-Application", "testApp"));
+        RdfConsumer c1 = this.entityClient.createEntity(file, "/api/entities", Map.of("X-Application", "test_app"));
 
         super.printStep();
 
 
-        super.dump(Map.of("X-Application", "testApp"));
+        super.dump(Map.of("X-Application", "test_app"));
 
         super.printStep();
-        RdfConsumer c2 = this.entityClient.listEntities("/api/s/testApp/entities");
+        RdfConsumer c2 = this.entityClient.listEntities("/api/s/test_app/entities");
         Assertions.assertEquals(1, c2.getStatements().size());
 
         super.printStep();

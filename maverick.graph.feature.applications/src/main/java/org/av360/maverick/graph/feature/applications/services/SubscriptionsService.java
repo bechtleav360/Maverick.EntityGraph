@@ -9,6 +9,7 @@ import org.av360.maverick.graph.feature.applications.services.model.Subscription
 import org.av360.maverick.graph.feature.applications.services.vocab.ApplicationTerms;
 import org.av360.maverick.graph.feature.applications.services.vocab.SubscriptionTerms;
 import org.av360.maverick.graph.feature.applications.store.ApplicationsStore;
+import org.av360.maverick.graph.model.context.SessionContext;
 import org.av360.maverick.graph.model.identifier.RandomIdentifier;
 import org.av360.maverick.graph.model.security.Authorities;
 import org.av360.maverick.graph.model.util.StreamsLogger;
@@ -20,7 +21,6 @@ import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.sparqlbuilder.core.query.Queries;
 import org.eclipse.rdf4j.sparqlbuilder.core.query.SelectQuery;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -51,7 +51,7 @@ public class SubscriptionsService {
     }
 
 
-    public Mono<Subscription> getSubscription(String subscriptionIdentifier, Authentication authentication) {
+    public Mono<Subscription> getSubscription(String subscriptionIdentifier, SessionContext ctx) {
 
 
         SelectQuery q = Queries.SELECT()
@@ -66,7 +66,7 @@ public class SubscriptionsService {
                                 .andHas(ApplicationTerms.HAS_LABEL, QueryVariables.varAppLabel)
                         )
                 );
-        return this.applicationsStore.query(q, authentication, Authorities.APPLICATION)
+        return this.applicationsStore.query(q, ctx, Authorities.APPLICATION)
                 .singleOrEmpty()
                 .map(BindingsAccessor::new)
                 .flatMap(QueryVariables::buildSubscriptionFromBindings)
@@ -79,9 +79,9 @@ public class SubscriptionsService {
     }
 
 
-    public Flux<Subscription> listSubscriptionsForApplication(String applicationKey, Authentication authentication) {
+    public Flux<Subscription> listSubscriptionsForApplication(String applicationKey, SessionContext ctx) {
 
-        return this.applicationsService.getApplication(applicationKey, authentication)
+        return this.applicationsService.getApplication(applicationKey, ctx)
                 .flatMapMany(app -> {
                     SelectQuery q = Queries.SELECT()
                             .where(QueryVariables.varNodeSubscription.has(SubscriptionTerms.HAS_KEY, QueryVariables.varSubKey)
@@ -91,7 +91,7 @@ public class SubscriptionsService {
                                     .andHas(SubscriptionTerms.FOR_APPLICATION, app.key())
                             );
 
-                    return this.applicationsStore.query(q, authentication, Authorities.APPLICATION)
+                    return this.applicationsStore.query(q, ctx, Authorities.APPLICATION)
                             .map(BindingsAccessor::new)
                             .flatMap(ba -> QueryVariables.buildSubscriptionFromBindings(ba, app));
                 })
@@ -99,15 +99,15 @@ public class SubscriptionsService {
     }
 
 
-    public Mono<Void> revokeToken(String subscriptionId, String name, Authentication authentication) {
+    public Mono<Void> revokeToken(String subscriptionId, String name, SessionContext ctx) {
         log.debug("Revoking api key for node '{}'", subscriptionId);
 
         return Mono.error(new UnsupportedOperationException());
     }
 
-    public Mono<Subscription> createSubscription(String applicationKey, String subscriptionLabel, Authentication authentication) {
+    public Mono<Subscription> createSubscription(String applicationKey, String subscriptionLabel, SessionContext ctx) {
 
-        return this.applicationsService.getApplication(applicationKey, authentication)
+        return this.applicationsService.getApplication(applicationKey, ctx)
                 .map(application ->
                         new Subscription(
                                 IdentifierServices.createRandomIdentifier(Local.Applications.NAMESPACE),
@@ -129,7 +129,7 @@ public class SubscriptionsService {
                     modelBuilder.add(SubscriptionTerms.FOR_APPLICATION, apiKey.application().key());
                     modelBuilder.add(apiKey.application().iri(), ApplicationTerms.HAS_API_KEY, apiKey.iri());
 
-                    return this.applicationsStore.insert(modelBuilder.build(), authentication, Authorities.APPLICATION).then(Mono.just(apiKey));
+                    return this.applicationsStore.insert(modelBuilder.build(), ctx, Authorities.APPLICATION).then(Mono.just(apiKey));
                 })
                 .doOnSuccess(token -> {
                     this.eventPublisher.publishEvent(new TokenCreatedEvent(token));

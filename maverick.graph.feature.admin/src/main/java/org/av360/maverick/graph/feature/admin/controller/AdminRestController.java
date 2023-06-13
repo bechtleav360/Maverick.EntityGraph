@@ -1,12 +1,11 @@
-package org.av360.maverick.graph.feature.services.api;
+package org.av360.maverick.graph.feature.admin.controller;
 
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.api.controller.AbstractController;
-import org.av360.maverick.graph.feature.services.domain.AdminServices;
-import org.av360.maverick.graph.store.RepositoryType;
+import org.av360.maverick.graph.feature.admin.services.AdminServices;
 import org.av360.maverick.graph.store.rdf.helpers.RdfUtils;
 import org.eclipse.rdf4j.rio.RDFParserFactory;
 import org.springframework.core.io.buffer.DataBuffer;
@@ -27,10 +26,10 @@ import java.util.Optional;
 //@Api(tags = "Admin Operations")
 @Slf4j(topic = "graph.feat.admin.ctrl.api")
 @SecurityRequirement(name = "api_key")
-public class Admin extends AbstractController {
+public class AdminRestController extends AbstractController {
     protected final AdminServices adminServices;
 
-    public Admin(AdminServices adminServices) {
+    public AdminRestController(AdminServices adminServices) {
         this.adminServices = adminServices;
     }
 
@@ -41,12 +40,12 @@ public class Admin extends AbstractController {
                              @Parameter(description = "The label of the repository", schema = @Schema(type = "string", allowableValues = {"entities", "transactions", "schema"}))
                              String repositoryTypeName) {
         Assert.notNull(repositoryTypeName, "Invalid value for repository type: " + repositoryTypeName);
-        RepositoryType repositoryType = RepositoryType.valueOf(repositoryTypeName.toUpperCase());
 
-        return super.getAuthentication()
-                .flatMap(auth -> adminServices.reset(auth, repositoryType))
+        return super.acquireContext()
+                .map(context -> context.getEnvironment().withRepositoryType(repositoryTypeName))
+                .flatMap(adminServices::reset)
                 .doOnError(throwable -> log.error("Error while purging repository. Type '{}' with reason: {}", throwable.getClass().getSimpleName(), throwable.getMessage() ))
-                .doOnSubscribe(s -> log.info("Request to empty the repository of type '{}'", repositoryType));
+                .doOnSubscribe(s -> log.info("Request to empty the repository of type '{}'", repositoryTypeName));
     }
 
 
@@ -63,8 +62,8 @@ public class Admin extends AbstractController {
             String mimetype) {
         Assert.isTrue(StringUtils.hasLength(mimetype), "Mimetype is a required parameter");
 
-        return super.getAuthentication()
-                .flatMap(authentication -> adminServices.importEntities(bytes, mimetype, authentication))
+        return super.acquireContext()
+                .flatMap(ctx -> adminServices.importEntities(bytes, mimetype, ctx))
                 .doOnError(throwable -> log.error("Error while importing to repository.", throwable))
                 .doOnSubscribe(s -> log.debug("Request to import a request of mimetype {}", mimetype));
     }
@@ -84,7 +83,7 @@ public class Admin extends AbstractController {
         Optional<RDFParserFactory> parserFactory = RdfUtils.getParserFactory(MimeType.valueOf(mimetype));
         Assert.isTrue(parserFactory.isPresent(), "Unsupported mimetype for parsing the file. Supported mimetypes are: " + RdfUtils.getSupportedMimeTypes());
 
-        return Mono.zip(super.getAuthentication(), fileMono)
+        return Mono.zip(super.acquireContext(), fileMono)
                 .flatMap(objects -> adminServices.importEntities(objects.getT2().content(), mimetype, objects.getT1()))
                 .doOnError(throwable -> log.error("Error while importing to repository.", throwable))
                 .doOnSubscribe(s -> log.info("Request to import a file of mimetype {}", mimetype));

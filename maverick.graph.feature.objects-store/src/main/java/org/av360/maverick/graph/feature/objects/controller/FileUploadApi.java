@@ -1,4 +1,4 @@
-package org.av360.maverick.graph.feature.objects.api;
+package org.av360.maverick.graph.feature.objects.controller;
 
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -6,7 +6,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.api.controller.AbstractController;
-import org.av360.maverick.graph.feature.objects.domain.FileServices;
+import org.av360.maverick.graph.feature.objects.services.FileServices;
 import org.av360.maverick.graph.model.api.ContentApi;
 import org.av360.maverick.graph.model.enums.RdfMimeTypes;
 import org.av360.maverick.graph.model.rdf.AnnotatedStatement;
@@ -54,8 +54,8 @@ public class FileUploadApi extends AbstractController implements ContentApi {
     @GetMapping(value = "/content/{id:[\\w|\\d|\\-|\\_]+}")
     @ResponseStatus(HttpStatus.OK)
     public Mono<ResponseEntity<Flux<DataBuffer>>> download(@PathVariable String id) {
-        return super.getAuthentication()
-                .flatMap(authentication -> fileServices.read(id, authentication))
+        return super.acquireContext()
+                .flatMap(ctx -> fileServices.read(id, ctx))
                 .map(fileAccessResult -> {
                     ResponseEntity.BodyBuilder result = ResponseEntity.ok();
 
@@ -93,9 +93,9 @@ public class FileUploadApi extends AbstractController implements ContentApi {
         Assert.isTrue(StringUtils.hasLength(filename), "You have to provide a filename when uploading an object.");
         Assert.isTrue(filename.split("\\.").length > 1, "The filename has to have a file extension");
 
-        return super.getAuthentication()
-                .flatMap(authentication ->
-                        fileServices.store(id, bytes, prefixedKey, filename, lang, authentication)
+        return super.acquireContext()
+                .flatMap(ctx ->
+                        fileServices.store(id, bytes, prefixedKey, filename, lang, ctx)
                 )
                 .flatMapIterable(TripleModel::asStatements)
                 .doOnSubscribe(s -> {

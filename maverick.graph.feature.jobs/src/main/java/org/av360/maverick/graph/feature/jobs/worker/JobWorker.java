@@ -57,9 +57,8 @@ public class JobWorker {
                 return;
             }
 
-            requestedJob.get().run(event.getToken())
+            requestedJob.get().run(event.getSessionContext())
                     .subscribeOn(scheduler)
-                    .contextWrite(event::buildContext)
                     .doOnSubscribe(subscription -> {
                         log.debug("Starting job '{}'.", event.getJobIdentifier());
                         this.activeJobs.put(jobIdentifier.scope(), jobIdentifier.name());

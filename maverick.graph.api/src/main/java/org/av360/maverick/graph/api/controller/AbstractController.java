@@ -22,13 +22,13 @@ public class AbstractController {
     }
 
 
-    protected Mono<SessionContext> buildRequestContext() {
+    protected Mono<SessionContext> acquireContext() {
         return ReactiveSecurityContextHolder.getContext()
                 .map(SecurityContext::getAuthentication)
                 .switchIfEmpty(Mono.error(new AuthenticationCredentialsNotFoundException("Failed to acquire authentication from security context.")))
                 .filter(Authentication::isAuthenticated)
                 .switchIfEmpty(Mono.error(new InsufficientAuthenticationException("Request couldn't be authenticated.")))
-                .map(authentication -> new SessionContext().setAuthentication(authentication));
+                .map(authentication -> new SessionContext().withAuthentication(authentication));
     }
 
 

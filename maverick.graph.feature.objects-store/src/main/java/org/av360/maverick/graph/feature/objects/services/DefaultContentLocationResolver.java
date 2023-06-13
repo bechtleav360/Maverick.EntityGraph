@@ -1,11 +1,11 @@
-package org.av360.maverick.graph.feature.objects.domain;
+package org.av360.maverick.graph.feature.objects.services;
 
+import org.av360.maverick.graph.model.context.SessionContext;
 import org.av360.maverick.graph.model.errors.InsufficientPrivilegeException;
 import org.av360.maverick.graph.model.errors.InvalidConfiguration;
 import org.av360.maverick.graph.model.security.Authorities;
 import org.av360.maverick.graph.services.ContentLocationResolverService;
 import org.eclipse.rdf4j.model.IRI;
-import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
@@ -27,11 +27,12 @@ public class DefaultContentLocationResolver implements ContentLocationResolverSe
     }
 
     @Override
-    public Mono<ContentLocation> resolveContentLocation(IRI entityID, IRI contentId, String filename, @Nullable String language, Authentication authentication) {
+    public Mono<ContentLocation> resolveContentLocation(IRI entityID, IRI contentId, String filename, @Nullable String language, SessionContext ctx) {
         Assert.isTrue(StringUtils.hasLength(path), "Path for local file storage is not configured in application properties.");
 
-        if (!Authorities.satisfies(Authorities.READER, authentication.getAuthorities())) {
-            String msg = String.format("Required authority '%s' for resolving uri for filename '%s' and entity '%s' not met in authentication with authorities '%s'", Authorities.READER, filename, entityID.getLocalName(), authentication.getAuthorities());
+
+        if (ctx.getAuthentication().isEmpty() || !Authorities.satisfies(Authorities.READER, ctx.getAuthentication().get().getAuthorities())) {
+            String msg = String.format("Required authority '%s' for resolving uri for filename '%s' and entity '%s' not met in authentication", Authorities.READER, filename, entityID.getLocalName());
             return Mono.error(new InsufficientPrivilegeException(msg));
         }
 
