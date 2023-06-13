@@ -24,17 +24,13 @@ application:
         scheduled:
           detectDuplicates:
             enabled: true
-            defaultFrequency: "0 */5 * * * ?"
           replaceIdentifiers:
             enabled: true
-            defaultFrequency: "0 */5 * * * ?"
           typeCoercion:
             enabled: true
-            defaultFrequency: "0 */5 * * * ?"
           exportApplication:
             enabled: true
-            defaultFrequency: "0 */5 * * * ?"
-            defaultLocalPath: "C:/Exports"
+            defaultLocalPath: "D:/Graphen/entities/exports"
             defaultS3Host: "http://127.0.0.1:9000"
             defaultS3BucketId: "test"
       navigation:

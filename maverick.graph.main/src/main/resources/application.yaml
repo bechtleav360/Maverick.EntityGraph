@@ -2,12 +2,51 @@ info:
   app:
     version: '@project.version@'
 
-spring:
-  profiles:
-    active: dev
-
-
 application:
+  security:
+    enabled: true
+    apiKey: ~
+    basic:
+      enabled: false
+  features:
+    modules:
+      objects:
+        enabled: false
+        configuration:
+          mode: local
+          path: "/var/data/objects"
+      applications:
+        enabled: true
+      admin:
+        enabled: true
+      jobs:
+        enabled: true
+        scheduled:
+          detectDuplicates:
+            enabled: true
+            defaultFrequency: "0/20 * * * * ?"
+          replaceIdentifiers:
+            enabled: true
+            defaultFrequency: "5/20 * * * * ?"
+          typeCoercion:
+            enabled: true
+            defaultFrequency: "10/20 * * * * ?"
+          exportApplication:
+            enabled: true
+            defaultFrequency: "10 2 * * * ?"
+            defaultLocalPath: "/var/data/exports"
+            defaultS3Host: ~
+            defaultS3BucketId: ~
+      navigation:
+        enabled: true
+    transformers:
+      replaceGlobalIdentifiers: true
+      replaceAnonymousIdentifiers: true
+      mergeDuplicates: true
+      typeCoercion: true
+    validators:
+      checkRequiredType: true
+
   storage:
     vocabularies:
       persistent: false

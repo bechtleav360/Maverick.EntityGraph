@@ -48,6 +48,8 @@ public class Applications extends AbstractController {
     @ResponseStatus(HttpStatus.CREATED)
     Mono<Responses.ApplicationResponse> createApplication(@RequestBody Requests.RegisterApplicationRequest request) {
         Assert.notNull(request.label(), "Label must be set in request");
+        Assert.isTrue(request.label().matches("^[a-z0-9_-]*$"), "Only lowercase characters, numbers, '_' and '-' are allowed in the label.");
+
 
         return super.getAuthentication()
                 .flatMap(authentication -> this.applicationsService.createApplication(request.label(), request.flags(), request.configuration(), authentication))
