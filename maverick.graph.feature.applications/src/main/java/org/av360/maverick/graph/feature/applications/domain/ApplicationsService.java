@@ -271,12 +271,12 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
                     );
 
             return Mono.zip(
-                            this.applicationsStore.query(listApplicationsQuery, authentication, Authorities.READER)
+                            this.applicationsStore.query(listApplicationsQuery, authentication, Authorities.APPLICATION)
                                     .map(BindingsAccessor::new)
                                     .flatMap(QueryVariables::buildApplicationFromBindings)
                                     .collectList()
                             ,
-                            this.applicationsStore.query(listConfigurationItemsQuery, authentication, Authorities.READER)
+                            this.applicationsStore.query(listConfigurationItemsQuery, authentication, Authorities.APPLICATION)
                                     .map(BindingsAccessor::new)
                                     .flatMap(QueryVariables::buildConfigurationItemFromBindings)
                                     .collectList()
