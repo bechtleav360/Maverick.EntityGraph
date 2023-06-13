@@ -97,13 +97,13 @@ public class RequestedApplicationFilter implements PreAuthenticationWebFilter {
     public Optional<String> getRequestedApplicationFromPath(String path) throws IOException {
         Assert.isTrue(StringUtils.hasLength(path), "Empty path in request details");
 
+
+
         String[] split = path.split("/");
         for (int i = 0; i < split.length; i++) {
             if (split[i].equalsIgnoreCase("s")) {
                 if (split.length > i + 1) {
                     return Optional.of(split[i + 1]);
-                } else {
-                    throw new IOException("Invalid path in request, missing application label: " + path);
                 }
             }
         }
