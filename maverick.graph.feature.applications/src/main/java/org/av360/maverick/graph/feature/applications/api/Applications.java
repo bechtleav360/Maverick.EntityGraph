@@ -108,7 +108,7 @@ public class Applications extends AbstractController {
                                 application.configuration()
                         )
 
-                ).doOnSubscribe(subscription -> log.info("Request to get configuration key '{}' for application with id '{}'", configurationKey, applicationKey));
+                ).doOnSubscribe(subscription -> log.info("Request to update configuration key '{}' for application with id '{}'", configurationKey, applicationKey));
     }
 
     @DeleteMapping(value = "/{applicationKey}/configuration/{configurationKey}")
