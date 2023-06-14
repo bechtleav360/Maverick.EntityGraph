@@ -29,6 +29,7 @@ import java.io.StringWriter;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Map;
 
@@ -114,9 +115,11 @@ public class ExportApplicationJob implements Job {
 
     private Mono<Void> saveRdfStringToLocalPath(String rdfString, Application application) {
         return Mono.fromCallable(() -> {
+            Path directoryPath = Paths.get(application.configuration().get(ScopedScheduledExportApplication.CONFIG_KEY_EXPORT_LOCAL_PATH).toString());
+            Files.createDirectories(directoryPath);
             Files.writeString(
                     Paths.get(
-                            application.configuration().get(ScopedScheduledExportApplication.CONFIG_KEY_EXPORT_LOCAL_PATH).toString(),
+                            directoryPath.toString(),
                             application.label() + ".txt"
                     ),
                     rdfString,
