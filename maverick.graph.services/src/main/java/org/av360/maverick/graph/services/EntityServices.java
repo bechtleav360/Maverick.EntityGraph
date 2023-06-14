@@ -7,6 +7,9 @@ import org.av360.maverick.graph.store.EntityStore;
 import org.av360.maverick.graph.store.rdf.fragments.RdfEntity;
 import org.av360.maverick.graph.store.rdf.fragments.RdfTransaction;
 import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Model;
+import org.eclipse.rdf4j.rio.RDFFormat;
+import org.springframework.core.io.Resource;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -97,4 +100,7 @@ public interface EntityServices {
 
     EntityStore getStore();
 
+    Mono<RdfTransaction> importFile(Resource resource, RDFFormat format, SessionContext ctx);
+
+    Mono<Model> getModel(SessionContext ctx);
 }

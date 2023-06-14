@@ -64,7 +64,7 @@ public abstract class TestsBase {
 
     public void printModel(Model md, RDFFormat rdfFormat) {
        String m = this.dumpModel(md, rdfFormat);
-       log.trace("Current model: \n {}", m);
+       log.info("Current model: \n {}", m);
     }
 
     public String dumpModel(Model md, RDFFormat rdfFormat) {

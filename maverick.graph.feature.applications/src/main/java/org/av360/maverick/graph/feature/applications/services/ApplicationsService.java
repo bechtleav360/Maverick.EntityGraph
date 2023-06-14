@@ -17,6 +17,7 @@ import org.av360.maverick.graph.feature.applications.services.model.QueryVariabl
 import org.av360.maverick.graph.feature.applications.services.vocab.ApplicationTerms;
 import org.av360.maverick.graph.feature.applications.store.ApplicationsStore;
 import org.av360.maverick.graph.model.context.SessionContext;
+import org.av360.maverick.graph.model.enums.RepositoryType;
 import org.av360.maverick.graph.model.errors.InconsistentModelException;
 import org.av360.maverick.graph.model.errors.InsufficientPrivilegeException;
 import org.av360.maverick.graph.model.identifier.LocalIdentifier;
@@ -81,6 +82,7 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
      */
     public Mono<Application> createApplication(String label, ApplicationFlags flags, Map<String, Serializable> configuration, SessionContext ctx) {
 
+
         LocalIdentifier subject = IdentifierServices.createRandomIdentifier(Local.Applications.NAMESPACE);
 
         Application application = new Application(
@@ -106,7 +108,7 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
         });
 
 
-        Mono<Application> applicationMono = this.applicationsStore.insert(modelBuilder.build(), ctx, Authorities.SYSTEM)
+        Mono<Application> applicationMono = this.applicationsStore.insert(modelBuilder.build(), ctx.withEnvironment().setRepositoryType(RepositoryType.APPLICATION), Authorities.SYSTEM)
                 .then(Mono.just(application))
                 .doOnSuccess(app -> {
                     this.eventPublisher.publishEvent(new ApplicationCreatedEvent(app));

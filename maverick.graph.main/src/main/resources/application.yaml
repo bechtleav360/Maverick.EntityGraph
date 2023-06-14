@@ -24,16 +24,16 @@ application:
         scheduled:
           detectDuplicates:
             enabled: true
-            defaultFrequency: "0/20 * * * * ?"
+            defaultFrequency: "* 0/20 * * * ?"
           replaceIdentifiers:
             enabled: true
-            defaultFrequency: "5/20 * * * * ?"
+            defaultFrequency: "* 5/20 * * * ?"
           typeCoercion:
             enabled: true
-            defaultFrequency: "10/20 * * * * ?"
+            defaultFrequency: "* 10/20 * * * ?"
           exportApplication:
             enabled: true
-            defaultFrequency: "10 2 * * * ?"
+            defaultFrequency: "* 10 2  * * ?"
             defaultLocalPath: "/var/data/exports"
             defaultS3Host: ~
             defaultS3BucketId: ~

@@ -1,22 +1,17 @@
 package org.av360.maverick.graph.feature.jobs;
 
 import lombok.extern.slf4j.Slf4j;
-import org.av360.maverick.graph.feature.applications.config.Globals;
-import org.av360.maverick.graph.feature.applications.config.ReactiveApplicationContextHolder;
-import org.av360.maverick.graph.feature.applications.schedulers.ScopedScheduledExportApplication;
 import org.av360.maverick.graph.feature.applications.services.ApplicationsService;
-import org.av360.maverick.graph.feature.applications.services.model.Application;
-import org.av360.maverick.graph.feature.applications.services.model.ApplicationFlags;
 import org.av360.maverick.graph.model.context.SessionContext;
 import org.av360.maverick.graph.model.entities.Job;
-import org.av360.maverick.graph.model.vocabulary.Local;
+import org.av360.maverick.graph.model.util.ValidateReactive;
 import org.av360.maverick.graph.services.EntityServices;
-import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.rio.RDFFormat;
 import org.eclipse.rdf4j.rio.RDFWriter;
 import org.eclipse.rdf4j.rio.RDFWriterRegistry;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 import software.amazon.awssdk.core.async.AsyncRequestBody;
@@ -30,11 +25,10 @@ import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.Map;
 
 @Service
 @Slf4j(topic = "graph.feat.jobs.exports")
-public class ExportApplicationJob implements Job {
+public class ExportRepositoryJob implements Job {
 
     public static String NAME = "exportApplication";
     private final EntityServices entityServices;
@@ -54,7 +48,7 @@ public class ExportApplicationJob implements Job {
     private String defaultS3BucketId;
 
 
-    public ExportApplicationJob(EntityServices service, ApplicationsService applicationsService) {
+    public ExportRepositoryJob(EntityServices service, ApplicationsService applicationsService) {
         this.entityServices = service;
         this.applicationsService = applicationsService;
     }
@@ -66,6 +60,37 @@ public class ExportApplicationJob implements Job {
 
     @Override
     public Mono<Void> run(SessionContext ctx) {
+        return ValidateReactive.notNull(ctx.getEnvironment().getRepositoryType())
+                .then(Mono.<Void>create(sink -> {
+                    // FIXME: @mumi, it should be valid to run address multiple export targets in parallel
+                    // see also https://projectreactor.io/docs/core/release/api/reactor/core/publisher/MonoSink.html#success--
+                    if (StringUtils.hasLength(resolveLocalStorageDirectory())) {
+                        try {
+
+                            exportRdfStatements(ctx)
+                                    .flatMap(rdfString -> saveRdfStringToLocalPath(rdfString, ctx))
+                                    .doOnSuccess(s -> sink.success());
+
+                        } catch (Exception e) {
+                            sink.error(e);
+                        }
+                    }
+
+                    if (StringUtils.hasLength(resolveS3Bucket())) {
+                        try (S3AsyncClient s3Client = createS3Client(resolveS3Host())) {
+
+
+                            exportRdfStatements(ctx)
+                                    .flatMap(rdfString -> uploadRdfStringToS3(s3Client, rdfString, ctx))
+                                    .doOnSuccess(s -> sink.success());
+                        } catch (Exception e) {
+                            sink.error(e);
+                        }
+                    }
+
+                }));
+
+    /*
         return ReactiveApplicationContextHolder.getRequestedApplicationLabel()
                 .flatMap(label -> applicationsService.getApplicationByLabel(label, ctx))
                 .defaultIfEmpty(new Application(
@@ -90,6 +115,7 @@ public class ExportApplicationJob implements Job {
                                 .flatMap(rdfString -> uploadRdfStringToS3(s3Client, rdfString, application)).then();
                     }
                 });
+                */
     }
 
     private S3AsyncClient createS3Client(String s3Host) {
@@ -99,6 +125,8 @@ public class ExportApplicationJob implements Job {
                 .build();
     }
 
+    // TODO: @mumi, Don't return a Mono<String>, but a streaming Flux<DataBuffer> ... you never know how a large the dumps will be, and you don't want to run out of memory
+    // You can use a pipedstream to forward the stream either into a file or into an s3 endpoint (check DataBufferUtils)
     private Mono<String> exportRdfStatements(SessionContext ctx) {
         return this.entityServices.getStore().listStatements(null, null, null, ctx)
                 .map(statements -> {
@@ -112,23 +140,44 @@ public class ExportApplicationJob implements Job {
                 });
     }
 
-    private Mono<Void> saveRdfStringToLocalPath(String rdfString, Application application) {
+    private Mono<Void> saveRdfStringToLocalPath(String rdfString, SessionContext ctx) {
         return Mono.fromCallable(() -> {
+            String filename = StringUtils.hasLength(ctx.getEnvironment().getScope()) ? ctx.getEnvironment().getScope() : "default";
+            // FIXME: @mumi, write stream into file
             Files.writeString(
                     Paths.get(
-                            application.configuration().get(ScopedScheduledExportApplication.CONFIG_KEY_EXPORT_LOCAL_PATH).toString(),
-                            application.label() + ".ttl"
+                            this.resolveLocalStorageDirectory(),
+                            "%s.ttl".formatted(filename)
                     ),
                     rdfString,
                     StandardCharsets.UTF_8);
             return null;
+            // FIXME: @mumi, are you sure about the subscribeOn here?
         }).subscribeOn(Schedulers.boundedElastic()).then();
     }
 
-    private Mono<PutObjectResponse> uploadRdfStringToS3(S3AsyncClient s3Client, String rdfString, Application application) {
+    protected String resolveLocalStorageDirectory() {
+        // FIXME: @mumi, we don't want a dependency to the application feature here... the jobs module should also work if the applications module is inactive.
+        // Solution: create a ConfigurationService (interface in model), which has a default implementation and a decorator in the applications module
+        // application.configuration().get(ScopedScheduledExportApplication.CONFIG_KEY_EXPORT_LOCAL_PATH).toString(),
+        return defaultLocalPath;
+    }
+
+    protected String resolveS3Bucket() {
+        // application.configuration().get(ScopedScheduledExportApplication.CONFIG_KEY_EXPORT_S3_BUCKET).toString()
+        return defaultS3BucketId;
+    }
+
+    protected String resolveS3Host() {
+        // application.configuration().get(ScopedScheduledExportApplication.CONFIG_KEY_EXPORT_S3_HOST).toString()
+        return defaultS3Host;
+    }
+
+    private Mono<PutObjectResponse> uploadRdfStringToS3(S3AsyncClient s3Client, String rdfString, SessionContext ctx) {
+        String filename = StringUtils.hasLength(ctx.getEnvironment().getScope()) ? ctx.getEnvironment().getScope() : "default";
         PutObjectRequest putObjectRequest = PutObjectRequest.builder()
-                .bucket(application.configuration().get(ScopedScheduledExportApplication.CONFIG_KEY_EXPORT_S3_BUCKET).toString())
-                .key(application.label() + ".txt")
+                .bucket(resolveS3Bucket())
+                .key("%s.ttl".formatted(filename))
                 .build();
         return Mono.fromCompletionStage(s3Client.putObject(
                 putObjectRequest,

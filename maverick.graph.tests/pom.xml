@@ -60,6 +60,10 @@
             <artifactId>graph-store</artifactId>
         </dependency>
         <dependency>
+            <groupId>org.av360.maverick.graph</groupId>
+            <artifactId>graph-model</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.eclipse.rdf4j</groupId>
             <artifactId>rdf4j-sail-memory</artifactId>
         </dependency>

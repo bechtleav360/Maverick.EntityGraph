@@ -3,11 +3,11 @@ package org.av360.maverick.graph.feature.jobs;
 import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.model.context.SessionContext;
 import org.av360.maverick.graph.model.entities.Job;
+import org.av360.maverick.graph.model.enums.RepositoryType;
 import org.av360.maverick.graph.model.errors.InvalidConfiguration;
 import org.av360.maverick.graph.model.security.Authorities;
 import org.av360.maverick.graph.model.vocabulary.Local;
 import org.av360.maverick.graph.model.vocabulary.Transactions;
-import org.av360.maverick.graph.services.QueryServices;
 import org.av360.maverick.graph.services.transformers.replaceIdentifiers.ReplaceAnonymousIdentifiers;
 import org.av360.maverick.graph.services.transformers.replaceIdentifiers.ReplaceExternalIdentifiers;
 import org.av360.maverick.graph.store.EntityStore;
@@ -57,7 +57,6 @@ public class ReplaceSubjectIdentifiersJob implements Job {
 
     public static String NAME = "replaceSubjectIdentifiers";
 
-    private final QueryServices queryServices;
 
     private final EntityStore entityStore;
     private final TransactionsStore trxStore;
@@ -77,8 +76,7 @@ public class ReplaceSubjectIdentifiersJob implements Job {
     ) {
     }
 
-    public ReplaceSubjectIdentifiersJob(QueryServices queryServices, EntityStore store, TransactionsStore trxStore, ReplaceExternalIdentifiers transformer, ReplaceAnonymousIdentifiers replaceAnonymousIdentifiers) {
-        this.queryServices = queryServices;
+    public ReplaceSubjectIdentifiersJob(EntityStore store, TransactionsStore trxStore, ReplaceExternalIdentifiers transformer, ReplaceAnonymousIdentifiers replaceAnonymousIdentifiers) {
         this.entityStore = store;
         this.trxStore = trxStore;
         this.replaceExternalIdentifiers = transformer;
@@ -95,6 +93,7 @@ public class ReplaceSubjectIdentifiersJob implements Job {
         if (Objects.isNull(this.replaceExternalIdentifiers))
             return Mono.error(new InvalidConfiguration("External identity transformer is disabled"));
 
+        ctx.withEnvironment().setRepositoryType(RepositoryType.ENTITIES);
         return this.checkForExternalSubjectIdentifiers(ctx).then();
 
     }
@@ -132,7 +131,8 @@ public class ReplaceSubjectIdentifiersJob implements Job {
                   LIMIT 5000
                 """;
         String query = String.format(tpl, Local.Entities.NAMESPACE);
-        return queryServices.queryValues(query, ctx)
+
+        return entityStore.query(query, ctx)
                 .map(bindings -> bindings.getValue("a"))
                 .filter(Value::isResource)
                 .map(value -> (Resource) value);
@@ -153,6 +153,7 @@ public class ReplaceSubjectIdentifiersJob implements Job {
 
     private Mono<RdfTransaction> deleteStatements(StatementsBag statementsBag) {
         ArrayList<Statement> statements = new ArrayList<>(statementsBag.removableStatements());
+
         return entityStore.removeStatements(statements, statementsBag.transaction());
     }
 

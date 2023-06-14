@@ -21,7 +21,10 @@ public class SessionContext {
     }
 
     public Environment getEnvironment() {
-        return Objects.isNull(this.environment) ? new Environment(this) : this.environment;
+        if (Objects.isNull(this.environment)) {
+            this.environment = new Environment(this);
+        }
+        return this.environment;
     }
 
     public Environment withEnvironment() {
@@ -29,7 +32,7 @@ public class SessionContext {
     }
 
     public Optional<Authentication> getAuthentication() {
-        return Optional.of(this.authentication);
+        return Optional.ofNullable(this.authentication);
     }
 
     public Authentication getAuthenticationOrThrow() {

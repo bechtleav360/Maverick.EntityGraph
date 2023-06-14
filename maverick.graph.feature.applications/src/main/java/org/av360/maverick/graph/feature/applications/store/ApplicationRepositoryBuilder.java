@@ -2,32 +2,20 @@ package org.av360.maverick.graph.feature.applications.store;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.ArrayUtils;
-import org.av360.maverick.graph.feature.applications.security.SubscriptionToken;
-import org.av360.maverick.graph.feature.applications.services.model.Application.CONFIG_KEYS;
-import org.av360.maverick.graph.model.context.RequestDetails;
+import org.apache.commons.lang3.Validate;
+import org.av360.maverick.graph.model.context.Environment;
 import org.av360.maverick.graph.model.context.SessionContext;
-import org.av360.maverick.graph.model.errors.InsufficientPrivilegeException;
-import org.av360.maverick.graph.model.security.AdminToken;
-import org.av360.maverick.graph.model.security.Authorities;
+import org.av360.maverick.graph.model.enums.RepositoryType;
 import org.av360.maverick.graph.store.behaviours.TripleStore;
 import org.av360.maverick.graph.store.rdf.LabeledRepository;
 import org.av360.maverick.graph.store.rdf4j.config.DefaultRepositoryBuilder;
-import org.eclipse.rdf4j.http.protocol.UnauthorizedException;
 import org.springframework.context.annotation.Primary;
-import org.springframework.security.authentication.AnonymousAuthenticationToken;
-import org.springframework.security.authentication.TestingAuthenticationToken;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
-import org.springframework.util.Assert;
-import org.springframework.util.StringUtils;
 import reactor.core.publisher.Mono;
 
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Map;
 
 /**
  * Replaces the @see DefaultRepositoryBuilder
@@ -54,6 +42,33 @@ public class ApplicationRepositoryBuilder extends DefaultRepositoryBuilder {
      */
     @Override
     public Mono<LabeledRepository> buildRepository(TripleStore store, SessionContext context) {
+        try {
+            Environment environment = context.getEnvironment();
+
+            // TODO: we have to assume that the validation if the current authentication has access to this particular application repository was handled before.
+
+            Validate.isTrue(context.getAuthentication().isPresent());
+            Validate.isTrue(context.getAuthentication().get().isAuthenticated());
+            Validate.notNull(context.getEnvironment().getRepositoryType());
+            Validate.notBlank(context.getEnvironment().getRepositoryType().toString());
+
+            boolean is_default_repository_type = environment.getRepositoryType().equals(RepositoryType.APPLICATION) || context.getEnvironment().getRepositoryType().equals(RepositoryType.SCHEMA);
+            boolean has_no_scope_defined = ! environment.hasScope();
+
+            if(is_default_repository_type || has_no_scope_defined) {
+                return super.buildRepository(store, context);
+            } else {
+                return Mono.just(this.buildApplicationRepository(store, context.getEnvironment()));
+            }
+
+        } catch (Exception e) {
+            return  Mono.error(e);
+        }
+
+
+
+
+        /*
             try {
                 Authentication authentication = context.getAuthenticationOrThrow();
 
@@ -76,8 +91,40 @@ public class ApplicationRepositoryBuilder extends DefaultRepositoryBuilder {
                 log.error("Failed to build repository of type '{}' due to error: {}", store.getRepositoryType(), e.getMessage());
                 return Mono.error(e);
             }
+            */
     }
 
+    private LabeledRepository buildApplicationRepository(TripleStore store, Environment environment) throws IOException {
+            Validate.isTrue(environment.getConfiguration(Environment.RepositoryConfigurationKey.FLAG_PERSISTENT).isPresent(), "Missing configuration in environment: Persistence flag");
+            Validate.isTrue(environment.getConfiguration(Environment.RepositoryConfigurationKey.FLAG_PUBLIC).isPresent(), "Missing configuration in environment: Public flag");
+            Validate.isTrue(environment.getConfiguration(Environment.RepositoryConfigurationKey.KEY).isPresent(), "Missing configuration in environment: Unique key for scope");
+            if(Boolean.parseBoolean(environment.getConfiguration(Environment.RepositoryConfigurationKey.FLAG_PERSISTENT).get())) {
+                // TODO: either default path is set, or application has a configuration set for the path. For now we expect the default path
+                Validate.notBlank(store.getDirectory(), "No default storage directory defined for persistent application");
+
+            }
+
+            Validate.notBlank(environment.getScope());
+
+            String label = super.formatRepositoryLabel(environment);
+            meterRegistry.counter("graph.store.repository", "method", "access", "label", label).increment();
+            LabeledRepository labeledRepository = null;
+            if(environment.getConfiguration(Environment.RepositoryConfigurationKey.FLAG_PERSISTENT).map(Boolean::parseBoolean).orElse(false)) {
+                Path path = Paths.get(store.getDirectory(), environment.getConfiguration(Environment.RepositoryConfigurationKey.KEY).get());
+                labeledRepository = super.getCache().get(label, s -> super.initializePersistentRepository(path, label));
+
+            } else {
+                labeledRepository = super.getCache().get(label, s -> super.initializeVolatileRepository(label));
+            }
+
+            return super.validateRepository(labeledRepository, store, environment);
+
+    }
+
+
+
+
+    /*
     public Mono<LabeledRepository> buildApplicationRepository(TripleStore store, Authentication authentication, Map<String, String> appConfig) {
         Assert.isTrue(appConfig.containsKey(CONFIG_KEYS.LABEL.toString()), "Missing application configuration: label");
         Assert.isTrue(appConfig.containsKey(CONFIG_KEYS.KEY.toString()), "Missing application configuration: key");
@@ -98,11 +145,12 @@ public class ApplicationRepositoryBuilder extends DefaultRepositoryBuilder {
                 repository = this.resolveRepositoryForSystemAuthentication(store, appConfig, authenticationToken);
             }
 
-            return Mono.just(super.validateRepository(repository, store, authentication));
+            return Mono.just(super.validateRepository(repository, store, null));
         } catch (IOException e) {
             return Mono.error(e);
         }
     }
+
 
     private LabeledRepository resolveRepositoryForAnonymousAuthentication(TripleStore store, Map<String, String> appConfig) throws IOException {
         if (!Boolean.parseBoolean(appConfig.get(CONFIG_KEYS.FLAG_PUBLIC.toString()))) {
@@ -144,6 +192,8 @@ public class ApplicationRepositoryBuilder extends DefaultRepositoryBuilder {
             return super.getCache().get(label, s -> super.initializePersistentRepository(path, label));
         }
     }
+
+     */
 
 
 }

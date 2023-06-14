@@ -3,6 +3,7 @@ package org.av360.maverick.graph.feature.jobs;
 import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.model.context.SessionContext;
 import org.av360.maverick.graph.model.entities.Job;
+import org.av360.maverick.graph.model.enums.RepositoryType;
 import org.av360.maverick.graph.model.errors.InvalidConfiguration;
 import org.av360.maverick.graph.model.security.Authorities;
 import org.av360.maverick.graph.model.vocabulary.Local;
@@ -57,7 +58,6 @@ public class ReplaceObjectIdentifiersJob implements Job {
     private final EntityStore entityStore;
     private final TransactionsStore trxStore;
 
-
     private final ReplaceExternalIdentifiers replaceExternalIdentifiers;
 
 
@@ -85,6 +85,8 @@ public class ReplaceObjectIdentifiersJob implements Job {
     public Mono<Void> run(SessionContext ctx) {
         if (Objects.isNull(this.replaceExternalIdentifiers))
             return Mono.error(new InvalidConfiguration("External identity transformer is disabled"));
+
+        ctx.withEnvironment().setRepositoryType(RepositoryType.ENTITIES);
 
         return this.checkForLinkedObjectIdentifiers(ctx).then();
 

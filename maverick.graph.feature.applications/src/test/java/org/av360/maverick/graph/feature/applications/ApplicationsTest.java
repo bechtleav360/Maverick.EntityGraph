@@ -106,7 +106,7 @@ class ApplicationsTest extends ApplicationsTestsBase {
         Variable p = SparqlBuilder.var("p");
         Variable o = SparqlBuilder.var("o");
         SelectQuery q = Queries.SELECT(s, p, o).all().where(s.has(p, o));
-        List<BindingSet> block = this.queryServices.queryValues(q, new SessionContext().withSystemAuthentication(), RepositoryType.APPLICATION).collectList().block();
+        List<BindingSet> block = this.queryServices.queryValues(q, new SessionContext().withSystemAuthentication().withEnvironment().setRepositoryType(RepositoryType.APPLICATION)).collectList().block();
 
         super.printStep();
         this.client.getApplication(app.key())

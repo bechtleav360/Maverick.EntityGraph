@@ -1,7 +1,6 @@
 package org.av360.maverick.graph.feature.applications.decorators;
 
 import lombok.extern.slf4j.Slf4j;
-import org.av360.maverick.graph.feature.applications.config.ReactiveApplicationContextHolder;
 import org.av360.maverick.graph.feature.applications.security.SubscriptionToken;
 import org.av360.maverick.graph.feature.applications.services.ApplicationsService;
 import org.av360.maverick.graph.model.context.SessionContext;
@@ -30,7 +29,7 @@ public class DelegatingContentResolver implements ContentLocationResolverService
 
     @Override
     public Mono<ContentLocation> resolveContentLocation(IRI entityID, IRI contentId, String filename, @Nullable String language, SessionContext ctx) {
-        return ReactiveApplicationContextHolder.getRequestedApplicationLabel()
+        return Mono.just(ctx.getEnvironment().getScope())
                 .flatMap(applicationsLabel -> applicationsService.getApplicationByLabel(applicationsLabel, ctx))
                 .flatMap(application -> {
 

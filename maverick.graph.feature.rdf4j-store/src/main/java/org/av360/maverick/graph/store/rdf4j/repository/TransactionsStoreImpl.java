@@ -60,4 +60,9 @@ public class TransactionsStoreImpl extends AbstractStore implements Transactions
     public String getDirectory() {
         return this.path;
     }
+
+    @Override
+    protected Mono<SessionContext> validateContext(SessionContext ctx) {
+        return Mono.just(ctx.getEnvironment().setRepositoryType(RepositoryType.TRANSACTIONS));
+    }
 }

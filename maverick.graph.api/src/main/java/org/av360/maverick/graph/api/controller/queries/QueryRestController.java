@@ -1,10 +1,12 @@
 package org.av360.maverick.graph.api.controller.queries;
 
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.api.controller.AbstractController;
+import org.av360.maverick.graph.model.enums.RepositoryType;
 import org.av360.maverick.graph.model.rdf.AnnotatedStatement;
 import org.av360.maverick.graph.services.QueryServices;
 import org.eclipse.rdf4j.query.BindingSet;
@@ -16,10 +18,10 @@ import reactor.core.publisher.Flux;
 @RequestMapping(path = "/api/query")
 @Slf4j(topic = "graph.ctrl.queries")
 @SecurityRequirement(name = "api_key")
-public class Queries extends AbstractController {
+public class QueryRestController extends AbstractController {
     protected final QueryServices queryServices;
 
-    public Queries(QueryServices queryServices) {
+    public QueryRestController(QueryServices queryServices) {
         this.queryServices = queryServices;
     }
 
@@ -31,10 +33,13 @@ public class Queries extends AbstractController {
                     @ExampleObject(name = "Query everything", value = "SELECT ?a ?b ?c  ?type WHERE { ?a ?b ?c } LIMIT 100")
             })
     )
+
     @ResponseStatus(HttpStatus.ACCEPTED)
-    public Flux<BindingSet> queryBindings(@RequestBody String query) {
+    public Flux<BindingSet> queryBindings(@RequestBody String query, @RequestParam(required = true, value = "entities") @Parameter(name = "repository type", description = "The repository type in which the query should search.")
+    RepositoryType repositoryType) {
 
         return super.acquireContext()
+                .map(ctx -> ctx.withEnvironment().setRepositoryType(repositoryType))
                 .flatMapMany(ctx -> queryServices.queryValues(query, ctx))
                 .doOnSubscribe(s -> {
                     if (log.isDebugEnabled()) log.debug("Request to search graph with tuples query: {}", query);
@@ -50,9 +55,11 @@ public class Queries extends AbstractController {
                     @ExampleObject(name = "Query everything", value = "CONSTRUCT WHERE { ?s ?p ?o . } LIMIT 100")
             })
     )
-    public Flux<AnnotatedStatement> queryStatements(@RequestBody String query) {
+    public Flux<AnnotatedStatement> queryStatements(@RequestBody String query, @RequestParam(required = true, value = "entities") @Parameter(name = "repository type", description = "The repository type in which the query should search.")
+    RepositoryType repositoryType) {
 
         return acquireContext()
+                .map(ctx -> ctx.withEnvironment().setRepositoryType(repositoryType))
                 .flatMapMany(ctx -> queryServices.queryGraph(query, ctx))
                 .doOnSubscribe(s -> {
                     if (log.isDebugEnabled()) log.debug("Request to search graph with construct query: {}", query);

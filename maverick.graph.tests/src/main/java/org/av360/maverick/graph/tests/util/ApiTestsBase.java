@@ -4,6 +4,7 @@ import org.av360.maverick.graph.store.rdf.helpers.RdfUtils;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.rio.RDFFormat;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.MediaType;
@@ -12,7 +13,7 @@ import org.springframework.web.reactive.function.BodyInserters;
 
 import java.util.List;
 import java.util.Map;
-
+@AutoConfigureWebTestClient(timeout = "360000")
 public abstract class ApiTestsBase extends TestsBase {
 
 

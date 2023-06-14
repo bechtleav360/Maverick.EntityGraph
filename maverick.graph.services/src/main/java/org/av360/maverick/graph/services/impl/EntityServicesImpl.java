@@ -9,6 +9,7 @@ import org.av360.maverick.graph.model.events.EntityCreatedEvent;
 import org.av360.maverick.graph.model.events.EntityDeletedEvent;
 import org.av360.maverick.graph.model.rdf.LocalIRI;
 import org.av360.maverick.graph.model.rdf.Triples;
+import org.av360.maverick.graph.model.util.ValidateReactive;
 import org.av360.maverick.graph.model.vocabulary.SDO;
 import org.av360.maverick.graph.services.EntityServices;
 import org.av360.maverick.graph.services.IdentifierServices;
@@ -20,26 +21,37 @@ import org.av360.maverick.graph.store.EntityStore;
 import org.av360.maverick.graph.store.rdf.fragments.RdfEntity;
 import org.av360.maverick.graph.store.rdf.fragments.RdfTransaction;
 import org.av360.maverick.graph.store.rdf.helpers.BindingsAccessor;
+import org.av360.maverick.graph.store.rdf.helpers.RdfUtils;
+import org.av360.maverick.graph.store.rdf.helpers.TriplesCollector;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
+import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.Resource;
+import org.eclipse.rdf4j.model.impl.LinkedHashModel;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.util.ModelBuilder;
 import org.eclipse.rdf4j.model.vocabulary.DCTERMS;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.model.vocabulary.RDFS;
 import org.eclipse.rdf4j.model.vocabulary.SKOS;
+import org.eclipse.rdf4j.rio.RDFFormat;
+import org.eclipse.rdf4j.rio.RDFParser;
+import org.eclipse.rdf4j.rio.RDFParserRegistry;
 import org.eclipse.rdf4j.sparqlbuilder.core.SparqlBuilder;
 import org.eclipse.rdf4j.sparqlbuilder.core.Variable;
 import org.eclipse.rdf4j.sparqlbuilder.core.query.Queries;
 import org.eclipse.rdf4j.sparqlbuilder.core.query.SelectQuery;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.core.io.buffer.DataBuffer;
+import org.springframework.core.io.buffer.DataBufferUtils;
+import org.springframework.core.io.buffer.DefaultDataBufferFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -197,6 +209,36 @@ public class EntityServicesImpl implements EntityServices {
     @Override
     public EntityStore getStore() {
         return this.entityStore;
+    }
+
+    @Override
+    public Mono<RdfTransaction> importFile(org.springframework.core.io.Resource resource, RDFFormat format, SessionContext context) {
+        Flux<DataBuffer> publisher = ValidateReactive.notNull(resource)
+                .then(ValidateReactive.isTrue(resource.exists()))
+                .thenMany(DataBufferUtils.read(resource, new DefaultDataBufferFactory(), 1024));
+
+
+        return DataBufferUtils.join(publisher)
+                .flatMap(dataBuffer -> {
+                    RDFParser parser = RDFParserRegistry.getInstance().get(format).orElseThrow().getParser();
+                    TriplesCollector handler = RdfUtils.getTriplesCollector();
+
+                    try (InputStream is = dataBuffer.asInputStream(true)) {
+                        parser.setRDFHandler(handler);
+                        parser.parse(is);
+                        return Mono.just(handler.getTriples());
+                    } catch (Exception e) {
+                        return Mono.error(e);
+                    }
+                })
+                .flatMap(triples -> this.create(triples, Map.of(), context))
+                .doOnSubscribe(s -> log.info("Importing file '{}'", resource.getFilename()))
+                .doOnError(s -> log.error("Failed to import file '{}'", resource.getFilename()));
+    }
+
+    @Override
+    public Mono<Model> getModel(SessionContext ctx) {
+        return this.entityStore.listStatements(null, null, null, ctx).map(LinkedHashModel::new);
     }
 
 

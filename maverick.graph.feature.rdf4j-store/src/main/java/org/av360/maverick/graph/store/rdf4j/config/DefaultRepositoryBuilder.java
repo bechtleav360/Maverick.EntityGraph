@@ -7,6 +7,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import lombok.extern.slf4j.Slf4j;
+import org.av360.maverick.graph.model.context.Environment;
 import org.av360.maverick.graph.model.context.SessionContext;
 import org.av360.maverick.graph.model.enums.RepositoryType;
 import org.av360.maverick.graph.model.security.ApiKeyAuthenticationToken;
@@ -25,7 +26,6 @@ import org.springframework.core.io.Resource;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import reactor.core.publisher.Mono;
@@ -114,14 +114,14 @@ public class DefaultRepositoryBuilder implements RepositoryBuilder {
         }
 
         try {
-            return Mono.just(this.validateRepository(repository, store, ctx.getAuthenticationOrThrow()));
+            return Mono.just(this.validateRepository(repository, store, ctx.getEnvironment()));
         } catch (IOException e) {
             return Mono.error(e);
         }
 
     }
 
-    protected LabeledRepository validateRepository(@Nullable LabeledRepository repository, TripleStore store, Authentication authentication) throws IOException {
+    protected LabeledRepository validateRepository(@Nullable LabeledRepository repository, TripleStore store, Environment environment) throws IOException {
         if(!Objects.isNull(repository)) {
             if(! repository.isInitialized() && repository.getConnectionsCount() == 0) {
                 log.warn("Validation error: Repository of type '{}' is not initialized", repository);
@@ -129,7 +129,7 @@ public class DefaultRepositoryBuilder implements RepositoryBuilder {
             }
             return repository;
         } else {
-            throw new IOException(String.format("Cannot resolve repository of type '%s' for authentication of type '%s'", store.getRepositoryType(), authentication.getClass()));
+            throw new IOException(String.format("Cannot resolve repository of type '%s' for environment '%s'", store.getRepositoryType(), environment));
         }
     }
 
@@ -210,6 +210,14 @@ public class DefaultRepositoryBuilder implements RepositoryBuilder {
         for (String appendix : details) {
             label.append("_").append(appendix);
         }
+        return label.toString();
+    }
+
+    protected String formatRepositoryLabel(Environment environment) {
+        StringBuilder label = new StringBuilder(environment.getRepositoryType().toString());
+        if(StringUtils.hasLength(environment.getScope())) label.append("_").append(environment.getScope());
+        if(StringUtils.hasLength(environment.getStage())) label.append("_").append(environment.getStage());
+
         return label.toString();
     }
 

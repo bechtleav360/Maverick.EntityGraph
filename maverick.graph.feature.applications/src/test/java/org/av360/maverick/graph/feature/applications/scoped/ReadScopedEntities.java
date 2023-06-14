@@ -28,7 +28,7 @@ import java.util.Map;
 @ActiveProfiles({"test", "api"})
 @AutoConfigureWebTestClient(timeout = "360000")
 @Slf4j
-public class CreateScopedEntities  extends ApiTestsBase {
+public class ReadScopedEntities extends ApiTestsBase {
     @Autowired
     private WebTestClient webClient;
 
@@ -44,12 +44,11 @@ public class CreateScopedEntities  extends ApiTestsBase {
 
     @Test
     public void createEntity() {
-        super.printStart("creating scoped entity");
-        client.createApplication("test_app", new ApplicationFlags(false, true))
-                .expectStatus().isCreated();
+        super.printStart("reading scoped entity");
+        client.createApplication("test_app", new ApplicationFlags(false, true)).expectStatus().isCreated();
 
 
-        Resource file = new ClassPathResource("requests/create-valid.jsonld");
+        Resource file = new ClassPathResource("requests/create-valid.ttl");
 
         super.printStep();
         RdfConsumer c1 = this.entityClient.createEntity(file, "/api/entities", Map.of("X-Application", "test_app"));
@@ -61,18 +60,7 @@ public class CreateScopedEntities  extends ApiTestsBase {
 
         super.printStep();
         RdfConsumer c2 = this.entityClient.listEntities("/api/s/test_app/entities");
-        Assertions.assertEquals(1, c2.getStatements().size());
-
-        super.printStep();
-        RdfConsumer c3 = this.entityClient.listEntities("/api/entities");
-        Assertions.assertEquals(0, c3.getStatements().size());
-
-
-
-
-
-
-        // check if correct application events have been recorded
+        Assertions.assertEquals(2, c2.getStatements().size());
     }
 
 }

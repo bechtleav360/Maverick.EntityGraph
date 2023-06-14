@@ -4,10 +4,12 @@ package org.av360.maverick.graph.feature.jobs;
 import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.model.context.SessionContext;
 import org.av360.maverick.graph.model.entities.Job;
+import org.av360.maverick.graph.model.enums.RepositoryType;
 import org.av360.maverick.graph.model.vocabulary.SDO;
 import org.av360.maverick.graph.services.EntityServices;
 import org.av360.maverick.graph.services.QueryServices;
 import org.av360.maverick.graph.services.ValueServices;
+import org.av360.maverick.graph.store.EntityStore;
 import org.av360.maverick.graph.store.rdf.fragments.RdfTransaction;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Value;
@@ -87,17 +89,22 @@ public class MergeDuplicatesJob implements Job {
     private final EntityServices entityServices;
     private final QueryServices queryServices;
 
+    private final EntityStore entityStore;
+
     private final ValueServices valueServices;
     private final SimpleValueFactory valueFactory;
 
-    public MergeDuplicatesJob(EntityServices service, QueryServices queryServices, ValueServices valueServices) {
+    public MergeDuplicatesJob(EntityServices service, QueryServices queryServices, EntityStore entityStore, ValueServices valueServices) {
         this.entityServices = service;
         this.queryServices = queryServices;
+        this.entityStore = entityStore;
         this.valueServices = valueServices;
         this.valueFactory = SimpleValueFactory.getInstance();
     }
 
     public Mono<Void> run(SessionContext ctx) {
+        ctx.withEnvironment().setRepositoryType(RepositoryType.ENTITIES);
+
         return this.checkForDuplicates(RDFS.LABEL, ctx)
                 .then(this.checkForDuplicates(SDO.IDENTIFIER, ctx))
                 .then(this.checkForDuplicates(SKOS.PREF_LABEL, ctx))
@@ -108,6 +115,7 @@ public class MergeDuplicatesJob implements Job {
     }
 
     public Mono<Void> checkForDuplicates(IRI characteristicProperty, SessionContext ctx) {
+
         return this.findCandidates(characteristicProperty, ctx)
                 .map(candidate -> {
                     log.trace("There are multiple entities with shared type '{}' and label '{}'", candidate.type(), candidate.sharedValue());
@@ -118,7 +126,10 @@ public class MergeDuplicatesJob implements Job {
                                 .doOnNext(duplicate -> log.trace("Entity '{}' identified as duplicate. Another item exists with property {} and value {} .", duplicate.id(), candidate.sharedProperty(), candidate.sharedValue()))
                                 .collectList()
                                 .flatMap(duplicates -> this.mergeDuplicates(duplicates, ctx)))
-                .doOnSubscribe(sub -> log.trace("Checking duplicates sharing the same characteristic property <{}>", characteristicProperty))
+                .doOnSubscribe(sub -> {
+                    log.trace("Checking duplicates sharing the same characteristic property <{}>", characteristicProperty);
+                    ctx.withEnvironment().setRepositoryType(RepositoryType.ENTITIES);
+                })
                 .doOnComplete(() -> log.debug("Completed checking for duplicates sharing the same characteristic property <{}>", characteristicProperty))
                 .thenEmpty(Mono.empty());
 
@@ -134,6 +145,8 @@ public class MergeDuplicatesJob implements Job {
     ?thing 	<http://schema.org/dateCreated> ?date .
 }
          */
+
+
         Variable idVariable = SparqlBuilder.var("id");
 
         SelectQuery findDuplicates = Queries.SELECT(idVariable).where(
@@ -196,7 +209,8 @@ public class MergeDuplicatesJob implements Job {
     }
 
 
-    private Mono<RdfTransaction> removeDuplicate(IRI object, SessionContext ctx) {
+    private Mono<RdfTransaction> removeDuplicate(IRI object, SessionContext ctx)  {
+        // not sure if we should use the entity services (which handle authentication), or let the jobs always access only the store layer
         return this.entityServices.remove(object, ctx);
     }
 

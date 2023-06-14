@@ -19,11 +19,11 @@ import java.io.StringWriter;
 import java.util.Map;
 import java.util.Objects;
 
-public class TestEntitiesClient {
+public class EntitiesTestClient {
 
     private final WebTestClient webClient;
 
-    public TestEntitiesClient(WebTestClient webClient) {
+    public EntitiesTestClient(WebTestClient webClient) {
         this.webClient = webClient;
     }
 

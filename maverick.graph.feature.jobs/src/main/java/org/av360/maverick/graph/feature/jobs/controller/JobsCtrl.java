@@ -70,7 +70,7 @@ public class JobsCtrl extends AbstractController {
     @ResponseStatus(HttpStatus.ACCEPTED)
     Mono<Void> execExportJob() {
         return super.acquireContext()
-                .flatMap(ctx -> this.jobsService.scheduleJob(ExportApplicationJob.NAME, ctx))
+                .flatMap(ctx -> this.jobsService.scheduleJob(ExportRepositoryJob.NAME, ctx))
                 .doOnSubscribe(subscription -> log.info("Request to execute job: Export application"));
 
     }

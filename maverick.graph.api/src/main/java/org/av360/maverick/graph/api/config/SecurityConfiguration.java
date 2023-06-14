@@ -48,8 +48,6 @@ public class SecurityConfiguration {
         authenticationWebFilter.setServerAuthenticationConverter(authenticationConverter);
 
 
-
-
         preFilterList.forEach(preFilter -> http.addFilterBefore(preFilter, SecurityWebFiltersOrder.AUTHENTICATION));
         http.addFilterAt(authenticationWebFilter, SecurityWebFiltersOrder.AUTHENTICATION);
         http.httpBasic(spec -> spec.disable());
@@ -59,6 +57,7 @@ public class SecurityConfiguration {
 
 
         http.authorizeExchange(spec ->
+
                 spec.pathMatchers(HttpMethod.GET, "/api/**").hasAnyAuthority(Authorities.SYSTEM.getAuthority(), Authorities.APPLICATION.getAuthority(), Authorities.CONTRIBUTOR.getAuthority(), Authorities.READER.getAuthority())
                         .pathMatchers(HttpMethod.GET, "/api/**").hasAnyAuthority(Authorities.SYSTEM.getAuthority(), Authorities.APPLICATION.getAuthority(), Authorities.CONTRIBUTOR.getAuthority(), Authorities.READER.getAuthority())
                         .pathMatchers(HttpMethod.HEAD, "/api/**").hasAnyAuthority(Authorities.SYSTEM.getAuthority(), Authorities.APPLICATION.getAuthority(), Authorities.CONTRIBUTOR.getAuthority(), Authorities.READER.getAuthority())

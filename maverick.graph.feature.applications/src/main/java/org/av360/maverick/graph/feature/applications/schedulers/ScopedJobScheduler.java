@@ -4,7 +4,6 @@ import jakarta.annotation.PostConstruct;
 import org.av360.maverick.graph.feature.applications.services.ApplicationsService;
 import org.av360.maverick.graph.feature.applications.services.events.ApplicationCreatedEvent;
 import org.av360.maverick.graph.feature.applications.services.events.ApplicationDeletedEvent;
-import org.av360.maverick.graph.feature.applications.services.events.ApplicationJobScheduledEvent;
 import org.av360.maverick.graph.feature.applications.services.events.ApplicationUpdatedEvent;
 import org.av360.maverick.graph.feature.applications.services.model.Application;
 import org.av360.maverick.graph.model.context.SessionContext;
@@ -50,7 +49,7 @@ public abstract class ScopedJobScheduler {
                 application.configuration().get(getFrequencyConfigurationKey()).toString() : getDefaultFrequency();
 
         Runnable task = () -> {
-            JobScheduledEvent event = new ApplicationJobScheduledEvent(getJobLabel(), new SessionContext().withSystemAuthentication().withEnvironment().setScope(application.label()), application.label());
+            JobScheduledEvent event = new JobScheduledEvent(getJobLabel(), new SessionContext().withSystemAuthentication().withEnvironment().setScope(application.label()));
             eventPublisher.publishEvent(event);
         };
 

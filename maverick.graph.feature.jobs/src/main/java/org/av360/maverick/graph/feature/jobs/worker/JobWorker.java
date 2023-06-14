@@ -4,21 +4,23 @@ import io.micrometer.core.instrument.MeterRegistry;
 import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.model.entities.Job;
 import org.av360.maverick.graph.model.events.JobScheduledEvent;
+import org.av360.maverick.graph.services.SessionContextBuilderService;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j(topic = "graph.jobs")
 @Service
 public class JobWorker {
+
+    private final Set<SessionContextBuilderService> builders;
 
     private final Scheduler scheduler;
     private final Map<String, String> activeJobs;
@@ -28,7 +30,8 @@ public class JobWorker {
     private final MeterRegistry meterRegistry;
 
 
-    public JobWorker(JobQueue eventListener, List<Job> jobs, MeterRegistry meterRegistry) {
+    public JobWorker(Set<SessionContextBuilderService> builders, JobQueue eventListener, List<Job> jobs, MeterRegistry meterRegistry) {
+        this.builders = builders;
         this.requestedJobs = eventListener;
         this.registeredJobs = jobs;
         this.meterRegistry = meterRegistry;
@@ -57,7 +60,10 @@ public class JobWorker {
                 return;
             }
 
-            requestedJob.get().run(event.getSessionContext())
+
+            Flux.fromIterable(this.builders)
+                    .reduceWith(() -> Mono.just(event.getSessionContext()), (update, builderService) -> update.flatMap(builderService::build)).flatMap(mono -> mono)
+                    .flatMap(ctx -> requestedJob.get().run(ctx))
                     .subscribeOn(scheduler)
                     .doOnSubscribe(subscription -> {
                         log.debug("Starting job '{}'.", event.getJobIdentifier());

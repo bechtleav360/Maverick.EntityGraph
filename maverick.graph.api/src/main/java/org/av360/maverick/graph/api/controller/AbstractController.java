@@ -1,37 +1,31 @@
 package org.av360.maverick.graph.api.controller;
 
 import org.av360.maverick.graph.model.context.SessionContext;
-import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
-import org.springframework.security.authentication.InsufficientAuthenticationException;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.ReactiveSecurityContextHolder;
-import org.springframework.security.core.context.SecurityContext;
+import org.av360.maverick.graph.services.SessionContextBuilderService;
+import org.springframework.beans.factory.annotation.Autowired;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+
+import java.util.Set;
 
 public class AbstractController {
 
 
-    // TODO: add ContextBuilderService, which is decorated by application feature
 
-    protected Mono<Authentication> getAuthentication() {
-        return ReactiveSecurityContextHolder.getContext()
-                .map(SecurityContext::getAuthentication)
-                .switchIfEmpty(Mono.error(new AuthenticationCredentialsNotFoundException("Failed to acquire authentication from security context.")))
-                .filter(Authentication::isAuthenticated)
-                .switchIfEmpty(Mono.error(new InsufficientAuthenticationException("Request couldn't be authenticated.")));
-    }
+    Set<SessionContextBuilderService> builders;
 
 
     protected Mono<SessionContext> acquireContext() {
-        return ReactiveSecurityContextHolder.getContext()
-                .map(SecurityContext::getAuthentication)
-                .switchIfEmpty(Mono.error(new AuthenticationCredentialsNotFoundException("Failed to acquire authentication from security context.")))
-                .filter(Authentication::isAuthenticated)
-                .switchIfEmpty(Mono.error(new InsufficientAuthenticationException("Request couldn't be authenticated.")))
-                .map(authentication -> new SessionContext().withAuthentication(authentication));
+        return Flux.fromIterable(this.builders)
+                // see example here: https://stackoverflow.com/questions/73141978/how-to-asynchronosuly-reduce-a-flux-to-mono-with-reactor
+                .reduceWith(() -> Mono.just(new SessionContext()), (update, builderService) -> update.flatMap(builderService::build))
+                .flatMap(sessionContextMono -> sessionContextMono);
     }
 
 
-
+    @Autowired
+    public void setBuilders(Set<SessionContextBuilderService> builders) {
+        this.builders = builders;
+    }
 
 }

@@ -42,7 +42,7 @@ public class AdminRestController extends AbstractController {
         Assert.notNull(repositoryTypeName, "Invalid value for repository type: " + repositoryTypeName);
 
         return super.acquireContext()
-                .map(context -> context.getEnvironment().withRepositoryType(repositoryTypeName))
+                .map(context -> context.getEnvironment().setRepositoryType(repositoryTypeName))
                 .flatMap(adminServices::reset)
                 .doOnError(throwable -> log.error("Error while purging repository. Type '{}' with reason: {}", throwable.getClass().getSimpleName(), throwable.getMessage() ))
                 .doOnSubscribe(s -> log.info("Request to empty the repository of type '{}'", repositoryTypeName));

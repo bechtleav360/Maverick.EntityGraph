@@ -67,8 +67,7 @@ logging:
       repo: TRACE
       srvc: TRACE
       ctrl: TRACE
-      feat:
-        admin: TRACE
+      feat: TRACE
     org:
       eclipse:
         rdf4j: DEBUG

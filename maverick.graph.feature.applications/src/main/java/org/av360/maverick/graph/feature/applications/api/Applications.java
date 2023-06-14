@@ -201,7 +201,7 @@ public class Applications extends AbstractController {
     )
     Flux<AnnotatedStatement> query(@RequestBody String query) {
         return acquireContext()
-                .flatMapMany(ctx -> queryServices.queryGraph(query, ctx, RepositoryType.APPLICATION))
+                .flatMapMany(ctx -> queryServices.queryGraph(query, ctx.withEnvironment().setRepositoryType(RepositoryType.APPLICATION)))
                 .doOnSubscribe(s -> {
                     if (log.isDebugEnabled()) log.debug("Request to dump node graph");
                 });

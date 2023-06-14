@@ -4,6 +4,7 @@ package org.av360.maverick.graph.feature.jobs;
 import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.model.context.SessionContext;
 import org.av360.maverick.graph.model.entities.Job;
+import org.av360.maverick.graph.model.enums.RepositoryType;
 import org.av360.maverick.graph.model.errors.InvalidConfiguration;
 import org.av360.maverick.graph.model.vocabulary.Local;
 import org.av360.maverick.graph.model.vocabulary.Transactions;
@@ -68,6 +69,7 @@ public class AssignInternalTypesJob implements Job {
     public Mono<Void> run(SessionContext ctx) {
         if(Objects.isNull(this.localTypesTransformer)) return Mono.error(new InvalidConfiguration("Type Coercion Transformer is disabled"));
 
+        ctx.withEnvironment().setRepositoryType(RepositoryType.ENTITIES);
 
 
         return this.findCandidates(ctx)
@@ -81,7 +83,10 @@ public class AssignInternalTypesJob implements Job {
                 .doOnNext(transaction -> Assert.isTrue(transaction.hasStatement(null, Transactions.STATUS, Transactions.SUCCESS), "Failed transaction: \n" + transaction))
                 .flatMap(transaction -> this.transactionsStore.store(List.of(transaction), ctx))
                 .doOnError(throwable -> log.error("Exception while assigning internal types: {}", throwable.getMessage()))
-                .doOnSubscribe(sub -> log.trace("Checking for entities with missing internal type definitions."))
+                .doOnSubscribe(sub -> {
+                    log.trace("Checking for entities with missing internal type definitions.");
+                    ctx.withEnvironment().setRepositoryType(RepositoryType.ENTITIES);
+                })
                 .doOnComplete(() -> log.debug("Completed checking for entities with missing internal type definitions."))
                 .then();
 

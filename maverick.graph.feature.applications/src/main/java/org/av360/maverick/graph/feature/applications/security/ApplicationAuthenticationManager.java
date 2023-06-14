@@ -92,17 +92,19 @@ public class ApplicationAuthenticationManager implements ReactiveAuthenticationM
     }
 
     private Mono<String> checkPath(Authentication authentication) {
-        log.warn("Application label not found in thread context, verifying in request details within authentication.");
-        if(authentication.getDetails() instanceof RequestDetails requestDetails) {
-            try {
-                Optional<String> requestedApplication = RequestedApplicationFilter.getRequestedApplicationFromRequestDetails(requestDetails);
-                return requestedApplication.map(Mono::just).orElseGet(Mono::empty);
-
-            } catch (IOException e) {
-                return Mono.error(e);
+        return Mono.<String>create(sink -> {
+            if(authentication.getDetails() instanceof RequestDetails requestDetails) {
+                try {
+                    Optional<String> requestedApplication = RequestedApplicationFilter.getRequestedApplicationFromRequestDetails(requestDetails);
+                    requestedApplication.ifPresentOrElse(sink::success, sink::success);
+                } catch (IOException e) {
+                    sink.error(e);
+                }
             }
-        }
-        return Mono.empty();
+        }).doOnSubscribe(subscription -> log.debug("Application label not found in thread context, verifying in request details within authentication."));
+
+
+
     }
 
     /**

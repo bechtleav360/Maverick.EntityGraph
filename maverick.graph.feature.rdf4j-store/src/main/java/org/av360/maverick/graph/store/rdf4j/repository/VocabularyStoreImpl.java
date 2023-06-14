@@ -1,6 +1,7 @@
 package org.av360.maverick.graph.store.rdf4j.repository;
 
 import lombok.extern.slf4j.Slf4j;
+import org.av360.maverick.graph.model.context.SessionContext;
 import org.av360.maverick.graph.model.enums.RepositoryType;
 import org.av360.maverick.graph.model.vocabulary.Local;
 import org.av360.maverick.graph.model.vocabulary.SDO;
@@ -14,6 +15,7 @@ import org.eclipse.rdf4j.model.util.Namespaces;
 import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -61,5 +63,10 @@ public class VocabularyStoreImpl extends AbstractStore implements SchemaStore {
     @Override
     public String getDirectory() {
         return this.path;
+    }
+
+    @Override
+    protected Mono<SessionContext> validateContext(SessionContext ctx) {
+        return Mono.just(ctx.getEnvironment().setRepositoryType(RepositoryType.SCHEMA));
     }
 }

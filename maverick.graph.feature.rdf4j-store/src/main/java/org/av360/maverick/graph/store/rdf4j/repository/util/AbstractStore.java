@@ -268,6 +268,8 @@ public abstract class AbstractStore implements TripleStore, StatementsAware, Mod
             }
 
 
+
+
             Set<RdfTransaction> result = transactions.stream().peek(trx -> {
                 synchronized (connection) {
                     getLogger().trace("Committing transaction '{}' to repository '{}'", trx.getIdentifier().getLocalName(), connection.getRepository().toString());
@@ -399,7 +401,8 @@ public abstract class AbstractStore implements TripleStore, StatementsAware, Mod
 
     protected <T> Mono<T> applyWithConnection(SessionContext ctx, GrantedAuthority requiredAuthority, ThrowingFunction<RepositoryConnection, T> fun) {
         return transactionsMonoTimer.record(() ->
-                this.assertPrivilege(ctx, requiredAuthority)
+                this.validateContext(ctx)
+                        .then(this.assertPrivilege(ctx, requiredAuthority))
                         .then(this.getBuilder().buildRepository(this, ctx))
                         .flatMap(repository -> {
                             try (RepositoryConnection connection = repository.getConnection()) {
@@ -418,7 +421,8 @@ public abstract class AbstractStore implements TripleStore, StatementsAware, Mod
 
     protected Mono<Void> consumeWithConnection(SessionContext ctx, GrantedAuthority requiredAuthority, ThrowingConsumer<RepositoryConnection> fun) {
         return transactionsMonoTimer.record(() ->
-                this.assertPrivilege(ctx, requiredAuthority)
+                this.validateContext(ctx)
+                        .then(this.assertPrivilege(ctx, requiredAuthority))
                         .then(this.getBuilder().buildRepository(this, ctx))
                         .switchIfEmpty(Mono.error(new IOException("Failed to build repository for repository of type: " + this.getRepositoryType())))
                         .flatMap(repository -> {
@@ -434,10 +438,13 @@ public abstract class AbstractStore implements TripleStore, StatementsAware, Mod
                         }));
     }
 
+    protected abstract Mono<SessionContext> validateContext(SessionContext ctx);
+
     protected <E, T extends Iterable<E>> Flux<E> applyManyWithConnection(SessionContext ctx, GrantedAuthority requiredAuthority, ThrowingFunction<RepositoryConnection, T> fun) {
 
         Flux<E> result =
-                this.assertPrivilege(ctx, requiredAuthority)
+                this.validateContext(ctx)
+                        .then(this.assertPrivilege(ctx, requiredAuthority))
                         .then(this.getBuilder().buildRepository(this, ctx))
                         .flatMapMany(repository -> {
                             try (RepositoryConnection connection = repository.getConnection()) {
