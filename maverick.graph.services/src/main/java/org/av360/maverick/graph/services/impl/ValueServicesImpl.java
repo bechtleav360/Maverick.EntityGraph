@@ -52,12 +52,12 @@ public class ValueServicesImpl implements ValueServices {
 
 
     @Override
-    public Mono<RdfTransaction> insertLiteral(String entityKey, String prefixedPoperty, String value, String languageTag, Authentication authentication) {
+    public Mono<RdfTransaction> insertValue(String entityKey, String prefixedPoperty, String value, String languageTag, Authentication authentication) {
 
         return Mono.zip(
                         this.entityServices.resolveAndVerify(entityKey, authentication),
                         this.schemaServices.resolvePrefixedName(prefixedPoperty),
-                        this.normalizeLanguage(value, languageTag)
+                        this.normalizeValue(value, languageTag)
                 )
                 .switchIfEmpty(Mono.error(new InvalidEntityUpdate(entityKey, "Failed to insert value")))
                 .flatMap(triple -> this.insertValue(triple.getT1(), triple.getT2(), triple.getT3(), authentication));
@@ -311,7 +311,7 @@ public class ValueServicesImpl implements ValueServices {
      * @param paramTag the request parameter for the language tag, can be null
      * @return the identified language tag
      */
-    private Mono<Literal> extractLanguageTag(String value, @Nullable String paramTag) {
+    private Mono<Value> extractLanguageTag(String value, @Nullable String paramTag) {
         return Mono.create(sink -> {
             LanguageHandler languageHandler = LanguageHandlerRegistry.getInstance().get(LanguageHandler.BCP47).orElseThrow();
             SimpleValueFactory svf = SimpleValueFactory.getInstance();
@@ -338,7 +338,16 @@ public class ValueServicesImpl implements ValueServices {
         });
     }
 
-    private Mono<Literal> normalizeLanguage(String value, String languageTag) {
+    private Mono<Value> normalizeValue(String value, String languageTag) {
+        if(value.matches("^<\\w+:(/?/?)[^\\s>]+>$")) {
+            value = value.substring(1, value.length()-1);
+            return Mono.just(SimpleValueFactory.getInstance().createIRI(value));
+        } else
+
+        if(value.matches("^\\w+:(/?/?)[^\\s>]+$")) {
+            return Mono.just(SimpleValueFactory.getInstance().createLiteral(value));
+        } else
+
         return this.extractLanguageTag(value, languageTag);
     }
 }

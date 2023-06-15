@@ -67,7 +67,7 @@ public class LinksController extends AbstractController implements LinksAPI {
     }
 
     @Override
-    @Operation(summary = "Create edge to existing entity identified by target id (within the same application).",
+    @Operation(summary = "Create edge to existing entity identified by target id (within the same dataset).",
             description = """
                     Creates an edge to an existing entity within the same graph (application) identified by the target identifier to link the two entities. An edge represents a relationship between 
                     two nodes in the graph, while the node represents an entity in the graph. When creating an edge to an existing entity, the target identifier

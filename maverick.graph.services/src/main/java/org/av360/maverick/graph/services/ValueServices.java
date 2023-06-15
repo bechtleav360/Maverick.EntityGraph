@@ -23,7 +23,7 @@ public interface ValueServices {
      * @param authentication    The current authentication
      * @return The transaction information.
      */
-    Mono<RdfTransaction> insertLiteral(String entityKey, String property, String value, @Nullable String languageTag, Authentication authentication);
+    Mono<RdfTransaction> insertValue(String entityKey, String property, String value, @Nullable String languageTag, Authentication authentication);
 
     /**
      * Sets the value. Replaces an existing value with the same predicate, except a different @-tag has been set
