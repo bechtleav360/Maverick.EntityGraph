@@ -2,6 +2,8 @@ package org.av360.maverick.graph.jobs;
 
 import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.feature.jobs.ReplaceSubjectIdentifiersJob;
+import org.av360.maverick.graph.model.context.SessionContext;
+import org.av360.maverick.graph.services.EntityServices;
 import org.av360.maverick.graph.store.rdf.fragments.RdfTransaction;
 import org.av360.maverick.graph.tests.config.TestRepositoryConfig;
 import org.av360.maverick.graph.tests.config.TestSecurityConfig;
@@ -41,6 +43,9 @@ class CheckGlobalIdentifiersTest extends TestsBase {
     @Autowired
     EntityServicesClient entityServicesClient;
 
+    @Autowired
+    EntityServices entityServices;
+
 
     @AfterEach
     public void resetRepository() {
@@ -52,10 +57,12 @@ class CheckGlobalIdentifiersTest extends TestsBase {
 
         super.printStart("checkForGlobalIdentifiers");
 
+        SessionContext ctx = TestSecurityConfig.createTestContext();
+
         // Mono<Transaction> tx1 = entityServicesClient.importFileMono(new ClassPathResource("requests/create-esco.ttl"));
 
-        Mono<Void> importMono = entityServicesClient.importFileToStore(new ClassPathResource("requests/create-esco.ttl")).doOnSubscribe(sub -> super.printStep());
-        Mono<Model> readModelMono = entityServicesClient.getModel().doOnSubscribe(sub -> super.printStep());
+        Mono<RdfTransaction> importMono = entityServices.importFile(new ClassPathResource("requests/create-esco.ttl"), RDFFormat.TURTLE, ctx).doOnSubscribe(sub -> super.printStep());
+        Mono<Model> readModelMono = entityServices.getModel(ctx).doOnSubscribe(sub -> super.printStep());
 
 
         Flux<RdfTransaction> actionMono = scheduled.checkForExternalSubjectIdentifiers(TestSecurityConfig.createTestContext()).doOnSubscribe(sub -> super.printStep());

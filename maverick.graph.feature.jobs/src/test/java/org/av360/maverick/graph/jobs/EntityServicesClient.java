@@ -1,6 +1,7 @@
 package org.av360.maverick.graph.jobs;
 
 import lombok.extern.slf4j.Slf4j;
+import org.av360.maverick.graph.model.enums.RepositoryType;
 import org.av360.maverick.graph.model.rdf.AnnotatedStatement;
 import org.av360.maverick.graph.model.rdf.Triples;
 import org.av360.maverick.graph.model.security.Authorities;
@@ -38,6 +39,7 @@ import java.util.Map;
 
 @Service
 @Slf4j
+@Deprecated
 public class EntityServicesClient {
 
     private final EntityServices entityServices;
@@ -82,7 +84,7 @@ public class EntityServicesClient {
         Flux<DataBuffer> read = DataBufferUtils.read(resource, new DefaultDataBufferFactory(), 1024);
 
         return this.entityStore
-                .importStatements(read, getFormat(resource).getDefaultMIMEType(), TestSecurityConfig.createTestContext(), Authorities.SYSTEM)
+                .importStatements(read, getFormat(resource).getDefaultMIMEType(), TestSecurityConfig.createTestContext().withEnvironment().setRepositoryType(RepositoryType.ENTITIES), Authorities.SYSTEM)
                 .doOnSuccess(subscription -> log.info("Imported file '{}'", resource.getFilename()))
                 .doOnError(throwable -> log.warn("Failed to import file"))
                 .onErrorStop();

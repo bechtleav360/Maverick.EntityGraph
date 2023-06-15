@@ -70,7 +70,7 @@ logging:
       feat: TRACE
     org:
       eclipse:
-        rdf4j: DEBUG
+        rdf4j: INFO
       springframework:
         security: INFO
 

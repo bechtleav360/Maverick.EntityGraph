@@ -2,8 +2,10 @@ package org.av360.maverick.graph.jobs;
 
 import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.feature.jobs.ReplaceObjectIdentifiersJob;
+import org.av360.maverick.graph.model.context.SessionContext;
 import org.av360.maverick.graph.model.vocabulary.Local;
 import org.av360.maverick.graph.model.vocabulary.SDO;
+import org.av360.maverick.graph.services.EntityServices;
 import org.av360.maverick.graph.tests.config.TestRepositoryConfig;
 import org.av360.maverick.graph.tests.config.TestSecurityConfig;
 import org.av360.maverick.graph.tests.util.TestsBase;
@@ -43,6 +45,8 @@ class ConvertExternalLinked extends TestsBase {
     @Autowired
     EntityServicesClient entityServicesClient;
 
+    @Autowired
+    EntityServices entityServices;
 
     @AfterEach
     public void resetRepository() {
@@ -52,16 +56,17 @@ class ConvertExternalLinked extends TestsBase {
     @Test
     void externalSimple() throws IOException {
 
+        SessionContext ctx = TestSecurityConfig.createTestContext();
         super.printStart("Test: Convert original identifier to owl:sameAs relation (Single)");
 
         // Mono<Transaction> tx1 = entityServicesClient.importFileMono(new ClassPathResource("requests/create-esco.ttl"));
 
-        Mono<Void> importMono = entityServicesClient.importFileToStore(new ClassPathResource("intermediate/externalSimple.ttl")).doOnSubscribe(sub -> super.printStep());
-        Mono<Model> read1 = entityServicesClient.getModel().doOnSubscribe(sub -> super.printStep());
-        Mono<Model> read2 = entityServicesClient.getModel().doOnNext(model -> super.printModel(model, RDFFormat.TURTLE)).doOnSubscribe(sub -> super.printStep());
+        Mono<Void> importMono = entityServices.importFile(new ClassPathResource("intermediate/externalSimple.ttl"), RDFFormat.TURTLE, ctx).doOnSubscribe(sub -> super.printStep()).then();
+        Mono<Model> read1 = entityServices.getModel(ctx).doOnSubscribe(sub -> super.printStep());
+        Mono<Model> read2 = entityServices.getModel(ctx).doOnNext(model -> super.printModel(model, RDFFormat.TURTLE)).doOnSubscribe(sub -> super.printStep());
 
 
-        Mono<Void> jobMono = scheduled.run(TestSecurityConfig.createTestContext()).doOnSubscribe(sub -> super.printStep());
+        Mono<Void> jobMono = scheduled.run(ctx).doOnSubscribe(sub -> super.printStep());
 
         StepVerifier.create(importMono.then(read1))
                 .assertNext(md -> {
@@ -74,7 +79,7 @@ class ConvertExternalLinked extends TestsBase {
         SimpleValueFactory vf = SimpleValueFactory.getInstance();
         StepVerifier.create(read2)
                 .assertNext(model -> {
-                    Assertions.assertEquals(4, model.size());
+                    Assertions.assertEquals(5, model.size());
                     Assertions.assertEquals(1, model.subjects().size());
                     Assertions.assertTrue(model.contains(null, OWL.SAMEAS, vf.createIRI("http://www.example.org/vocab#x")));
                     Assertions.assertFalse(model.contains(null, Local.ORIGINAL_IDENTIFIER, null));
@@ -86,16 +91,16 @@ class ConvertExternalLinked extends TestsBase {
 
     @Test
     void externalMultiple() throws IOException {
-
+        SessionContext ctx = TestSecurityConfig.createTestContext();
         super.printStart("Test: Convert original identifier to owl:sameAs relation (Multiple)");
 
 
-        Mono<Void> importMono = entityServicesClient.importFileToStore(new ClassPathResource("intermediate/externalMultiple.ttl")).doOnSubscribe(sub -> super.printStep());
-        Mono<Model> read1 = entityServicesClient.getModel().doOnSubscribe(sub -> super.printStep());
-        Mono<Model> read2 = entityServicesClient.getModel().doOnNext(model -> super.printModel(model, RDFFormat.TURTLE)).doOnSubscribe(sub -> super.printStep());
+        Mono<Void> importMono = entityServices.importFile(new ClassPathResource("intermediate/externalMultiple.ttl"), RDFFormat.TURTLE, ctx).doOnSubscribe(sub -> super.printStep()).then();
+        Mono<Model> read1 = entityServices.getModel(ctx).doOnSubscribe(sub -> super.printStep());
+        Mono<Model> read2 = entityServices.getModel(ctx).doOnNext(model -> super.printModel(model, RDFFormat.TURTLE)).doOnSubscribe(sub -> super.printStep());
 
 
-        Mono<Void> jobMono = scheduled.run(TestSecurityConfig.createTestContext()).doOnSubscribe(sub -> super.printStep());
+        Mono<Void> jobMono = scheduled.run(ctx).doOnSubscribe(sub -> super.printStep());
 
         StepVerifier.create(importMono.then(read1))
                 .assertNext(md -> {
@@ -106,7 +111,7 @@ class ConvertExternalLinked extends TestsBase {
 
         StepVerifier.create(read2)
                 .assertNext(model -> {
-                    Assertions.assertEquals(8, model.size());
+                    Assertions.assertEquals(10, model.size());
                     Assertions.assertTrue(model.contains(null, OWL.SAMEAS, vf.createIRI("http://www.example.org/vocab#x")));
                     Assertions.assertTrue(model.contains(null, OWL.SAMEAS, vf.createIRI("http://www.example.org/vocab#y")));
                     Assertions.assertFalse(model.contains(null, Local.ORIGINAL_IDENTIFIER, null));
@@ -118,16 +123,16 @@ class ConvertExternalLinked extends TestsBase {
 
     @Test
     void externalWithEmbedded() throws IOException {
-
+        SessionContext ctx = TestSecurityConfig.createTestContext();
         super.printStart("Test: Convert mixed identifiers (Multiple)");
 
 
-        Mono<Void> importMono = entityServicesClient.importFileToStore(new ClassPathResource("intermediate/externalWithEmbedded.ttl")).doOnSubscribe(sub -> super.printStep());
-        Mono<Model> read1 = entityServicesClient.getModel().doOnNext(model -> super.printModel(model, RDFFormat.TURTLE)).doOnSubscribe(sub -> super.printStep());
-        Mono<Model> read2 = entityServicesClient.getModel().doOnNext(model -> super.printModel(model, RDFFormat.TURTLE)).doOnSubscribe(sub -> super.printStep());
+        Mono<Void> importMono = entityServices.importFile(new ClassPathResource("intermediate/externalWithEmbedded.ttl"), RDFFormat.TURTLE, ctx).doOnSubscribe(sub -> super.printStep()).then();
+        Mono<Model> read1 = entityServices.getModel(ctx).doOnNext(model -> super.printModel(model, RDFFormat.TURTLE)).doOnSubscribe(sub -> super.printStep());
+        Mono<Model> read2 = entityServices.getModel(ctx).doOnNext(model -> super.printModel(model, RDFFormat.TURTLE)).doOnSubscribe(sub -> super.printStep());
 
 
-        Mono<Void> jobMono = scheduled.run(TestSecurityConfig.createTestContext()).doOnSubscribe(sub -> super.printStep());
+        Mono<Void> jobMono = scheduled.run(ctx).doOnSubscribe(sub -> super.printStep());
 
         StepVerifier.create(importMono.then(read1))
                 .assertNext(md -> {
@@ -138,7 +143,7 @@ class ConvertExternalLinked extends TestsBase {
 
         StepVerifier.create(read2)
                 .assertNext(model -> {
-                    Assertions.assertEquals(7, model.size());
+                    Assertions.assertEquals(9, model.size());
                     Assertions.assertTrue(model.contains(null, OWL.SAMEAS, vf.createIRI("http://www.example.org/vocab#x")));
                     Assertions.assertTrue(model.contains(null, OWL.SAMEAS, vf.createIRI("http://www.acme.org/vocab#a")));
                     Assertions.assertFalse(model.contains(null, Local.ORIGINAL_IDENTIFIER, null));
@@ -155,16 +160,16 @@ class ConvertExternalLinked extends TestsBase {
 
     @Test
     void externalMultipleWithEmbedded() throws IOException {
-
+        SessionContext ctx = TestSecurityConfig.createTestContext();
         super.printStart("Test: Convert anonymous identifiers (Multiple with shared object)");
 
 
-        Mono<Void> importMono = entityServicesClient.importFileToStore(new ClassPathResource("intermediate/externalMultipleWithEmbedded.ttl")).doOnSubscribe(sub -> super.printStep());
-        Mono<Model> read1 = entityServicesClient.getModel().doOnNext(model -> super.printModel(model, RDFFormat.TURTLE)).doOnSubscribe(sub -> super.printStep());
-        Mono<Model> read2 = entityServicesClient.getModel().doOnNext(model -> super.printModel(model, RDFFormat.TURTLE)).doOnSubscribe(sub -> super.printStep());
+        Mono<Void> importMono = entityServices.importFile(new ClassPathResource("intermediate/externalMultipleWithEmbedded.ttl"), RDFFormat.TURTLE, ctx).doOnSubscribe(sub -> super.printStep()).then();
+        Mono<Model> read1 = entityServices.getModel(ctx).doOnNext(model -> super.printModel(model, RDFFormat.TURTLE)).doOnSubscribe(sub -> super.printStep());
+        Mono<Model> read2 = entityServices.getModel(ctx).doOnNext(model -> super.printModel(model, RDFFormat.TURTLE)).doOnSubscribe(sub -> super.printStep());
 
 
-        Mono<Void> jobMono = scheduled.run(TestSecurityConfig.createTestContext()).doOnSubscribe(sub -> super.printStep());
+        Mono<Void> jobMono = scheduled.run(ctx).doOnSubscribe(sub -> super.printStep());
 
         StepVerifier.create(importMono.then(read1))
                 .assertNext(md -> {
@@ -185,16 +190,16 @@ class ConvertExternalLinked extends TestsBase {
 
     @Test
     void externalWithShared() throws IOException {
-
+        SessionContext ctx = TestSecurityConfig.createTestContext();
         super.printStart("Test: Convert anonymous identifiers (Multiple with shared object)");
 
 
-        Mono<Void> importMono = entityServicesClient.importFileToStore(new ClassPathResource("intermediate/externalWithShared.ttl")).doOnSubscribe(sub -> super.printStep());
-        Mono<Model> read1 = entityServicesClient.getModel().doOnNext(model -> super.printModel(model, RDFFormat.TURTLE)).doOnSubscribe(sub -> super.printStep());
-        Mono<Model> read2 = entityServicesClient.getModel().doOnNext(model -> super.printModel(model, RDFFormat.TURTLE)).doOnSubscribe(sub -> super.printStep());
+        Mono<Void> importMono = entityServices.importFile(new ClassPathResource("intermediate/externalWithShared.ttl"), RDFFormat.TURTLE, ctx).doOnSubscribe(sub -> super.printStep()).then();
+        Mono<Model> read1 = entityServices.getModel(ctx).doOnNext(model -> super.printModel(model, RDFFormat.TURTLE)).doOnSubscribe(sub -> super.printStep());
+        Mono<Model> read2 = entityServices.getModel(ctx).doOnNext(model -> super.printModel(model, RDFFormat.TURTLE)).doOnSubscribe(sub -> super.printStep());
 
 
-        Mono<Void> jobMono = scheduled.run(TestSecurityConfig.createTestContext()).doOnSubscribe(sub -> super.printStep());
+        Mono<Void> jobMono = scheduled.run(ctx).doOnSubscribe(sub -> super.printStep());
 
         StepVerifier.create(importMono.then(read1))
                 .assertNext(md -> {

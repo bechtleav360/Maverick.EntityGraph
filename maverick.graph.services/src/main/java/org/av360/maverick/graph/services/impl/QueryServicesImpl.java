@@ -6,7 +6,6 @@ import org.av360.maverick.graph.model.context.SessionContext;
 import org.av360.maverick.graph.model.enums.RepositoryType;
 import org.av360.maverick.graph.model.errors.requests.InvalidQuery;
 import org.av360.maverick.graph.model.rdf.AnnotatedStatement;
-import org.av360.maverick.graph.model.util.ValidateReactive;
 import org.av360.maverick.graph.services.QueryServices;
 import org.av360.maverick.graph.store.behaviours.Searchable;
 import org.eclipse.rdf4j.query.BindingSet;
@@ -42,25 +41,12 @@ public class QueryServicesImpl implements QueryServices {
 
     @Override
     public Flux<BindingSet> queryValues(String query, SessionContext ctx) {
-
         try {
             ParsedQuery parsedQuery = queryParser.parseQuery(query, null);
             if(parsedQuery instanceof  ParsedTupleQuery) {
                 return this.queryValuesTrusted(query, ctx);
-            } else return Flux.error(new InvalidQuery(query));
-        } catch (Exception e) {
-            return Flux.error(e);
-        }
-    }
-
-    private Flux<BindingSet> queryValuesTrusted(String query, SessionContext ctx) {
-        try {
-            Validate.notNull(ctx.getEnvironment().getRepositoryType());
-            Validate.isTrue(this.stores.containsKey(ctx.getEnvironment().getRepositoryType()), "No repository configured and found for type: %s".formatted(ctx.getEnvironment().getRepositoryType()));
-
-            return this.stores.get(ctx.getEnvironment().getRepositoryType()).query(query, ctx);
-
-        } catch (Exception e) {
+            } else throw new InvalidQuery(query);
+        } catch (Exception | InvalidQuery e) {
             return Flux.error(e);
         }
     }
@@ -72,22 +58,52 @@ public class QueryServicesImpl implements QueryServices {
 
     @Override
     public Flux<AnnotatedStatement> queryGraph(String queryStr, SessionContext ctx) {
-        return ValidateReactive.notNull(ctx.getEnvironment().getRepositoryType())
-                .map(q -> queryParser.parseQuery(queryStr, null))
-                .flatMapMany(ptq -> this.stores.get(ctx.getEnvironment().getRepositoryType()).construct(queryStr, ctx))
-                .doOnSubscribe(subscription -> {
-                    if (log.isTraceEnabled())
-                        log.trace("Running construct query in {}: {}", ctx.getEnvironment(), queryStr);
-                });
-
+        try {
+            ParsedQuery parsedQuery = queryParser.parseQuery(queryStr, null);
+            if(parsedQuery instanceof  ParsedTupleQuery) {
+                return this.queryGraphTrusted(queryStr, ctx);
+            } else throw new InvalidQuery(queryStr);
+        } catch (Exception | InvalidQuery e) {
+            return Flux.error(e);
+        }
     }
 
     public Flux<AnnotatedStatement> queryGraph(ConstructQuery query, SessionContext ctx) {
-        return this.stores.get(ctx.getEnvironment().getRepositoryType()).construct(query.getQueryString(), ctx)
-                .doOnSubscribe(subscription -> {
-                    if (log.isTraceEnabled())
-                        log.trace("Running construct query in {}: {}", ctx.getEnvironment(), query.getQueryString().replace('\n', ' ').trim());
-                });
+        return this.queryGraphTrusted(query.getQueryString(), ctx);
+
+    }
+
+
+    private Flux<AnnotatedStatement> queryGraphTrusted(String query, SessionContext ctx) {
+        try {
+            this.validateContext(ctx);
+            return this.stores.get(ctx.getEnvironment().getRepositoryType()).construct(query, ctx)
+                    .doOnSubscribe(subscription -> {
+                        if (log.isTraceEnabled())
+                            log.trace("Running construct query in {}: {}", ctx.getEnvironment(), query.replace('\n', ' ').trim());
+                    });
+        } catch (Exception e) {
+            return Flux.error(e);
+        }
+    }
+
+
+    private Flux<BindingSet> queryValuesTrusted(String query, SessionContext ctx) {
+        try {
+            this.validateContext(ctx);
+            return this.stores.get(ctx.getEnvironment().getRepositoryType()).query(query, ctx)
+                    .doOnSubscribe(subscription -> {
+                        if (log.isTraceEnabled())
+                            log.trace("Running select query in {}: {}", ctx.getEnvironment(), query.replace('\n', ' ').trim());
+                    });
+        } catch (Exception e) {
+            return Flux.error(e);
+        }
+    }
+
+    private void validateContext(SessionContext ctx) {
+        Validate.notNull(ctx.getEnvironment().getRepositoryType(), "Missing target (repository type) for running query.");
+        Validate.isTrue(this.stores.containsKey(ctx.getEnvironment().getRepositoryType()), "No repository configured and found for type: %s".formatted(ctx.getEnvironment().getRepositoryType()));
     }
 
 }

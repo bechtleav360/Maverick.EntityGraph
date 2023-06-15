@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component;
  */
 @Slf4j(topic = "graph.jobs.identifiers")
 @Component
-@ConditionalOnProperty(name = "application.features.modules.jobs.scheduled.typeCoercion.enabled", havingValue = "true")
+@ConditionalOnProperty({"application.features.modules.jobs.scheduled.typeCoercion.enabled","application.features.modules.applications.enabled"})
 public class ScopedScheduledTypeCoercion extends ScopedJobScheduler {
     public static final String CONFIG_KEY_ASSIGN_INTERNAL_TYPES_FREQUENCY = "assign_internal_types_frequency";
 
