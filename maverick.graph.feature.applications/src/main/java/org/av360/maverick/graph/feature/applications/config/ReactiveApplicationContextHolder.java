@@ -1,6 +1,7 @@
 package org.av360.maverick.graph.feature.applications.config;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.util.StringUtils;
 import reactor.core.publisher.Mono;
 import reactor.util.context.Context;
 
@@ -18,10 +19,10 @@ public class ReactiveApplicationContextHolder {
         return Mono.deferContextual(Mono::just)
                 .filter(ctx -> ctx.hasKey(CONTEXT_LABEL_KEY))
                 .map(ctx -> ctx.get(CONTEXT_LABEL_KEY).toString())
+                .filter(StringUtils::hasLength)
                 .map(label -> label)
                 .switchIfEmpty(Mono.empty())
-                .doOnSuccess(label -> log.trace("Extracted application label '{}' from context", label))
-                .doOnError(error -> log.error("Failed to read application label from context due to error: {}", error.getMessage()));
+                .doOnError(error -> log.warn("Failed to read application label from context due to error: {}", error.getMessage()));
 
     }
 

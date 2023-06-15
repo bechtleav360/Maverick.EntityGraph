@@ -31,7 +31,7 @@ public class ApplicationContextBuilder implements SessionContextBuilderService {
     }
 
     private Mono<SessionContext> buildApplicationConfiguration(SessionContext context) {
-        return this.applicationsService.getApplicationByLabel(context.getEnvironment().getScope(), context)
+        return this.applicationsService.getApplicationByLabel(context.getEnvironment().getScope(), SessionContext.SYSTEM)
                 .map(application ->
                         context.withEnvironment().setConfiguration(Environment.RepositoryConfigurationKey.FLAG_PERSISTENT, application.flags().isPersistent())
                                 .withEnvironment().setConfiguration(Environment.RepositoryConfigurationKey.FLAG_PUBLIC, application.flags().isPublic())

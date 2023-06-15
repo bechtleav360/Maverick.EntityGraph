@@ -128,7 +128,7 @@ public class AssignInternalTypesJob implements Job {
                 } LIMIT 10000
                 """;
         String query = String.format(tpl, Local.Entities.TYPE_INDIVIDUAL, Local.Entities.TYPE_CLASSIFIER, Local.Entities.TYPE_EMBEDDED);
-        return this.queryServices.queryValues(query, ctx)
+        return this.queryServices.queryValues(query, RepositoryType.ENTITIES, ctx)
                 .map(bindings -> bindings.getValue("entity"))
                 .filter(Value::isResource)
                 .map(value -> (Resource) value);

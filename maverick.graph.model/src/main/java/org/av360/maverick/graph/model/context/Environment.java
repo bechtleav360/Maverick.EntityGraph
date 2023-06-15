@@ -6,9 +6,11 @@ import org.springframework.util.StringUtils;
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 
-public class Environment {
+public class Environment implements  Serializable{
+
 
 
 
@@ -86,4 +88,13 @@ public class Environment {
         return this.parent;
     }
 
+
+    @Override
+    public String toString() {
+        return "%s:%s:%s".formatted(
+                StringUtils.hasLength(this.scope) ? this.scope : "default",
+                Objects.isNull(this.repositoryType) ? "?" : this.repositoryType.toString(),
+                StringUtils.hasLength(this.stage) ? this.stage : "?"
+        );
+    }
 }

@@ -66,16 +66,16 @@ public class JobWorker {
                     .flatMap(ctx -> requestedJob.get().run(ctx))
                     .subscribeOn(scheduler)
                     .doOnSubscribe(subscription -> {
-                        log.debug("Starting job '{}'.", event.getJobIdentifier());
+                        log.debug("Starting job '{}' in {}.", event.getJobIdentifier(), event.getSessionContext().getEnvironment());
                         this.activeJobs.put(jobIdentifier.scope(), jobIdentifier.name());
                     })
                     .doOnSuccess(success -> {
-                        log.trace("Completed job '{}'", event.getJobIdentifier());
+                        log.trace("Completed job '{}' in {}.", event.getJobIdentifier(), event.getSessionContext().getEnvironment());
                         this.activeJobs.put(jobIdentifier.scope(), null);
                         meterRegistry.counter("graph.jobs.counter", "name", jobIdentifier.name(), "scope", jobIdentifier.scope(), "status", "completed").increment();
                     })
                     .doOnError(error -> {
-                        log.warn("Failed job '{}' due to reason: {}", event.getJobIdentifier(), error.getMessage());
+                        log.warn("Failed job '{}' in {} due to reason: {}", event.getJobIdentifier(), event.getSessionContext().getEnvironment(), error.getMessage());
                         meterRegistry.counter("graph.jobs.counter", "name", jobIdentifier.name(), "scope", jobIdentifier.scope(), "status ", "failed").increment();
                         this.activeJobs.put(jobIdentifier.scope(), null);
                     }).subscribe();

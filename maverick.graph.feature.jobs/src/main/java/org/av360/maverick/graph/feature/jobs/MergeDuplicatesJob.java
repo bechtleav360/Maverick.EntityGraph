@@ -27,6 +27,8 @@ import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -114,7 +116,7 @@ public class MergeDuplicatesJob implements Job {
 
     }
 
-    public Mono<Void> checkForDuplicates(IRI characteristicProperty, SessionContext ctx) {
+    private Mono<Void> checkForDuplicates(IRI characteristicProperty, SessionContext ctx) {
 
         return this.findCandidates(characteristicProperty, ctx)
                 .map(candidate -> {
@@ -127,10 +129,10 @@ public class MergeDuplicatesJob implements Job {
                                 .collectList()
                                 .flatMap(duplicates -> this.mergeDuplicates(duplicates, ctx)))
                 .doOnSubscribe(sub -> {
-                    log.trace("Checking duplicates sharing the same characteristic property <{}>", characteristicProperty);
+                    log.trace("Checking duplicates sharing the same characteristic property <{}> in environment {}", characteristicProperty, ctx.getEnvironment());
                     ctx.withEnvironment().setRepositoryType(RepositoryType.ENTITIES);
                 })
-                .doOnComplete(() -> log.debug("Completed checking for duplicates sharing the same characteristic property <{}>", characteristicProperty))
+                .doOnComplete(() -> log.debug("Completed checking for duplicates sharing the same characteristic property <{}> in {}", characteristicProperty, ctx.getEnvironment()))
                 .thenEmpty(Mono.empty());
 
     }
@@ -274,7 +276,7 @@ public class MergeDuplicatesJob implements Job {
                     Value sharedValueVal = binding.getValue(sharedValue.getVarName());
                     Value typeVal = binding.getValue(type.getVarName());
                     return new DuplicateCandidate(sharedProperty, typeVal.stringValue(), sharedValueVal.stringValue());
-                });
+                }).timeout(Duration.of(10, ChronoUnit.SECONDS));
 
     }
 

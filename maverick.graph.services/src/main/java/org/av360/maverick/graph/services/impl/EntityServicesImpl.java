@@ -3,6 +3,7 @@ package org.av360.maverick.graph.services.impl;
 import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.model.context.SessionContext;
 import org.av360.maverick.graph.model.enums.Activity;
+import org.av360.maverick.graph.model.enums.RepositoryType;
 import org.av360.maverick.graph.model.errors.InconsistentModelException;
 import org.av360.maverick.graph.model.errors.requests.EntityNotFound;
 import org.av360.maverick.graph.model.events.EntityCreatedEvent;
@@ -117,7 +118,7 @@ public class EntityServicesImpl implements EntityServices {
                     GROUP BY ?id  ?sct ?dct ?rdt ?skt
                 """.replace("$limit", limit + "").replace("$offset", offset + "");
 
-        return this.queryServices.queryValues(query, ctx)
+        return this.queryServices.queryValues(query, ctx.withEnvironment().setRepositoryType(RepositoryType.ENTITIES))
                 .map(BindingsAccessor::new)
                 .flatMap(bnd -> {
                     try {
@@ -214,7 +215,7 @@ public class EntityServicesImpl implements EntityServices {
     @Override
     public Mono<RdfTransaction> importFile(org.springframework.core.io.Resource resource, RDFFormat format, SessionContext context) {
         Flux<DataBuffer> publisher = ValidateReactive.notNull(resource)
-                .then(ValidateReactive.isTrue(resource.exists()))
+                .then(ValidateReactive.isTrue(resource.exists(), "Resource does not exist: "+resource.toString()))
                 .thenMany(DataBufferUtils.read(resource, new DefaultDataBufferFactory(), 1024));
 
 

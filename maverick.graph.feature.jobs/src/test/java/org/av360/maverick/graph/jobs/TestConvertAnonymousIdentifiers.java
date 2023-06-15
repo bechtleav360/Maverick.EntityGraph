@@ -2,7 +2,9 @@ package org.av360.maverick.graph.jobs;
 
 import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.feature.jobs.ReplaceSubjectIdentifiersJob;
+import org.av360.maverick.graph.model.context.SessionContext;
 import org.av360.maverick.graph.model.vocabulary.Local;
+import org.av360.maverick.graph.services.EntityServices;
 import org.av360.maverick.graph.tests.config.TestRepositoryConfig;
 import org.av360.maverick.graph.tests.config.TestSecurityConfig;
 import org.av360.maverick.graph.tests.util.TestsBase;
@@ -36,7 +38,7 @@ class TestConvertAnonymousIdentifiers extends TestsBase {
 
 
     @Autowired
-    EntityServicesClient entityServicesClient;
+    EntityServices entityServicesClient;
 
 
     @AfterEach
@@ -46,14 +48,14 @@ class TestConvertAnonymousIdentifiers extends TestsBase {
 
     @Test
     void checkForGlobalIdentifiers() throws IOException {
-
+        SessionContext ctx = TestSecurityConfig.createTestContext();
         super.printStart("Test: Convert anonymous identifiers (Simple)");
 
         // Mono<Transaction> tx1 = entityServicesClient.importFileMono(new ClassPathResource("requests/create-esco.ttl"));
 
-        Mono<Void> importMono = entityServicesClient.importFileToStore(new ClassPathResource("requests/create-valid.ttl")).doOnSubscribe(sub -> super.printStep());
-        Mono<Model> read1 = entityServicesClient.getModel().doOnSubscribe(sub -> super.printStep());
-        Mono<Model> read2 = entityServicesClient.getModel().doOnNext(model -> super.printModel(model, RDFFormat.TURTLE)).doOnSubscribe(sub -> super.printStep());
+        Mono<Void> importMono = entityServicesClient.importFile(new ClassPathResource("requests/create-valid.ttl"), RDFFormat.TURTLE, ctx).doOnSubscribe(sub -> super.printStep()).then();
+        Mono<Model> read1 = entityServicesClient.getModel(ctx).doOnSubscribe(sub -> super.printStep());
+        Mono<Model> read2 = entityServicesClient.getModel(ctx).doOnNext(model -> super.printModel(model, RDFFormat.TURTLE)).doOnSubscribe(sub -> super.printStep());
 
 
         Mono<Void> jobMono = scheduled.run(TestSecurityConfig.createTestContext()).doOnSubscribe(sub -> super.printStep());
@@ -76,13 +78,13 @@ class TestConvertAnonymousIdentifiers extends TestsBase {
 
     @Test
     void checkForGlobalIdentifiersMultiple() throws IOException {
-
+        SessionContext ctx = TestSecurityConfig.createTestContext();
         super.printStart("Test: Convert anonymous identifiers (Multiple)");
 
 
-        Mono<Void> importMono = entityServicesClient.importFileToStore(new ClassPathResource("requests/create-valid_multiple-ext.ttl")).doOnSubscribe(sub -> super.printStep());
-        Mono<Model> read1 = entityServicesClient.getModel().doOnSubscribe(sub -> super.printStep());
-        Mono<Model> read2 = entityServicesClient.getModel().doOnNext(model -> super.printModel(model, RDFFormat.TURTLE)).doOnSubscribe(sub -> super.printStep());
+        Mono<Void> importMono = entityServicesClient.importFile(new ClassPathResource("requests/create-valid_multiple-ext.ttl"), RDFFormat.TURTLE, ctx).doOnSubscribe(sub -> super.printStep()).then();
+        Mono<Model> read1 = entityServicesClient.getModel(ctx).doOnSubscribe(sub -> super.printStep());
+        Mono<Model> read2 = entityServicesClient.getModel(ctx).doOnNext(model -> super.printModel(model, RDFFormat.TURTLE)).doOnSubscribe(sub -> super.printStep());
 
 
         Mono<Void> jobMono = scheduled.run(TestSecurityConfig.createTestContext()).doOnSubscribe(sub -> super.printStep());
@@ -93,7 +95,7 @@ class TestConvertAnonymousIdentifiers extends TestsBase {
         StepVerifier.create(jobMono).verifyComplete();
 
         StepVerifier.create(read2)
-                .assertNext(model -> Assertions.assertEquals(8, model.size()))
+                .assertNext(model -> Assertions.assertEquals(10, model.size()))
                 .verifyComplete();
 
     }
@@ -101,13 +103,13 @@ class TestConvertAnonymousIdentifiers extends TestsBase {
 
     @Test
     void checkForGlobalIdentifiersObjects() throws IOException {
-
+        SessionContext ctx = TestSecurityConfig.createTestContext();
         super.printStart("Test: Convert global identifiers (Multiple)");
 
 
-        Mono<Void> importMono = entityServicesClient.importFileToStore(new ClassPathResource("requests/create-valid_withEmbedded-ext.ttl")).doOnSubscribe(sub -> super.printStep());
-        Mono<Model> read1 = entityServicesClient.getModel().doOnNext(model -> super.printModel(model, RDFFormat.TURTLE)).doOnSubscribe(sub -> super.printStep());
-        Mono<Model> read2 = entityServicesClient.getModel().doOnNext(model -> super.printModel(model, RDFFormat.TURTLE)).doOnSubscribe(sub -> super.printStep());
+        Mono<Void> importMono = entityServicesClient.importFile(new ClassPathResource("requests/create-valid_withEmbedded-ext.ttl"), RDFFormat.TURTLE, ctx).doOnSubscribe(sub -> super.printStep()).then();
+        Mono<Model> read1 = entityServicesClient.getModel(ctx).doOnNext(model -> super.printModel(model, RDFFormat.TURTLE)).doOnSubscribe(sub -> super.printStep());
+        Mono<Model> read2 = entityServicesClient.getModel(ctx).doOnNext(model -> super.printModel(model, RDFFormat.TURTLE)).doOnSubscribe(sub -> super.printStep());
 
 
         Mono<Void> jobMono = scheduled.run(TestSecurityConfig.createTestContext()).doOnSubscribe(sub -> super.printStep());
@@ -118,7 +120,7 @@ class TestConvertAnonymousIdentifiers extends TestsBase {
         StepVerifier.create(jobMono).verifyComplete();
 
         StepVerifier.create(read2)
-                .assertNext(model -> Assertions.assertEquals(7, model.size()))
+                .assertNext(model -> Assertions.assertEquals(9, model.size()))
                 .verifyComplete();
 
     }
@@ -126,13 +128,13 @@ class TestConvertAnonymousIdentifiers extends TestsBase {
 
     @Test
     void checkForGlobalIdentifiersMultipleWithSharedObject() throws IOException {
-
+        SessionContext ctx = TestSecurityConfig.createTestContext();
         super.printStart("Test: Convert anonymous identifiers (Multiple with shared object)");
 
 
-        Mono<Void> importMono = entityServicesClient.importFileToStore(new ClassPathResource("requests/create-valid_multipleWithEmbedded.ttl")).doOnSubscribe(sub -> super.printStep());
-        Mono<Model> read1 = entityServicesClient.getModel().doOnNext(model -> super.printModel(model, RDFFormat.TURTLE)).doOnSubscribe(sub -> super.printStep());
-        Mono<Model> read2 = entityServicesClient.getModel().doOnNext(model -> super.printModel(model, RDFFormat.TURTLE)).doOnSubscribe(sub -> super.printStep());
+        Mono<Void> importMono = entityServicesClient.importFile(new ClassPathResource("requests/create-valid_multipleWithEmbedded.ttl"), RDFFormat.TURTLE, ctx).doOnSubscribe(sub -> super.printStep()).then();
+        Mono<Model> read1 = entityServicesClient.getModel(ctx).doOnNext(model -> super.printModel(model, RDFFormat.TURTLE)).doOnSubscribe(sub -> super.printStep());
+        Mono<Model> read2 = entityServicesClient.getModel(ctx).doOnNext(model -> super.printModel(model, RDFFormat.TURTLE)).doOnSubscribe(sub -> super.printStep());
 
 
         Mono<Void> jobMono = scheduled.run(TestSecurityConfig.createTestContext()).doOnSubscribe(sub -> super.printStep());
@@ -153,3 +155,18 @@ class TestConvertAnonymousIdentifiers extends TestsBase {
     }
 
 }
+
+/*
+
+<urn:pwid:meg:e:bzpgjhdx> a <https://schema.org/DefinedTerm>, <urn:pwid:meg:e:Classifier>;
+  <http://www.w3.org/2000/01/rdf-schema#label> "Term 1" .
+
+<urn:pwid:meg:e:b56adz7x> a <urn:pwid:meg:e:Individual>, <https://schema.org/VideoObject>;
+  <https://schema.org/hasDefinedTerm> <urn:pwid:meg:e:bzpgjhdx>;
+  <https://schema.org/identifier> "video_a" .
+
+<urn:pwid:meg:e:bspau98x> a <https://schema.org/VideoObject>, <urn:pwid:meg:e:Individual>;
+  <https://schema.org/hasDefinedTerm> <urn:pwid:meg:e:bzpgjhdx>;
+  <https://schema.org/identifier> "video_b" .
+
+ */

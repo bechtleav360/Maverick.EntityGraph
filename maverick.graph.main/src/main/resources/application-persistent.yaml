@@ -25,7 +25,6 @@ application:
         scheduled:
           detectDuplicates:
             enabled: true
-            defaultFrequency: "0/1 * * * * ?"
           replaceIdentifiers:
             enabled: true
           typeCoercion:

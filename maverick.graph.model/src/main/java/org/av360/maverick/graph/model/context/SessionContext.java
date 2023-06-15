@@ -7,10 +7,12 @@ import java.util.Objects;
 import java.util.Optional;
 
 public class SessionContext {
+    public static final SessionContext SYSTEM = new SessionContext().withSystemAuthentication();
     RequestDetails requestDetails;
     Environment environment;
     Authentication authentication;
     Scope scope;
+
 
     public SessionContext() {
     }

@@ -15,7 +15,9 @@ public class AbstractController {
     Set<SessionContextBuilderService> builders;
 
 
-    protected Mono<SessionContext> acquireContext() {
+    protected Mono<SessionContext>
+
+     acquireContext() {
         return Flux.fromIterable(this.builders)
                 // see example here: https://stackoverflow.com/questions/73141978/how-to-asynchronosuly-reduce-a-flux-to-mono-with-reactor
                 .reduceWith(() -> Mono.just(new SessionContext()), (update, builderService) -> update.flatMap(builderService::build))

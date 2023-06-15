@@ -21,7 +21,7 @@ import org.springframework.web.reactive.function.BodyInserters;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ContextConfiguration(classes = TestSecurityConfig.class)
 @RecordApplicationEvents
-@ActiveProfiles("test")
+@ActiveProfiles({"test","api"})
 @Slf4j
 public class QueryTestsImpl extends TestsBase implements QueriesTest {
 
@@ -44,7 +44,10 @@ public class QueryTestsImpl extends TestsBase implements QueriesTest {
 
         CsvConsumer csvConsumer = new CsvConsumer();
         webClient.post()
-                .uri("/api/query/select")
+                .uri(uriBuilder -> uriBuilder.path("/api/query/select")
+                        .queryParam("repository", "entities")
+                        .build()
+                )
                 .contentType(MediaType.parseMediaType("text/plain"))
                 .accept(MediaType.parseMediaType("text/csv"))
                 .body(BodyInserters.fromValue("SELECT DISTINCT * WHERE { ?s ?p ?o }"))
@@ -54,7 +57,7 @@ public class QueryTestsImpl extends TestsBase implements QueriesTest {
                 .consumeWith(csvConsumer);
 
 
-        Assertions.assertEquals(6, csvConsumer.getRows().size());
+        Assertions.assertEquals(8, csvConsumer.getRows().size());
     }
 
     @Override

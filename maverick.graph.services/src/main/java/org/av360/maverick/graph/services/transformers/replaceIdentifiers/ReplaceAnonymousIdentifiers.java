@@ -55,14 +55,23 @@ public class ReplaceAnonymousIdentifiers extends AbstractIdentifierReplace imple
                     }
                 })
                 .then(Mono.just(triples))
-                .doOnSubscribe(c -> log.debug("(Start) Checking if model contains replaceable anonymous identifiers"))
-                .doFinally(signalType -> log.trace("(End) Finished checks for anonymous identifiers"));
+                .doOnSubscribe(c -> log.debug("Checking if model contains replaceable anonymous identifiers"))
+                .doFinally(signalType -> log.trace("Finished checks for anonymous identifiers"));
     }
 
     public Flux<IdentifierMapping> buildIdentifierMappings(Model model) {
         Set<BNode> collect = new HashSet<>();
-        model.subjects().stream().filter(Value::isBNode).map(val -> (BNode) val).forEach(collect::add);
-        model.objects().stream().filter(Value::isBNode).map(val -> (BNode) val).forEach(collect::add);
+        model.forEach(statement -> {
+            if(statement.getPredicate().equals(Local.ORIGINAL_IDENTIFIER)) return;
+            if(statement.getSubject().isBNode()) {
+                collect.add((BNode) statement.getSubject());
+            }
+            if(statement.getObject().isBNode() && ! model.contains(null, Local.ORIGINAL_IDENTIFIER, statement.getObject())) {
+                // we must not replace identifier, which are stored as intermediate original ids
+                collect.add((BNode) statement.getObject());
+            }
+        });
+
 
         return Flux.fromIterable(collect)
                 .flatMap(val ->

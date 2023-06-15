@@ -3,6 +3,7 @@ package org.av360.maverick.graph.feature.applications.services;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.Validate;
 import org.av360.maverick.graph.feature.applications.config.Globals;
 import org.av360.maverick.graph.feature.applications.security.SubscriptionToken;
 import org.av360.maverick.graph.feature.applications.services.errors.InvalidApplication;
@@ -81,6 +82,10 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
      * @return New node as mono
      */
     public Mono<Application> createApplication(String label, ApplicationFlags flags, Map<String, Serializable> configuration, SessionContext ctx) {
+        try {
+            Validate.isTrue(ctx.getAuthentication().isPresent());
+            Validate.isTrue(ctx.getAuthentication().get().isAuthenticated());
+        } catch (Exception e) { return Mono.error(e); }
 
 
         LocalIdentifier subject = IdentifierServices.createRandomIdentifier(Local.Applications.NAMESPACE);
@@ -255,6 +260,11 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
     }
 
     public Flux<Application> listApplications(SessionContext ctx) {
+        try {
+            Validate.isTrue(ctx.getAuthentication().isPresent());
+            Validate.isTrue(ctx.getAuthentication().get().isAuthenticated());
+        } catch (Exception e) { return Flux.error(e); }
+
 
         if (!this.caching_enabled || this.cache.asMap().isEmpty()) {
 
@@ -295,13 +305,19 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
                     })
                     .doOnNext(application -> this.cache.put(application.key(), application))
                     .filter(application -> verifyReadingPrivilege(application, ctx))
-                    .doOnSubscribe(StreamsLogger.debug(log, "Loading all applications from repository."));
+                    .doOnSubscribe(StreamsLogger.debug(log, "Loading all applications from repository ({})", ctx.getEnvironment()));
         } else {
             return Flux.fromIterable(this.cache.asMap().values()).filter(application -> verifyReadingPrivilege(application, ctx));
         }
     }
 
     public Mono<Application> getApplicationByLabel(String applicationLabel, SessionContext ctx) {
+        try {
+            Validate.isTrue(ctx.getAuthentication().isPresent());
+            Validate.isTrue(ctx.getAuthentication().get().isAuthenticated());
+        } catch (Exception e) { return Mono.error(e); }
+
+
         if (applicationLabel.equalsIgnoreCase(Globals.DEFAULT_APPLICATION_LABEL)) return Mono.empty();
 
         return this.listApplications(ctx)

@@ -35,12 +35,13 @@ public class QueryRestController extends AbstractController {
     )
 
     @ResponseStatus(HttpStatus.ACCEPTED)
-    public Flux<BindingSet> queryBindings(@RequestBody String query, @RequestParam(required = true, value = "entities") @Parameter(name = "repository type", description = "The repository type in which the query should search.")
+    public Flux<BindingSet> queryBindings(@RequestBody String query,
+                                          @RequestParam(required = false, defaultValue = "entities", value = "entities") @Parameter(name = "repository", description = "The repository type in which the query should search.")
     RepositoryType repositoryType) {
 
         return super.acquireContext()
                 .map(ctx -> ctx.withEnvironment().setRepositoryType(repositoryType))
-                .flatMapMany(ctx -> queryServices.queryValues(query, ctx))
+                .flatMapMany(ctx -> queryServices.queryValues(query, RepositoryType.ENTITIES, ctx))
                 .doOnSubscribe(s -> {
                     if (log.isDebugEnabled()) log.debug("Request to search graph with tuples query: {}", query);
                 });
@@ -55,7 +56,7 @@ public class QueryRestController extends AbstractController {
                     @ExampleObject(name = "Query everything", value = "CONSTRUCT WHERE { ?s ?p ?o . } LIMIT 100")
             })
     )
-    public Flux<AnnotatedStatement> queryStatements(@RequestBody String query, @RequestParam(required = true, value = "entities") @Parameter(name = "repository type", description = "The repository type in which the query should search.")
+    public Flux<AnnotatedStatement> queryStatements(@RequestBody String query, @RequestParam(required = false, defaultValue = "entities", value = "entities") @Parameter(name = "repository", description = "The repository type in which the query should search.")
     RepositoryType repositoryType) {
 
         return acquireContext()

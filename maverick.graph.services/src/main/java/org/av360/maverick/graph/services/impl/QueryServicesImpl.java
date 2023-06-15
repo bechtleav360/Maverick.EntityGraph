@@ -40,11 +40,11 @@ public class QueryServicesImpl implements QueryServices {
 
 
     @Override
-    public Flux<BindingSet> queryValues(String query, SessionContext ctx) {
+    public Flux<BindingSet> queryValues(String query, RepositoryType repositoryType, SessionContext ctx) {
         try {
             ParsedQuery parsedQuery = queryParser.parseQuery(query, null);
             if(parsedQuery instanceof  ParsedTupleQuery) {
-                return this.queryValuesTrusted(query, ctx);
+                return this.queryValuesTrusted(query, repositoryType, ctx);
             } else throw new InvalidQuery(query);
         } catch (Exception | InvalidQuery e) {
             return Flux.error(e);
@@ -52,32 +52,32 @@ public class QueryServicesImpl implements QueryServices {
     }
 
     @Override
-    public Flux<BindingSet> queryValues(SelectQuery query, SessionContext ctx) {
-        return this.queryValuesTrusted(query.getQueryString(), ctx);
+    public Flux<BindingSet> queryValues(SelectQuery query, RepositoryType repositoryType, SessionContext ctx) {
+        return this.queryValuesTrusted(query.getQueryString(), repositoryType, ctx);
     }
 
     @Override
-    public Flux<AnnotatedStatement> queryGraph(String queryStr, SessionContext ctx) {
+    public Flux<AnnotatedStatement> queryGraph(String queryStr, RepositoryType repositoryType, SessionContext ctx) {
         try {
             ParsedQuery parsedQuery = queryParser.parseQuery(queryStr, null);
             if(parsedQuery instanceof  ParsedTupleQuery) {
-                return this.queryGraphTrusted(queryStr, ctx);
+                return this.queryGraphTrusted(queryStr, repositoryType, ctx);
             } else throw new InvalidQuery(queryStr);
         } catch (Exception | InvalidQuery e) {
             return Flux.error(e);
         }
     }
 
-    public Flux<AnnotatedStatement> queryGraph(ConstructQuery query, SessionContext ctx) {
-        return this.queryGraphTrusted(query.getQueryString(), ctx);
+    public Flux<AnnotatedStatement> queryGraph(ConstructQuery query,  RepositoryType repositoryType, SessionContext ctx) {
+        return this.queryGraphTrusted(query.getQueryString(), repositoryType, ctx);
 
     }
 
 
-    private Flux<AnnotatedStatement> queryGraphTrusted(String query, SessionContext ctx) {
+    private Flux<AnnotatedStatement> queryGraphTrusted(String query,  RepositoryType repositoryType, SessionContext ctx) {
         try {
             this.validateContext(ctx);
-            return this.stores.get(ctx.getEnvironment().getRepositoryType()).construct(query, ctx)
+            return this.stores.get(repositoryType).construct(query, ctx)
                     .doOnSubscribe(subscription -> {
                         if (log.isTraceEnabled())
                             log.trace("Running construct query in {}: {}", ctx.getEnvironment(), query.replace('\n', ' ').trim());
@@ -88,10 +88,10 @@ public class QueryServicesImpl implements QueryServices {
     }
 
 
-    private Flux<BindingSet> queryValuesTrusted(String query, SessionContext ctx) {
+    private Flux<BindingSet> queryValuesTrusted(String query, RepositoryType repositoryType, SessionContext ctx) {
         try {
             this.validateContext(ctx);
-            return this.stores.get(ctx.getEnvironment().getRepositoryType()).query(query, ctx)
+            return this.stores.get(repositoryType).query(query, ctx)
                     .doOnSubscribe(subscription -> {
                         if (log.isTraceEnabled())
                             log.trace("Running select query in {}: {}", ctx.getEnvironment(), query.replace('\n', ' ').trim());

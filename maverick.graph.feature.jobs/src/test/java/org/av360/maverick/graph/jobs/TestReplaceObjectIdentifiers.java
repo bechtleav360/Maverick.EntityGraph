@@ -36,7 +36,7 @@ import java.io.IOException;
 @ActiveProfiles("test")
 @Slf4j
 @SuppressWarnings("all")
-class ConvertExternalLinked extends TestsBase {
+class TestReplaceObjectIdentifiers extends TestsBase {
 
     @Autowired
     private ReplaceObjectIdentifiersJob scheduled;
@@ -180,7 +180,7 @@ class ConvertExternalLinked extends TestsBase {
 
         StepVerifier.create(read2)
                 .assertNext(model -> {
-                    Assertions.assertEquals(8, model.size());
+                    Assertions.assertEquals(11, model.size());
                     Assertions.assertEquals(3, model.subjects().size());
                 })
                 .verifyComplete();
@@ -192,7 +192,6 @@ class ConvertExternalLinked extends TestsBase {
     void externalWithShared() throws IOException {
         SessionContext ctx = TestSecurityConfig.createTestContext();
         super.printStart("Test: Convert anonymous identifiers (Multiple with shared object)");
-
 
         Mono<Void> importMono = entityServices.importFile(new ClassPathResource("intermediate/externalWithShared.ttl"), RDFFormat.TURTLE, ctx).doOnSubscribe(sub -> super.printStep()).then();
         Mono<Model> read1 = entityServices.getModel(ctx).doOnNext(model -> super.printModel(model, RDFFormat.TURTLE)).doOnSubscribe(sub -> super.printStep());
@@ -210,7 +209,7 @@ class ConvertExternalLinked extends TestsBase {
 
         StepVerifier.create(read2)
                 .assertNext(model -> {
-                    Assertions.assertEquals(16, model.size());
+                    Assertions.assertEquals(21, model.size());
                     Assertions.assertEquals(5, model.subjects().size());
                 })
                 .verifyComplete();
