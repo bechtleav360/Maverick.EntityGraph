@@ -1,6 +1,8 @@
 package org.av360.maverick.graph.api.controller.entities;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
@@ -41,7 +43,12 @@ public class ValuesController extends AbstractController implements ValuesAPI {
         this.schemaServices = schemaServices;
     }
     @Override
-    @Operation(summary = "Returns a list of value property of the selected entity.  ")
+    @Operation(summary = "Returns a list of value properties of the selected entity.  ",
+            description = """
+                    Returns a list of values formatted as dictionary for a specific entity. 
+                                        
+                    Note: this is not implemented yet. 
+                    """)
     @GetMapping(value = "/entities/{id:[\\w|\\d|\\-|\\_]+}/values",
             produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE, MediaType.APPLICATION_JSON_VALUE})
     @ResponseStatus(HttpStatus.OK)
@@ -53,6 +60,34 @@ public class ValuesController extends AbstractController implements ValuesAPI {
 
     //  @ApiOperation(value = "Sets a value for an entity. Replaces an existing value. ")
     @Override
+    @Operation(summary = "Sets a specific value.  ",
+            description = """
+                You can either set literals or links to resources with this method. 
+                
+                A literal is a specific type of value that represents data in a straightforward and self-contained 
+                manner. It can be a string, a number, a date/time value, a boolean, or any other type that can be
+                expressed in a textual format. In RDF, literals play a crucial role in representing and exchanging
+                structured data, allowing for semantic understanding and integration of information
+                from various sources. To set a literal, simply add any value in a single line in the request body.  
+                
+                Resources are identified by URIs (Uniform Resource Identifiers), which serve as globally unique
+                identifiers for each resource. URIs can take the form of URLs (Uniform Resource Locators)
+                or URNs (Uniform Resource Names). To set a link to a resource, you have to insert either a URN or URL 
+                in tags "<,>" in the request body. 
+                
+                The request body has to be short, line breaks are not supported. For content, please upload the value 
+                as a file (if the feature is enabled)  
+                
+                    """
+    )
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(
+            description = "The value to set",
+            content = @Content(examples = {
+                    @ExampleObject(name = "Set value as link to a resource", value = "<https://www.wikidata.org/wiki/Q42>"),
+                    @ExampleObject(name = "Set value as link to a webpage", value = "https://bar.wikipedia.org/wiki/Douglas_Adams"),
+                    @ExampleObject(name = "Set value as literal", value = "Douglas Adams"),
+            })
+    )
     @PostMapping(value = "/entities/{id:[\\w|\\d|\\-|\\_]+}/values/{prefixedKey:[\\w|\\d]+\\.[\\w|\\d|\\-|\\_]+}",
             consumes = {MediaType.TEXT_PLAIN_VALUE},
             produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE})
@@ -62,7 +97,7 @@ public class ValuesController extends AbstractController implements ValuesAPI {
 
 
         return super.acquireContext()
-                .flatMap(ctx -> values.insertLiteral(id, prefixedKey, value, lang, ctx))
+                .flatMap(ctx -> values.insertValue(id, prefixedKey, value, lang, ctx))
                 .flatMapIterable(TripleModel::asStatements)
                 .doOnSubscribe(s -> {
                     if (log.isDebugEnabled())

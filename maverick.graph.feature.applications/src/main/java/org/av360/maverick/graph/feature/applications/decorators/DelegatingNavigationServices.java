@@ -8,6 +8,7 @@ import org.av360.maverick.graph.model.vocabulary.Local;
 import org.av360.maverick.graph.services.NavigationServices;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Namespace;
+import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.util.ModelBuilder;
 import org.eclipse.rdf4j.model.vocabulary.HYDRA;
@@ -15,6 +16,7 @@ import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.springframework.beans.factory.annotation.Autowired;
 import reactor.core.publisher.Flux;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -35,15 +37,21 @@ public class DelegatingNavigationServices implements NavigationServices {
         return delegate.start(ctx).mergeWith(
                 applicationsService.listApplications(ctx)
                         .collectList()
+                        .map(list -> {
+                            list.add(Application.DEFAULT);
+                            return list;
+                        })
+                        .switchIfEmpty(Mono.just(List.of(Application.DEFAULT)))
                         .flatMapMany(applications -> Flux.create(sink -> {
-                            IRI appsCollection = vf.createIRI(ResolvableUrlPrefix + "/api/applications");
-                            IRI start = vf.createIRI(Local.NAMESPACE, "Start");
+                            IRI appsCollection = vf.createIRI(ResolvableUrlPrefix+"/api/applications");
+                            Resource root = vf.createIRI(Local.URN_PREFIX, "nav");
+
                             ModelBuilder builder = new ModelBuilder()
                                     .subject(appsCollection)
                                     .add(RDF.TYPE, HYDRA.COLLECTION)
                                     .add(HYDRA.TOTAL_ITEMS, applications.size())
-                                    .subject(start)
-                                    .add(vf.createIRI(Local.NAMESPACE, "applications"), appsCollection);
+                                    .subject(root)
+                                    .add(HYDRA.ENTRYPOINT, appsCollection);
 
                             applications.forEach(application -> {
                                 IRI app = vf.createIRI(Local.Applications.NAMESPACE, application.key());
