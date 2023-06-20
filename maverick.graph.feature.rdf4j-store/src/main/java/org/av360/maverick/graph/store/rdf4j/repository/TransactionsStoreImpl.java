@@ -1,20 +1,17 @@
 package org.av360.maverick.graph.store.rdf4j.repository;
 
 import lombok.extern.slf4j.Slf4j;
-import org.av360.maverick.graph.model.context.SessionContext;
+import org.av360.maverick.graph.model.context.Environment;
 import org.av360.maverick.graph.model.enums.RepositoryType;
 import org.av360.maverick.graph.store.TransactionsStore;
 import org.av360.maverick.graph.store.rdf.fragments.RdfTransaction;
 import org.av360.maverick.graph.store.rdf4j.repository.util.AbstractStore;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.core.GrantedAuthority;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
 
 import java.util.Collection;
-import java.util.List;
 
 @Slf4j(topic = "graph.repo.transactions")
 @Component
@@ -26,15 +23,10 @@ public class TransactionsStoreImpl extends AbstractStore implements Transactions
         super(RepositoryType.TRANSACTIONS);
     }
 
-    @Override
-    public Mono<RdfTransaction> store(RdfTransaction transaction, SessionContext ctx, GrantedAuthority requiredAuthority) {
-        return this.store(List.of(transaction), ctx, requiredAuthority).singleOrEmpty();
-    }
-
 
     @Override
-    public Flux<RdfTransaction> store(Collection<RdfTransaction> transactions, SessionContext ctx, GrantedAuthority requiredAuthority) {
-        return this.applyManyWithConnection(ctx, requiredAuthority, connection -> {
+    public Flux<RdfTransaction> store(Collection<RdfTransaction> transactions, Environment environment) {
+        return this.applyManyWithConnection(environment, connection -> {
             transactions.forEach(trx -> {
                 try {
                     connection.begin();
@@ -61,8 +53,5 @@ public class TransactionsStoreImpl extends AbstractStore implements Transactions
         return this.path;
     }
 
-    @Override
-    protected Mono<SessionContext> validateContext(SessionContext ctx) {
-        return Mono.just(ctx.getEnvironment().setRepositoryType(RepositoryType.TRANSACTIONS));
-    }
+
 }

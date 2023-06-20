@@ -34,20 +34,21 @@ public class ResolveRepositoriesTest {
 
     @Test
     public void buildEntityRepoWithTestAuthentication() throws IOException {
-        Mono<LabeledRepository> mono = builder.buildRepository(entityStore, TestSecurityConfig.createTestContext());
-        StepVerifier.create(mono).assertNext(Repository::isInitialized);
+
+        Mono<LabeledRepository> mono = builder.buildRepository(entityStore,  TestSecurityConfig.createTestContext().getEnvironment());
+        StepVerifier.create(mono).assertNext(repo -> repo.isInitialized()).verifyComplete();
     }
 
     @Test
     public void buildEntityRepoWithAdminAuthentication() throws IOException {
-        Mono<LabeledRepository> mono = builder.buildRepository(entityStore, TestSecurityConfig.createAdminContext());
-        StepVerifier.create(mono).assertNext(Repository::isInitialized);
+        Mono<LabeledRepository> mono = builder.buildRepository(entityStore, TestSecurityConfig.createAdminContext().getEnvironment());
+        StepVerifier.create(mono).assertNext(Repository::isInitialized).verifyComplete();
     }
 
     @Test
     public void buildEntityRepoWithAnonAuthentication() throws IOException {
-        Mono<LabeledRepository> mono = builder.buildRepository(entityStore, TestSecurityConfig.createAnonymousContext());
-        StepVerifier.create(mono).assertNext(Repository::isInitialized);
+        Mono<LabeledRepository> mono = builder.buildRepository(entityStore, TestSecurityConfig.createAnonymousContext().getEnvironment());
+        StepVerifier.create(mono).assertNext(Repository::isInitialized).verifyComplete();
 
     }
 
@@ -62,8 +63,8 @@ public class ResolveRepositoriesTest {
         TestSecurityConfig.addConfigurationDetail(ctx, Application.CONFIG_KEYS.FLAG_PERSISTENT, "false");
 
 
-        Mono<LabeledRepository> mono = builder.buildRepository(entityStore, ctx);
-        StepVerifier.create(mono).assertNext(Repository::isInitialized);
+        Mono<LabeledRepository> mono = builder.buildRepository(entityStore, ctx.getEnvironment());
+        StepVerifier.create(mono).assertNext(Repository::isInitialized).verifyComplete();
 
     }
 
@@ -77,10 +78,10 @@ public class ResolveRepositoriesTest {
         TestSecurityConfig.addConfigurationDetail(ctx, Application.CONFIG_KEYS.FLAG_PUBLIC, "false");
         TestSecurityConfig.addConfigurationDetail(ctx, Application.CONFIG_KEYS.FLAG_PERSISTENT, "false");
 
-        Mono<LabeledRepository> mono = builder.buildRepository(entityStore, ctx);
+        Mono<LabeledRepository> mono = builder.buildRepository(entityStore, ctx.getEnvironment());
 
 
-        StepVerifier.create(mono).assertNext(Repository::isInitialized);
+        StepVerifier.create(mono).assertNext(Repository::isInitialized).verifyComplete();
     }
 
 

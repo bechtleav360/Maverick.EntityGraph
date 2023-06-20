@@ -30,7 +30,7 @@ public class ChainingAuthenticationManager implements ReactiveAuthenticationMana
         // @formatter:off
         return Flux.fromIterable(this.delegates)
                 // see example here: https://stackoverflow.com/questions/73141978/how-to-asynchronosuly-reduce-a-flux-to-mono-with-reactor
-                .reduceWith(() -> Mono.just(authentication), (update, reactiveAuthenticationManager) -> update.flatMap(reactiveAuthenticationManager::authenticate))
+                .reduceWith(() -> Mono.just(authentication), (update, delegate) -> update.flatMap(delegate::authenticate))
                 .flatMap(authenticationMono -> authenticationMono);
 
 

@@ -1,10 +1,10 @@
 package org.av360.maverick.graph.jobs;
 
 import lombok.extern.slf4j.Slf4j;
+import org.av360.maverick.graph.model.context.SessionContext;
 import org.av360.maverick.graph.model.enums.RepositoryType;
 import org.av360.maverick.graph.model.rdf.AnnotatedStatement;
 import org.av360.maverick.graph.model.rdf.Triples;
-import org.av360.maverick.graph.model.security.Authorities;
 import org.av360.maverick.graph.services.EntityServices;
 import org.av360.maverick.graph.services.QueryServices;
 import org.av360.maverick.graph.store.EntityStore;
@@ -82,9 +82,9 @@ public class EntityServicesClient {
 
     public Mono<Void> importFileToStore(Resource resource) throws IOException {
         Flux<DataBuffer> read = DataBufferUtils.read(resource, new DefaultDataBufferFactory(), 1024);
-
+        SessionContext ctx = TestSecurityConfig.createTestContext().updateEnvironment(environment -> environment.setRepositoryType(RepositoryType.ENTITIES));
         return this.entityStore
-                .importStatements(read, getFormat(resource).getDefaultMIMEType(), TestSecurityConfig.createTestContext().withEnvironment().setRepositoryType(RepositoryType.ENTITIES), Authorities.SYSTEM)
+                .importStatements(read, getFormat(resource).getDefaultMIMEType(), ctx.getEnvironment())
                 .doOnSuccess(subscription -> log.info("Imported file '{}'", resource.getFilename()))
                 .doOnError(throwable -> log.warn("Failed to import file"))
                 .onErrorStop();

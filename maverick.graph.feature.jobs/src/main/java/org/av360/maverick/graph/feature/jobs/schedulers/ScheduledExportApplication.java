@@ -23,7 +23,7 @@ public class ScheduledExportApplication {
 //    @Scheduled(initialDelay = 35, fixedRate = 60, timeUnit = TimeUnit.SECONDS)
     @Scheduled(cron = "${application.features.modules.jobs.scheduled.exportApplication.defaultFrequency:0 */5 * * * ?}")
     public void scheduled() {
-        JobScheduledEvent event = new JobScheduledEvent(ExportRepositoryJob.NAME, new SessionContext().withSystemAuthentication());
+        JobScheduledEvent event = new JobScheduledEvent(ExportRepositoryJob.NAME, new SessionContext().setSystemAuthentication());
         eventPublisher.publishEvent(event);
     }
 }

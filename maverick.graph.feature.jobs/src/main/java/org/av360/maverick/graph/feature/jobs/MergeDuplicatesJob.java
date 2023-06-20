@@ -105,14 +105,21 @@ public class MergeDuplicatesJob implements Job {
     }
 
     public Mono<Void> run(SessionContext ctx) {
-        ctx.withEnvironment().setRepositoryType(RepositoryType.ENTITIES);
 
         return this.checkForDuplicates(RDFS.LABEL, ctx)
                 .then(this.checkForDuplicates(SDO.IDENTIFIER, ctx))
                 .then(this.checkForDuplicates(SKOS.PREF_LABEL, ctx))
                 .then(this.checkForDuplicates(DCTERMS.IDENTIFIER, ctx))
                 .then(this.checkForDuplicates(SDO.TERM_CODE, ctx))
-                .then(this.checkForDuplicates(DC.IDENTIFIER, ctx));
+                .then(this.checkForDuplicates(DC.IDENTIFIER, ctx))
+                .doOnError(throwable -> log.error("Exception while checking for duplicates: {}", throwable.getMessage()))
+                .doOnSubscribe(sub -> {
+                    ctx.updateEnvironment(env -> env.setRepositoryType(RepositoryType.ENTITIES));
+                    log.trace("Checking for duplicates in environment {}.", ctx.getEnvironment());
+                })
+                .doOnSuccess(success -> log.debug("Completed checking for duplicates in environment {}.", ctx.getEnvironment()))
+                .then();
+
 
     }
 
@@ -128,11 +135,9 @@ public class MergeDuplicatesJob implements Job {
                                 .doOnNext(duplicate -> log.trace("Entity '{}' identified as duplicate. Another item exists with property {} and value {} .", duplicate.id(), candidate.sharedProperty(), candidate.sharedValue()))
                                 .collectList()
                                 .flatMap(duplicates -> this.mergeDuplicates(duplicates, ctx)))
-                .doOnSubscribe(sub -> {
-                    log.trace("Checking duplicates sharing the same characteristic property <{}> in environment {}", characteristicProperty, ctx.getEnvironment());
-                    ctx.withEnvironment().setRepositoryType(RepositoryType.ENTITIES);
-                })
-                .doOnComplete(() -> log.debug("Completed checking for duplicates sharing the same characteristic property <{}> in {}", characteristicProperty, ctx.getEnvironment()))
+                .doOnSubscribe(sub ->
+                    log.trace("Checking duplicates sharing the same characteristic property <{}> in environment {}", characteristicProperty, ctx.getEnvironment())
+                )
                 .thenEmpty(Mono.empty());
 
     }

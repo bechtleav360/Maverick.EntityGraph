@@ -178,7 +178,9 @@ public class CreateValuesTest extends ApiTestsBase {
                 .expectStatus().isOk();
 
         super.printStep();
+
         RdfConsumer resultConsumer = super.loadEntity((IRI) video.getSubject());
+        super.printModel(resultConsumer.asModel(), RDFFormat.TURTLE);
         Assert.equals(3, resultConsumer.countValues(video.getSubject(), SDO.TITLE));
     }
 

@@ -5,7 +5,6 @@ import org.av360.maverick.graph.model.context.SessionContext;
 import org.av360.maverick.graph.model.entities.Job;
 import org.av360.maverick.graph.model.enums.RepositoryType;
 import org.av360.maverick.graph.model.errors.InvalidConfiguration;
-import org.av360.maverick.graph.model.security.Authorities;
 import org.av360.maverick.graph.model.vocabulary.Local;
 import org.av360.maverick.graph.model.vocabulary.Transactions;
 import org.av360.maverick.graph.services.transformers.replaceIdentifiers.ReplaceExternalIdentifiers;
@@ -86,9 +85,14 @@ public class ReplaceObjectIdentifiersJob implements Job {
         if (Objects.isNull(this.replaceExternalIdentifiers))
             return Mono.error(new InvalidConfiguration("External identity transformer is disabled"));
 
-        ctx.withEnvironment().setRepositoryType(RepositoryType.ENTITIES);
-
-        return this.checkForLinkedObjectIdentifiers(ctx).then();
+        return this.checkForLinkedObjectIdentifiers(ctx)
+                .doOnError(throwable -> log.error("Exception while relinking objects to new subject identifiers in environment {}: {}", ctx.getEnvironment(), throwable.getMessage()))
+                .doOnSubscribe(sub -> {
+                    ctx.updateEnvironment(env -> env.setRepositoryType(RepositoryType.ENTITIES));
+                    log.trace("Checking for external or anonymous identifiers in objects in environment: {}.", ctx.getEnvironment());
+                })
+                .doOnComplete(() -> log.info("Completed checking for external or anonymous identifiers in objects in environment: {}.", ctx.getEnvironment()))
+                .then();
 
     }
 
@@ -99,25 +103,22 @@ public class ReplaceObjectIdentifiersJob implements Job {
                 .flatMap(this::convertObjectStatements)
                 .flatMap(this::insertStatements)
                 .flatMap(this::deleteStatements)
-                .buffer(50)
+                .buffer(100)
                 .flatMap(transactions -> this.commit(transactions, ctx))
                 .doOnNext(transaction -> Assert.isTrue(transaction.hasStatement(null, Transactions.STATUS, Transactions.SUCCESS), "Failed transaction: \n" + transaction))
                 .buffer(5)
-                .flatMap(transactions -> this.storeTransactions(transactions, ctx))
-                .doOnError(throwable -> log.error("Exception while relinking objects to new subject identifiers: {}", throwable.getMessage()))
-                .doOnSubscribe(sub -> log.trace("Checking for external or anonymous identifiers in objects."))
-                .doOnComplete(() -> log.info("Completed checking for external or anonymous identifiers in objects."));
+                .flatMap(transactions -> this.storeTransactions(transactions, ctx));
     }
 
 
     private Flux<RdfTransaction> commit(List<RdfTransaction> transactions, SessionContext ctx) {
-        // log.trace("Committing {} transactions", transactions.size());
-        return this.entityStore.commit(transactions, ctx, Authorities.CONTRIBUTOR, true);
+        // FIXME: assert system authentication
+        return this.entityStore.commit(transactions, ctx.getEnvironment());
     }
 
     private Flux<RdfTransaction> storeTransactions(Collection<RdfTransaction> transactions, SessionContext ctx) {
         //FIXME: through event
-        return this.trxStore.store(transactions, ctx);
+        return this.trxStore.store(transactions, ctx.getEnvironment());
     }
 
     private Mono<RdfTransaction> deleteStatements(StatementsBag statementsBag) {
@@ -126,7 +127,7 @@ public class ReplaceObjectIdentifiersJob implements Job {
     }
 
     private Mono<StatementsBag> insertStatements(StatementsBag bag) {
-        return this.entityStore.insert(bag.convertedStatements(), bag.transaction()).then(Mono.just(bag));
+        return this.entityStore.insertModel(bag.convertedStatements(), bag.transaction()).then(Mono.just(bag));
     }
 
     private Mono<StatementsBag> convertObjectStatements(StatementsBag bag) {
@@ -152,11 +153,11 @@ public class ReplaceObjectIdentifiersJob implements Job {
 
 
     public Flux<StatementsBag> loadObjectStatements(SessionContext ctx) {
-        return this.entityStore.listStatements(null, Local.ORIGINAL_IDENTIFIER, null, ctx, Authorities.READER)
+        return this.entityStore.listStatements(null, Local.ORIGINAL_IDENTIFIER, null, ctx.getEnvironment())
                 .flatMapMany(Flux::fromIterable)
                 .filter(statement -> statement.getObject().isResource())
                 .flatMap(st ->
-                        this.entityStore.listStatements(null, null, st.getObject(), ctx)
+                        this.entityStore.listStatements(null, null, st.getObject(), ctx.getEnvironment())
                                 .map(statements -> statements.stream()
                                         .filter(s -> ! s.getPredicate().equals(Local.ORIGINAL_IDENTIFIER))
                                         .filter(s -> ! s.getPredicate().equals(OWL.SAMEAS))

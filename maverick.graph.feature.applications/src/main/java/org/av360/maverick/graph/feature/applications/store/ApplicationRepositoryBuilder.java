@@ -4,7 +4,6 @@ import io.micrometer.core.instrument.MeterRegistry;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.Validate;
 import org.av360.maverick.graph.model.context.Environment;
-import org.av360.maverick.graph.model.context.SessionContext;
 import org.av360.maverick.graph.model.enums.RepositoryType;
 import org.av360.maverick.graph.store.behaviours.TripleStore;
 import org.av360.maverick.graph.store.rdf.LabeledRepository;
@@ -41,28 +40,27 @@ public class ApplicationRepositoryBuilder extends DefaultRepositoryBuilder {
      * @throws IOException if repository cannot be resolved
      */
     @Override
-    public Mono<LabeledRepository> buildRepository(TripleStore store, SessionContext context) {
+    public Mono<LabeledRepository> buildRepository(TripleStore store, Environment target) {
         try {
-            Environment environment = context.getEnvironment();
 
-            // TODO: we have to assume that the validation if the current authentication has access to this particular application repository was handled before.
+            Validate.isTrue(target.isAuthorized(), "Unauthorized operation in environment %s".formatted(target));
+            Validate.notNull(target.getRepositoryType(), "Repository type is not set in environment %s".formatted(target));
+            Validate.notBlank(target.getRepositoryType().toString(), "Repository type is empty string in environment %s".formatted(target));
 
-            Validate.isTrue(context.getAuthentication().isPresent());
-            Validate.isTrue(context.getAuthentication().get().isAuthenticated());
-            Validate.notNull(context.getEnvironment().getRepositoryType());
-            Validate.notBlank(context.getEnvironment().getRepositoryType().toString());
+            boolean is_default_repository_type = target.getRepositoryType().equals(RepositoryType.APPLICATION) || target.getRepositoryType().equals(RepositoryType.SCHEMA);
+            boolean has_no_scope_defined = !target.hasScope();
 
-            boolean is_default_repository_type = environment.getRepositoryType().equals(RepositoryType.APPLICATION) || context.getEnvironment().getRepositoryType().equals(RepositoryType.SCHEMA);
-            boolean has_no_scope_defined = ! environment.hasScope();
-
-            if(is_default_repository_type || has_no_scope_defined) {
-                return super.buildRepository(store, context);
+            LabeledRepository repository = null;
+            if (is_default_repository_type || has_no_scope_defined) {
+                repository = super.buildDefaultRepository(store, target);
             } else {
-                return Mono.just(this.buildApplicationRepository(store, context.getEnvironment()));
+                repository = this.buildApplicationRepository(store, target);
             }
 
+            return super.validateRepository(repository, store, target);
+
         } catch (Exception e) {
-            return  Mono.error(e);
+            return Mono.error(e);
         }
 
 
@@ -95,29 +93,29 @@ public class ApplicationRepositoryBuilder extends DefaultRepositoryBuilder {
     }
 
     private LabeledRepository buildApplicationRepository(TripleStore store, Environment environment) throws IOException {
-            Validate.isTrue(environment.getConfiguration(Environment.RepositoryConfigurationKey.FLAG_PERSISTENT).isPresent(), "Missing configuration in environment: Persistence flag");
-            Validate.isTrue(environment.getConfiguration(Environment.RepositoryConfigurationKey.FLAG_PUBLIC).isPresent(), "Missing configuration in environment: Public flag");
-            Validate.isTrue(environment.getConfiguration(Environment.RepositoryConfigurationKey.KEY).isPresent(), "Missing configuration in environment: Unique key for scope");
-            if(Boolean.parseBoolean(environment.getConfiguration(Environment.RepositoryConfigurationKey.FLAG_PERSISTENT).get())) {
-                // TODO: either default path is set, or application has a configuration set for the path. For now we expect the default path
-                Validate.notBlank(store.getDirectory(), "No default storage directory defined for persistent application");
+        Validate.isTrue(environment.getConfiguration(Environment.RepositoryConfigurationKey.FLAG_PERSISTENT).isPresent(), "Missing configuration in environment: Persistence flag");
+        Validate.isTrue(environment.getConfiguration(Environment.RepositoryConfigurationKey.FLAG_PUBLIC).isPresent(), "Missing configuration in environment: Public flag");
+        Validate.isTrue(environment.getConfiguration(Environment.RepositoryConfigurationKey.KEY).isPresent(), "Missing configuration in environment: Unique key for scope");
+        if (Boolean.parseBoolean(environment.getConfiguration(Environment.RepositoryConfigurationKey.FLAG_PERSISTENT).get())) {
+            // TODO: either default path is set, or application has a configuration set for the path. For now we expect the default path
+            Validate.notBlank(store.getDirectory(), "No default storage directory defined for persistent application");
 
-            }
+        }
 
-            Validate.notBlank(environment.getScope());
+        Validate.notBlank(environment.getScope());
 
-            String label = super.formatRepositoryLabel(environment);
-            meterRegistry.counter("graph.store.repository", "method", "access", "label", label).increment();
-            LabeledRepository labeledRepository = null;
-            if(environment.getConfiguration(Environment.RepositoryConfigurationKey.FLAG_PERSISTENT).map(Boolean::parseBoolean).orElse(false)) {
-                Path path = Paths.get(store.getDirectory(), environment.getConfiguration(Environment.RepositoryConfigurationKey.KEY).get());
-                labeledRepository = super.getCache().get(label, s -> super.initializePersistentRepository(path, label));
+        String label = super.formatRepositoryLabel(environment);
+        meterRegistry.counter("graph.store.repository", "method", "access", "label", label).increment();
 
-            } else {
-                labeledRepository = super.getCache().get(label, s -> super.initializeVolatileRepository(label));
-            }
+        if (environment.getConfiguration(Environment.RepositoryConfigurationKey.FLAG_PERSISTENT).map(Boolean::parseBoolean).orElse(false)) {
+            Path path = Paths.get(store.getDirectory(), environment.getConfiguration(Environment.RepositoryConfigurationKey.KEY).get());
+            return super.getCache().get(label, s -> super.initializePersistentRepository(path, label));
 
-            return super.validateRepository(labeledRepository, store, environment);
+        } else {
+            return super.getCache().get(label, s -> super.initializeVolatileRepository(label));
+        }
+
+
 
     }
 

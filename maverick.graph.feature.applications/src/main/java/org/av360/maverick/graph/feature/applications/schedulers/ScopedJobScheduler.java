@@ -7,6 +7,7 @@ import org.av360.maverick.graph.feature.applications.services.events.Application
 import org.av360.maverick.graph.feature.applications.services.events.ApplicationUpdatedEvent;
 import org.av360.maverick.graph.feature.applications.services.model.Application;
 import org.av360.maverick.graph.model.context.SessionContext;
+import org.av360.maverick.graph.model.enums.RepositoryType;
 import org.av360.maverick.graph.model.events.JobScheduledEvent;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
@@ -41,7 +42,7 @@ public abstract class ScopedJobScheduler {
 
     @PostConstruct
     public void initializeScheduledJobs() {
-        applicationsService.listApplications(new SessionContext().withSystemAuthentication()).doOnNext(this::scheduleRunnableTask).subscribe();
+        applicationsService.listApplications(new SessionContext().setSystemAuthentication()).doOnNext(this::scheduleRunnableTask).subscribe();
     }
 
     protected void scheduleRunnableTask(Application application) {
@@ -49,7 +50,7 @@ public abstract class ScopedJobScheduler {
                 application.configuration().get(getFrequencyConfigurationKey()).toString() : getDefaultFrequency();
 
         Runnable task = () -> {
-            JobScheduledEvent event = new JobScheduledEvent(getJobLabel(), new SessionContext().withSystemAuthentication().withEnvironment().setScope(application.label()));
+            JobScheduledEvent event = new JobScheduledEvent(getJobLabel(), new SessionContext().setSystemAuthentication().updateEnvironment(env -> env.withScope(application.label()).withRepositoryType(RepositoryType.ENTITIES)));
             eventPublisher.publishEvent(event);
         };
 

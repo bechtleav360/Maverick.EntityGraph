@@ -13,6 +13,9 @@ public class Environment implements  Serializable{
 
 
 
+    public SessionContext getSessionContext() {
+        return this.parent;
+    }
 
     public enum RepositoryConfigurationKey {
         IDENTIFIER,
@@ -37,25 +40,37 @@ public class Environment implements  Serializable{
     }
 
 
+
     public RepositoryType getRepositoryType() {
         return repositoryType;
     }
 
-    public SessionContext setRepositoryType(RepositoryType repositoryType) {
+    public Environment setRepositoryType(RepositoryType repositoryType) {
+        this.repositoryType = repositoryType;
+        return this;
+    }
+
+    public Environment setRepositoryType(String label) {
+        this.repositoryType = RepositoryType.valueOf(label.toUpperCase());
+        return this;
+    }
+
+
+    public SessionContext withRepositoryType(RepositoryType repositoryType) {
         this.repositoryType = repositoryType;
         return this.parent;
     }
 
-    public SessionContext setRepositoryType(String label) {
-        this.repositoryType = RepositoryType.valueOf(label.toUpperCase());
-        return this.parent;
-    }
 
-
-    public SessionContext setScope(String identifier) {
+    public void setScope(String identifier) {
         this.scope = identifier;
-        return this.parent;
     }
+
+    public Environment withScope(String identifier) {
+        this.scope = identifier;
+        return this;
+    }
+
 
     public boolean hasScope() {
         return StringUtils.hasLength(this.getScope());
@@ -76,6 +91,12 @@ public class Environment implements  Serializable{
     public SessionContext setConfiguration(RepositoryConfigurationKey key, Serializable value) {
         this.configuration.put(key, value);
         return this.parent;
+    }
+
+
+
+    public boolean isAuthorized() {
+        return this.parent.getDecision().isGranted();
     }
 
 

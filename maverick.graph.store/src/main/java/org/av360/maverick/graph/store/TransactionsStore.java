@@ -1,29 +1,27 @@
 package org.av360.maverick.graph.store;
 
-import org.av360.maverick.graph.model.context.SessionContext;
-import org.av360.maverick.graph.model.security.Authorities;
+import org.av360.maverick.graph.model.context.Environment;
 import org.av360.maverick.graph.store.behaviours.Maintainable;
+import org.av360.maverick.graph.store.behaviours.ModelAware;
 import org.av360.maverick.graph.store.rdf.fragments.RdfTransaction;
-import org.springframework.security.core.GrantedAuthority;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.Collection;
+import java.util.List;
 
-public interface TransactionsStore extends Maintainable {
-
-
-    Mono<RdfTransaction> store(RdfTransaction transaction, SessionContext ctx, GrantedAuthority requiredAuthority);
+public interface TransactionsStore extends Maintainable, ModelAware {
 
 
-    Flux<RdfTransaction> store(Collection<RdfTransaction> transaction, SessionContext ctx, GrantedAuthority requiredAuthority);
-
-    default Flux<RdfTransaction> store(Collection<RdfTransaction> transaction, SessionContext ctx) {
-        return this.store(transaction, ctx, Authorities.CONTRIBUTOR);
+    @Deprecated
+    default Mono<RdfTransaction> store(RdfTransaction transaction, Environment environment) {
+        return this.store(List.of(transaction), environment).singleOrEmpty();
     }
 
-    default Mono<RdfTransaction> store(RdfTransaction transaction, SessionContext ctx) {
-        return this.store(transaction, ctx, Authorities.CONTRIBUTOR);
-    }
+
+    @Deprecated
+    Flux<RdfTransaction> store(Collection<RdfTransaction> transaction, Environment environment);
+
+
 
 }

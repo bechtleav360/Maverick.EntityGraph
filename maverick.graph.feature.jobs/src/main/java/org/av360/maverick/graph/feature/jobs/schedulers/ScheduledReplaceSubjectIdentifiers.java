@@ -29,7 +29,7 @@ public class ScheduledReplaceSubjectIdentifiers {
 //    @Scheduled(initialDelay = 120, fixedRate = 600, timeUnit = TimeUnit.SECONDS)
     @Scheduled(cron = "${application.features.modules.jobs.scheduled.replaceIdentifiers.defaultFrequency:0 */5 * * * ?}")
     public void checkForGlobalIdentifiersScheduled() {
-        JobScheduledEvent event = new JobScheduledEvent(ReplaceObjectIdentifiersJob.NAME, new SessionContext().withSystemAuthentication());
+        JobScheduledEvent event = new JobScheduledEvent(ReplaceObjectIdentifiersJob.NAME, new SessionContext().setSystemAuthentication());
         eventPublisher.publishEvent(event);
     }
 

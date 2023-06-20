@@ -16,6 +16,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.authentication.ReactiveAuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.config.annotation.method.configuration.EnableReactiveMethodSecurity;
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
 import org.springframework.security.config.web.server.SecurityWebFiltersOrder;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
@@ -31,6 +32,7 @@ import static org.av360.maverick.graph.model.security.ApiKeyAuthenticationToken.
 
 @Configuration
 @EnableWebFluxSecurity
+@EnableReactiveMethodSecurity
 @Profile("! test")  // see TestSecurityConfig in Test Module
 @Slf4j(topic = "graph.ctrl.cfg.sec")
 public class SecurityConfiguration {
@@ -58,7 +60,8 @@ public class SecurityConfiguration {
 
         http.authorizeExchange(spec ->
 
-                spec.pathMatchers(HttpMethod.GET, "/api/**").hasAnyAuthority(Authorities.SYSTEM.getAuthority(), Authorities.APPLICATION.getAuthority(), Authorities.CONTRIBUTOR.getAuthority(), Authorities.READER.getAuthority())
+                spec.pathMatchers(HttpMethod.GET, "/api/**")
+                        .hasAnyAuthority(Authorities.SYSTEM.getAuthority(), Authorities.APPLICATION.getAuthority(), Authorities.CONTRIBUTOR.getAuthority(), Authorities.READER.getAuthority())
                         .pathMatchers(HttpMethod.GET, "/api/**").hasAnyAuthority(Authorities.SYSTEM.getAuthority(), Authorities.APPLICATION.getAuthority(), Authorities.CONTRIBUTOR.getAuthority(), Authorities.READER.getAuthority())
                         .pathMatchers(HttpMethod.HEAD, "/api/**").hasAnyAuthority(Authorities.SYSTEM.getAuthority(), Authorities.APPLICATION.getAuthority(), Authorities.CONTRIBUTOR.getAuthority(), Authorities.READER.getAuthority())
                         .pathMatchers(HttpMethod.DELETE, "/api/**").hasAnyAuthority(Authorities.SYSTEM.getAuthority(), Authorities.APPLICATION.getAuthority(), Authorities.CONTRIBUTOR.getAuthority())
@@ -110,6 +113,8 @@ public class SecurityConfiguration {
             return Mono.just(new GuestToken(details));
         };
     }
+
+
 
     @Bean
     @ConditionalOnProperty(name = "application.security.enabled", havingValue = "true")

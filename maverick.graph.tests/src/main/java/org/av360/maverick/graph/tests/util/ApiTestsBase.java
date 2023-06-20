@@ -40,9 +40,13 @@ public abstract class ApiTestsBase extends TestsBase {
         CsvConsumer csvConsumer = new CsvConsumer();
         webClient
                 .post()
-                .uri("/api/query/select")
+                .uri(uriBuilder -> uriBuilder.path("/api/query/select")
+                        .queryParam("repository", "entities")
+                        .build()
+                )
                 .contentType(MediaType.parseMediaType("text/plain"))
                 .accept(MediaType.parseMediaType("text/csv"))
+                .header("X-API-KEY", "test")
                 .headers(c -> headers.forEach((k,v) -> c.put(k, List.of(v))))
                 .body(BodyInserters.fromValue("SELECT DISTINCT ?subject ?predicate ?object WHERE { ?subject ?predicate ?object }"))
                 .exchange()

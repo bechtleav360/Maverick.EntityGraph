@@ -1,15 +1,13 @@
 package org.av360.maverick.graph.store.behaviours;
 
 
-import org.av360.maverick.graph.model.context.SessionContext;
+import org.av360.maverick.graph.model.context.Environment;
 import org.av360.maverick.graph.model.enums.RepositoryType;
-import org.av360.maverick.graph.model.security.Authorities;
 import org.av360.maverick.graph.store.RepositoryBuilder;
 import org.av360.maverick.graph.store.rdf.fragments.RdfTransaction;
 import org.eclipse.rdf4j.model.*;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.slf4j.Logger;
-import org.springframework.security.core.GrantedAuthority;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -34,38 +32,26 @@ public interface TripleStore {
      * @param subj the id of the entity
      * @return true if exists
      */
-    default Mono<Boolean> exists(Resource subj, SessionContext ctx) {
-        return this.exists(subj, ctx, Authorities.READER);
+    Mono<Boolean> exists(Resource subj, Environment environment);
+
+
+    Flux<IRI> types(Resource subj, Environment environment);
+
+    Flux<RdfTransaction> commit(Collection<RdfTransaction> transactions, Environment environment, boolean merge);
+
+    default Flux<RdfTransaction> commit(Collection<RdfTransaction> transactions, Environment environment) {
+        return this.commit(transactions, environment, false);
     }
 
-    Mono<Boolean> exists(Resource subj, SessionContext ctx, GrantedAuthority requiredAuthority);
-
-
-    Flux<IRI> types(Resource subj, SessionContext ctx, GrantedAuthority requiredAuthority);
-
-    Flux<RdfTransaction> commit(Collection<RdfTransaction> transactions, SessionContext ctx, GrantedAuthority requiredAuthority, boolean merge);
-
-    default Flux<RdfTransaction> commit(Collection<RdfTransaction> transactions, SessionContext ctx, GrantedAuthority requiredAuthority) {
-        return this.commit(transactions, ctx, requiredAuthority, false);
+    default Mono<RdfTransaction> commit(RdfTransaction transaction, Environment environment) {
+        return this.commit(List.of(transaction), environment).singleOrEmpty();
     }
 
-    default Flux<RdfTransaction> commit(List<RdfTransaction> transactions, SessionContext ctx) {
-        return this.commit(transactions, ctx, Authorities.CONTRIBUTOR);
-    }
-
-    default Mono<RdfTransaction> commit(RdfTransaction trx, SessionContext ctx) {
-        return this.commit(trx, ctx, Authorities.CONTRIBUTOR);
-    }
-
-    default Mono<RdfTransaction> commit(RdfTransaction transaction, SessionContext ctx, GrantedAuthority requiredAuthority) {
-        return this.commit(List.of(transaction), ctx, requiredAuthority).singleOrEmpty();
-    }
-
-    Mono<Set<Statement>> listStatements(Resource subject, IRI predicate, Value object, SessionContext ctx, GrantedAuthority requiredAuthority);
+    Mono<Set<Statement>> listStatements(Resource subject, IRI predicate, Value object, Environment environment);
 
     Mono<RdfTransaction> removeStatements(Collection<Statement> statements, RdfTransaction transaction);
 
-    Mono<Boolean> hasStatement(Resource subject, IRI predicate, Value object, SessionContext ctx, GrantedAuthority requiredAuthority);
+    Mono<Boolean> hasStatement(Resource subject, IRI predicate, Value object, Environment environment);
 
     RepositoryType getRepositoryType();
 

@@ -1,5 +1,6 @@
 package org.av360.maverick.graph.services;
 
+import org.apache.commons.lang3.Validate;
 import org.av360.maverick.graph.model.context.SessionContext;
 import org.av360.maverick.graph.model.enums.RepositoryType;
 import org.av360.maverick.graph.model.rdf.AnnotatedStatement;
@@ -32,21 +33,30 @@ public interface QueryServices {
     Flux<BindingSet> queryValues(SelectQuery query, RepositoryType entities, SessionContext ctx);
 
     default Flux<BindingSet>  queryValues(String query, SessionContext ctx) {
+        Validate.notNull(ctx.getEnvironment().getRepositoryType());
+
         return this.queryValues(query, ctx.getEnvironment().getRepositoryType(), ctx);
     }
 
     default Flux<BindingSet>  queryValues(SelectQuery query, SessionContext ctx) {
+        Validate.notNull(ctx.getEnvironment().getRepositoryType());
+
         return this.queryValues(query, ctx.getEnvironment().getRepositoryType(), ctx);
     }
     Flux<AnnotatedStatement> queryGraph(String query, RepositoryType entities,SessionContext ctx);
 
+
     Flux<AnnotatedStatement> queryGraph(ConstructQuery query, RepositoryType entities,SessionContext ctx);
 
     default Flux<AnnotatedStatement>  queryGraph(String query, SessionContext ctx) {
+        Validate.notNull(ctx.getEnvironment().getRepositoryType());
+
         return this.queryGraph(query, ctx.getEnvironment().getRepositoryType(), ctx);
     }
 
     default Flux<AnnotatedStatement>  queryGraph(ConstructQuery query, SessionContext ctx) {
+        Validate.notNull(ctx.getEnvironment().getRepositoryType());
+
         return this.queryGraph(query, ctx.getEnvironment().getRepositoryType(), ctx);
     }
 

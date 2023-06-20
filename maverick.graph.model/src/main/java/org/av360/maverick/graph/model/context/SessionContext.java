@@ -1,17 +1,21 @@
 package org.av360.maverick.graph.model.context;
 
 import org.av360.maverick.graph.model.security.AdminToken;
+import org.springframework.security.authorization.AuthorizationDecision;
 import org.springframework.security.core.Authentication;
 
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Consumer;
 
 public class SessionContext {
-    public static final SessionContext SYSTEM = new SessionContext().withSystemAuthentication();
+    public static final SessionContext SYSTEM = new SessionContext().setSystemAuthentication();
+    public static final SessionContext EMPTY = new SessionContext();
     RequestDetails requestDetails;
     Environment environment;
     Authentication authentication;
     Scope scope;
+    private AuthorizationDecision decision;
 
 
     public SessionContext() {
@@ -29,16 +33,18 @@ public class SessionContext {
         return this.environment;
     }
 
-    public Environment withEnvironment() {
-        return this.getEnvironment();
+    public SessionContext updateEnvironment(Consumer<Environment> customizer) {
+        customizer.accept(this.getEnvironment());
+        return this;
     }
+
 
     public Optional<Authentication> getAuthentication() {
         return Optional.ofNullable(this.authentication);
     }
 
     public Authentication getAuthenticationOrThrow() {
-        if(this.authentication == null) throw new SecurityException("Missing authentication in request");
+        if (this.authentication == null) throw new SecurityException("Missing authentication in request");
         else return this.authentication;
     }
 
@@ -67,9 +73,7 @@ public class SessionContext {
     }
 
 
-
-
-    public SessionContext withSystemAuthentication() {
+    public SessionContext setSystemAuthentication() {
         this.authentication = new AdminToken();
         return this;
     }
@@ -78,4 +82,28 @@ public class SessionContext {
         this.authentication = authentication;
         return this;
     }
+
+    public boolean isScheduled() {
+        return this.getRequestDetails().isEmpty();
+    }
+
+    public boolean isRequest() {
+        return this.getRequestDetails().isPresent();
+    }
+
+    public SessionContext withAuthorization(AuthorizationDecision decision) {
+        this.decision = decision;
+        return this;
+    }
+
+    public SessionContext setAuthorized() {
+        this.decision = new AuthorizationDecision(true);
+        return this;
+    }
+
+    public AuthorizationDecision getDecision() {
+        return decision;
+    }
+
+
 }

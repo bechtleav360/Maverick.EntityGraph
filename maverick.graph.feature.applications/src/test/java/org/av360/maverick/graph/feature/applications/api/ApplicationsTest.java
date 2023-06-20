@@ -1,7 +1,6 @@
-package org.av360.maverick.graph.feature.applications;
+package org.av360.maverick.graph.feature.applications.api;
 
 import org.av360.maverick.graph.feature.applications.api.dto.Responses;
-import org.av360.maverick.graph.feature.applications.client.ApplicationsTestClient;
 import org.av360.maverick.graph.feature.applications.config.ApplicationsTestsBase;
 import org.av360.maverick.graph.feature.applications.services.model.ApplicationFlags;
 import org.av360.maverick.graph.model.context.SessionContext;
@@ -13,9 +12,9 @@ import org.eclipse.rdf4j.sparqlbuilder.core.SparqlBuilder;
 import org.eclipse.rdf4j.sparqlbuilder.core.Variable;
 import org.eclipse.rdf4j.sparqlbuilder.core.query.Queries;
 import org.eclipse.rdf4j.sparqlbuilder.core.query.SelectQuery;
+import org.json.JSONArray;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -31,28 +30,23 @@ import java.util.List;
 @ActiveProfiles({"test", "api"})
 class ApplicationsTest extends ApplicationsTestsBase {
 
-    private ApplicationsTestClient client;
 
     @Autowired
     private QueryServices queryServices;
 
 
-    @BeforeEach
-    public void setup() {
-        client = new ApplicationsTestClient(super.webClient);
-    }
 
 
     @AfterEach
     public void resetRepository() {
-        super.resetRepository();
+        super.resetRepository("test_app");
     }
 
     @Test
     public void createPublicApplication() {
         super.printStep();
 
-        this.client.createApplication("test-public", new ApplicationFlags(false, true))
+        super.applicationsTestClient.createApplication("test_app", new ApplicationFlags(false, true))
                 .expectStatus().isCreated()
                 .expectBody()
                 .jsonPath("$.key").isNotEmpty();
@@ -65,26 +59,45 @@ class ApplicationsTest extends ApplicationsTestsBase {
 
         super.printStep();
 
-        this.client.createApplication("a", new ApplicationFlags(false, true))
+        super.applicationsTestClient.createApplication("test_app", new ApplicationFlags(false, true))
                 .expectStatus().isCreated().expectBody().jsonPath("$.key").isNotEmpty();
 
         super.printStep();
 
-        this.client.createApplication("b", new ApplicationFlags(true, true))
+        super.applicationsTestClient.createApplication("test_app_1", new ApplicationFlags(true, true))
                 .expectStatus().isCreated().expectBody().jsonPath("$.key").isNotEmpty();
 
         super.printStep();
 
-        this.client.createApplication("c", new ApplicationFlags(false, false))
+        super.applicationsTestClient.createApplication("test_app_2", new ApplicationFlags(false, false))
                 .expectStatus().isCreated().expectBody().jsonPath("$.key").isNotEmpty();
 
         super.printStep();
 
-        this.client.listApplications()
-                        .expectStatus().isOk()
-                        .expectBody()
+        String string = super.applicationsTestClient.listApplications()
+                .expectStatus().isOk()
+                .expectBody()
+                .toString();
+        System.out.println(string);
+
+        byte[] sr = super.applicationsTestClient.listApplications()
+                .expectStatus().isOk()
+                .expectBody()
                 .jsonPath("$").isArray()
-                .jsonPath("$.size()").isEqualTo(3);
+                .jsonPath("$").value(obj -> {
+                    Assertions.assertNotNull(obj);
+                    if(obj instanceof JSONArray array) {
+                        Assertions.assertEquals(array.length(), 3);
+                    }
+
+
+                    // Assertions.assertEquals(array.size(), 3);
+
+                })
+                .jsonPath("$.size()").isEqualTo(3)
+                .returnResult().getResponseBody();
+
+        super.printResult("Result", new String(sr));
 
 
     }
@@ -95,21 +108,22 @@ class ApplicationsTest extends ApplicationsTestsBase {
 
         super.printStart("Read node");
 
-        Responses.ApplicationResponse app = this.client.createApplication("test", new ApplicationFlags(false, true))
+        Responses.ApplicationResponse app = super.applicationsTestClient.createApplication("test_app", new ApplicationFlags(false, true))
                 .expectStatus().isCreated()
                 .expectBody(Responses.ApplicationResponse.class)
                 .returnResult()
                 .getResponseBody();
 
 
+
         Variable s = SparqlBuilder.var("s");
         Variable p = SparqlBuilder.var("p");
         Variable o = SparqlBuilder.var("o");
         SelectQuery q = Queries.SELECT(s, p, o).all().where(s.has(p, o));
-        List<BindingSet> block = this.queryServices.queryValues(q, RepositoryType.APPLICATION, new SessionContext().withSystemAuthentication()).collectList().block();
+        List<BindingSet> block = this.queryServices.queryValues(q, RepositoryType.APPLICATION, new SessionContext().setSystemAuthentication()).collectList().block();
 
         super.printStep();
-        this.client.getApplication(app.key())
+        super.applicationsTestClient.getApplication(app.key())
                 .expectStatus().isOk()
                 .expectBody()
                 .jsonPath("$.key").isEqualTo(app.key());
@@ -119,7 +133,7 @@ class ApplicationsTest extends ApplicationsTestsBase {
     @Test
     public void createSubscription() {
         super.printStart("Create Subscription");
-        Responses.ApplicationResponse re = this.client.createApplication("test-public", new ApplicationFlags(false, false))
+        Responses.ApplicationResponse re = super.applicationsTestClient.createApplication("test_app", new ApplicationFlags(false, false))
                 .expectStatus().isCreated()
                 .expectBody(Responses.ApplicationResponse.class)
                 .returnResult()
@@ -130,7 +144,7 @@ class ApplicationsTest extends ApplicationsTestsBase {
 
         super.printStep();
 
-        this.client.createSubscription("test-subscription", re.key())
+        super.applicationsTestClient.createSubscription("test-subscription", re.key())
                 .expectStatus().isCreated()
                 .expectBody(Responses.SubscriptionResponse.class);
 
@@ -138,25 +152,25 @@ class ApplicationsTest extends ApplicationsTestsBase {
 
     @Test
     public void listSubscriptions() {
-        Responses.ApplicationResponse re = this.client.createApplication("test-public", new ApplicationFlags(false, false))
+        Responses.ApplicationResponse re = super.applicationsTestClient.createApplication("test-public", new ApplicationFlags(false, false))
                 .expectStatus().isCreated()
                 .expectBody(Responses.ApplicationResponse.class)
                 .returnResult()
                 .getResponseBody();
 
-        this.client.createSubscription("test-sub-1", re.key())
+        super.applicationsTestClient.createSubscription("test-sub-1", re.key())
                 .expectStatus().isCreated()
                 .expectBody(Responses.SubscriptionResponse.class);
 
-        this.client.createSubscription("test-sub-2", re.key())
+        super.applicationsTestClient.createSubscription("test-sub-2", re.key())
                 .expectStatus().isCreated()
                 .expectBody(Responses.SubscriptionResponse.class);
 
-        this.client.createSubscription("test-sub-3", re.key())
+        super.applicationsTestClient.createSubscription("test-sub-3", re.key())
                 .expectStatus().isCreated()
                 .expectBody(Responses.SubscriptionResponse.class);
 
-        this.client.listSubscriptions(re.key())
+        super.applicationsTestClient.listSubscriptions(re.key())
                 .expectStatus().isOk()
                 .expectBody()
                 .jsonPath("$").isArray()

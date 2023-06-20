@@ -7,10 +7,9 @@ import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.Validate;
 import org.av360.maverick.graph.model.context.Environment;
-import org.av360.maverick.graph.model.context.SessionContext;
 import org.av360.maverick.graph.model.enums.RepositoryType;
-import org.av360.maverick.graph.model.security.ApiKeyAuthenticationToken;
 import org.av360.maverick.graph.store.RepositoryBuilder;
 import org.av360.maverick.graph.store.behaviours.TripleStore;
 import org.av360.maverick.graph.store.rdf.LabeledRepository;
@@ -23,9 +22,6 @@ import org.eclipse.rdf4j.sail.memory.MemoryStore;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
-import org.springframework.security.authentication.AnonymousAuthenticationToken;
-import org.springframework.security.authentication.TestingAuthenticationToken;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import reactor.core.publisher.Mono;
@@ -95,10 +91,19 @@ public class DefaultRepositoryBuilder implements RepositoryBuilder {
      * @throws IOException If repository cannot be found
      */
     @Override
-    public Mono<LabeledRepository> buildRepository(TripleStore store, SessionContext ctx) {
-        LabeledRepository repository = null;
+    public Mono<LabeledRepository> buildRepository(TripleStore store, Environment target) {
 
+        Validate.isTrue(target.isAuthorized(), "Unauthorized status in repository builder");
+        Validate.notNull(target.getRepositoryType(), "Missing repository type in repository builder");
+        Validate.notBlank(target.getRepositoryType().toString(), "Empty repository type in repository builder");
 
+        try {
+            LabeledRepository labeledRepository = this.buildDefaultRepository(store, target);
+            return this.validateRepository(labeledRepository, store, target);
+        } catch (IOException e) {
+            return Mono.error(e);
+        }
+        /*
         if (ctx.getAuthenticationOrThrow() instanceof TestingAuthenticationToken) {
             // default repository always get the default label (also in test mode)
             repository = this.buildDefaultRepository(store, "default");
@@ -118,27 +123,44 @@ public class DefaultRepositoryBuilder implements RepositoryBuilder {
         } catch (IOException e) {
             return Mono.error(e);
         }
-
+        */
     }
 
-    protected LabeledRepository validateRepository(@Nullable LabeledRepository repository, TripleStore store, Environment environment) throws IOException {
-        if(!Objects.isNull(repository)) {
-            if(! repository.isInitialized() && repository.getConnectionsCount() == 0) {
-                log.warn("Validation error: Repository of type '{}' is not initialized", repository);
-                throw new IOException(String.format("Repository %s not initialized", store.getRepositoryType()));
+    @Override
+    public Mono<Void> shutdownRepository(TripleStore store, Environment environment) {
+        if(cache != null) {
+            String key = formatRepositoryLabel(environment);
+            LabeledRepository repository = cache.getIfPresent(key);
+            if(!Objects.isNull(repository)) {
+                repository.shutDown();
+                cache.invalidate(key);
             }
-            return repository;
-        } else {
-            throw new IOException(String.format("Cannot resolve repository of type '%s' for environment '%s'", store.getRepositoryType(), environment));
+
         }
+        return Mono.empty();
     }
 
-    protected LabeledRepository buildDefaultRepository(TripleStore store, String... details) {
+    protected Mono<LabeledRepository> validateRepository(@Nullable LabeledRepository repository, TripleStore store, Environment environment) throws IOException {
+        return Mono.create(sink -> {
+            if(!Objects.isNull(repository)) {
+                if(! repository.isInitialized() && repository.getConnectionsCount() == 0) {
+                    log.warn("Validation error: Repository of type '{}' is not initialized", repository);
+                    sink.error(new IOException(String.format("Repository %s not initialized", store.getRepositoryType())));
+                } else {
+                    sink.success(repository);
+                }
+            } else {
+                sink.error(new IOException(String.format("Cannot resolve repository of type '%s' for environment '%s'", store.getRepositoryType(), environment)));
+            }
+        });
+    }
 
-        String key = formatRepositoryLabel(store.getRepositoryType(), details);
+    protected LabeledRepository buildDefaultRepository(TripleStore store, Environment target) {
+
+        String key = formatRepositoryLabel(target);
         String path = store.getDirectory();
 
-        log.trace("Resolving repository of type '{}', label '{}'", store.getRepositoryType(), key);
+        log.trace("Resolving default repository for environment: {}", target);
         meterRegistry.counter("graph.store.repository", "method", "access", "label", key).increment();
 
         if (!StringUtils.hasLength(path)) {

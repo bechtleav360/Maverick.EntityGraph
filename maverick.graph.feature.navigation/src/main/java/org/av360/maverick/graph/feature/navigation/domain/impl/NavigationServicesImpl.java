@@ -3,10 +3,12 @@ package org.av360.maverick.graph.feature.navigation.domain.impl;
 import org.av360.maverick.graph.api.config.ReactiveRequestUriContextHolder;
 import org.av360.maverick.graph.model.context.SessionContext;
 import org.av360.maverick.graph.model.rdf.AnnotatedStatement;
+import org.av360.maverick.graph.model.security.Authorities;
 import org.av360.maverick.graph.model.vocabulary.Local;
 import org.av360.maverick.graph.model.vocabulary.SDO;
 import org.av360.maverick.graph.services.EntityServices;
 import org.av360.maverick.graph.services.NavigationServices;
+import org.av360.maverick.graph.services.config.RequiresPrivilege;
 import org.av360.maverick.graph.store.rdf.fragments.TripleModel;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
@@ -36,6 +38,7 @@ public class NavigationServicesImpl implements NavigationServices {
 
 
     @Override
+    @RequiresPrivilege(Authorities.READER_VALUE)
     public Flux<AnnotatedStatement> start(SessionContext ctx) {
         return ReactiveRequestUriContextHolder.getURI()
                 .map(requestUrl -> {
@@ -85,6 +88,7 @@ public class NavigationServicesImpl implements NavigationServices {
 
 
     @Override
+    @RequiresPrivilege(Authorities.READER_VALUE)
     public Flux<AnnotatedStatement> browse(Map<String, String> params, SessionContext ctx) {
         if (params.containsKey("entities")) {
             if (params.get("entities").equalsIgnoreCase("list"))
@@ -99,7 +103,7 @@ public class NavigationServicesImpl implements NavigationServices {
 
 
 
-
+    @RequiresPrivilege(Authorities.READER_VALUE)
     public Flux<AnnotatedStatement> list(Map<String, String> params, SessionContext ctx) {
         Integer limit = Optional.ofNullable(params.get("limit")).map(Integer::parseInt).orElse(20);
         Integer offset = Optional.ofNullable(params.get("offset")).map(Integer::parseInt).orElse(0);

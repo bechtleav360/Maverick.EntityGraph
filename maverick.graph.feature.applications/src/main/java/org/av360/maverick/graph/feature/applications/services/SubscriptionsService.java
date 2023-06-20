@@ -11,7 +11,6 @@ import org.av360.maverick.graph.feature.applications.services.vocab.Subscription
 import org.av360.maverick.graph.feature.applications.store.ApplicationsStore;
 import org.av360.maverick.graph.model.context.SessionContext;
 import org.av360.maverick.graph.model.identifier.RandomIdentifier;
-import org.av360.maverick.graph.model.security.Authorities;
 import org.av360.maverick.graph.model.util.StreamsLogger;
 import org.av360.maverick.graph.model.vocabulary.Local;
 import org.av360.maverick.graph.services.IdentifierServices;
@@ -66,7 +65,7 @@ public class SubscriptionsService {
                                 .andHas(ApplicationTerms.HAS_LABEL, QueryVariables.varAppLabel)
                         )
                 );
-        return this.applicationsStore.query(q, ctx, Authorities.APPLICATION)
+        return this.applicationsStore.query(q, ctx.getEnvironment())
                 .singleOrEmpty()
                 .map(BindingsAccessor::new)
                 .flatMap(QueryVariables::buildSubscriptionFromBindings)
@@ -91,7 +90,7 @@ public class SubscriptionsService {
                                     .andHas(SubscriptionTerms.FOR_APPLICATION, app.key())
                             );
 
-                    return this.applicationsStore.query(q, ctx, Authorities.APPLICATION)
+                    return this.applicationsStore.query(q, ctx.getEnvironment())
                             .map(BindingsAccessor::new)
                             .flatMap(ba -> QueryVariables.buildSubscriptionFromBindings(ba, app));
                 })
@@ -129,7 +128,7 @@ public class SubscriptionsService {
                     modelBuilder.add(SubscriptionTerms.FOR_APPLICATION, apiKey.application().key());
                     modelBuilder.add(apiKey.application().iri(), ApplicationTerms.HAS_API_KEY, apiKey.iri());
 
-                    return this.applicationsStore.insert(modelBuilder.build(), ctx, Authorities.APPLICATION).then(Mono.just(apiKey));
+                    return this.applicationsStore.insertModel(modelBuilder.build(), ctx.getEnvironment()).then(Mono.just(apiKey));
                 })
                 .doOnSuccess(token -> {
                     this.eventPublisher.publishEvent(new TokenCreatedEvent(token));

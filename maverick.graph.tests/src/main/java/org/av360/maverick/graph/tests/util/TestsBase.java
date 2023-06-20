@@ -3,7 +3,6 @@ package org.av360.maverick.graph.tests.util;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.av360.maverick.graph.model.context.SessionContext;
-import org.av360.maverick.graph.model.security.Authorities;
 import org.av360.maverick.graph.store.EntityStore;
 import org.av360.maverick.graph.store.TransactionsStore;
 import org.av360.maverick.graph.tests.config.TestSecurityConfig;
@@ -81,6 +80,11 @@ public abstract class TestsBase {
         echo("Cleaning up");
     }
 
+    public void printResult(String message, String dump) {
+        this.echo(message);
+        System.out.println(dump);
+    }
+
     public void printModel(Model md, RDFFormat rdfFormat) {
        String m = this.dumpModel(md, rdfFormat);
        this.printSummary("Content of current model");
@@ -103,8 +107,8 @@ public abstract class TestsBase {
 
 
     protected void resetRepository(SessionContext ctx) {
-        Mono<Void> r1 = this.entityStore.reset(ctx, Authorities.SYSTEM)
-                .then(this.transactionsStore.reset(ctx, Authorities.SYSTEM));
+        Mono<Void> r1 = this.entityStore.reset(ctx.getEnvironment())
+                .then(this.transactionsStore.reset(ctx.getEnvironment()));
 
         StepVerifier.create(r1).verifyComplete();
     }

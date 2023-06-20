@@ -37,11 +37,10 @@ public class QueryRestController extends AbstractController {
     @ResponseStatus(HttpStatus.ACCEPTED)
     public Flux<BindingSet> queryBindings(@RequestBody String query,
                                           @RequestParam(required = false, defaultValue = "entities", value = "entities") @Parameter(name = "repository", description = "The repository type in which the query should search.")
-    RepositoryType repositoryType) {
+                                          RepositoryType repositoryType) {
 
         return super.acquireContext()
-                .map(ctx -> ctx.withEnvironment().setRepositoryType(repositoryType))
-                .flatMapMany(ctx -> queryServices.queryValues(query, RepositoryType.ENTITIES, ctx))
+                .flatMapMany(ctx -> queryServices.queryValues(query, repositoryType, ctx))
                 .doOnSubscribe(s -> {
                     if (log.isDebugEnabled()) log.debug("Request to search graph with tuples query: {}", query);
                 });
@@ -60,8 +59,7 @@ public class QueryRestController extends AbstractController {
     RepositoryType repositoryType) {
 
         return acquireContext()
-                .map(ctx -> ctx.withEnvironment().setRepositoryType(repositoryType))
-                .flatMapMany(ctx -> queryServices.queryGraph(query, ctx))
+                .flatMapMany(ctx -> queryServices.queryGraph(query, repositoryType, ctx))
                 .doOnSubscribe(s -> {
                     if (log.isDebugEnabled()) log.debug("Request to search graph with construct query: {}", query);
                 });

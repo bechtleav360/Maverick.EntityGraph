@@ -28,6 +28,12 @@ public class QueryTestsImpl extends TestsBase implements QueriesTest {
     @Autowired
     private WebTestClient webClient;
 
+
+    @AfterEach
+    public void resetRepository() {
+        super.resetRepository();
+    }
+
     @Override
     @Test
     public void runSparqlQuery() {
@@ -65,8 +71,5 @@ public class QueryTestsImpl extends TestsBase implements QueriesTest {
 
     }
 
-    @AfterEach
-    public void resetRepository() {
-        super.resetRepository();
-    }
+
 }

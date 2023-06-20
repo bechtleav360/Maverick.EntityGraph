@@ -26,6 +26,7 @@ public interface EntityServices {
      * @param neighbourLevel how many levels of neigbours to include (0 is entity only, 1 is direct neighbours)
      * @return Entity as Mono
      */
+
     Mono<RdfEntity> get(IRI entityIri, int neighbourLevel, SessionContext ctx);
 
     /**
@@ -77,6 +78,7 @@ public interface EntityServices {
      */
     Mono<RdfTransaction> create(Triples triples, Map<String, String> parameters, SessionContext ctx);
 
+
     Mono<RdfTransaction> linkEntityTo(String entityKey, IRI predicate, Triples linkedEntities, SessionContext ctx);
 
     /**
@@ -88,6 +90,7 @@ public interface EntityServices {
      *
      * @return Entity as Mono
      */
+
     Mono<RdfEntity> findByKey(String entityKey, SessionContext ctx);
 
     Mono<RdfEntity> findByProperty(String identifier, IRI predicate, SessionContext ctx);
@@ -98,7 +101,7 @@ public interface EntityServices {
 
     Mono<IRI> resolveAndVerify(String entityKey, SessionContext ctx);
 
-    EntityStore getStore();
+    EntityStore getStore(SessionContext ctx);
 
     Mono<RdfTransaction> importFile(Resource resource, RDFFormat format, SessionContext ctx);
 

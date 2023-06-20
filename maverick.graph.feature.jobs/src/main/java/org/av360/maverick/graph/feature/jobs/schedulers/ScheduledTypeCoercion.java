@@ -36,7 +36,7 @@ public class ScheduledTypeCoercion  {
 //    @Scheduled(initialDelay = 30, fixedRate = 600, timeUnit = TimeUnit.SECONDS)
     @Scheduled(cron = "${application.features.modules.jobs.scheduled.typeCoercion.defaultFrequency:0 */5 * * * ?}")
     public void scheduled() {
-        JobScheduledEvent event = new JobScheduledEvent(AssignInternalTypesJob.NAME, new SessionContext().withSystemAuthentication());
+        JobScheduledEvent event = new JobScheduledEvent(AssignInternalTypesJob.NAME, new SessionContext().setSystemAuthentication());
         eventPublisher.publishEvent(event);
     }
 

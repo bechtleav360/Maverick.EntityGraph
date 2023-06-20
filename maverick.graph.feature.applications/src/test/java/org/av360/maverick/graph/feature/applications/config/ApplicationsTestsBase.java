@@ -20,8 +20,13 @@ public class ApplicationsTestsBase extends ApiTestsBase  {
         super.printCleanUp();
         adminTestClient.reset(RepositoryType.ENTITIES, Map.of("X-Application", label));
         adminTestClient.reset(RepositoryType.TRANSACTIONS, Map.of("X-Application", label));
-        adminTestClient.reset(RepositoryType.TRANSACTIONS, Map.of("X-Application", label));
+        adminTestClient.reset(RepositoryType.APPLICATION, Map.of());
+    }
 
+    protected void resetRepository() {
 
+        super.printCleanUp();
+        adminTestClient.reset(RepositoryType.APPLICATION, Map.of());
+        super.resetRepository();
     }
 }

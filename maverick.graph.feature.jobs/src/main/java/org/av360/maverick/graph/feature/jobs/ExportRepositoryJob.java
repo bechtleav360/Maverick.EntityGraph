@@ -128,7 +128,7 @@ public class ExportRepositoryJob implements Job {
     // TODO: @mumi, Don't return a Mono<String>, but a streaming Flux<DataBuffer> ... you never know how a large the dumps will be, and you don't want to run out of memory
     // You can use a pipedstream to forward the stream either into a file or into an s3 endpoint (check DataBufferUtils)
     private Mono<String> exportRdfStatements(SessionContext ctx) {
-        return this.entityServices.getStore().listStatements(null, null, null, ctx)
+        return this.entityServices.getStore(ctx).listStatements(null, null, null, ctx.getEnvironment())
                 .map(statements -> {
                     StringWriter stringWriter = new StringWriter();
                     RDFWriter writer = RDFWriterRegistry.getInstance().get(RDFFormat.TURTLE).get().getWriter(stringWriter);

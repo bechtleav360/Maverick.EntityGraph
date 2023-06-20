@@ -58,7 +58,7 @@ public class ScheduledDetectDuplicates  {
 //    @Scheduled(initialDelay = 60, fixedRate = 600, timeUnit = TimeUnit.SECONDS)
     @Scheduled(cron = "${application.features.modules.jobs.scheduled.detectDuplicates.defaultFrequency:0 */5 * * * ?}")
     public void checkForDuplicatesScheduled() {
-        JobScheduledEvent event = new JobScheduledEvent(MergeDuplicatesJob.NAME, new SessionContext().withSystemAuthentication());
+        JobScheduledEvent event = new JobScheduledEvent(MergeDuplicatesJob.NAME, new SessionContext().setSystemAuthentication());
         eventPublisher.publishEvent(event);
 
     }

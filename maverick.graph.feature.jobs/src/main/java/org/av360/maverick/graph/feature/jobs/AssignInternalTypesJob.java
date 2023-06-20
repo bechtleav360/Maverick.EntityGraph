@@ -69,23 +69,20 @@ public class AssignInternalTypesJob implements Job {
     public Mono<Void> run(SessionContext ctx) {
         if(Objects.isNull(this.localTypesTransformer)) return Mono.error(new InvalidConfiguration("Type Coercion Transformer is disabled"));
 
-        ctx.withEnvironment().setRepositoryType(RepositoryType.ENTITIES);
-
-
         return this.findCandidates(ctx)
                 .doOnNext(res -> log.trace("Convert type of resource with id '{}'", res.stringValue()))
                 .flatMap(res -> this.loadFragment(ctx, res))
                 .flatMap(localTypesTransformer::handle)
                 .collect(new MergingModelCollector())
                 .doOnNext(model -> log.trace("Collected {} statements for new types", model.size()))
-                .flatMap(model -> this.entityServices.getStore().insert(model, new RdfTransaction()))
-                .flatMapMany(trx -> this.entityServices.getStore().commit(trx, ctx))
+                .flatMap(model -> this.entityServices.getStore(ctx).insertModel(model, new RdfTransaction()))
+                .flatMapMany(trx -> this.entityServices.getStore(ctx).commit(trx, ctx.getEnvironment()))
                 .doOnNext(transaction -> Assert.isTrue(transaction.hasStatement(null, Transactions.STATUS, Transactions.SUCCESS), "Failed transaction: \n" + transaction))
-                .flatMap(transaction -> this.transactionsStore.store(List.of(transaction), ctx))
+                .flatMap(transaction -> this.transactionsStore.store(List.of(transaction), ctx.getEnvironment()))
                 .doOnError(throwable -> log.error("Exception while assigning internal types: {}", throwable.getMessage()))
                 .doOnSubscribe(sub -> {
                     log.trace("Checking for entities with missing internal type definitions.");
-                    ctx.withEnvironment().setRepositoryType(RepositoryType.ENTITIES);
+                    ctx.updateEnvironment(env -> env.setRepositoryType(RepositoryType.ENTITIES));
                 })
                 .doOnComplete(() -> log.debug("Completed checking for entities with missing internal type definitions."))
                 .then();
@@ -95,7 +92,7 @@ public class AssignInternalTypesJob implements Job {
 
 
     private Mono<Model> loadFragment(SessionContext ctx, Resource value) {
-        return this.entityServices.getStore().listStatements(value, null, null, ctx)
+        return this.entityServices.getStore(ctx).listStatements(value, null, null, ctx.getEnvironment())
                 .map(statements -> statements.stream().collect(new ModelCollector()));
 
 

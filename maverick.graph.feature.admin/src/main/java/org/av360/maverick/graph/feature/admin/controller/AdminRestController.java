@@ -45,7 +45,7 @@ public class AdminRestController extends AbstractController {
         Assert.notNull(repositoryType, "Invalid value for repository type: " + repositoryType);
 
         return super.acquireContext()
-                .map(context -> context.getEnvironment().setRepositoryType(repositoryType))
+                .map(context -> context.updateEnvironment(env -> env.withRepositoryType(repositoryType)))
                 .flatMap(adminServices::reset)
                 .doOnError(throwable -> log.error("Error while purging repository. Type '{}' with reason: {}", throwable.getClass().getSimpleName(), throwable.getMessage() ))
                 .doOnSubscribe(s -> log.info("Request to empty the repository of type '{}'", repositoryType));
@@ -66,7 +66,7 @@ public class AdminRestController extends AbstractController {
         Assert.isTrue(StringUtils.hasLength(mimetype), "Mimetype is a required parameter");
 
         return super.acquireContext()
-                .map(context -> context.withEnvironment().setRepositoryType(repositoryType))
+                .map(context -> context.updateEnvironment(env -> env.setRepositoryType(repositoryType)))
                 .flatMap(ctx -> adminServices.importEntities(bytes, mimetype, ctx))
                 .doOnError(throwable -> log.error("Error while importing to repository.", throwable))
                 .doOnSubscribe(s -> log.debug("Request to import a request of mimetype {}", mimetype));

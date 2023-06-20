@@ -1,12 +1,13 @@
 package org.av360.maverick.graph.services.impl;
 
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.Validate;
 import org.av360.maverick.graph.model.context.SessionContext;
 import org.av360.maverick.graph.model.enums.RepositoryType;
 import org.av360.maverick.graph.model.errors.requests.InvalidQuery;
 import org.av360.maverick.graph.model.rdf.AnnotatedStatement;
+import org.av360.maverick.graph.model.security.Authorities;
 import org.av360.maverick.graph.services.QueryServices;
+import org.av360.maverick.graph.services.config.RequiresPrivilege;
 import org.av360.maverick.graph.store.behaviours.Searchable;
 import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.query.QueryLanguage;
@@ -21,6 +22,7 @@ import reactor.core.publisher.Flux;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 
@@ -40,6 +42,7 @@ public class QueryServicesImpl implements QueryServices {
 
 
     @Override
+    @RequiresPrivilege(Authorities.CONTRIBUTOR_VALUE)
     public Flux<BindingSet> queryValues(String query, RepositoryType repositoryType, SessionContext ctx) {
         try {
             ParsedQuery parsedQuery = queryParser.parseQuery(query, null);
@@ -52,11 +55,13 @@ public class QueryServicesImpl implements QueryServices {
     }
 
     @Override
+    @RequiresPrivilege(Authorities.CONTRIBUTOR_VALUE)
     public Flux<BindingSet> queryValues(SelectQuery query, RepositoryType repositoryType, SessionContext ctx) {
         return this.queryValuesTrusted(query.getQueryString(), repositoryType, ctx);
     }
 
     @Override
+    @RequiresPrivilege(Authorities.CONTRIBUTOR_VALUE)
     public Flux<AnnotatedStatement> queryGraph(String queryStr, RepositoryType repositoryType, SessionContext ctx) {
         try {
             ParsedQuery parsedQuery = queryParser.parseQuery(queryStr, null);
@@ -67,17 +72,19 @@ public class QueryServicesImpl implements QueryServices {
             return Flux.error(e);
         }
     }
-
+    @RequiresPrivilege(Authorities.CONTRIBUTOR_VALUE)
     public Flux<AnnotatedStatement> queryGraph(ConstructQuery query,  RepositoryType repositoryType, SessionContext ctx) {
         return this.queryGraphTrusted(query.getQueryString(), repositoryType, ctx);
 
     }
 
 
-    private Flux<AnnotatedStatement> queryGraphTrusted(String query,  RepositoryType repositoryType, SessionContext ctx) {
+    private Flux<AnnotatedStatement> queryGraphTrusted(String query, RepositoryType target, SessionContext ctx) {
         try {
-            this.validateContext(ctx);
-            return this.stores.get(repositoryType).construct(query, ctx)
+            if(Objects.isNull(ctx.getEnvironment().getRepositoryType())) ctx.updateEnvironment(env -> env.setRepositoryType(target));
+
+            // check if we should set back to old repository type if needed
+            return this.stores.get(target).construct(query, ctx.getEnvironment())
                     .doOnSubscribe(subscription -> {
                         if (log.isTraceEnabled())
                             log.trace("Running construct query in {}: {}", ctx.getEnvironment(), query.replace('\n', ' ').trim());
@@ -90,8 +97,9 @@ public class QueryServicesImpl implements QueryServices {
 
     private Flux<BindingSet> queryValuesTrusted(String query, RepositoryType repositoryType, SessionContext ctx) {
         try {
-            this.validateContext(ctx);
-            return this.stores.get(repositoryType).query(query, ctx)
+            if(Objects.isNull(ctx.getEnvironment().getRepositoryType())) ctx.updateEnvironment(env -> env.setRepositoryType(repositoryType));
+
+            return this.stores.get(repositoryType).query(query, ctx.getEnvironment())
                     .doOnSubscribe(subscription -> {
                         if (log.isTraceEnabled())
                             log.trace("Running select query in {}: {}", ctx.getEnvironment(), query.replace('\n', ' ').trim());
@@ -101,9 +109,6 @@ public class QueryServicesImpl implements QueryServices {
         }
     }
 
-    private void validateContext(SessionContext ctx) {
-        Validate.notNull(ctx.getEnvironment().getRepositoryType(), "Missing target (repository type) for running query.");
-        Validate.isTrue(this.stores.containsKey(ctx.getEnvironment().getRepositoryType()), "No repository configured and found for type: %s".formatted(ctx.getEnvironment().getRepositoryType()));
-    }
+
 
 }

@@ -3,6 +3,7 @@ package org.av360.maverick.graph.tests.config;
 import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.model.context.RequestDetails;
 import org.av360.maverick.graph.model.context.SessionContext;
+import org.av360.maverick.graph.model.enums.RepositoryType;
 import org.av360.maverick.graph.model.security.Authorities;
 import org.av360.maverick.graph.model.util.PreAuthenticationWebFilter;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -74,17 +75,29 @@ public class TestSecurityConfig {
         TestingAuthenticationToken testingAuthenticationToken = new TestingAuthenticationToken("test", "test", List.of(Authorities.SYSTEM));
         testingAuthenticationToken.setDetails(new RequestDetails().setPath("/api/entities"));
 
-        return new SessionContext().setAuthentication(testingAuthenticationToken);
+        return new SessionContext().setAuthentication(testingAuthenticationToken)
+                .setAuthorized()
+                .updateEnvironment(environment -> {
+                    environment.setRepositoryType(RepositoryType.ENTITIES);
+                });
     }
 
     public static SessionContext createAdminContext() {
-        return new SessionContext().withSystemAuthentication();
+        return new SessionContext().setSystemAuthentication()
+                .setAuthorized()
+                .updateEnvironment(environment -> {
+                    environment.setRepositoryType(RepositoryType.ENTITIES);
+                });
     }
 
     public static SessionContext createAnonymousContext() {
         AnonymousAuthenticationToken token = new AnonymousAuthenticationToken("key", "anonymous", List.of(Authorities.GUEST));
         token.setDetails(new RequestDetails().setPath("/api/entities"));
-        return new SessionContext().withAuthentication(token);
+        return new SessionContext().setAuthentication(token)
+                .setAuthorized()
+                .updateEnvironment(environment -> {
+                    environment.setRepositoryType(RepositoryType.ENTITIES);
+                });
     }
     /*
     @Bean
