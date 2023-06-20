@@ -1,10 +1,10 @@
 package org.av360.maverick.graph.api.config;
 
 import lombok.extern.slf4j.Slf4j;
-import org.av360.maverick.graph.api.security.ext.ChainingAuthenticationManager;
 import org.av360.maverick.graph.model.context.RequestDetails;
 import org.av360.maverick.graph.model.security.ApiKeyAuthenticationToken;
 import org.av360.maverick.graph.model.security.Authorities;
+import org.av360.maverick.graph.model.security.ChainingAuthenticationManager;
 import org.av360.maverick.graph.model.security.GuestToken;
 import org.av360.maverick.graph.model.util.PreAuthenticationWebFilter;
 import org.springframework.boot.actuate.autoconfigure.security.reactive.EndpointRequest;
@@ -33,7 +33,7 @@ import static org.av360.maverick.graph.model.security.ApiKeyAuthenticationToken.
 @Configuration
 @EnableWebFluxSecurity
 @EnableReactiveMethodSecurity
-@Profile("! test")  // see TestSecurityConfig in Test Module
+@Profile("! test || (test && secure) ")  // see TestSecurityConfig in Test Module
 @Slf4j(topic = "graph.ctrl.cfg.sec")
 public class SecurityConfiguration {
 

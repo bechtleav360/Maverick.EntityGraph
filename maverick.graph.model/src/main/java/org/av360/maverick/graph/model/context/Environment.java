@@ -3,6 +3,7 @@ package org.av360.maverick.graph.model.context;
 import org.av360.maverick.graph.model.enums.RepositoryType;
 import org.springframework.util.StringUtils;
 
+import javax.annotation.Nullable;
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
@@ -32,7 +33,7 @@ public class Environment implements  Serializable{
     private RepositoryType repositoryType;
 
     private Map<RepositoryConfigurationKey, Serializable>  configuration;
-    private String scope;
+    private Scope scope;
 
     public Environment(SessionContext parent) {
         this.configuration = new HashMap<>();
@@ -63,21 +64,25 @@ public class Environment implements  Serializable{
 
 
     public void setScope(String identifier) {
-        this.scope = identifier;
+        this.scope = new Scope(identifier, null);
     }
 
     public Environment withScope(String identifier) {
-        this.scope = identifier;
+        return this.withScope(identifier, null);
+    }
+
+    public Environment withScope(String identifier, @Nullable Object details) {
+        this.scope = new Scope(identifier, details);
         return this;
     }
 
 
     public boolean hasScope() {
-        return StringUtils.hasLength(this.getScope());
+        return Objects.nonNull(this.scope);
     }
 
-    public String getScope() {
-        return scope;
+    public Scope getScope() {
+        return Objects.isNull(this.scope) ? new Scope("default", null) : this.scope;
     }
 
     public boolean hasConfiguration(RepositoryConfigurationKey key) {
@@ -96,7 +101,7 @@ public class Environment implements  Serializable{
 
 
     public boolean isAuthorized() {
-        return this.parent.getDecision().isGranted();
+        return Objects.nonNull(this.parent) && Objects.nonNull(this.parent.getDecision()) && this.parent.getDecision().isGranted();
     }
 
 
@@ -113,7 +118,7 @@ public class Environment implements  Serializable{
     @Override
     public String toString() {
         return "%s:%s:%s".formatted(
-                StringUtils.hasLength(this.scope) ? this.scope : "default",
+                Objects.nonNull(this.scope) ? this.scope.label() : "default",
                 Objects.isNull(this.repositoryType) ? "?" : this.repositoryType.toString(),
                 StringUtils.hasLength(this.stage) ? this.stage : "?"
         );

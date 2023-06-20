@@ -60,4 +60,16 @@ public interface QueryServices {
         return this.queryGraph(query, ctx.getEnvironment().getRepositoryType(), ctx);
     }
 
+    /**
+     * Should only be called by other services (which have managed the authorization).
+     *
+     * Will fail otherwise (because not authorization decision exists)
+     * @param query
+     * @param target
+     * @param ctx
+     * @return
+     */
+    Flux<AnnotatedStatement> queryGraphTrusted(String query, RepositoryType target, SessionContext ctx);
+
+    Flux<BindingSet> queryValuesTrusted(String query, RepositoryType repositoryType, SessionContext ctx);
 }

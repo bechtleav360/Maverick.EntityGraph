@@ -30,7 +30,7 @@ public class DelegatingContentResolver implements ContentLocationResolverService
     @Override
     public Mono<ContentLocation> resolveContentLocation(IRI entityID, IRI contentId, String filename, @Nullable String language, SessionContext ctx) {
         return Mono.just(ctx.getEnvironment().getScope())
-                .flatMap(applicationsLabel -> applicationsService.getApplicationByLabel(applicationsLabel, ctx))
+                .flatMap(scope -> applicationsService.getApplicationByLabel(scope.label(), ctx))
                 .flatMap(application -> {
 
 

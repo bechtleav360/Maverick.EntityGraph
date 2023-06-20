@@ -11,7 +11,7 @@ import org.av360.maverick.graph.feature.applications.services.errors.InvalidAppl
 import org.av360.maverick.graph.feature.applications.services.model.Application;
 import org.av360.maverick.graph.model.context.RequestDetails;
 import org.av360.maverick.graph.model.context.SessionContext;
-import org.av360.maverick.graph.model.security.AdminToken;
+import org.av360.maverick.graph.model.security.AdminAuthentication;
 import org.av360.maverick.graph.model.security.ApiKeyAuthenticationToken;
 import org.av360.maverick.graph.model.security.Authorities;
 import org.av360.maverick.graph.model.util.StreamsLogger;
@@ -70,7 +70,7 @@ public class ApplicationAuthenticationManager implements ReactiveAuthenticationM
                             .switchIfEmpty(Mono.error(new InvalidApplication(label))))
                     .flatMap(app -> this.addRequestedApplicationToAuthentication(app, authentication))
                     .flatMap(requestedApplication -> {
-                        if (authentication instanceof AdminToken token) {
+                        if (authentication instanceof AdminAuthentication token) {
                             log.trace("Authentication has system authority and application scope '{}' requested.", requestedApplication.label());
                             return Mono.just(SubscriptionToken.fromAdminToken(token, requestedApplication));
 
@@ -129,7 +129,7 @@ public class ApplicationAuthenticationManager implements ReactiveAuthenticationM
     }
 
     private Mono<Authentication> defaultFallback(Authentication authentication) {
-        if (authentication instanceof AdminToken token) {
+        if (authentication instanceof AdminAuthentication token) {
             log.trace("Authentication has system authority, but not application scope requested.");
             return Mono.just(authentication);
         } else if (authentication instanceof ApiKeyAuthenticationToken token) {
@@ -151,7 +151,7 @@ public class ApplicationAuthenticationManager implements ReactiveAuthenticationM
      * @return
      */
     protected Mono<? extends ApiKeyAuthenticationToken> checkSubscriptionKey(ApiKeyAuthenticationToken token) {
-        if (token instanceof AdminToken) return Mono.just(token);
+        if (token instanceof AdminAuthentication) return Mono.just(token);
 
         return this.subscriptionsService.getSubscription(token.getApiKey().orElseThrow(), new SessionContext().withAuthentication(token))
                 .map(subscription -> {
@@ -165,7 +165,7 @@ public class ApplicationAuthenticationManager implements ReactiveAuthenticationM
     }
 
     protected Mono<? extends ApiKeyAuthenticationToken> checkSubscriptionKeyForRequestedApplication(ApiKeyAuthenticationToken token, Application requestedApplication) {
-        if (token instanceof AdminToken) return Mono.just(token);
+        if (token instanceof AdminAuthentication) return Mono.just(token);
 
         return this.subscriptionsService.getSubscription(token.getApiKey().orElseThrow(), new SessionContext().withAuthentication(token))
                 .map(subscription -> {

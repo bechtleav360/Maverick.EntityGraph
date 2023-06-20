@@ -237,7 +237,7 @@ public class DefaultRepositoryBuilder implements RepositoryBuilder {
 
     protected String formatRepositoryLabel(Environment environment) {
         StringBuilder label = new StringBuilder(environment.getRepositoryType().toString());
-        if(StringUtils.hasLength(environment.getScope())) label.append("_").append(environment.getScope());
+        if(Objects.nonNull(environment.getScope())) label.append("_").append(environment.getScope().label());
         if(StringUtils.hasLength(environment.getStage())) label.append("_").append(environment.getStage());
 
         return label.toString();

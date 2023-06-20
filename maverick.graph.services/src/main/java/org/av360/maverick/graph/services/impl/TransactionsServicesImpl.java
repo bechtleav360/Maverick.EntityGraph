@@ -6,6 +6,7 @@ import org.av360.maverick.graph.model.context.SessionContext;
 import org.av360.maverick.graph.model.security.Authorities;
 import org.av360.maverick.graph.services.TransactionsService;
 import org.av360.maverick.graph.services.config.RequiresPrivilege;
+import org.av360.maverick.graph.store.TransactionsStore;
 import org.av360.maverick.graph.store.rdf.fragments.RdfTransaction;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
@@ -13,6 +14,13 @@ import reactor.core.publisher.Mono;
 @Service
 @Slf4j(topic = "graph.srvc.trx")
 public class TransactionsServicesImpl implements TransactionsService {
+
+    private final TransactionsStore transactionsStore;
+
+    public TransactionsServicesImpl(TransactionsStore transactionsStore) {
+        this.transactionsStore = transactionsStore;
+    }
+
     @Override
     @RequiresPrivilege(Authorities.MAINTAINER_VALUE)
     public Flux<RdfTransaction> list(Integer limit, Integer offset, SessionContext authentication) {
@@ -23,5 +31,11 @@ public class TransactionsServicesImpl implements TransactionsService {
     @RequiresPrivilege(Authorities.MAINTAINER_VALUE)
     public Mono<RdfTransaction> find(String identifier, SessionContext authentication) {
         return Mono.error(NotImplementedException::new);
+    }
+
+    @Override
+    @RequiresPrivilege(Authorities.SYSTEM_VALUE)
+    public TransactionsStore getStore(SessionContext ctx) {
+        return transactionsStore;
     }
 }

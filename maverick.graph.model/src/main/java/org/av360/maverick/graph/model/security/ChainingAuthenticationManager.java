@@ -1,4 +1,4 @@
-package org.av360.maverick.graph.api.security.ext;
+package org.av360.maverick.graph.model.security;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.ReactiveAuthenticationManager;

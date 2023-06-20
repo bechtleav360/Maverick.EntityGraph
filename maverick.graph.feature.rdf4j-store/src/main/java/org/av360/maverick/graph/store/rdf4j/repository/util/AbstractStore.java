@@ -515,8 +515,8 @@ public abstract class AbstractStore implements TripleStore, StatementsAware, Mod
                             } finally {
                                 this.meterRegistry.counter("graph.store.operations", "cardinality", "multiple", "state", "complete").increment();
                             }
-                        })
-                        .doOnSubscribe(subscription -> getLogger().trace("Applying function with many results."));
+                        });
+                        // .doOnSubscribe(subscription -> getLogger().trace("Applying function with many results."));
 
         // FIXME: should check whether we are called from a scheduler
         if (environment.getSessionContext().isScheduled()) {

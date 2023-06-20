@@ -102,7 +102,7 @@ public class ApplicationRepositoryBuilder extends DefaultRepositoryBuilder {
 
         }
 
-        Validate.notBlank(environment.getScope());
+        Validate.notNull(environment.getScope());
 
         String label = super.formatRepositoryLabel(environment);
         meterRegistry.counter("graph.store.repository", "method", "access", "label", label).increment();

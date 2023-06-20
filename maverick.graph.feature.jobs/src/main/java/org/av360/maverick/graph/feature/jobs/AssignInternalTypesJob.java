@@ -66,7 +66,7 @@ public class AssignInternalTypesJob implements Job {
         return NAME;
     }
 
-    public Mono<Void> run(SessionContext ctx) {
+    public Mono<Void>   run(SessionContext ctx) {
         if(Objects.isNull(this.localTypesTransformer)) return Mono.error(new InvalidConfiguration("Type Coercion Transformer is disabled"));
 
         return this.findCandidates(ctx)

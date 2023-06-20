@@ -4,6 +4,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.model.entities.Job;
 import org.av360.maverick.graph.model.events.JobScheduledEvent;
+import org.av360.maverick.graph.model.security.Authorities;
 import org.av360.maverick.graph.services.SessionContextBuilderService;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -63,6 +64,8 @@ public class JobWorker {
 
             Flux.fromIterable(this.builders)
                     .reduceWith(() -> Mono.just(event.getSessionContext()), (update, builderService) -> update.flatMap(builderService::build)).flatMap(mono -> mono)
+                    // jobs always run with System authentication
+                    .doOnNext(ctx -> ctx.withAuthority(Authorities.MAINTAINER))
                     .flatMap(ctx -> requestedJob.get().run(ctx))
                     .subscribeOn(scheduler)
                     .doOnSubscribe(subscription -> {

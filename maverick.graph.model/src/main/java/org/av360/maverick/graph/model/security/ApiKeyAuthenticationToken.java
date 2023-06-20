@@ -53,9 +53,7 @@ public class ApiKeyAuthenticationToken implements Authentication {
      * Since different authentication managers might need different authorities, we keep this list mutable.
      *
      * @param authority
-     * @deprecated  should be managed by authorization manager
      */
-    @Deprecated
     public void grantAuthority(Authorities.WeightedAuthority authority) {
         // authorities USER and ADMIN are XOR
         // if(authority == Authorities.USER && this.getAuthorities().contains(Authorities.ADMIN)) throw new SecurityException("Granting user authority while admin authority has been set already");

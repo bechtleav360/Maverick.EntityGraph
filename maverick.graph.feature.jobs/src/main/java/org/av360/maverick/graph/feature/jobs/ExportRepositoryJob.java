@@ -25,6 +25,7 @@ import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.Objects;
 
 @Service
 @Slf4j(topic = "graph.feat.jobs.exports")
@@ -142,7 +143,7 @@ public class ExportRepositoryJob implements Job {
 
     private Mono<Void> saveRdfStringToLocalPath(String rdfString, SessionContext ctx) {
         return Mono.fromCallable(() -> {
-            String filename = StringUtils.hasLength(ctx.getEnvironment().getScope()) ? ctx.getEnvironment().getScope() : "default";
+            String filename = Objects.nonNull(ctx.getEnvironment().getScope()) ? ctx.getEnvironment().getScope().label() : "default";
             // FIXME: @mumi, write stream into file
             Files.writeString(
                     Paths.get(
@@ -174,7 +175,7 @@ public class ExportRepositoryJob implements Job {
     }
 
     private Mono<PutObjectResponse> uploadRdfStringToS3(S3AsyncClient s3Client, String rdfString, SessionContext ctx) {
-        String filename = StringUtils.hasLength(ctx.getEnvironment().getScope()) ? ctx.getEnvironment().getScope() : "default";
+        String filename = Objects.nonNull(ctx.getEnvironment().getScope()) ? ctx.getEnvironment().getScope().label() : "default";
         PutObjectRequest putObjectRequest = PutObjectRequest.builder()
                 .bucket(resolveS3Bucket())
                 .key("%s.ttl".formatted(filename))

@@ -119,7 +119,7 @@ public class EntityServicesImpl implements EntityServices {
                     GROUP BY ?id  ?sct ?dct ?rdt ?skt
                 """.replace("$limit", limit + "").replace("$offset", offset + "");
 
-        return this.queryServices.queryValues(query, RepositoryType.ENTITIES, ctx)
+        return this.queryServices.queryValuesTrusted(query, RepositoryType.ENTITIES, ctx)
                 .map(BindingsAccessor::new)
                 .flatMap(bnd -> {
                     try {

@@ -7,10 +7,11 @@ import org.av360.maverick.graph.model.enums.RepositoryType;
 import org.av360.maverick.graph.model.errors.InvalidConfiguration;
 import org.av360.maverick.graph.model.vocabulary.Local;
 import org.av360.maverick.graph.model.vocabulary.Transactions;
+import org.av360.maverick.graph.services.EntityServices;
+import org.av360.maverick.graph.services.QueryServices;
+import org.av360.maverick.graph.services.TransactionsService;
 import org.av360.maverick.graph.services.transformers.replaceIdentifiers.ReplaceAnonymousIdentifiers;
 import org.av360.maverick.graph.services.transformers.replaceIdentifiers.ReplaceExternalIdentifiers;
-import org.av360.maverick.graph.store.EntityStore;
-import org.av360.maverick.graph.store.TransactionsStore;
 import org.av360.maverick.graph.store.rdf.fragments.RdfTransaction;
 import org.eclipse.rdf4j.model.*;
 import org.eclipse.rdf4j.model.impl.LinkedHashModel;
@@ -56,9 +57,12 @@ public class ReplaceSubjectIdentifiersJob implements Job {
 
     public static String NAME = "replaceSubjectIdentifiers";
 
+    private final QueryServices queryServices;
 
-    private final EntityStore entityStore;
-    private final TransactionsStore trxStore;
+    private final EntityServices entityServices;
+
+
+    private final TransactionsService transactionsService;
 
 
     private final ReplaceExternalIdentifiers replaceExternalIdentifiers;
@@ -75,9 +79,10 @@ public class ReplaceSubjectIdentifiersJob implements Job {
     ) {
     }
 
-    public ReplaceSubjectIdentifiersJob(EntityStore store, TransactionsStore trxStore, ReplaceExternalIdentifiers transformer, ReplaceAnonymousIdentifiers replaceAnonymousIdentifiers) {
-        this.entityStore = store;
-        this.trxStore = trxStore;
+    public ReplaceSubjectIdentifiersJob(QueryServices queryServices, EntityServices entityServices, TransactionsService transactionsService, ReplaceExternalIdentifiers transformer, ReplaceAnonymousIdentifiers replaceAnonymousIdentifiers) {
+        this.queryServices = queryServices;
+        this.entityServices = entityServices;
+        this.transactionsService = transactionsService;
         this.replaceExternalIdentifiers = transformer;
         this.replaceAnonymousIdentifiers = replaceAnonymousIdentifiers;
     }
@@ -110,9 +115,9 @@ public class ReplaceSubjectIdentifiersJob implements Job {
     private Flux<RdfTransaction> checkForExternalSubjectIdentifiers(SessionContext ctx) {
         return findSubjectCandidates(ctx)
                 .flatMap(value -> this.loadSubjectStatements(value, ctx))
-                .flatMap(this::convertSubjectStatements)
-                .flatMap(this::insertStatements)
-                .flatMap(this::deleteStatements)
+                .flatMap(bag -> this.convertSubjectStatements(bag, ctx))
+                .flatMap(bag -> this.insertStatements(bag, ctx))
+                .flatMap(bag -> this.deleteStatements(bag, ctx))
                 .buffer(50)
                 .flatMap(transactions -> this.commit(transactions, ctx))
                 .doOnNext(transaction -> Assert.isTrue(transaction.hasStatement(null, Transactions.STATUS, Transactions.SUCCESS), "Failed transaction: \n" + transaction))
@@ -133,8 +138,7 @@ public class ReplaceSubjectIdentifiersJob implements Job {
                   LIMIT 5000
                 """;
         String query = String.format(tpl, Local.Entities.NAMESPACE);
-
-        return entityStore.query(query, ctx.getEnvironment())
+        return this.queryServices.queryValues(query, RepositoryType.ENTITIES, ctx)
                 .map(bindings -> bindings.getValue("a"))
                 .filter(Value::isResource)
                 .map(value -> (Resource) value);
@@ -144,27 +148,27 @@ public class ReplaceSubjectIdentifiersJob implements Job {
 
     private Flux<RdfTransaction> commit(List<RdfTransaction> transactions, SessionContext ctx) {
         // log.trace("Committing {} transactions", transactions.size());
-        return this.entityStore.commit(transactions, ctx.getEnvironment(), true)
+        return this.entityServices.getStore(ctx).commit(transactions, ctx.getEnvironment(), true)
                 .doOnComplete(() -> log.trace("Committed {} transactions in job {}", transactions.size(), this.getName()));
     }
 
     private Flux<RdfTransaction> storeTransactions(Collection<RdfTransaction> transactions, SessionContext ctx) {
         //FIXME: through event
-        return this.trxStore.store(transactions, ctx.getEnvironment());
+        return this.transactionsService.getStore(ctx).store(transactions, ctx.getEnvironment());
     }
 
-    private Mono<RdfTransaction> deleteStatements(StatementsBag statementsBag) {
+    private Mono<RdfTransaction> deleteStatements(StatementsBag statementsBag, SessionContext ctx) {
         ArrayList<Statement> statements = new ArrayList<>(statementsBag.removableStatements());
 
-        return entityStore.removeStatements(statements, statementsBag.transaction());
+        return entityServices.getStore(ctx).removeStatements(statements, statementsBag.transaction());
     }
 
-    private Mono<StatementsBag> insertStatements(StatementsBag bag) {
-        return this.entityStore.insertModel(bag.convertedStatements(), bag.transaction()).then(Mono.just(bag));
+    private Mono<StatementsBag> insertStatements(StatementsBag bag, SessionContext ctx) {
+        return this.entityServices.getStore(ctx).insertModel(bag.convertedStatements(), bag.transaction()).then(Mono.just(bag));
     }
 
 
-    private Mono<StatementsBag> convertSubjectStatements(StatementsBag bag) {
+    private Mono<StatementsBag> convertSubjectStatements(StatementsBag bag, SessionContext ctx) {
         LinkedHashModel model = new LinkedHashModel();
         model.addAll(bag.removableStatements());
 
@@ -193,7 +197,7 @@ public class ReplaceSubjectIdentifiersJob implements Job {
     }
 
     public Mono<StatementsBag> loadSubjectStatements(Resource candidate, SessionContext ctx) {
-        return this.entityStore.getFragment(candidate, ctx.getEnvironment())
+        return this.entityServices.getStore(ctx).getFragment(candidate, ctx.getEnvironment())
                 .map(fragment -> new StatementsBag(candidate, Collections.synchronizedSet(fragment.getModel()), new LinkedHashModel(), null, new RdfTransaction()));
 
     }

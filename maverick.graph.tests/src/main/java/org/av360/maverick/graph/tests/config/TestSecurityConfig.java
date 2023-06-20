@@ -5,11 +5,13 @@ import org.av360.maverick.graph.model.context.RequestDetails;
 import org.av360.maverick.graph.model.context.SessionContext;
 import org.av360.maverick.graph.model.enums.RepositoryType;
 import org.av360.maverick.graph.model.security.Authorities;
+import org.av360.maverick.graph.model.security.ChainingAuthenticationManager;
 import org.av360.maverick.graph.model.util.PreAuthenticationWebFilter;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Profile;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.authentication.DelegatingReactiveAuthenticationManager;
 import org.springframework.security.authentication.ReactiveAuthenticationManager;
@@ -27,18 +29,15 @@ import java.util.List;
 
 @TestConfiguration
 @EnableWebFluxSecurity
-@Profile({"test && api"})
+@Profile({"(test && api) && !secure"})
 @Slf4j(topic = "graph.test.cfg")
 public class TestSecurityConfig {
 
 
-    public static void addConfigurationDetail(SessionContext context, Serializable key, String value) {
-        ((RequestDetails) context.getAuthenticationOrThrow().getDetails()).setConfiguration(key, value);
-    }
 
     @Bean
     @ConditionalOnProperty(name = "application.security.enabled", havingValue = "false")
-    public SecurityWebFilterChain securityWebFilterChain(List<PreAuthenticationWebFilter> earlyFilters, List<ReactiveAuthenticationManager> authenticationManager, ServerAuthenticationConverter authenticationConverter) {
+    public SecurityWebFilterChain unsecurityWebFilterChain(List<PreAuthenticationWebFilter> earlyFilters, List<ReactiveAuthenticationManager> authenticationManager, ServerAuthenticationConverter authenticationConverter) {
         final ReactiveAuthenticationManager authenticationManagers = new DelegatingReactiveAuthenticationManager(authenticationManager);
         final AuthenticationWebFilter authenticationWebFilter = new AuthenticationWebFilter(authenticationManagers);
 
@@ -56,6 +55,49 @@ public class TestSecurityConfig {
 
     }
 
+    @Bean
+    @ConditionalOnProperty(name = "application.security.enabled", havingValue = "true")
+    public SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity http,
+                                                         List<ReactiveAuthenticationManager> authenticationManager,
+                                                         ServerAuthenticationConverter authenticationConverter,
+                                                         List<PreAuthenticationWebFilter> preFilterList) {
+        final ReactiveAuthenticationManager authenticationManagers = new ChainingAuthenticationManager(authenticationManager);
+        final AuthenticationWebFilter authenticationWebFilter = new AuthenticationWebFilter(authenticationManagers);
+        authenticationWebFilter.setServerAuthenticationConverter(authenticationConverter);
+
+
+        preFilterList.forEach(preFilter -> http.addFilterBefore(preFilter, SecurityWebFiltersOrder.AUTHENTICATION));
+        http.addFilterAt(authenticationWebFilter, SecurityWebFiltersOrder.AUTHENTICATION);
+        http.httpBasic(spec -> spec.disable());
+        http.csrf(spec -> spec.disable());
+        http.formLogin(spec -> spec.disable());
+        http.logout(spec -> spec.disable());
+
+
+        http.authorizeExchange(spec ->
+
+                spec.pathMatchers(HttpMethod.GET, "/api/**")
+                        .hasAnyAuthority(Authorities.SYSTEM.getAuthority(), Authorities.APPLICATION.getAuthority(), Authorities.CONTRIBUTOR.getAuthority(), Authorities.READER.getAuthority())
+                        .pathMatchers(HttpMethod.GET, "/api/**").hasAnyAuthority(Authorities.SYSTEM.getAuthority(), Authorities.APPLICATION.getAuthority(), Authorities.CONTRIBUTOR.getAuthority(), Authorities.READER.getAuthority())
+                        .pathMatchers(HttpMethod.HEAD, "/api/**").hasAnyAuthority(Authorities.SYSTEM.getAuthority(), Authorities.APPLICATION.getAuthority(), Authorities.CONTRIBUTOR.getAuthority(), Authorities.READER.getAuthority())
+                        .pathMatchers(HttpMethod.DELETE, "/api/**").hasAnyAuthority(Authorities.SYSTEM.getAuthority(), Authorities.APPLICATION.getAuthority(), Authorities.CONTRIBUTOR.getAuthority())
+                        .pathMatchers(HttpMethod.POST, "/api/**").hasAnyAuthority(Authorities.SYSTEM.getAuthority(), Authorities.APPLICATION.getAuthority(), Authorities.CONTRIBUTOR.getAuthority())
+                        .pathMatchers("/api/admin/**").hasAnyAuthority(Authorities.SYSTEM.getAuthority(), Authorities.APPLICATION.getAuthority())
+                        .pathMatchers(HttpMethod.GET, "/swagger-ui/*").permitAll()
+                        .pathMatchers(HttpMethod.GET, "/nav").permitAll()
+                        //.matchers(EndpointRequest.to("env", "logfile", "loggers", "metrics", "scheduledTasks")).hasAuthority(Authorities.SYSTEM.getAuthority())
+                        // .matchers(EndpointRequest.to("health", "info")).permitAll()
+                        .anyExchange().permitAll()
+        );
+
+
+
+
+
+        log.info("Security is enabled and was configured to secure all requests.");
+        return http.build();
+    }
+
 
     @Bean
     @ConditionalOnProperty(name = "application.security.enabled", havingValue = "false")
@@ -70,6 +112,9 @@ public class TestSecurityConfig {
 
 
 
+    public static void addConfigurationDetail(SessionContext context, Serializable key, String value) {
+        ((RequestDetails) context.getAuthenticationOrThrow().getDetails()).setConfiguration(key, value);
+    }
 
     public static SessionContext createTestContext() {
         TestingAuthenticationToken testingAuthenticationToken = new TestingAuthenticationToken("test", "test", List.of(Authorities.SYSTEM));

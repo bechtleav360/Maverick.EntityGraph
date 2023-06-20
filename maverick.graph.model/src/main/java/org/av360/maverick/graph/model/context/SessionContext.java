@@ -1,6 +1,7 @@
 package org.av360.maverick.graph.model.context;
 
-import org.av360.maverick.graph.model.security.AdminToken;
+import org.av360.maverick.graph.model.security.Authorities;
+import org.av360.maverick.graph.model.security.SystemAuthentication;
 import org.springframework.security.authorization.AuthorizationDecision;
 import org.springframework.security.core.Authentication;
 
@@ -48,9 +49,7 @@ public class SessionContext {
         else return this.authentication;
     }
 
-    public Scope getScope() {
-        return Objects.isNull(this.scope) ? new Scope("default", null) : this.scope;
-    }
+
 
     public SessionContext setRequestDetails(RequestDetails requestDetails) {
         this.requestDetails = requestDetails;
@@ -67,19 +66,21 @@ public class SessionContext {
         return this;
     }
 
-    public SessionContext setScope(Scope scope) {
-        this.scope = scope;
-        return this;
-    }
+
 
 
     public SessionContext setSystemAuthentication() {
-        this.authentication = new AdminToken();
+        this.authentication = new SystemAuthentication();
         return this;
     }
 
     public SessionContext withAuthentication(Authentication authentication) {
         this.authentication = authentication;
+        return this;
+    }
+
+    public SessionContext withAuthority(Authorities.WeightedAuthority authority) {
+        this.authentication = new SystemAuthentication(authority);
         return this;
     }
 
@@ -104,6 +105,7 @@ public class SessionContext {
     public AuthorizationDecision getDecision() {
         return decision;
     }
+
 
 
 }

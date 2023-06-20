@@ -7,6 +7,8 @@ import org.av360.maverick.graph.model.enums.RepositoryType;
 import org.av360.maverick.graph.model.errors.InvalidConfiguration;
 import org.av360.maverick.graph.model.vocabulary.Local;
 import org.av360.maverick.graph.model.vocabulary.Transactions;
+import org.av360.maverick.graph.services.EntityServices;
+import org.av360.maverick.graph.services.TransactionsService;
 import org.av360.maverick.graph.services.transformers.replaceIdentifiers.ReplaceExternalIdentifiers;
 import org.av360.maverick.graph.store.EntityStore;
 import org.av360.maverick.graph.store.TransactionsStore;
@@ -54,9 +56,8 @@ public class ReplaceObjectIdentifiersJob implements Job {
 
     public static String NAME = "replaceLinkedIdentifiers";
 
-    private final EntityStore entityStore;
-    private final TransactionsStore trxStore;
-
+    private final EntityServices entityServices;
+    private final TransactionsService transactionsService;
     private final ReplaceExternalIdentifiers replaceExternalIdentifiers;
 
 
@@ -69,9 +70,9 @@ public class ReplaceObjectIdentifiersJob implements Job {
     ) {
     }
 
-    public ReplaceObjectIdentifiersJob(EntityStore store, TransactionsStore trxStore, ReplaceExternalIdentifiers transformer) {
-        this.entityStore = store;
-        this.trxStore = trxStore;
+    public ReplaceObjectIdentifiersJob(EntityStore store, TransactionsStore trxStore, EntityServices entityServices, TransactionsService transactionsService, ReplaceExternalIdentifiers transformer) {
+        this.entityServices = entityServices;
+        this.transactionsService = transactionsService;
         this.replaceExternalIdentifiers = transformer;
     }
 
@@ -101,8 +102,8 @@ public class ReplaceObjectIdentifiersJob implements Job {
     private Flux<RdfTransaction> checkForLinkedObjectIdentifiers(SessionContext ctx) {
         return this.loadObjectStatements(ctx)
                 .flatMap(this::convertObjectStatements)
-                .flatMap(this::insertStatements)
-                .flatMap(this::deleteStatements)
+                .flatMap(bag -> this.insertStatements(bag, ctx))
+                .flatMap(bag -> this.deleteStatements(bag, ctx))
                 .buffer(100)
                 .flatMap(transactions -> this.commit(transactions, ctx))
                 .doOnNext(transaction -> Assert.isTrue(transaction.hasStatement(null, Transactions.STATUS, Transactions.SUCCESS), "Failed transaction: \n" + transaction))
@@ -113,21 +114,21 @@ public class ReplaceObjectIdentifiersJob implements Job {
 
     private Flux<RdfTransaction> commit(List<RdfTransaction> transactions, SessionContext ctx) {
         // FIXME: assert system authentication
-        return this.entityStore.commit(transactions, ctx.getEnvironment());
+        return this.entityServices.getStore(ctx).commit(transactions, ctx.getEnvironment());
     }
 
     private Flux<RdfTransaction> storeTransactions(Collection<RdfTransaction> transactions, SessionContext ctx) {
         //FIXME: through event
-        return this.trxStore.store(transactions, ctx.getEnvironment());
+        return this.transactionsService.getStore(ctx).store(transactions, ctx.getEnvironment());
     }
 
-    private Mono<RdfTransaction> deleteStatements(StatementsBag statementsBag) {
+    private Mono<RdfTransaction> deleteStatements(StatementsBag statementsBag, SessionContext ctx) {
         ArrayList<Statement> statements = new ArrayList<>(statementsBag.removableStatements());
-        return entityStore.removeStatements(statements, statementsBag.transaction());
+        return this.entityServices.getStore(ctx).removeStatements(statements, statementsBag.transaction());
     }
 
-    private Mono<StatementsBag> insertStatements(StatementsBag bag) {
-        return this.entityStore.insertModel(bag.convertedStatements(), bag.transaction()).then(Mono.just(bag));
+    private Mono<StatementsBag> insertStatements(StatementsBag bag, SessionContext ctx) {
+        return this.entityServices.getStore(ctx).insertModel(bag.convertedStatements(), bag.transaction()).then(Mono.just(bag));
     }
 
     private Mono<StatementsBag> convertObjectStatements(StatementsBag bag) {
@@ -153,11 +154,11 @@ public class ReplaceObjectIdentifiersJob implements Job {
 
 
     public Flux<StatementsBag> loadObjectStatements(SessionContext ctx) {
-        return this.entityStore.listStatements(null, Local.ORIGINAL_IDENTIFIER, null, ctx.getEnvironment())
+        return this.entityServices.getStore(ctx).listStatements(null, Local.ORIGINAL_IDENTIFIER, null, ctx.getEnvironment())
                 .flatMapMany(Flux::fromIterable)
                 .filter(statement -> statement.getObject().isResource())
                 .flatMap(st ->
-                        this.entityStore.listStatements(null, null, st.getObject(), ctx.getEnvironment())
+                        this.entityServices.getStore(ctx).listStatements(null, null, st.getObject(), ctx.getEnvironment())
                                 .map(statements -> statements.stream()
                                         .filter(s -> ! s.getPredicate().equals(Local.ORIGINAL_IDENTIFIER))
                                         .filter(s -> ! s.getPredicate().equals(OWL.SAMEAS))

@@ -18,7 +18,7 @@ public class DelegatingJobSchedulingService implements JobSchedulingService {
     @Override
     public Mono<Void> scheduleJob(String name, SessionContext context) {
 
-        return ValidateReactive.notBlank(context.getEnvironment().getScope())
+        return ValidateReactive.notNull(context.getEnvironment().getScope())
                 .flatMap(label -> {
                             JobScheduledEvent event = new JobScheduledEvent(name, context);
                             return this.publish(event);

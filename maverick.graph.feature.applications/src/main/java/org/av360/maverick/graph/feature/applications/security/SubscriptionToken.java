@@ -2,7 +2,7 @@ package org.av360.maverick.graph.feature.applications.security;
 
 import org.av360.maverick.graph.feature.applications.services.model.Application;
 import org.av360.maverick.graph.feature.applications.services.model.Subscription;
-import org.av360.maverick.graph.model.security.AdminToken;
+import org.av360.maverick.graph.model.security.AdminAuthentication;
 import org.av360.maverick.graph.model.security.ApiKeyAuthenticationToken;
 
 import javax.annotation.Nullable;
@@ -38,7 +38,7 @@ public class SubscriptionToken extends ApiKeyAuthenticationToken {
         return authentication;
     }
 
-    public static SubscriptionToken fromAdminToken(AdminToken systemAuthentication, Application application) {
+    public static SubscriptionToken fromAdminToken(AdminAuthentication systemAuthentication, Application application) {
         SubscriptionToken authentication = new SubscriptionToken(null, application);
         authentication.setAuthenticated(systemAuthentication.isAuthenticated());
         authentication.setDetails(systemAuthentication.getDetails());

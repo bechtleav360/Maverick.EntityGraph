@@ -1,8 +1,8 @@
 package org.av360.maverick.graph.model.events;
 
+import org.apache.commons.lang3.Validate;
 import org.av360.maverick.graph.model.context.SessionContext;
 import org.springframework.context.ApplicationEvent;
-import org.springframework.util.StringUtils;
 
 import javax.annotation.Nonnull;
 import java.util.Objects;
@@ -12,9 +12,12 @@ public class JobScheduledEvent extends ApplicationEvent {
 
     public JobScheduledEvent(@Nonnull String name, SessionContext ctx) {
         super(name);
+
         this.ctx = ctx;
 
-        if(!StringUtils.hasLength(name)) throw  new IllegalArgumentException("Job Event without name");
+        Validate.notNull(ctx);
+        Validate.notNull(ctx.getEnvironment());
+        Validate.notBlank(name, "Job Event without name");
     }
 
     public String getJobName() {
@@ -22,7 +25,7 @@ public class JobScheduledEvent extends ApplicationEvent {
     }
 
     public String getScope() {
-        return "default";
+        return ctx.getEnvironment().getScope().label();
     }
 
 

@@ -9,7 +9,6 @@ import org.av360.maverick.graph.model.vocabulary.SDO;
 import org.av360.maverick.graph.services.EntityServices;
 import org.av360.maverick.graph.services.QueryServices;
 import org.av360.maverick.graph.services.ValueServices;
-import org.av360.maverick.graph.store.EntityStore;
 import org.av360.maverick.graph.store.rdf.fragments.RdfTransaction;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Value;
@@ -69,39 +68,21 @@ import java.util.TreeSet;
 public class MergeDuplicatesJob implements Job {
 
     public static String NAME = "detectDuplicates";
+    private final EntityServices entityServices;
+    private final QueryServices queryServices;
+    private final ValueServices valueServices;
+    private final SimpleValueFactory valueFactory;
+
+    public MergeDuplicatesJob(EntityServices service, QueryServices queryServices, ValueServices valueServices) {
+        this.entityServices = service;
+        this.queryServices = queryServices;
+        this.valueServices = valueServices;
+        this.valueFactory = SimpleValueFactory.getInstance();
+    }
 
     @Override
     public String getName() {
         return NAME;
-    }
-
-    private record DuplicateCandidate(IRI sharedProperty, String type, String sharedValue) {
-    }
-
-    private record MislinkedStatement(IRI subject, IRI predicate, IRI object) {
-    }
-
-    private record Duplicate(IRI id) implements Comparable<Duplicate> {
-        @Override
-        public int compareTo(Duplicate o) {
-            return o.id().stringValue().compareTo(this.id().stringValue());
-        }
-    }
-
-    private final EntityServices entityServices;
-    private final QueryServices queryServices;
-
-    private final EntityStore entityStore;
-
-    private final ValueServices valueServices;
-    private final SimpleValueFactory valueFactory;
-
-    public MergeDuplicatesJob(EntityServices service, QueryServices queryServices, EntityStore entityStore, ValueServices valueServices) {
-        this.entityServices = service;
-        this.queryServices = queryServices;
-        this.entityStore = entityStore;
-        this.valueServices = valueServices;
-        this.valueFactory = SimpleValueFactory.getInstance();
     }
 
     public Mono<Void> run(SessionContext ctx) {
@@ -115,6 +96,7 @@ public class MergeDuplicatesJob implements Job {
                 .doOnError(throwable -> log.error("Exception while checking for duplicates: {}", throwable.getMessage()))
                 .doOnSubscribe(sub -> {
                     ctx.updateEnvironment(env -> env.setRepositoryType(RepositoryType.ENTITIES));
+
                     log.trace("Checking for duplicates in environment {}.", ctx.getEnvironment());
                 })
                 .doOnSuccess(success -> log.debug("Completed checking for duplicates in environment {}.", ctx.getEnvironment()))
@@ -136,12 +118,11 @@ public class MergeDuplicatesJob implements Job {
                                 .collectList()
                                 .flatMap(duplicates -> this.mergeDuplicates(duplicates, ctx)))
                 .doOnSubscribe(sub ->
-                    log.trace("Checking duplicates sharing the same characteristic property <{}> in environment {}", characteristicProperty, ctx.getEnvironment())
+                        log.trace("Checking duplicates sharing the same characteristic property <{}> in environment {}", characteristicProperty, ctx.getEnvironment())
                 )
                 .thenEmpty(Mono.empty());
 
     }
-
 
     private Flux<Duplicate> findDuplicates(DuplicateCandidate duplicate, SessionContext ctx) {
 
@@ -161,7 +142,7 @@ public class MergeDuplicatesJob implements Job {
                 idVariable.has(duplicate.sharedProperty(), this.valueFactory.createLiteral(duplicate.sharedValue()))
         );
 
-        return this.queryServices.queryValues(findDuplicates, ctx)
+        return this.queryServices.queryValues(findDuplicates, RepositoryType.ENTITIES, ctx)
                 .doOnSubscribe(subscription -> log.trace("Retrieving all duplicates of same type with value '{}' for property '{}' ", duplicate.sharedValue, duplicate.sharedProperty))
                 .flatMap(bindings -> {
                     Value id = bindings.getValue(idVariable.getVarName());
@@ -215,8 +196,7 @@ public class MergeDuplicatesJob implements Job {
                 .then();
     }
 
-
-    private Mono<RdfTransaction> removeDuplicate(IRI object, SessionContext ctx)  {
+    private Mono<RdfTransaction> removeDuplicate(IRI object, SessionContext ctx) {
         // not sure if we should use the entity services (which handle authentication), or let the jobs always access only the store layer
         return this.entityServices.remove(object, ctx);
     }
@@ -225,12 +205,11 @@ public class MergeDuplicatesJob implements Job {
         return this.valueServices.replace(subject, predicate, object, id, ctx);
     }
 
-
     /**
      * Runs the query:   SELECT * WHERE { ?sub ?pre <duplicate id> }. to find all entities pointing to the identified duplicate entity (with the goal to reroute those statements to the original)
      *
-     * @param duplicate,      the identified duplicate
-     * @param ctx, auth info
+     * @param duplicate, the identified duplicate
+     * @param ctx,       auth info
      * @return the statements pointing to the duplicate (as Flux)
      */
     private Flux<MislinkedStatement> findStatementsPointingToDuplicate(Duplicate duplicate, SessionContext ctx) {
@@ -251,8 +230,6 @@ public class MergeDuplicatesJob implements Job {
                 });
 
     }
-
-
 
     private Flux<DuplicateCandidate> findCandidates(IRI sharedProperty, SessionContext ctx) {
 
@@ -283,6 +260,19 @@ public class MergeDuplicatesJob implements Job {
                     return new DuplicateCandidate(sharedProperty, typeVal.stringValue(), sharedValueVal.stringValue());
                 }).timeout(Duration.of(10, ChronoUnit.SECONDS));
 
+    }
+
+    private record DuplicateCandidate(IRI sharedProperty, String type, String sharedValue) {
+    }
+
+    private record MislinkedStatement(IRI subject, IRI predicate, IRI object) {
+    }
+
+    private record Duplicate(IRI id) implements Comparable<Duplicate> {
+        @Override
+        public int compareTo(Duplicate o) {
+            return o.id().stringValue().compareTo(this.id().stringValue());
+        }
     }
 
 

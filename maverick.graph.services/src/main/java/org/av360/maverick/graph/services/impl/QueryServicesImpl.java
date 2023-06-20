@@ -55,13 +55,13 @@ public class QueryServicesImpl implements QueryServices {
     }
 
     @Override
-    @RequiresPrivilege(Authorities.CONTRIBUTOR_VALUE)
+    @RequiresPrivilege(Authorities.READER_VALUE)
     public Flux<BindingSet> queryValues(SelectQuery query, RepositoryType repositoryType, SessionContext ctx) {
         return this.queryValuesTrusted(query.getQueryString(), repositoryType, ctx);
     }
 
     @Override
-    @RequiresPrivilege(Authorities.CONTRIBUTOR_VALUE)
+    @RequiresPrivilege(Authorities.READER_VALUE)
     public Flux<AnnotatedStatement> queryGraph(String queryStr, RepositoryType repositoryType, SessionContext ctx) {
         try {
             ParsedQuery parsedQuery = queryParser.parseQuery(queryStr, null);
@@ -72,14 +72,15 @@ public class QueryServicesImpl implements QueryServices {
             return Flux.error(e);
         }
     }
-    @RequiresPrivilege(Authorities.CONTRIBUTOR_VALUE)
+    @RequiresPrivilege(Authorities.READER_VALUE)
     public Flux<AnnotatedStatement> queryGraph(ConstructQuery query,  RepositoryType repositoryType, SessionContext ctx) {
         return this.queryGraphTrusted(query.getQueryString(), repositoryType, ctx);
 
     }
 
 
-    private Flux<AnnotatedStatement> queryGraphTrusted(String query, RepositoryType target, SessionContext ctx) {
+    @Override
+    public Flux<AnnotatedStatement> queryGraphTrusted(String query, RepositoryType target, SessionContext ctx) {
         try {
             if(Objects.isNull(ctx.getEnvironment().getRepositoryType())) ctx.updateEnvironment(env -> env.setRepositoryType(target));
 
@@ -94,8 +95,8 @@ public class QueryServicesImpl implements QueryServices {
         }
     }
 
-
-    private Flux<BindingSet> queryValuesTrusted(String query, RepositoryType repositoryType, SessionContext ctx) {
+    @Override
+    public Flux<BindingSet> queryValuesTrusted(String query, RepositoryType repositoryType, SessionContext ctx) {
         try {
             if(Objects.isNull(ctx.getEnvironment().getRepositoryType())) ctx.updateEnvironment(env -> env.setRepositoryType(repositoryType));
 
