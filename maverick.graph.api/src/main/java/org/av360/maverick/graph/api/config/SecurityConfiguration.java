@@ -1,11 +1,11 @@
 package org.av360.maverick.graph.api.config;
 
 import lombok.extern.slf4j.Slf4j;
-import org.av360.maverick.graph.api.security.ext.ChainingAuthenticationManager;
+import org.av360.maverick.graph.model.context.RequestDetails;
 import org.av360.maverick.graph.model.security.ApiKeyAuthenticationToken;
 import org.av360.maverick.graph.model.security.Authorities;
+import org.av360.maverick.graph.model.security.ChainingAuthenticationManager;
 import org.av360.maverick.graph.model.security.GuestToken;
-import org.av360.maverick.graph.model.security.RequestDetails;
 import org.av360.maverick.graph.model.util.PreAuthenticationWebFilter;
 import org.springframework.boot.actuate.autoconfigure.security.reactive.EndpointRequest;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -16,6 +16,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.authentication.ReactiveAuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.config.annotation.method.configuration.EnableReactiveMethodSecurity;
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
 import org.springframework.security.config.web.server.SecurityWebFiltersOrder;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
@@ -31,7 +32,8 @@ import static org.av360.maverick.graph.model.security.ApiKeyAuthenticationToken.
 
 @Configuration
 @EnableWebFluxSecurity
-@Profile("! test")  // see TestSecurityConfig in Test Module
+@EnableReactiveMethodSecurity
+@Profile("! test || (test && secure) ")  // see TestSecurityConfig in Test Module
 @Slf4j(topic = "graph.ctrl.cfg.sec")
 public class SecurityConfiguration {
 
@@ -48,8 +50,6 @@ public class SecurityConfiguration {
         authenticationWebFilter.setServerAuthenticationConverter(authenticationConverter);
 
 
-
-
         preFilterList.forEach(preFilter -> http.addFilterBefore(preFilter, SecurityWebFiltersOrder.AUTHENTICATION));
         http.addFilterAt(authenticationWebFilter, SecurityWebFiltersOrder.AUTHENTICATION);
         http.httpBasic(spec -> spec.disable());
@@ -59,7 +59,9 @@ public class SecurityConfiguration {
 
 
         http.authorizeExchange(spec ->
-                spec.pathMatchers(HttpMethod.GET, "/api/**").hasAnyAuthority(Authorities.SYSTEM.getAuthority(), Authorities.APPLICATION.getAuthority(), Authorities.CONTRIBUTOR.getAuthority(), Authorities.READER.getAuthority())
+
+                spec.pathMatchers(HttpMethod.GET, "/api/**")
+                        .hasAnyAuthority(Authorities.SYSTEM.getAuthority(), Authorities.APPLICATION.getAuthority(), Authorities.CONTRIBUTOR.getAuthority(), Authorities.READER.getAuthority())
                         .pathMatchers(HttpMethod.GET, "/api/**").hasAnyAuthority(Authorities.SYSTEM.getAuthority(), Authorities.APPLICATION.getAuthority(), Authorities.CONTRIBUTOR.getAuthority(), Authorities.READER.getAuthority())
                         .pathMatchers(HttpMethod.HEAD, "/api/**").hasAnyAuthority(Authorities.SYSTEM.getAuthority(), Authorities.APPLICATION.getAuthority(), Authorities.CONTRIBUTOR.getAuthority(), Authorities.READER.getAuthority())
                         .pathMatchers(HttpMethod.DELETE, "/api/**").hasAnyAuthority(Authorities.SYSTEM.getAuthority(), Authorities.APPLICATION.getAuthority(), Authorities.CONTRIBUTOR.getAuthority())
@@ -111,6 +113,8 @@ public class SecurityConfiguration {
             return Mono.just(new GuestToken(details));
         };
     }
+
+
 
     @Bean
     @ConditionalOnProperty(name = "application.security.enabled", havingValue = "true")

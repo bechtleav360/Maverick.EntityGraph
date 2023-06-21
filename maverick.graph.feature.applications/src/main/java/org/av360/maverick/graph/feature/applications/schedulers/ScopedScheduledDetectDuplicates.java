@@ -39,7 +39,8 @@ import org.springframework.stereotype.Component;
  */
 @Component
 @Slf4j(topic = "graph.jobs.duplicates")
-@ConditionalOnProperty(name = "application.features.modules.jobs.scheduled.detectDuplicates.enabled", havingValue = "true")
+@ConditionalOnProperty({"application.features.modules.jobs.scheduled.detectDuplicates.enabled","application.features.modules.applications.enabled"})
+
 public class ScopedScheduledDetectDuplicates extends ScopedJobScheduler {
 
     @Value("${application.features.modules.jobs.scheduled.detectDuplicates.defaultFrequency:0 */5 * * * ?}")

@@ -1,12 +1,15 @@
 package org.av360.maverick.graph.services;
 
 import jakarta.annotation.Nullable;
+import org.av360.maverick.graph.model.context.SessionContext;
 import org.av360.maverick.graph.model.rdf.Triples;
 import org.av360.maverick.graph.store.EntityStore;
 import org.av360.maverick.graph.store.rdf.fragments.RdfEntity;
 import org.av360.maverick.graph.store.rdf.fragments.RdfTransaction;
 import org.eclipse.rdf4j.model.IRI;
-import org.springframework.security.core.Authentication;
+import org.eclipse.rdf4j.model.Model;
+import org.eclipse.rdf4j.rio.RDFFormat;
+import org.springframework.core.io.Resource;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -23,7 +26,8 @@ public interface EntityServices {
      * @param neighbourLevel how many levels of neigbours to include (0 is entity only, 1 is direct neighbours)
      * @return Entity as Mono
      */
-    Mono<RdfEntity> get(IRI entityIri, Authentication authentication, int neighbourLevel);
+
+    Mono<RdfEntity> get(IRI entityIri, int neighbourLevel, SessionContext ctx);
 
     /**
      * Retrieves an entity representation (identifier, values and relations) with its direct neighbours from store.
@@ -32,8 +36,8 @@ public interface EntityServices {
      * @param authentication   The current authentication
      * @return Entity as Mono
      */
-    default Mono<RdfEntity> get(IRI entityIri, Authentication authentication) {
-        return this.get(entityIri, authentication, 1);
+    default Mono<RdfEntity> get(IRI entityIri, SessionContext ctx) {
+        return this.get(entityIri, 1, ctx);
     }
 
     /**
@@ -44,7 +48,7 @@ public interface EntityServices {
      * @param offset
      * @return
      */
-     Flux<RdfEntity> list(Authentication authentication, int limit, int offset);
+     Flux<RdfEntity> list(int limit, int offset, SessionContext ctx);
 
     /**
      * Deletes an entity with all its values from the store.
@@ -53,7 +57,7 @@ public interface EntityServices {
      * @param authentication   The current authentication
      * @return Transaction with affected statements
      */
-    Mono<RdfTransaction> remove(IRI entityIri, Authentication authentication);
+    Mono<RdfTransaction> remove(IRI entityIri, SessionContext ctx);
 
     /**
      * Deletes an entity with all its values from the store.
@@ -62,7 +66,7 @@ public interface EntityServices {
      * @param authentication   The current authentication
      * @return Transaction with affected statements
      */
-    Mono<RdfTransaction> remove(String entityKey, Authentication authentication);
+    Mono<RdfTransaction> remove(String entityKey, SessionContext ctx);
 
     /**
      * Creates entities from the incoming set of triples
@@ -72,9 +76,10 @@ public interface EntityServices {
      * @param authentication The current authentication
      * @return Transaction with affected statements
      */
-    Mono<RdfTransaction> create(Triples triples, Map<String, String> parameters, Authentication authentication);
+    Mono<RdfTransaction> create(Triples triples, Map<String, String> parameters, SessionContext ctx);
 
-    Mono<RdfTransaction> linkEntityTo(String entityKey, IRI predicate, Triples linkedEntities, Authentication authentication);
+
+    Mono<RdfTransaction> linkEntityTo(String entityKey, IRI predicate, Triples linkedEntities, SessionContext ctx);
 
     /**
      * Retrieves a complete entity representation (identifier, values and relations) from store.
@@ -85,16 +90,20 @@ public interface EntityServices {
      *
      * @return Entity as Mono
      */
-    Mono<RdfEntity> findByKey(String entityKey, Authentication authentication);
 
-    Mono<RdfEntity> findByProperty(String identifier, IRI predicate, Authentication authentication);
+    Mono<RdfEntity> findByKey(String entityKey, SessionContext ctx);
 
-    Mono<RdfEntity> find(String entityKey, @Nullable String property, Authentication authentication);
+    Mono<RdfEntity> findByProperty(String identifier, IRI predicate, SessionContext ctx);
 
-    Mono<Boolean> contains(IRI entityIri, Authentication authentication);
+    Mono<RdfEntity> find(String entityKey, @Nullable String property, SessionContext ctx);
 
-    Mono<IRI> resolveAndVerify(String entityKey, Authentication authentication);
+    Mono<Boolean> contains(IRI entityIri, SessionContext ctx);
 
-    EntityStore getStore();
+    Mono<IRI> resolveAndVerify(String entityKey, SessionContext ctx);
 
+    EntityStore getStore(SessionContext ctx);
+
+    Mono<RdfTransaction> importFile(Resource resource, RDFFormat format, SessionContext ctx);
+
+    Mono<Model> getModel(SessionContext ctx);
 }

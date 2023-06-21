@@ -1,7 +1,8 @@
 package org.av360.maverick.graph.tests.util;
 
 import lombok.extern.slf4j.Slf4j;
-import org.av360.maverick.graph.model.security.Authorities;
+import org.apache.commons.lang3.StringUtils;
+import org.av360.maverick.graph.model.context.SessionContext;
 import org.av360.maverick.graph.store.EntityStore;
 import org.av360.maverick.graph.store.TransactionsStore;
 import org.av360.maverick.graph.tests.config.TestSecurityConfig;
@@ -14,7 +15,6 @@ import org.eclipse.rdf4j.rio.RDFFormat;
 import org.eclipse.rdf4j.rio.RDFWriter;
 import org.eclipse.rdf4j.rio.Rio;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.authentication.TestingAuthenticationToken;
 import reactor.core.publisher.Hooks;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
@@ -36,6 +36,8 @@ public abstract class TestsBase {
     }
 
 
+    private static String ECHO_LINE_PREFIX = "-----------";
+
 
 
     protected IRI createIRIFrom(String url) {
@@ -54,17 +56,39 @@ public abstract class TestsBase {
 
     int steps = 0;
     protected void printStart(String label) {
-        System.out.println("\n----------- Starting: "+label+" --------------------------------------------------------------------------------------\n");
+        echo("Starting: " + label);
         steps = 0;
     }
 
+    private void echo(String message) {
+        String formatted = "\n%s %s\n".formatted(StringUtils.leftPad("|", 10, "-"), StringUtils.rightPad(message+" |", 100, "-"));
+        System.out.println(formatted);
+    }
     public void printStep() {
-        System.out.println("\n----------- Step: "+ ++steps +" --------------------------------------------------------------------------------------");
+        echo("Step: "+ ++steps);
+    }
+
+    public void printStep(String detail) {
+        echo("Step: "+ ++steps+" ("+detail+")");
+    }
+
+    public void printSummary(String detail) {
+        echo(detail);
+    }
+
+    public void printCleanUp() {
+        echo("Cleaning up");
+    }
+
+    public void printResult(String message, String dump) {
+        this.echo(message);
+        System.out.println(dump);
     }
 
     public void printModel(Model md, RDFFormat rdfFormat) {
        String m = this.dumpModel(md, rdfFormat);
-       log.trace("Current model: \n {}", m);
+       this.printSummary("Content of current model");
+       System.out.println(m);
     }
 
     public String dumpModel(Model md, RDFFormat rdfFormat) {
@@ -77,9 +101,14 @@ public abstract class TestsBase {
     }
 
     protected void resetRepository() {
-        TestingAuthenticationToken token = TestSecurityConfig.createAuthenticationToken();
-        Mono<Void> r1 = this.entityStore.reset(token, Authorities.SYSTEM)
-                .then(this.transactionsStore.reset(token, Authorities.SYSTEM));
+        SessionContext ctx = TestSecurityConfig.createTestContext();
+        this.resetRepository(ctx);
+    }
+
+
+    protected void resetRepository(SessionContext ctx) {
+        Mono<Void> r1 = this.entityStore.reset(ctx.getEnvironment())
+                .then(this.transactionsStore.reset(ctx.getEnvironment()));
 
         StepVerifier.create(r1).verifyComplete();
     }

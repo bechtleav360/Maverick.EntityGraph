@@ -21,11 +21,17 @@ application:
       admin:
         enabled: true
       jobs:
-        enabled: false
+        enabled: true
         scheduled:
-          detectDuplicates: true
-          replaceIdentifiers: true
-          typeCoercion: true
+          detectDuplicates:
+            enabled: true
+          replaceIdentifiers:
+            enabled: true
+          typeCoercion:
+            enabled: true
+          exportApplication:
+            enabled: true
+            defaultLocalPath: "D:/Graphen/entities/exports"
       navigation:
         enabled: true
     transformers:

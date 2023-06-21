@@ -40,8 +40,8 @@ public class Transactions extends AbstractController {
         Assert.isTrue(id.length() == LocalIdentifier.LENGTH, "Incorrect length for identifier.");
 
         // FIXME: marker to use transactions repository
-        return super.getAuthentication()
-                .flatMap(authentication -> transactionsService.find(id, authentication))
+        return super.acquireContext()
+                .flatMap(ctx -> transactionsService.find(id, ctx))
                 .flatMapIterable(TripleModel::asStatements)
                 .doOnSubscribe(s -> {
                     if (log.isTraceEnabled()) log.trace("Reading transaction with id: {}", id);
@@ -54,8 +54,8 @@ public class Transactions extends AbstractController {
                                   @RequestParam(value = "offset", defaultValue = "0") Integer offset) {
 
         // FIXME: marker to use transactions repository
-        return super.getAuthentication()
-                .flatMapMany(authentication -> transactionsService.list(limit, offset, authentication))
+        return super.acquireContext()
+                .flatMapMany(ctx -> transactionsService.list(limit, offset, ctx))
                 .flatMapIterable(TripleModel::asStatements)
                 .doOnSubscribe(s -> {
                     if (log.isTraceEnabled()) log.trace("Listing last {} transactions with offset {}", limit, offset);

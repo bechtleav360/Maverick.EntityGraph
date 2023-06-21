@@ -25,7 +25,7 @@ import static org.av360.maverick.graph.feature.applications.schedulers.ScopedSch
  */
 @Slf4j(topic = "graph.jobs.identifiers")
 @Component
-@ConditionalOnProperty(name = "application.features.modules.jobs.scheduled.replaceIdentifiers.enabled", havingValue = "true")
+@ConditionalOnProperty({"application.features.modules.jobs.scheduled.replaceIdentifiers.enabled","application.features.modules.applications.enabled"})
 public class ScopedScheduledReplaceLinkedIdentifiers extends ScopedJobScheduler {
     private final Map<String, ScheduledFuture<?>> scheduledTasks = new ConcurrentHashMap<>();
 

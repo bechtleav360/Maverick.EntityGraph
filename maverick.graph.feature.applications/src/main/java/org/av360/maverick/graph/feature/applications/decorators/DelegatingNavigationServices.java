@@ -1,10 +1,10 @@
 package org.av360.maverick.graph.feature.applications.decorators;
 
-import org.av360.maverick.graph.feature.applications.domain.ApplicationsService;
-import org.av360.maverick.graph.feature.applications.domain.model.Application;
-import org.av360.maverick.graph.feature.applications.domain.vocab.ApplicationTerms;
+import org.av360.maverick.graph.feature.applications.services.ApplicationsService;
+import org.av360.maverick.graph.feature.applications.services.model.Application;
+import org.av360.maverick.graph.feature.applications.services.vocab.ApplicationTerms;
+import org.av360.maverick.graph.model.context.SessionContext;
 import org.av360.maverick.graph.model.rdf.AnnotatedStatement;
-import org.av360.maverick.graph.model.security.GuestToken;
 import org.av360.maverick.graph.model.vocabulary.Local;
 import org.av360.maverick.graph.services.NavigationServices;
 import org.eclipse.rdf4j.model.IRI;
@@ -15,9 +15,6 @@ import org.eclipse.rdf4j.model.util.ModelBuilder;
 import org.eclipse.rdf4j.model.vocabulary.HYDRA;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.ReactiveSecurityContextHolder;
-import org.springframework.security.core.context.SecurityContext;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -37,13 +34,10 @@ public class DelegatingNavigationServices implements NavigationServices {
     }
 
     @Override
-    public Flux<AnnotatedStatement> start(Authentication authentication) {
+    public Flux<AnnotatedStatement> start(SessionContext ctx) {
 
-
-        return delegate.start(authentication).mergeWith(
-                ReactiveSecurityContextHolder.getContext().map(SecurityContext::getAuthentication)
-                        .switchIfEmpty(Mono.just(new GuestToken()))
-                        .flatMapMany(applicationsService::listApplications)
+        return delegate.start(ctx).mergeWith(
+                applicationsService.listApplications(ctx)
                         .collectList()
                         .map(list -> {
                             list.add(Application.DEFAULT);
@@ -63,7 +57,7 @@ public class DelegatingNavigationServices implements NavigationServices {
 
                             applications.forEach(application -> {
                                 IRI app = vf.createIRI(Local.Applications.NAMESPACE, application.key());
-                                builder.setNamespace(application.label(), ResolvableUrlPrefix+"/api/s/"+application.label()+"/");
+                                builder.setNamespace(application.label(), ResolvableUrlPrefix + "/api/s/" + application.label() + "/");
                                 // FIXME: we only add the new namespace to late statements, later we just use the namespaces of the first statement
 
                                 builder.subject(app)
@@ -76,19 +70,17 @@ public class DelegatingNavigationServices implements NavigationServices {
                             Set<Namespace> namespaces = builder.build().getNamespaces();
                             builder.build().stream().map(statement -> AnnotatedStatement.wrap(statement, namespaces)).forEach(sink::next);
                             sink.complete();
-
-
                         })));
     }
 
     @Override
-    public Flux<AnnotatedStatement> list(Map<String, String> requestParams, Authentication authentication) {
-        return delegate.list(requestParams, authentication);
+    public Flux<AnnotatedStatement> list(Map<String, String> requestParams, SessionContext ctx) {
+        return delegate.list(requestParams, ctx);
     }
 
     @Override
-    public Flux<AnnotatedStatement> browse(Map<String, String> params, Authentication authentication) {
-        return delegate.browse(params, authentication);
+    public Flux<AnnotatedStatement> browse(Map<String, String> params, SessionContext ctx) {
+        return delegate.browse(params, ctx);
     }
 
     @Override

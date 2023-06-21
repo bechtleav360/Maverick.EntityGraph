@@ -39,7 +39,7 @@ public class NavigationRestController extends AbstractController {
     @GetMapping(produces = MediaType.TEXT_HTML_VALUE)
     @ResponseStatus(HttpStatus.OK)
     public Flux<AnnotatedStatement> start() {
-        return super.getAuthentication().flatMapMany(this.navigationServices::start);
+        return super.acquireContext().flatMapMany(this.navigationServices::start);
     }
 
     @GetMapping(value = "/node", produces = MediaType.TEXT_HTML_VALUE)
@@ -96,7 +96,7 @@ public class NavigationRestController extends AbstractController {
         log.info("Request to navigate to params {}", params);
 
 
-        return super.getAuthentication().flatMapMany(authentication -> this.navigationServices.browse(new HashMap<>(params.toSingleValueMap()), authentication));
+        return super.acquireContext().flatMapMany(context -> this.navigationServices.browse(new HashMap<>(params.toSingleValueMap()), context));
     }
 
 

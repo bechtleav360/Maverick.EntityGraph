@@ -178,7 +178,9 @@ public class CreateValuesTest extends ApiTestsBase {
                 .expectStatus().isOk();
 
         super.printStep();
+
         RdfConsumer resultConsumer = super.loadEntity((IRI) video.getSubject());
+        super.printModel(resultConsumer.asModel(), RDFFormat.TURTLE);
         Assert.equals(3, resultConsumer.countValues(video.getSubject(), SDO.TITLE));
     }
 
@@ -271,7 +273,50 @@ public class CreateValuesTest extends ApiTestsBase {
             }
         });
         Assertions.assertTrue(found.get());
+    }
 
 
+    @Test
+    public void testSetResourceLinkValue() {
+        super.printStart("set link to resource");
+
+        RdfConsumer rdfConsumer = super.upload("requests/create-valid.ttl");
+        Statement video = rdfConsumer.findStatement(null, RDF.TYPE, SDO.VIDEO_OBJECT);
+
+        String link = "<http://example.com#concept>";
+
+        super.printStep();
+        webClient.post()
+                .uri(uriBuilder -> uriBuilder.path("/api/entities/{id}/values/sdo.hasDefinedTerm")
+                        .build(
+                                vf.createIRI(video.getSubject().stringValue()).getLocalName()
+                        )
+
+                )
+                .contentType(MediaType.parseMediaType("text/plain"))
+                .body(BodyInserters.fromValue(link))
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .consumeWith(rdfConsumer);
+
+        Assertions.assertTrue(rdfConsumer.hasStatement(video.getSubject(), video.getPredicate(), video.getObject()));
+
+        super.printStep();
+        rdfConsumer = new RdfConsumer(RDFFormat.TURTLE);
+        webClient.get()
+                .uri(uriBuilder -> uriBuilder.path("/api/entities/{id}")
+                        .build(
+                                vf.createIRI(video.getSubject().stringValue()).getLocalName()
+                        )
+
+                )
+                .accept(RdfMimeTypes.TURTLE)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .consumeWith(rdfConsumer);
+
+        Assertions.assertTrue(rdfConsumer.hasStatement(video.getSubject(), SDO.HAS_DEFINED_TERM, vf.createIRI("http://example.com#concept")));
     }
 }

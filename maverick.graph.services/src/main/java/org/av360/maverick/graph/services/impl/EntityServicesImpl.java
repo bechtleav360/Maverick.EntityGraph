@@ -1,26 +1,34 @@
 package org.av360.maverick.graph.services.impl;
 
 import lombok.extern.slf4j.Slf4j;
+import org.av360.maverick.graph.model.context.SessionContext;
 import org.av360.maverick.graph.model.enums.Activity;
+import org.av360.maverick.graph.model.enums.RepositoryType;
 import org.av360.maverick.graph.model.errors.InconsistentModelException;
 import org.av360.maverick.graph.model.errors.requests.EntityNotFound;
 import org.av360.maverick.graph.model.events.EntityCreatedEvent;
 import org.av360.maverick.graph.model.events.EntityDeletedEvent;
 import org.av360.maverick.graph.model.rdf.LocalIRI;
 import org.av360.maverick.graph.model.rdf.Triples;
+import org.av360.maverick.graph.model.security.Authorities;
+import org.av360.maverick.graph.model.util.ValidateReactive;
 import org.av360.maverick.graph.model.vocabulary.SDO;
 import org.av360.maverick.graph.services.EntityServices;
 import org.av360.maverick.graph.services.IdentifierServices;
 import org.av360.maverick.graph.services.QueryServices;
 import org.av360.maverick.graph.services.SchemaServices;
+import org.av360.maverick.graph.services.config.RequiresPrivilege;
 import org.av360.maverick.graph.services.transformers.DelegatingTransformer;
 import org.av360.maverick.graph.services.validators.DelegatingValidator;
 import org.av360.maverick.graph.store.EntityStore;
 import org.av360.maverick.graph.store.rdf.fragments.RdfEntity;
 import org.av360.maverick.graph.store.rdf.fragments.RdfTransaction;
 import org.av360.maverick.graph.store.rdf.helpers.BindingsAccessor;
+import org.av360.maverick.graph.store.rdf.helpers.RdfUtils;
+import org.av360.maverick.graph.store.rdf.helpers.TriplesCollector;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
+import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.util.ModelBuilder;
@@ -28,18 +36,24 @@ import org.eclipse.rdf4j.model.vocabulary.DCTERMS;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.model.vocabulary.RDFS;
 import org.eclipse.rdf4j.model.vocabulary.SKOS;
+import org.eclipse.rdf4j.rio.RDFFormat;
+import org.eclipse.rdf4j.rio.RDFParser;
+import org.eclipse.rdf4j.rio.RDFParserRegistry;
 import org.eclipse.rdf4j.sparqlbuilder.core.SparqlBuilder;
 import org.eclipse.rdf4j.sparqlbuilder.core.Variable;
 import org.eclipse.rdf4j.sparqlbuilder.core.query.Queries;
 import org.eclipse.rdf4j.sparqlbuilder.core.query.SelectQuery;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.security.core.Authentication;
+import org.springframework.core.io.buffer.DataBuffer;
+import org.springframework.core.io.buffer.DataBufferUtils;
+import org.springframework.core.io.buffer.DefaultDataBufferFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -52,11 +66,8 @@ public class EntityServicesImpl implements EntityServices {
 
     private final SchemaServices schemaServices;
     private final QueryServices queryServices;
-
     private final IdentifierServices identifierServices;
-
     private final ApplicationEventPublisher eventPublisher;
-
     private DelegatingValidator validators;
     private DelegatingTransformer transformers;
 
@@ -68,17 +79,20 @@ public class EntityServicesImpl implements EntityServices {
         this.queryServices = queryServices;
         this.identifierServices = identifierServices;
         this.eventPublisher = eventPublisher;
+
     }
 
 
     @Override
-    public Mono<RdfEntity> get(IRI entityIri, Authentication authentication, int includeNeighboursLevel) {
-        return entityStore.getEntity(entityIri, authentication, includeNeighboursLevel)
+    @RequiresPrivilege(Authorities.READER_VALUE)
+    public Mono<RdfEntity> get(IRI entityIri, int includeNeighboursLevel, SessionContext ctx) {
+        return entityStore.getFragment(entityIri, includeNeighboursLevel, ctx.getEnvironment())
                 .switchIfEmpty(Mono.error(new EntityNotFound(entityIri)));
     }
 
     @Override
-    public Flux<RdfEntity> list(Authentication authentication, int limit, int offset) {
+    @RequiresPrivilege(Authorities.READER_VALUE)
+    public Flux<RdfEntity> list(int limit, int offset, SessionContext ctx) {
         String query = """
                         
                     PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
@@ -105,7 +119,7 @@ public class EntityServicesImpl implements EntityServices {
                     GROUP BY ?id  ?sct ?dct ?rdt ?skt
                 """.replace("$limit", limit + "").replace("$offset", offset + "");
 
-        return this.queryServices.queryValues(query, authentication)
+        return this.queryServices.queryValuesTrusted(query, RepositoryType.ENTITIES, ctx)
                 .map(BindingsAccessor::new)
                 .flatMap(bnd -> {
                     try {
@@ -138,81 +152,18 @@ public class EntityServicesImpl implements EntityServices {
                         return Mono.error(e);
                     }
                 });
-
-        /*
-        Variable idVariable = SparqlBuilder.var("id");
-        Variable typeVariable = SparqlBuilder.var("type");
-        Variable l1 = SparqlBuilder.var("l1");
-        Variable l2 = SparqlBuilder.var("l2");
-        Variable l3 = SparqlBuilder.var("l3");
-        Variable l4 = SparqlBuilder.var("l4");
-
-        SparqlBuilder.select()
-
-
-
-
-        // TriplePattern resPattern = idVariable.isA(typeVariable).andHas(SDO.TITLE, l1).andHas(RDFS.LABEL, l2).andHas(DCTERMS.TITLE, l3).andHas(SKOS.PREF_LABEL, l4);
-        GraphPattern wherePattern = idVariable.isA(Local.Entities.INDIVIDUAL)
-                .andIsA(typeVariable)
-                .and(idVariable.has(RDFS.LABEL, l1).optional())
-                .and(idVariable.has(DCTERMS.TITLE, l2).optional())
-                .and(idVariable.has(SDO.TITLE, l3).optional())
-                .and(idVariable.has(SKOS.PREF_LABEL, l4).optional());
-        SelectQuery q = Queries.SELECT(idVariable, typeVariable, l1, l2, l3, l4).where(wherePattern).limit(limit).offset(offset);
-        this.queryServices.queryValues(q, authentication)
-                .map(BindingsAccessor::new)
-                .map(bnd -> {
-                    ModelBuilder builder = new ModelBuilder();
-                    builder.subject(bnd.asIRI(idVariable));
-                    builder.
-                })
-        */
-        /*
-
-         ConstructQuery q = Queries.CONSTRUCT(resPattern).where(wherePattern).limit(limit).offset(offset);
-
-
-        final Resource[] current = {null};
-        return this.queryServices.queryGraph(q, authentication)
-                .bufferUntil(annotatedStatement -> {
-                    if (annotatedStatement.getSubject() == current[0]) return true;
-                    else {
-                        current[0] = annotatedStatement.getSubject();
-                        return false;
-                    }
-                })
-                .map(statements -> {
-                    RdfEntity rdfEntity = new RdfEntity(current[0]);
-                    rdfEntity.getModel().addAll(statements);
-                    return rdfEntity;
-                });
-                */
-        /*
-        return this.queryServices.queryValues(query.getQueryString(), authentication)
-                .map(bindings -> {
-                    Value value = bindings.getValue(idVariable.getVarName());
-                    if(! value.isIRI()) return;
-
-                    RdfEntity rdfEntity = new RdfEntity((IRI) value);
-                    rdfEntity.getBuilder().subject()
-
-
-                })
-                .filter(Value::isIRI)
-                .map(value -> (IRI) value)
-                .flatMap(id -> this.entityStore.getEntity(id, authentication, 0));
-         */
     }
 
     @Override
-    public Mono<RdfEntity> findByKey(String entityKey, Authentication authentication) {
+    @RequiresPrivilege(Authorities.READER_VALUE)
+    public Mono<RdfEntity> findByKey(String entityKey, SessionContext ctx) {
         return identifierServices.asIRI(entityKey)
-                .flatMap(entityIdentifier -> this.get(entityIdentifier, authentication, 1));
+                .flatMap(entityIdentifier -> this.get(entityIdentifier, 1, ctx));
     }
 
     @Override
-    public Mono<RdfEntity> findByProperty(String identifier, IRI predicate, Authentication authentication) {
+    @RequiresPrivilege(Authorities.READER_VALUE)
+    public Mono<RdfEntity> findByProperty(String identifier, IRI predicate, SessionContext ctx) {
         Literal identifierLit = entityStore.getValueFactory().createLiteral(identifier);
 
         Variable idVariable = SparqlBuilder.var("id");
@@ -220,37 +171,40 @@ public class EntityServicesImpl implements EntityServices {
         SelectQuery query = Queries.SELECT(idVariable).where(
                 idVariable.has(predicate, identifierLit));
 
-        return this.entityStore.query(query.getQueryString(), authentication)
+        return this.entityStore.query(query.getQueryString(), ctx.getEnvironment())
                 .next()
                 .map(bindings -> bindings.getValue(idVariable.getVarName()))
-                .flatMap(id -> this.entityStore.getEntity((Resource) id, authentication, 1))
+                .flatMap(id -> this.entityStore.getFragment((Resource) id, 1, ctx.getEnvironment()))
                 .switchIfEmpty(Mono.error(new EntityNotFound(identifier)));
     }
 
     @Override
-    public Mono<RdfEntity> find(String identifier, String property, Authentication authentication) {
+    @RequiresPrivilege(Authorities.READER_VALUE)
+    public Mono<RdfEntity> find(String identifier, String property, SessionContext ctx) {
         if (StringUtils.hasLength(property)) {
             return schemaServices.resolvePrefixedName(property)
-                    .flatMap(propertyIri -> this.findByProperty(identifier, propertyIri, authentication));
+                    .flatMap(propertyIri -> this.findByProperty(identifier, propertyIri, ctx));
         } else {
-            return this.findByKey(identifier, authentication);
+            return this.findByKey(identifier, ctx);
         }
     }
 
     @Override
-    public Mono<Boolean> contains(IRI entityIri, Authentication authentication) {
-        return entityStore.exists(entityIri, authentication);
+    @RequiresPrivilege(Authorities.READER_VALUE)
+    public Mono<Boolean> contains(IRI entityIri, SessionContext ctx) {
+        return entityStore.exists(entityIri, ctx.getEnvironment());
     }
 
 
-    public Mono<IRI> resolveAndVerify(String key, Authentication authentication) {
+    @RequiresPrivilege(Authorities.READER_VALUE)
+    public Mono<IRI> resolveAndVerify(String key, SessionContext ctx) {
         return this.identifierServices.asIRI(key)
-                .filterWhen(iri -> this.contains(iri, authentication))
+                .filterWhen(iri -> this.contains(iri, ctx))
                 .switchIfEmpty(Mono.error(new EntityNotFound(key)))
                 .doOnSuccess(res -> log.trace("Resolved entity key {} to qualified identifier {}", key, res.stringValue()));
         /*
                 .flatMap(targetIri ->
-                        this.contains(targetIri, authentication)
+                        this.contains(targetIri, ctx)
                                 .flatMap(exists -> {
                                     if (!exists) return Mono.error(new EntityNotFound(key));
                                     else return Mono.just(targetIri);
@@ -260,16 +214,50 @@ public class EntityServicesImpl implements EntityServices {
     }
 
     @Override
-    public EntityStore getStore() {
+    @RequiresPrivilege(Authorities.MAINTAINER_VALUE)
+    public EntityStore getStore(SessionContext ctx) {
         return this.entityStore;
+    }
+
+    @Override
+    @RequiresPrivilege(Authorities.MAINTAINER_VALUE)
+    public Mono<RdfTransaction> importFile(org.springframework.core.io.Resource resource, RDFFormat format, SessionContext context) {
+        Flux<DataBuffer> publisher = ValidateReactive.notNull(resource)
+                .then(ValidateReactive.isTrue(resource.exists(), "Resource does not exist: "+resource.toString()))
+                .thenMany(DataBufferUtils.read(resource, new DefaultDataBufferFactory(), 1024));
+
+
+        return DataBufferUtils.join(publisher)
+                .flatMap(dataBuffer -> {
+                    RDFParser parser = RDFParserRegistry.getInstance().get(format).orElseThrow().getParser();
+                    TriplesCollector handler = RdfUtils.getTriplesCollector();
+
+                    try (InputStream is = dataBuffer.asInputStream(true)) {
+                        parser.setRDFHandler(handler);
+                        parser.parse(is);
+                        return Mono.just(handler.getTriples());
+                    } catch (Exception e) {
+                        return Mono.error(e);
+                    }
+                })
+                .flatMap(triples -> this.create(triples, Map.of(), context))
+                .doOnSubscribe(s -> log.info("Importing file '{}'", resource.getFilename()))
+                .doOnError(s -> log.error("Failed to import file '{}'", resource.getFilename()));
+    }
+
+    @Override
+    @RequiresPrivilege(Authorities.MAINTAINER_VALUE     )
+    public Mono<Model> getModel(SessionContext ctx) {
+        return this.entityStore.getModel(ctx.getEnvironment());
     }
 
 
     @Override
-    public Mono<RdfTransaction> remove(IRI entityIri, Authentication authentication) {
-        return this.entityStore.listStatements(entityIri, null, null, authentication)
+    @RequiresPrivilege(Authorities.MAINTAINER_VALUE)
+    public Mono<RdfTransaction> remove(IRI entityIri, SessionContext ctx) {
+        return this.entityStore.listStatements(entityIri, null, null, ctx.getEnvironment())
                 .flatMap(statements -> this.entityStore.removeStatements(statements, new RdfTransaction()))
-                .flatMap(trx -> this.entityStore.commit(trx, authentication))
+                .flatMap(trx -> this.entityStore.commit(trx, ctx.getEnvironment()))
                 .doOnSuccess(transaction -> {
                     eventPublisher.publishEvent(new EntityDeletedEvent(transaction));
                 });
@@ -277,19 +265,25 @@ public class EntityServicesImpl implements EntityServices {
 
 
     @Override
-    public Mono<RdfTransaction> remove(String entityKey, Authentication authentication) {
-        return this.identifierServices.asIRI(entityKey).flatMap(iri -> this.remove(iri, authentication));
+    @RequiresPrivilege(Authorities.MAINTAINER_VALUE)
+    public Mono<RdfTransaction> remove(String entityKey, SessionContext ctx) {
+        return this.identifierServices.asIRI(entityKey).flatMap(iri -> this.remove(iri, ctx));
     }
 
     @Override
-    public Mono<RdfTransaction> create(Triples triples, Map<String, String> parameters, Authentication authentication) {
-        return this.prepareEntity(triples, parameters, new RdfTransaction(), authentication)
-                .flatMap(transaction -> entityStore.commit(transaction, authentication))
+    @RequiresPrivilege(Authorities.CONTRIBUTOR_VALUE)
+    public Mono<RdfTransaction> create(Triples triples, Map<String, String> parameters,  SessionContext ctx) {
+
+
+        return this.prepareEntity(triples, parameters, new RdfTransaction())
+                .flatMap(transaction -> entityStore.commit(transaction, ctx.getEnvironment()))
                 .doOnSuccess(transaction -> {
                     eventPublisher.publishEvent(new EntityCreatedEvent(transaction));
                     // TODO: throw event for every entity in payload
                 });
 
+
+        // return this.authorizationService.check(ctx, Authorities.CONTRIBUTOR).then(action);
     }
 
 
@@ -305,7 +299,8 @@ public class EntityServicesImpl implements EntityServices {
      */
     @Override
     @Deprecated
-    public Mono<RdfTransaction> linkEntityTo(String id, IRI predicate, Triples linkedEntities, Authentication authentication) {
+    @RequiresPrivilege(Authorities.CONTRIBUTOR_VALUE)
+    public Mono<RdfTransaction> linkEntityTo(String id, IRI predicate, Triples linkedEntities, SessionContext ctx) {
 
 
         /*
@@ -315,12 +310,12 @@ public class EntityServicesImpl implements EntityServices {
          */
         return this.identifierServices.asIRI(id)
                 .flatMap(iri -> {
-                    return this.entityStore.getEntity(iri, authentication, 0)
+                    return this.entityStore.getFragment(iri, 0, ctx.getEnvironment())
                             .switchIfEmpty(Mono.error(new EntityNotFound(id)))
 
                             /* store the new entities */
                             .map(entity -> new RdfTransaction().affected(entity))
-                            .flatMap(transaction -> this.prepareEntity(linkedEntities, new HashMap<>(), transaction, authentication))
+                            .flatMap(transaction -> this.prepareEntity(linkedEntities, new HashMap<>(), transaction))
 
                             /* store the links */
                             .map(transaction -> {
@@ -332,7 +327,7 @@ public class EntityServicesImpl implements EntityServices {
                                 return transaction;
 
                             })
-                            .flatMap(trx -> this.entityStore.commit(trx, authentication));
+                            .flatMap(trx -> this.entityStore.commit(trx, ctx.getEnvironment()));
 
 
                     // FIXME: we should separate by entities (and have them as individual transactions)
@@ -342,7 +337,7 @@ public class EntityServicesImpl implements EntityServices {
     /**
      * Make sure you store the transaction once you are finished
      */
-    protected Mono<RdfTransaction> prepareEntity(Triples triples, Map<String, String> parameters, RdfTransaction transaction, Authentication authentication) {
+    protected Mono<RdfTransaction> prepareEntity(Triples triples, Map<String, String> parameters, RdfTransaction transaction) {
         if (log.isTraceEnabled())
             log.trace("Validating and transforming {} statements for new entity. Parameters: {}", triples.streamStatements().count(), parameters.size() > 0 ? parameters : "none");
 
@@ -363,7 +358,7 @@ public class EntityServicesImpl implements EntityServices {
 
                 })
 
-                .flatMap(model -> entityStore.insert(model, transaction));
+                .flatMap(model -> entityStore.insertModel(model, transaction));
 
     }
 
@@ -382,20 +377,22 @@ public class EntityServicesImpl implements EntityServices {
 
 
     /* for testing only */
-    public Mono<Boolean> valueIsSet(IRI identifier, IRI predicate, Authentication authentication) {
-        return this.entityStore.listStatements(identifier, predicate, null, authentication)
+    @RequiresPrivilege(Authorities.SYSTEM_VALUE)
+    public Mono<Boolean> valueIsSet(IRI identifier, IRI predicate, SessionContext ctx) {
+        return this.entityStore.listStatements(identifier, predicate, null, ctx.getEnvironment())
                 .hasElement();
     }
 
     /* for testing only */
-    public Mono<Boolean> valueIsSet(String id, String predicatePrefix, String predicateKey, Authentication authentication) {
+    @RequiresPrivilege(Authorities.SYSTEM_VALUE)
+    public Mono<Boolean> valueIsSet(String id, String predicatePrefix, String predicateKey, SessionContext ctx) {
         LocalIRI entityIdentifier = LocalIRI.withDefaultNamespace(id);
 
         return this.identifierServices.asIRI(id)
                 .flatMap(iri ->
                         schemaServices.getNamespaceFor(predicatePrefix)
                                 .map(ns -> LocalIRI.withDefinedNamespace(ns, predicateKey))
-                                .flatMap(predicate -> this.valueIsSet(entityIdentifier, predicate, authentication))
+                                .flatMap(predicate -> this.valueIsSet(entityIdentifier, predicate, ctx))
                 );
 
     }

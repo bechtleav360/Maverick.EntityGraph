@@ -11,7 +11,7 @@ import java.util.concurrent.ScheduledFuture;
 
 @Component
 @Slf4j(topic = "graph.jobs.exports")
-@ConditionalOnProperty(name = "application.features.modules.jobs.scheduled.exportApplication.enabled", havingValue = "true")
+@ConditionalOnProperty({"application.features.modules.jobs.scheduled.exportApplication.enabled","application.features.modules.applications.enabled"})
 public class ScopedScheduledExportApplication extends ScopedJobScheduler {
     public static final String CONFIG_KEY_EXPORT_FREQUENCY = "export_frequency";
     public static final String CONFIG_KEY_EXPORT_LOCAL_PATH = "export_local_path";

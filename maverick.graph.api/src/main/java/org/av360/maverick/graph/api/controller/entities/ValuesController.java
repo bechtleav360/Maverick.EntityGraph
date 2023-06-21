@@ -96,8 +96,8 @@ public class ValuesController extends AbstractController implements ValuesAPI {
         Assert.isTrue(!value.matches("(?s).*[\\n\\r].*"), "Newlines in request body are not supported");
 
 
-        return super.getAuthentication()
-                .flatMap(authentication -> values.insertValue(id, prefixedKey, value, lang, authentication))
+        return super.acquireContext()
+                .flatMap(ctx -> values.insertValue(id, prefixedKey, value, lang, ctx))
                 .flatMapIterable(TripleModel::asStatements)
                 .doOnSubscribe(s -> {
                     if (log.isDebugEnabled())
@@ -123,8 +123,8 @@ public class ValuesController extends AbstractController implements ValuesAPI {
     public Flux<AnnotatedStatement> delete(@PathVariable String id, @PathVariable String prefixedKey, @RequestParam(required = false) String lang) {
 
 
-        return super.getAuthentication()
-                .flatMap(authentication -> values.removeLiteral(id, prefixedKey, lang, authentication))
+        return super.acquireContext()
+                .flatMap(ctx -> values.removeLiteral(id, prefixedKey, lang, ctx))
                 .flatMapIterable(TripleModel::asStatements)
                 .doOnSubscribe(s -> {
                     if (log.isDebugEnabled()) log.debug("Deleted property '{}' of entity '{}'", prefixedKey, id);

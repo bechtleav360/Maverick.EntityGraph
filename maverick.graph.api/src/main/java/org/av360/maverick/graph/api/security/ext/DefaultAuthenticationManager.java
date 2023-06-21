@@ -3,7 +3,7 @@ package org.av360.maverick.graph.api.security.ext;
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.text.RandomStringGenerator;
-import org.av360.maverick.graph.model.security.AdminToken;
+import org.av360.maverick.graph.model.security.AdminAuthentication;
 import org.av360.maverick.graph.model.security.ApiKeyAuthenticationToken;
 import org.av360.maverick.graph.model.security.Authorities;
 import org.av360.maverick.graph.model.security.GuestToken;
@@ -87,7 +87,7 @@ public class DefaultAuthenticationManager implements ReactiveAuthenticationManag
         if (StringUtils.hasLength(this.key) && authentication.getApiKey().isPresent() && authentication.getApiKey().get().equalsIgnoreCase(this.key)) {
             log.debug("Valid admin key provided, granting system access in default authentication manager.");
 
-            return Mono.just(new AdminToken(authentication.getDetails()));
+            return Mono.just(new AdminAuthentication(authentication.getDetails()));
         } else {
             log.trace("Key in header is not the admin key, granting read-only access in default authentication manager.");
             authentication.grantAuthority(Authorities.READER);

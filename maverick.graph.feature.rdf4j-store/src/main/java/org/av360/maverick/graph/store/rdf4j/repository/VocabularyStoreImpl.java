@@ -1,10 +1,10 @@
 package org.av360.maverick.graph.store.rdf4j.repository;
 
 import lombok.extern.slf4j.Slf4j;
+import org.av360.maverick.graph.model.enums.RepositoryType;
 import org.av360.maverick.graph.model.vocabulary.Local;
 import org.av360.maverick.graph.model.vocabulary.SDO;
 import org.av360.maverick.graph.model.vocabulary.Transactions;
-import org.av360.maverick.graph.store.RepositoryType;
 import org.av360.maverick.graph.store.SchemaStore;
 import org.av360.maverick.graph.store.rdf4j.repository.util.AbstractStore;
 import org.eclipse.rdf4j.model.Namespace;
@@ -62,4 +62,6 @@ public class VocabularyStoreImpl extends AbstractStore implements SchemaStore {
     public String getDirectory() {
         return this.path;
     }
+
+
 }

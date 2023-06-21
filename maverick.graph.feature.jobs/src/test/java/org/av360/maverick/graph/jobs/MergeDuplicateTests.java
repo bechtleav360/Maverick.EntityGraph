@@ -2,7 +2,9 @@ package org.av360.maverick.graph.jobs;
 
 import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.feature.jobs.MergeDuplicatesJob;
+import org.av360.maverick.graph.model.context.SessionContext;
 import org.av360.maverick.graph.model.vocabulary.SDO;
+import org.av360.maverick.graph.services.EntityServices;
 import org.av360.maverick.graph.store.rdf.fragments.RdfTransaction;
 import org.av360.maverick.graph.tests.config.TestSecurityConfig;
 import org.av360.maverick.graph.tests.util.TestsBase;
@@ -10,7 +12,6 @@ import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
-import org.eclipse.rdf4j.model.vocabulary.RDFS;
 import org.eclipse.rdf4j.rio.RDFFormat;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
@@ -40,7 +41,7 @@ public class MergeDuplicateTests extends TestsBase  {
     private MergeDuplicatesJob scheduledDetectDuplicates;
 
     @Autowired
-    EntityServicesClient entityServicesClient;
+    EntityServices entityServicesClient;
 
     @AfterEach
     public void resetRepository() {
@@ -58,11 +59,11 @@ public class MergeDuplicateTests extends TestsBase  {
 
     @Test
     public void createEmbeddedWithSharedItemsDirect() throws IOException {
-
+        SessionContext ctx = TestSecurityConfig.createTestContext();
         ClassPathResource file = new ClassPathResource("requests/create-valid_multipleWithEmbedded.ttl");
 
-        Mono<Model> m = entityServicesClient.importFileMono(file)
-                .flatMap(trx -> entityServicesClient.getModel());
+        Mono<Model> m = entityServicesClient.importFile(file, RDFFormat.TURTLE, ctx)
+                .flatMap(trx -> entityServicesClient.getModel(ctx));
 
         StepVerifier.create(m)
                 .assertNext(model -> {
@@ -88,11 +89,12 @@ public class MergeDuplicateTests extends TestsBase  {
 
     @Test
     public void createEmbeddedEntitiesWithSharedItemsInSeparateRequests() throws InterruptedException, IOException {
+        SessionContext ctx = TestSecurityConfig.createTestContext();
         log.info("---------- Running test: Create embedded with shared items in separate requests ---------- ");
-        Mono<RdfTransaction> tx1 = entityServicesClient.importFileMono(new ClassPathResource("requests/create-valid_multipleWithEmbedded.ttl")).doOnSubscribe(sub -> log.trace("-------- 1"));
-        Mono<RdfTransaction> tx2 = entityServicesClient.importFileMono(new ClassPathResource("requests/create-valid_withEmbedded.ttl")).doOnSubscribe(sub -> log.trace("-------- 2"));
-        Mono<Void> scheduler = this.scheduledDetectDuplicates.checkForDuplicates(RDFS.LABEL, TestSecurityConfig.createAuthenticationToken()).doOnSubscribe(sub -> log.trace("-------- 3"));
-        Mono<Model> getAll = entityServicesClient.getModel();
+        Mono<RdfTransaction> tx1 = entityServicesClient.importFile(new ClassPathResource("requests/create-valid_multipleWithEmbedded.ttl"), RDFFormat.TURTLE, ctx).doOnSubscribe(sub -> log.trace("-------- 1"));
+        Mono<RdfTransaction> tx2 = entityServicesClient.importFile(new ClassPathResource("requests/create-valid_withEmbedded.ttl"), RDFFormat.TURTLE, ctx).doOnSubscribe(sub -> log.trace("-------- 2"));
+        Mono<Void> scheduler = this.scheduledDetectDuplicates.run(ctx).doOnSubscribe(sub -> log.trace("-------- 3"));
+        Mono<Model> getAll = entityServicesClient.getModel(ctx);
 
         StepVerifier.create(
                 tx1.then(tx2).then(scheduler).then(getAll)

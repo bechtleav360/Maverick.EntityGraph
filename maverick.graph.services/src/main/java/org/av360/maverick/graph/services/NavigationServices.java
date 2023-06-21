@@ -1,8 +1,8 @@
 package org.av360.maverick.graph.services;
 
+import org.av360.maverick.graph.model.context.SessionContext;
 import org.av360.maverick.graph.model.rdf.AnnotatedStatement;
 import org.eclipse.rdf4j.model.IRI;
-import org.springframework.security.core.Authentication;
 import reactor.core.publisher.Flux;
 
 import java.util.Map;
@@ -10,11 +10,11 @@ import java.util.Map;
 public interface NavigationServices {
     public static String ResolvableUrlPrefix = "http://??";
 
-    Flux<AnnotatedStatement> start(Authentication authentication);
+    Flux<AnnotatedStatement> start(SessionContext ctx);
 
-    Flux<AnnotatedStatement> list(Map<String, String> requestParams, Authentication authentication);
+    Flux<AnnotatedStatement> list(Map<String, String> requestParams, SessionContext ctx);
 
-    Flux<AnnotatedStatement> browse(Map<String, String> params, Authentication authentication);
+    Flux<AnnotatedStatement> browse(Map<String, String> params, SessionContext ctx);
 
 
     IRI generateResolvableIRI(String path, Map<String, String> params);

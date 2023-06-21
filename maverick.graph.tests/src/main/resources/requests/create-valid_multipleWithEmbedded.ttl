@@ -3,14 +3,14 @@
 @prefix ns2: <http://av360.io/schema/maverick/> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
-
+@prefix ext: <http://www.example.org/vocab#> .
 
 [] a ns1:VideoObject ;
     ns1:identifier "video_a" ;
     ns1:hasDefinedTerm [ a ns1:DefinedTerm ;
             rdfs:label "Term 1" ] .
 
-[] a ns1:VideoObject ;
+ext:y a ns1:VideoObject ;
     ns1:identifier "video_b" ;
     ns1:hasDefinedTerm [ a ns1:DefinedTerm ;
             rdfs:label "Term 1" ] .

@@ -2,7 +2,9 @@ package org.av360.maverick.graph.feature.jobs;
 
 
 import lombok.extern.slf4j.Slf4j;
+import org.av360.maverick.graph.model.context.SessionContext;
 import org.av360.maverick.graph.model.entities.Job;
+import org.av360.maverick.graph.model.enums.RepositoryType;
 import org.av360.maverick.graph.model.errors.InvalidConfiguration;
 import org.av360.maverick.graph.model.vocabulary.Local;
 import org.av360.maverick.graph.model.vocabulary.Transactions;
@@ -17,7 +19,6 @@ import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.util.ModelCollector;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 import reactor.core.publisher.Flux;
@@ -65,23 +66,24 @@ public class AssignInternalTypesJob implements Job {
         return NAME;
     }
 
-    public Mono<Void> run(Authentication authentication) {
+    public Mono<Void>   run(SessionContext ctx) {
         if(Objects.isNull(this.localTypesTransformer)) return Mono.error(new InvalidConfiguration("Type Coercion Transformer is disabled"));
 
-
-
-        return this.findCandidates(authentication)
+        return this.findCandidates(ctx)
                 .doOnNext(res -> log.trace("Convert type of resource with id '{}'", res.stringValue()))
-                .flatMap(res -> this.loadFragment(authentication, res))
+                .flatMap(res -> this.loadFragment(ctx, res))
                 .flatMap(localTypesTransformer::handle)
                 .collect(new MergingModelCollector())
                 .doOnNext(model -> log.trace("Collected {} statements for new types", model.size()))
-                .flatMap(model -> this.entityServices.getStore().insert(model, new RdfTransaction()))
-                .flatMapMany(trx -> this.entityServices.getStore().commit(trx, authentication))
+                .flatMap(model -> this.entityServices.getStore(ctx).insertModel(model, new RdfTransaction()))
+                .flatMapMany(trx -> this.entityServices.getStore(ctx).commit(trx, ctx.getEnvironment()))
                 .doOnNext(transaction -> Assert.isTrue(transaction.hasStatement(null, Transactions.STATUS, Transactions.SUCCESS), "Failed transaction: \n" + transaction))
-                .flatMap(transaction -> this.transactionsStore.store(List.of(transaction), authentication))
+                .flatMap(transaction -> this.transactionsStore.store(List.of(transaction), ctx.getEnvironment()))
                 .doOnError(throwable -> log.error("Exception while assigning internal types: {}", throwable.getMessage()))
-                .doOnSubscribe(sub -> log.trace("Checking for entities with missing internal type definitions."))
+                .doOnSubscribe(sub -> {
+                    log.trace("Checking for entities with missing internal type definitions.");
+                    ctx.updateEnvironment(env -> env.setRepositoryType(RepositoryType.ENTITIES));
+                })
                 .doOnComplete(() -> log.debug("Completed checking for entities with missing internal type definitions."))
                 .then();
 
@@ -89,14 +91,14 @@ public class AssignInternalTypesJob implements Job {
 
 
 
-    private Mono<Model> loadFragment(Authentication authentication, Resource value) {
-        return this.entityServices.getStore().listStatements(value, null, null, authentication)
+    private Mono<Model> loadFragment(SessionContext ctx, Resource value) {
+        return this.entityServices.getStore(ctx).listStatements(value, null, null, ctx.getEnvironment())
                 .map(statements -> statements.stream().collect(new ModelCollector()));
 
 
     }
 
-    private Flux<Resource> findCandidates(Authentication authentication) {
+    private Flux<Resource> findCandidates(SessionContext ctx) {
         /*
                SELECT ?entity WHERE
                     { ?entity a ?type .
@@ -123,7 +125,7 @@ public class AssignInternalTypesJob implements Job {
                 } LIMIT 10000
                 """;
         String query = String.format(tpl, Local.Entities.TYPE_INDIVIDUAL, Local.Entities.TYPE_CLASSIFIER, Local.Entities.TYPE_EMBEDDED);
-        return this.queryServices.queryValues(query, authentication)
+        return this.queryServices.queryValues(query, RepositoryType.ENTITIES, ctx)
                 .map(bindings -> bindings.getValue("entity"))
                 .filter(Value::isResource)
                 .map(value -> (Resource) value);
