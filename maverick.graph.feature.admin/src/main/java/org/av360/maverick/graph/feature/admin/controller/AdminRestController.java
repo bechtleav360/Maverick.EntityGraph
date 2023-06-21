@@ -72,23 +72,27 @@ public class AdminRestController extends AbstractController {
                 .doOnSubscribe(s -> log.debug("Request to import a request of mimetype {}", mimetype));
     }
 
-    //@ApiOperation(value = "Import RDF file into entity repository", tags = {})
     @PostMapping(value = "/import/file", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @ResponseStatus(HttpStatus.ACCEPTED)
     Mono<Void> importFile(
-            @RequestPart @Parameter(name = "file", description = "The file with rdf data.") Mono<FilePart> fileMono,
+            @RequestPart
+            @Parameter(name = "file", description = "The file with rdf data.") Mono<FilePart> fileMono,
             //@ApiParam(example = "text/turtle")
-            @RequestParam @Parameter(
-                    description = "The RDF format of the file",
-                    schema = @Schema(type = "string", allowableValues = {"text/turtle", "application/rdf+xml", "application/ld+json", "application/n-quads", "application/vnd.hdt"})
-            )String mimetype) {
+            @RequestParam(required = false, defaultValue = "entities", value = "entities")
+            @Parameter(name = "repository", description = "The repository type in which the query should search.")
+            RepositoryType repositoryType,
+            @RequestParam
+            @Parameter(description = "The RDF format of the file",schema = @Schema(type = "string", allowableValues = {"text/turtle", "application/rdf+xml", "application/ld+json", "application/n-quads", "application/vnd.hdt"}))
+            String mimetype) {
         Assert.isTrue(StringUtils.hasLength(mimetype), "Mimetype is a required parameter");
 
         Optional<RDFParserFactory> parserFactory = RdfUtils.getParserFactory(MimeType.valueOf(mimetype));
         Assert.isTrue(parserFactory.isPresent(), "Unsupported mimetype for parsing the file. Supported mimetypes are: " + RdfUtils.getSupportedMimeTypes());
 
-        return Mono.zip(super.acquireContext(), fileMono)
-                .flatMap(objects -> adminServices.importEntities(objects.getT2().content(), mimetype, objects.getT1()))
+        return super.acquireContext()
+                .map(context -> context.getEnvironment().withRepositoryType(repositoryType))
+                .flatMap(context -> Mono.zip(Mono.just(context), fileMono))
+                .flatMap(pair -> adminServices.importEntities(pair.getT2().content(), mimetype, pair.getT1()))
                 .doOnError(throwable -> log.error("Error while importing to repository.", throwable))
                 .doOnSubscribe(s -> log.info("Request to import a file of mimetype {}", mimetype));
     }
