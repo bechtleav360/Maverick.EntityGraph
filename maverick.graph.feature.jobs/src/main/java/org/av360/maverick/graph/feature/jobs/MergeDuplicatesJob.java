@@ -217,7 +217,7 @@ public class MergeDuplicatesJob implements Job {
         Variable predicate = SparqlBuilder.var("p");
 
         SelectQuery query = Queries.SELECT(subject, predicate).where(subject.has(predicate, duplicate.id()));
-        return queryServices.queryValues(query, ctx)
+        return queryServices.queryValues(query, RepositoryType.ENTITIES, ctx)
                 .doOnSubscribe(subscription -> log.trace("Retrieving all statements pointing to duplicate with id '{}'", duplicate.id()))
                 .flatMap(binding -> {
                     Value pVal = binding.getValue(predicate.getVarName());
@@ -253,7 +253,7 @@ public class MergeDuplicatesJob implements Job {
                 ).groupBy(sharedValue, type).having(Expressions.gt(Expressions.count(thing), 1)).limit(10);
 
 
-        return queryServices.queryValues(findDuplicates, ctx)
+        return queryServices.queryValues(findDuplicates, RepositoryType.ENTITIES, ctx)
                 .map(binding -> {
                     Value sharedValueVal = binding.getValue(sharedValue.getVarName());
                     Value typeVal = binding.getValue(type.getVarName());

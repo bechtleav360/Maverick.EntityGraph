@@ -214,13 +214,13 @@ public class EntityServicesImpl implements EntityServices {
     }
 
     @Override
-    @RequiresPrivilege(Authorities.SYSTEM_VALUE)
+    @RequiresPrivilege(Authorities.MAINTAINER_VALUE)
     public EntityStore getStore(SessionContext ctx) {
         return this.entityStore;
     }
 
     @Override
-    @RequiresPrivilege(Authorities.SYSTEM_VALUE)
+    @RequiresPrivilege(Authorities.MAINTAINER_VALUE)
     public Mono<RdfTransaction> importFile(org.springframework.core.io.Resource resource, RDFFormat format, SessionContext context) {
         Flux<DataBuffer> publisher = ValidateReactive.notNull(resource)
                 .then(ValidateReactive.isTrue(resource.exists(), "Resource does not exist: "+resource.toString()))
@@ -246,7 +246,7 @@ public class EntityServicesImpl implements EntityServices {
     }
 
     @Override
-    @RequiresPrivilege(Authorities.SYSTEM_VALUE)
+    @RequiresPrivilege(Authorities.MAINTAINER_VALUE     )
     public Mono<Model> getModel(SessionContext ctx) {
         return this.entityStore.getModel(ctx.getEnvironment());
     }

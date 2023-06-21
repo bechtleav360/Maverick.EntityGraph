@@ -40,7 +40,7 @@ public class JobWorker {
         this.activeJobs = new HashMap<>();
     }
 
-    @Scheduled(fixedRate = 10, timeUnit = TimeUnit.SECONDS)
+    @Scheduled(fixedRate = 15, timeUnit = TimeUnit.SECONDS)
     public void runJob() {
         if(requestedJobs.peek().isEmpty()) return;
 
