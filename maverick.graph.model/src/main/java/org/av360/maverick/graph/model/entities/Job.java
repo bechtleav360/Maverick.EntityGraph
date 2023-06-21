@@ -1,6 +1,6 @@
 package org.av360.maverick.graph.model.entities;
 
-import org.springframework.security.core.Authentication;
+import org.av360.maverick.graph.model.context.SessionContext;
 import reactor.core.publisher.Mono;
 
 import java.io.Serializable;
@@ -8,7 +8,7 @@ import java.io.Serializable;
 public interface Job extends Serializable {
     String getName();
 
-    Mono<Void> run(Authentication authentication);
+    Mono<Void> run(SessionContext ctx);
 
 
 }

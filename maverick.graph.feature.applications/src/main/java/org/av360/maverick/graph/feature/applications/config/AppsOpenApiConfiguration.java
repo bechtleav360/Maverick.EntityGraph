@@ -47,7 +47,7 @@ public class AppsOpenApiConfiguration implements InitializingBean {
     public void afterPropertiesSet() {
         Parameter header = new HeaderParameter()
                 .name("X-Application")
-                .description("Label of application this operation should apply to.")
+                .description("Label of application this operation should apply to. You can query a list of all available applications using the endpoint '/api/applications'")
                 .addExample("default", new Example().value("default"));
 
         if (Objects.nonNull(this.adminApiBuilder)) {

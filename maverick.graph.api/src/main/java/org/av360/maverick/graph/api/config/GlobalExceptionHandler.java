@@ -96,6 +96,12 @@ public class GlobalExceptionHandler extends DefaultErrorAttributes {
     }
 
     private void printWarning(Throwable error) {
-        log.warn("Handling error '{}' with message: {}", error.getClass().getSimpleName(), error.getMessage());
+
+        if(log.isDebugEnabled()) {
+            log.error("Handling error '{}' with message: {}", error.getClass().getSimpleName(), error.getMessage(), error);
+        } else {
+            log.warn("Handling error '{}' with message: {}", error.getClass().getSimpleName(), error.getMessage());
+        }
+
     }
 }

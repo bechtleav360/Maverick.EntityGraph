@@ -1,9 +1,12 @@
 package org.av360.maverick.graph.tests.util;
 
 import org.av360.maverick.graph.store.rdf.helpers.RdfUtils;
+import org.av360.maverick.graph.tests.clients.AdminTestClient;
+import org.av360.maverick.graph.tests.clients.EntitiesTestClient;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.rio.RDFFormat;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.MediaType;
@@ -12,16 +15,24 @@ import org.springframework.web.reactive.function.BodyInserters;
 
 import java.util.List;
 import java.util.Map;
-
+@AutoConfigureWebTestClient(timeout = "360000")
 public abstract class ApiTestsBase extends TestsBase {
 
 
     protected WebTestClient webClient;
 
+    protected AdminTestClient adminTestClient;
+
+    protected EntitiesTestClient entitiesTestClient;
+
+
     @Autowired
     public void setWebClient(WebTestClient webClient) {
         this.webClient = webClient;
+        this.adminTestClient = new AdminTestClient(webClient);
+        this.entitiesTestClient = new EntitiesTestClient(webClient);
     }
+
 
 
     protected void dump(Map<String, String> headers) {
@@ -29,17 +40,22 @@ public abstract class ApiTestsBase extends TestsBase {
         CsvConsumer csvConsumer = new CsvConsumer();
         webClient
                 .post()
-                .uri("/api/query/select")
+                .uri(uriBuilder -> uriBuilder.path("/api/query/select")
+                        .queryParam("repository", "entities")
+                        .build()
+                )
                 .contentType(MediaType.parseMediaType("text/plain"))
                 .accept(MediaType.parseMediaType("text/csv"))
+                .header("X-API-KEY", "test")
                 .headers(c -> headers.forEach((k,v) -> c.put(k, List.of(v))))
-                .body(BodyInserters.fromValue("SELECT DISTINCT * WHERE { ?s ?p ?o }"))
+                .body(BodyInserters.fromValue("SELECT DISTINCT ?subject ?predicate ?object WHERE { ?subject ?predicate ?object }"))
                 .exchange()
                 .expectStatus().isAccepted()
                 .expectBody()
                 .consumeWith(csvConsumer);
 
-        System.out.println(csvConsumer.getAsString());
+        this.printSummary("All statements in repository");
+        System.out.println(csvConsumer.getMapAsString());
 
     }
 

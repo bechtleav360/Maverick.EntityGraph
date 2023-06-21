@@ -56,8 +56,8 @@ public class LinksController extends AbstractController implements LinksAPI {
             produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE})
     @ResponseStatus(HttpStatus.OK)
     public Flux<AnnotatedStatement> getLinksByType(@PathVariable String id, @PathVariable String prefixedKey) {
-        return super.getAuthentication()
-                .flatMap(authentication -> this.values.listLinks(id, prefixedKey, authentication))
+        return super.acquireContext()
+                .flatMap(ctx -> this.values.listLinks(id, prefixedKey, ctx))
                 .flatMapIterable(TripleModel::asStatements)
                 .doOnSubscribe((Subscription s) -> {
                     if (log.isDebugEnabled())
@@ -67,7 +67,7 @@ public class LinksController extends AbstractController implements LinksAPI {
     }
 
     @Override
-    @Operation(summary = "Create edge to existing entity identified by target id (within the same application).",
+    @Operation(summary = "Create edge to existing entity identified by target id (within the same dataset).",
             description = """
                     Creates an edge to an existing entity within the same graph (application) identified by the target identifier to link the two entities. An edge represents a relationship between 
                     two nodes in the graph, while the node represents an entity in the graph. When creating an edge to an existing entity, the target identifier
@@ -84,8 +84,8 @@ public class LinksController extends AbstractController implements LinksAPI {
     @ResponseStatus(HttpStatus.CREATED)
     public Flux<AnnotatedStatement> createLink(@PathVariable String source_id, @PathVariable String prefixedKey, @PathVariable String target_id) {
 
-        return super.getAuthentication()
-                .flatMap(authentication -> this.values.insertLink(source_id, prefixedKey, target_id, authentication))
+        return super.acquireContext()
+                .flatMap(ctx -> this.values.insertLink(source_id, prefixedKey, target_id, ctx))
                 .flatMapIterable(TripleModel::asStatements)
                 .doOnSubscribe((Subscription s) -> {
                     if (log.isDebugEnabled())
@@ -101,8 +101,8 @@ public class LinksController extends AbstractController implements LinksAPI {
             produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE, MediaType.APPLICATION_JSON_VALUE})
     @ResponseStatus(HttpStatus.OK)
     public Flux<AnnotatedStatement> deleteLink(@PathVariable String source_id, @PathVariable String prefixedKey, @PathVariable String target_id) {
-        return super.getAuthentication()
-                .flatMap(authentication -> this.values.removeLink(source_id, prefixedKey, target_id, authentication))
+        return super.acquireContext()
+                .flatMap(ctx -> this.values.removeLink(source_id, prefixedKey, target_id, ctx))
                 .flatMap(Mono::just)
                 .flatMapIterable(TripleModel::asStatements)
                 .doOnSubscribe(s -> {

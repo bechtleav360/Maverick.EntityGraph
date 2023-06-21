@@ -1,21 +1,21 @@
 package org.av360.maverick.graph.feature.jobs;
 
 import lombok.extern.slf4j.Slf4j;
+import org.av360.maverick.graph.model.context.SessionContext;
 import org.av360.maverick.graph.model.entities.Job;
+import org.av360.maverick.graph.model.enums.RepositoryType;
 import org.av360.maverick.graph.model.errors.InvalidConfiguration;
-import org.av360.maverick.graph.model.security.Authorities;
 import org.av360.maverick.graph.model.vocabulary.Local;
 import org.av360.maverick.graph.model.vocabulary.Transactions;
+import org.av360.maverick.graph.services.EntityServices;
 import org.av360.maverick.graph.services.QueryServices;
+import org.av360.maverick.graph.services.TransactionsService;
 import org.av360.maverick.graph.services.transformers.replaceIdentifiers.ReplaceAnonymousIdentifiers;
 import org.av360.maverick.graph.services.transformers.replaceIdentifiers.ReplaceExternalIdentifiers;
-import org.av360.maverick.graph.store.EntityStore;
-import org.av360.maverick.graph.store.TransactionsStore;
 import org.av360.maverick.graph.store.rdf.fragments.RdfTransaction;
 import org.eclipse.rdf4j.model.*;
 import org.eclipse.rdf4j.model.impl.LinkedHashModel;
 import org.eclipse.rdf4j.model.util.ModelBuilder;
-import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 import reactor.core.publisher.Flux;
@@ -59,8 +59,10 @@ public class ReplaceSubjectIdentifiersJob implements Job {
 
     private final QueryServices queryServices;
 
-    private final EntityStore entityStore;
-    private final TransactionsStore trxStore;
+    private final EntityServices entityServices;
+
+
+    private final TransactionsService transactionsService;
 
 
     private final ReplaceExternalIdentifiers replaceExternalIdentifiers;
@@ -77,10 +79,10 @@ public class ReplaceSubjectIdentifiersJob implements Job {
     ) {
     }
 
-    public ReplaceSubjectIdentifiersJob(QueryServices queryServices, EntityStore store, TransactionsStore trxStore, ReplaceExternalIdentifiers transformer, ReplaceAnonymousIdentifiers replaceAnonymousIdentifiers) {
+    public ReplaceSubjectIdentifiersJob(QueryServices queryServices, EntityServices entityServices, TransactionsService transactionsService, ReplaceExternalIdentifiers transformer, ReplaceAnonymousIdentifiers replaceAnonymousIdentifiers) {
         this.queryServices = queryServices;
-        this.entityStore = store;
-        this.trxStore = trxStore;
+        this.entityServices = entityServices;
+        this.transactionsService = transactionsService;
         this.replaceExternalIdentifiers = transformer;
         this.replaceAnonymousIdentifiers = replaceAnonymousIdentifiers;
     }
@@ -91,11 +93,18 @@ public class ReplaceSubjectIdentifiersJob implements Job {
     }
 
     @Override
-    public Mono<Void> run(Authentication authentication) {
+    public Mono<Void> run(SessionContext ctx) {
         if (Objects.isNull(this.replaceExternalIdentifiers))
             return Mono.error(new InvalidConfiguration("External identity transformer is disabled"));
 
-        return this.checkForExternalSubjectIdentifiers(authentication).then();
+        return this.checkForExternalSubjectIdentifiers(ctx)
+                .doOnError(throwable -> log.error("Exception while finding and replacing subject identifiers in environment {}: {}", ctx.getEnvironment(), throwable.getMessage()))
+                .doOnSubscribe(sub -> {
+                    ctx.updateEnvironment(env -> env.setRepositoryType(RepositoryType.ENTITIES));
+                    log.trace("Checking for external or anonymous subject identifiers in environment: {}.", ctx.getEnvironment());
+                })
+                .doOnComplete(() -> log.debug("Completed checking for external or anonymous identifiers in subjects in environment: {}.", ctx.getEnvironment()))
+                .then();
 
     }
 
@@ -103,25 +112,22 @@ public class ReplaceSubjectIdentifiersJob implements Job {
     /**
      * First run: replace only subject identifiers, move old identifier in temporary property
      */
-    public Flux<RdfTransaction> checkForExternalSubjectIdentifiers(Authentication authentication) {
-        return findSubjectCandidates(authentication)
-                .flatMap(value -> this.loadSubjectStatements(value, authentication))
-                .flatMap(this::convertSubjectStatements)
-                .flatMap(this::insertStatements)
-                .flatMap(this::deleteStatements)
+    private Flux<RdfTransaction> checkForExternalSubjectIdentifiers(SessionContext ctx) {
+        return findSubjectCandidates(ctx)
+                .flatMap(value -> this.loadSubjectStatements(value, ctx))
+                .flatMap(bag -> this.convertSubjectStatements(bag, ctx))
+                .flatMap(bag -> this.insertStatements(bag, ctx))
+                .flatMap(bag -> this.deleteStatements(bag, ctx))
                 .buffer(50)
-                .flatMap(transactions -> this.commit(transactions, authentication))
+                .flatMap(transactions -> this.commit(transactions, ctx))
                 .doOnNext(transaction -> Assert.isTrue(transaction.hasStatement(null, Transactions.STATUS, Transactions.SUCCESS), "Failed transaction: \n" + transaction))
                 .buffer(5)
-                .flatMap(transactions -> this.storeTransactions(transactions, authentication))
-                .doOnError(throwable -> log.error("Exception while finding and replacing subject identifiers: {}", throwable.getMessage()))
-                .doOnSubscribe(sub -> log.trace("Checking for external or anonymous subject identifiers."))
-                .doOnComplete(() -> log.debug("Completed checking for external or anonymous identifiers in subjects."));
+                .flatMap(transactions -> this.storeTransactions(transactions, ctx));
     }
 
 
 
-    private Flux<Resource> findSubjectCandidates(Authentication authentication) {
+    private Flux<Resource> findSubjectCandidates(SessionContext ctx) {
         String tpl = """
                 SELECT DISTINCT ?a WHERE {
                   ?a a ?c .
@@ -132,7 +138,7 @@ public class ReplaceSubjectIdentifiersJob implements Job {
                   LIMIT 5000
                 """;
         String query = String.format(tpl, Local.Entities.NAMESPACE);
-        return queryServices.queryValues(query, authentication)
+        return this.queryServices.queryValues(query, RepositoryType.ENTITIES, ctx)
                 .map(bindings -> bindings.getValue("a"))
                 .filter(Value::isResource)
                 .map(value -> (Resource) value);
@@ -140,28 +146,29 @@ public class ReplaceSubjectIdentifiersJob implements Job {
 
 
 
-    private Flux<RdfTransaction> commit(List<RdfTransaction> transactions, Authentication authentication) {
+    private Flux<RdfTransaction> commit(List<RdfTransaction> transactions, SessionContext ctx) {
         // log.trace("Committing {} transactions", transactions.size());
-        return this.entityStore.commit(transactions, authentication, Authorities.CONTRIBUTOR, true)
+        return this.entityServices.getStore(ctx).commit(transactions, ctx.getEnvironment(), true)
                 .doOnComplete(() -> log.trace("Committed {} transactions in job {}", transactions.size(), this.getName()));
     }
 
-    private Flux<RdfTransaction> storeTransactions(Collection<RdfTransaction> transactions, Authentication authentication) {
+    private Flux<RdfTransaction> storeTransactions(Collection<RdfTransaction> transactions, SessionContext ctx) {
         //FIXME: through event
-        return this.trxStore.store(transactions, authentication);
+        return this.transactionsService.getStore(ctx).store(transactions, ctx.getEnvironment());
     }
 
-    private Mono<RdfTransaction> deleteStatements(StatementsBag statementsBag) {
+    private Mono<RdfTransaction> deleteStatements(StatementsBag statementsBag, SessionContext ctx) {
         ArrayList<Statement> statements = new ArrayList<>(statementsBag.removableStatements());
-        return entityStore.removeStatements(statements, statementsBag.transaction());
+
+        return entityServices.getStore(ctx).removeStatements(statements, statementsBag.transaction());
     }
 
-    private Mono<StatementsBag> insertStatements(StatementsBag bag) {
-        return this.entityStore.insert(bag.convertedStatements(), bag.transaction()).then(Mono.just(bag));
+    private Mono<StatementsBag> insertStatements(StatementsBag bag, SessionContext ctx) {
+        return this.entityServices.getStore(ctx).insertModel(bag.convertedStatements(), bag.transaction()).then(Mono.just(bag));
     }
 
 
-    private Mono<StatementsBag> convertSubjectStatements(StatementsBag bag) {
+    private Mono<StatementsBag> convertSubjectStatements(StatementsBag bag, SessionContext ctx) {
         LinkedHashModel model = new LinkedHashModel();
         model.addAll(bag.removableStatements());
 
@@ -189,9 +196,10 @@ public class ReplaceSubjectIdentifiersJob implements Job {
 
     }
 
-    public Mono<StatementsBag> loadSubjectStatements(Resource candidate, Authentication authentication) {
-        return this.entityStore.listStatements(candidate, null, null, authentication)
-                .map(statements -> new StatementsBag(candidate, Collections.synchronizedSet(statements), new LinkedHashModel(), null, new RdfTransaction()));
+    public Mono<StatementsBag> loadSubjectStatements(Resource candidate, SessionContext ctx) {
+        return this.entityServices.getStore(ctx).getFragment(candidate, ctx.getEnvironment())
+                .map(fragment -> new StatementsBag(candidate, Collections.synchronizedSet(fragment.getModel()), new LinkedHashModel(), null, new RdfTransaction()));
+
     }
 
 

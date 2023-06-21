@@ -1,22 +1,23 @@
 package org.av360.maverick.graph.model.events;
 
+import org.apache.commons.lang3.Validate;
+import org.av360.maverick.graph.model.context.SessionContext;
 import org.springframework.context.ApplicationEvent;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.ReactiveSecurityContextHolder;
-import org.springframework.util.StringUtils;
-import reactor.util.context.Context;
 
 import javax.annotation.Nonnull;
 import java.util.Objects;
 
 public class JobScheduledEvent extends ApplicationEvent {
-    private final Authentication token;
+    private final SessionContext ctx;
 
-    public JobScheduledEvent(@Nonnull String name, Authentication authentication) {
+    public JobScheduledEvent(@Nonnull String name, SessionContext ctx) {
         super(name);
-        this.token = authentication;
 
-        if(!StringUtils.hasLength(name)) throw  new IllegalArgumentException("Job Event without name");
+        this.ctx = ctx;
+
+        Validate.notNull(ctx);
+        Validate.notNull(ctx.getEnvironment());
+        Validate.notBlank(name, "Job Event without name");
     }
 
     public String getJobName() {
@@ -24,7 +25,7 @@ public class JobScheduledEvent extends ApplicationEvent {
     }
 
     public String getScope() {
-        return "default";
+        return ctx.getEnvironment().getScope().label();
     }
 
 
@@ -32,12 +33,8 @@ public class JobScheduledEvent extends ApplicationEvent {
         return String.format("%s:%s", getJobName(), getScope());
     }
 
-    public Context buildContext(Context ctx) {
-        return ctx.putAll(ReactiveSecurityContextHolder.withAuthentication(this.getToken()).readOnly());
-    }
-
-    public Authentication getToken() {
-        return token;
+    public SessionContext getSessionContext() {
+        return ctx;
     }
 
 

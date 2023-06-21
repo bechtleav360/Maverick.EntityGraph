@@ -9,13 +9,26 @@ import java.util.List;
 
 public class Authorities {
 
-    public static final WeightedAuthority GUEST =  new WeightedAuthority(100, "GUEST");
-    public static final WeightedAuthority READER = new WeightedAuthority(200, "READER");
+    public static final String GUEST_VALUE = "GUEST";
+    public static final String READER_VALUE = "READER";
+    public static final String CONTRIBUTOR_VALUE = "CONTRIBUTOR";
+
+    public static final String MAINTAINER_VALUE = "MAINTAINER";
+    public static final String APPLICATION_VALUE = "APPLICATION";
+    public static final String SYSTEM_VALUE = "SYSTEM";
 
 
-    public static final WeightedAuthority CONTRIBUTOR = new WeightedAuthority(400, "CONTRIBUTOR");
-    public static final WeightedAuthority APPLICATION = new WeightedAuthority(600, "APPLICATION");
-    public static final WeightedAuthority SYSTEM = new WeightedAuthority(800, "SYSTEM");
+    public static final WeightedAuthority GUEST = new WeightedAuthority(100, GUEST_VALUE);
+    public static final WeightedAuthority READER = new WeightedAuthority(200, READER_VALUE);
+
+
+    public static final WeightedAuthority CONTRIBUTOR = new WeightedAuthority(400, CONTRIBUTOR_VALUE);
+
+    public static final WeightedAuthority MAINTAINER = new WeightedAuthority(400, MAINTAINER_VALUE);
+
+    public static final WeightedAuthority APPLICATION = new WeightedAuthority(600, APPLICATION_VALUE);
+    public static final WeightedAuthority SYSTEM = new WeightedAuthority(800, SYSTEM_VALUE);
+
     public static List<WeightedAuthority> NO_AUTHORITIES = Collections.emptyList();
 
     /**
@@ -29,6 +42,20 @@ public class Authorities {
     public static boolean satisfies(WeightedAuthority requiredAuthority, Collection<? extends GrantedAuthority> grantedAuthorities) {
         return grantedAuthorities.stream().anyMatch(granted -> granted instanceof WeightedAuthority && ((WeightedAuthority) granted).getInfluence() >= requiredAuthority.getInfluence());
     }
+
+    public static boolean satisfies(String requiredAuthority, Collection<? extends GrantedAuthority> grantedAuthorities) {
+        WeightedAuthority required = switch (requiredAuthority) {
+            case READER_VALUE -> READER;
+            case CONTRIBUTOR_VALUE -> CONTRIBUTOR;
+            case MAINTAINER_VALUE -> MAINTAINER;
+            case APPLICATION_VALUE -> APPLICATION;
+            case SYSTEM_VALUE -> SYSTEM;
+            default -> GUEST;
+        };
+
+        return satisfies(required, grantedAuthorities);
+    }
+
 
     public static boolean satisfies(GrantedAuthority requiredAuthority, Collection<? extends GrantedAuthority> authorities) {
         Assert.isTrue(requiredAuthority instanceof WeightedAuthority, "Incompatible authority types detected.");

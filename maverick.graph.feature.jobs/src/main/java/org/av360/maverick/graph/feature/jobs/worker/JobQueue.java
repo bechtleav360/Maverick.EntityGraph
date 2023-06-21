@@ -31,7 +31,7 @@ public class JobQueue implements ApplicationListener<JobScheduledEvent> {
             JobScheduledEvent first = this.publishedJobs.pop();
             this.publishedJobs.addLast(first);
 
-            log.info("Current job queue: "+this.publishedJobs);
+            log.trace("Current job queue: "+this.publishedJobs);
         }
     }
 

@@ -1,6 +1,6 @@
 package org.av360.maverick.graph.feature.objects.config;
 
-import org.av360.maverick.graph.feature.objects.domain.FileServices;
+import org.av360.maverick.graph.feature.objects.services.FileServices;
 import org.av360.maverick.graph.services.EntityServices;
 import org.av360.maverick.graph.services.SchemaServices;
 import org.av360.maverick.graph.services.ValueServices;

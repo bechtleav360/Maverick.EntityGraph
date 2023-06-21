@@ -2,7 +2,7 @@ package org.av360.maverick.graph.feature.applications.config;
 
 import jakarta.validation.constraints.NotNull;
 import lombok.extern.slf4j.Slf4j;
-import org.av360.maverick.graph.model.security.RequestDetails;
+import org.av360.maverick.graph.model.context.RequestDetails;
 import org.av360.maverick.graph.model.util.PreAuthenticationWebFilter;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.server.reactive.ServerHttpRequest;

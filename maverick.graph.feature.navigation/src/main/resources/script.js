@@ -9,15 +9,20 @@ const lines = document.getElementById('rdf').innerText.split("\n");
             } else {
                 line.split(" ").forEach(token => {
                     const prm = token.match(/([a-z]+):([a-zA-Z]{1}[a-z0-9A-Z]+)/);
-                    const lnm = token.match(/\&#60;(https?:\/\/{{host}}[:0-9]*)(\/[a-zA-Z0-9-_\.\/]*)\??(.*)\&#62;/);
+                    const lnm = token.match(/\&#60;((https?:\/\/{{host}}[:0-9]*)(\/[a-zA-Z0-9-_\.\/]*)\??(.*))\&#62;/);
                     if (lnm) {
-                        pretty += `<a class="internal" rel="next" href="/nav/node?id=${encodeURIComponent(lnm[2])}&${lnm[3]}">${token}</a>`
+                        if(lnm[3].startsWith('/api/entities') || lnm[3].startsWith('/api/s/') || lnm[3].startsWith('/nav')) {
+                            pretty += `<a class="internal" rel="next" href="/nav/node?id=${encodeURIComponent(lnm[3])}&${lnm[4]}">${token}</a>`
+                        }
+                        else if(lnm[3].startsWith('/webjars') || lnm[3].startsWith('/v3'))  {
+                            pretty += `<a class="external" target="_blank" rel="external" href="${lnm[1]}">${token}</a>`
+                        }
+                        else { pretty += token }
                     } else if (prm) {
                         if(prefix[prm[1]]) {
                             if(prefix[prm[1]]["external"]) {
                                 pretty += `<a class="external" target="_blank" rel="external" href="${prefix[prm[1]]["url"]}${prm[2]}">${token}</a>`
                             } else {
-
                                 pretty += `<a class="internal" rel="next" href="/nav/node?id=${token}">${token}</a>`
                             }
                         } else {

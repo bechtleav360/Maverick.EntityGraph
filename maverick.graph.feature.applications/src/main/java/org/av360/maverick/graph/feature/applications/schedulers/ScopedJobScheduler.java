@@ -1,14 +1,14 @@
 package org.av360.maverick.graph.feature.applications.schedulers;
 
 import jakarta.annotation.PostConstruct;
-import org.av360.maverick.graph.feature.applications.domain.ApplicationsService;
-import org.av360.maverick.graph.feature.applications.domain.events.ApplicationCreatedEvent;
-import org.av360.maverick.graph.feature.applications.domain.events.ApplicationDeletedEvent;
-import org.av360.maverick.graph.feature.applications.domain.events.ApplicationJobScheduledEvent;
-import org.av360.maverick.graph.feature.applications.domain.events.ApplicationUpdatedEvent;
-import org.av360.maverick.graph.feature.applications.domain.model.Application;
+import org.av360.maverick.graph.feature.applications.services.ApplicationsService;
+import org.av360.maverick.graph.feature.applications.services.events.ApplicationCreatedEvent;
+import org.av360.maverick.graph.feature.applications.services.events.ApplicationDeletedEvent;
+import org.av360.maverick.graph.feature.applications.services.events.ApplicationUpdatedEvent;
+import org.av360.maverick.graph.feature.applications.services.model.Application;
+import org.av360.maverick.graph.model.context.SessionContext;
+import org.av360.maverick.graph.model.enums.RepositoryType;
 import org.av360.maverick.graph.model.events.JobScheduledEvent;
-import org.av360.maverick.graph.model.security.AdminToken;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
@@ -42,7 +42,7 @@ public abstract class ScopedJobScheduler {
 
     @PostConstruct
     public void initializeScheduledJobs() {
-        applicationsService.listApplications(new AdminToken()).doOnNext(this::scheduleRunnableTask).subscribe();
+        applicationsService.listApplications(new SessionContext().setSystemAuthentication()).doOnNext(this::scheduleRunnableTask).subscribe();
     }
 
     protected void scheduleRunnableTask(Application application) {
@@ -50,7 +50,7 @@ public abstract class ScopedJobScheduler {
                 application.configuration().get(getFrequencyConfigurationKey()).toString() : getDefaultFrequency();
 
         Runnable task = () -> {
-            JobScheduledEvent event = new ApplicationJobScheduledEvent(getJobLabel(), new AdminToken(), application.label());
+            JobScheduledEvent event = new JobScheduledEvent(getJobLabel(), new SessionContext().setSystemAuthentication().updateEnvironment(env -> env.withScope(application.label()).withRepositoryType(RepositoryType.ENTITIES)));
             eventPublisher.publishEvent(event);
         };
 

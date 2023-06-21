@@ -1,7 +1,7 @@
 package org.av360.maverick.graph.api.entities.links;
 
 import org.av360.maverick.graph.model.vocabulary.SDO;
-import org.av360.maverick.graph.tests.clients.TestEntitiesClient;
+import org.av360.maverick.graph.tests.clients.EntitiesTestClient;
 import org.av360.maverick.graph.tests.config.TestSecurityConfig;
 import org.av360.maverick.graph.tests.generator.EntitiesGenerator;
 import org.av360.maverick.graph.tests.util.ApiTestsBase;
@@ -27,12 +27,12 @@ public class RemoveLinkTests extends ApiTestsBase {
 
     @Autowired
     private WebTestClient webClient;
-    private TestEntitiesClient client;
+    private EntitiesTestClient client;
 
     @BeforeEach
     public void setup() {
 
-        client = new TestEntitiesClient(super.webClient);
+        client = new EntitiesTestClient(super.webClient);
         super.resetRepository();
     }
 

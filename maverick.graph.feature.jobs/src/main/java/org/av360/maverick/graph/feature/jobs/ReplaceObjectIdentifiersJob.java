@@ -1,11 +1,14 @@
 package org.av360.maverick.graph.feature.jobs;
 
 import lombok.extern.slf4j.Slf4j;
+import org.av360.maverick.graph.model.context.SessionContext;
 import org.av360.maverick.graph.model.entities.Job;
+import org.av360.maverick.graph.model.enums.RepositoryType;
 import org.av360.maverick.graph.model.errors.InvalidConfiguration;
-import org.av360.maverick.graph.model.security.Authorities;
 import org.av360.maverick.graph.model.vocabulary.Local;
 import org.av360.maverick.graph.model.vocabulary.Transactions;
+import org.av360.maverick.graph.services.EntityServices;
+import org.av360.maverick.graph.services.TransactionsService;
 import org.av360.maverick.graph.services.transformers.replaceIdentifiers.ReplaceExternalIdentifiers;
 import org.av360.maverick.graph.store.EntityStore;
 import org.av360.maverick.graph.store.TransactionsStore;
@@ -16,7 +19,6 @@ import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.impl.LinkedHashModel;
 import org.eclipse.rdf4j.model.util.ModelBuilder;
 import org.eclipse.rdf4j.model.vocabulary.OWL;
-import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 import reactor.core.publisher.Flux;
@@ -54,10 +56,8 @@ public class ReplaceObjectIdentifiersJob implements Job {
 
     public static String NAME = "replaceLinkedIdentifiers";
 
-    private final EntityStore entityStore;
-    private final TransactionsStore trxStore;
-
-
+    private final EntityServices entityServices;
+    private final TransactionsService transactionsService;
     private final ReplaceExternalIdentifiers replaceExternalIdentifiers;
 
 
@@ -70,9 +70,9 @@ public class ReplaceObjectIdentifiersJob implements Job {
     ) {
     }
 
-    public ReplaceObjectIdentifiersJob(EntityStore store, TransactionsStore trxStore, ReplaceExternalIdentifiers transformer) {
-        this.entityStore = store;
-        this.trxStore = trxStore;
+    public ReplaceObjectIdentifiersJob(EntityStore store, TransactionsStore trxStore, EntityServices entityServices, TransactionsService transactionsService, ReplaceExternalIdentifiers transformer) {
+        this.entityServices = entityServices;
+        this.transactionsService = transactionsService;
         this.replaceExternalIdentifiers = transformer;
     }
 
@@ -82,49 +82,53 @@ public class ReplaceObjectIdentifiersJob implements Job {
     }
 
     @Override
-    public Mono<Void> run(Authentication authentication) {
+    public Mono<Void> run(SessionContext ctx) {
         if (Objects.isNull(this.replaceExternalIdentifiers))
             return Mono.error(new InvalidConfiguration("External identity transformer is disabled"));
 
-        return this.checkForLinkedObjectIdentifiers(authentication).then();
+        return this.checkForLinkedObjectIdentifiers(ctx)
+                .doOnError(throwable -> log.error("Exception while relinking objects to new subject identifiers in environment {}: {}", ctx.getEnvironment(), throwable.getMessage()))
+                .doOnSubscribe(sub -> {
+                    ctx.updateEnvironment(env -> env.setRepositoryType(RepositoryType.ENTITIES));
+                    log.trace("Checking for external or anonymous identifiers in objects in environment: {}.", ctx.getEnvironment());
+                })
+                .doOnComplete(() -> log.info("Completed checking for external or anonymous identifiers in objects in environment: {}.", ctx.getEnvironment()))
+                .then();
 
     }
 
 
 
-    private Flux<RdfTransaction> checkForLinkedObjectIdentifiers(Authentication authentication) {
-        return this.loadObjectStatements(authentication)
+    private Flux<RdfTransaction> checkForLinkedObjectIdentifiers(SessionContext ctx) {
+        return this.loadObjectStatements(ctx)
                 .flatMap(this::convertObjectStatements)
-                .flatMap(this::insertStatements)
-                .flatMap(this::deleteStatements)
-                .buffer(50)
-                .flatMap(transactions -> this.commit(transactions, authentication))
+                .flatMap(bag -> this.insertStatements(bag, ctx))
+                .flatMap(bag -> this.deleteStatements(bag, ctx))
+                .buffer(100)
+                .flatMap(transactions -> this.commit(transactions, ctx))
                 .doOnNext(transaction -> Assert.isTrue(transaction.hasStatement(null, Transactions.STATUS, Transactions.SUCCESS), "Failed transaction: \n" + transaction))
                 .buffer(5)
-                .flatMap(transactions -> this.storeTransactions(transactions, authentication))
-                .doOnError(throwable -> log.error("Exception while relinking objects to new subject identifiers: {}", throwable.getMessage()))
-                .doOnSubscribe(sub -> log.trace("Checking for external or anonymous identifiers in objects."))
-                .doOnComplete(() -> log.info("Completed checking for external or anonymous identifiers in objects."));
+                .flatMap(transactions -> this.storeTransactions(transactions, ctx));
     }
 
 
-    private Flux<RdfTransaction> commit(List<RdfTransaction> transactions, Authentication authentication) {
-        // log.trace("Committing {} transactions", transactions.size());
-        return this.entityStore.commit(transactions, authentication, Authorities.CONTRIBUTOR, true);
+    private Flux<RdfTransaction> commit(List<RdfTransaction> transactions, SessionContext ctx) {
+        // FIXME: assert system authentication
+        return this.entityServices.getStore(ctx).commit(transactions, ctx.getEnvironment());
     }
 
-    private Flux<RdfTransaction> storeTransactions(Collection<RdfTransaction> transactions, Authentication authentication) {
+    private Flux<RdfTransaction> storeTransactions(Collection<RdfTransaction> transactions, SessionContext ctx) {
         //FIXME: through event
-        return this.trxStore.store(transactions, authentication);
+        return this.transactionsService.getStore(ctx).store(transactions, ctx.getEnvironment());
     }
 
-    private Mono<RdfTransaction> deleteStatements(StatementsBag statementsBag) {
+    private Mono<RdfTransaction> deleteStatements(StatementsBag statementsBag, SessionContext ctx) {
         ArrayList<Statement> statements = new ArrayList<>(statementsBag.removableStatements());
-        return entityStore.removeStatements(statements, statementsBag.transaction());
+        return this.entityServices.getStore(ctx).removeStatements(statements, statementsBag.transaction());
     }
 
-    private Mono<StatementsBag> insertStatements(StatementsBag bag) {
-        return this.entityStore.insert(bag.convertedStatements(), bag.transaction()).then(Mono.just(bag));
+    private Mono<StatementsBag> insertStatements(StatementsBag bag, SessionContext ctx) {
+        return this.entityServices.getStore(ctx).insertModel(bag.convertedStatements(), bag.transaction()).then(Mono.just(bag));
     }
 
     private Mono<StatementsBag> convertObjectStatements(StatementsBag bag) {
@@ -149,12 +153,12 @@ public class ReplaceObjectIdentifiersJob implements Job {
     }
 
 
-    public Flux<StatementsBag> loadObjectStatements(Authentication authentication) {
-        return this.entityStore.listStatements(null, Local.ORIGINAL_IDENTIFIER, null, authentication, Authorities.READER)
+    public Flux<StatementsBag> loadObjectStatements(SessionContext ctx) {
+        return this.entityServices.getStore(ctx).listStatements(null, Local.ORIGINAL_IDENTIFIER, null, ctx.getEnvironment())
                 .flatMapMany(Flux::fromIterable)
                 .filter(statement -> statement.getObject().isResource())
                 .flatMap(st ->
-                        this.entityStore.listStatements(null, null, st.getObject(), authentication)
+                        this.entityServices.getStore(ctx).listStatements(null, null, st.getObject(), ctx.getEnvironment())
                                 .map(statements -> statements.stream()
                                         .filter(s -> ! s.getPredicate().equals(Local.ORIGINAL_IDENTIFIER))
                                         .filter(s -> ! s.getPredicate().equals(OWL.SAMEAS))

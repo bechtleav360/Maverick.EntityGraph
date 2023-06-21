@@ -1,7 +1,7 @@
 package org.av360.maverick.graph.api.entities.formats;
 
 import org.av360.maverick.graph.model.vocabulary.Transactions;
-import org.av360.maverick.graph.tests.clients.TestEntitiesClient;
+import org.av360.maverick.graph.tests.clients.EntitiesTestClient;
 import org.av360.maverick.graph.tests.config.TestSecurityConfig;
 import org.av360.maverick.graph.tests.util.ApiTestsBase;
 import org.av360.maverick.graph.tests.util.RdfConsumer;
@@ -23,7 +23,7 @@ import java.util.Collection;
 @RecordApplicationEvents
 @ActiveProfiles({"test", "api"})
 public class CreateEntitiesInJsonLDTests extends ApiTestsBase {
-    private TestEntitiesClient client;
+    private EntitiesTestClient client;
 
 
     @AfterEach
@@ -33,7 +33,7 @@ public class CreateEntitiesInJsonLDTests extends ApiTestsBase {
 
     @BeforeEach
     public void setup() {
-        client = new TestEntitiesClient(super.webClient);
+        client = new EntitiesTestClient(super.webClient);
     }
 
     @Test

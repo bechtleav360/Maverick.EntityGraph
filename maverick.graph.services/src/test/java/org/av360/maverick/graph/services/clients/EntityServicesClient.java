@@ -1,9 +1,9 @@
 package org.av360.maverick.graph.services.clients;
 
 import lombok.extern.slf4j.Slf4j;
+import org.av360.maverick.graph.model.context.SessionContext;
 import org.av360.maverick.graph.model.rdf.AnnotatedStatement;
 import org.av360.maverick.graph.model.rdf.Triples;
-import org.av360.maverick.graph.model.security.Authorities;
 import org.av360.maverick.graph.services.EntityServices;
 import org.av360.maverick.graph.services.QueryServices;
 import org.av360.maverick.graph.store.EntityStore;
@@ -66,9 +66,10 @@ public class EntityServicesClient {
 
     public Mono<Void> importFileToStore(Resource resource) throws IOException {
         Flux<DataBuffer> read = DataBufferUtils.read(resource, new DefaultDataBufferFactory(), 1024);
+        SessionContext testContext = TestSecurityConfig.createTestContext();
 
         return this.entityStore
-                .importStatements(read, getFormat(resource).getDefaultMIMEType(), TestSecurityConfig.createAuthenticationToken(), Authorities.SYSTEM)
+                .importStatements(read, getFormat(resource).getDefaultMIMEType(), testContext.getEnvironment())
                 .doOnSubscribe(subscription -> log.info("Importing file '{}'", resource.getFilename()));
     }
 
@@ -79,7 +80,7 @@ public class EntityServicesClient {
     public Mono<RdfTransaction> importFileMono(Resource resource) throws IOException {
         Flux<DataBuffer> read = DataBufferUtils.read(resource, new DefaultDataBufferFactory(), 1024);
         return this.parse(read, getFormat(resource))
-                .flatMap(triples -> this.entityServices.create(triples, Map.of(), TestSecurityConfig.createAuthenticationToken()))
+                .flatMap(triples -> this.entityServices.create(triples, Map.of(), TestSecurityConfig.createTestContext()))
                 .doOnSubscribe(s -> log.info("Importing file '{}'", resource.getFilename()))
                 .doOnError(s -> log.error("Failed to import file '{}'", resource.getFilename()));
     }
@@ -99,7 +100,7 @@ public class EntityServicesClient {
         Variable o = SparqlBuilder.var("o");
         ConstructQuery q = Queries.CONSTRUCT().where(GraphPatterns.tp(s, p, o));
 
-        return this.queryServices.queryGraph(q, TestSecurityConfig.createAuthenticationToken())
+        return this.queryServices.queryGraph(q, TestSecurityConfig.createTestContext())
                 .doOnSubscribe(sub -> log.info("Querying with: {}", q.getQueryString()));
     }
 
@@ -114,7 +115,7 @@ public class EntityServicesClient {
     }
 
     public Mono<List<RdfEntity>> listAllEntitiesMono() {
-        return this.entityServices.list(TestSecurityConfig.createAuthenticationToken(), 100, 0).collectList();
+        return this.entityServices.list(100, 0, TestSecurityConfig.createTestContext()).collectList();
     }
 
     private Mono<Triples> parse(Publisher<DataBuffer> publisher, RDFFormat format) {

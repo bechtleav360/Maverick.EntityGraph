@@ -1,26 +1,32 @@
 package org.av360.maverick.graph.feature.applications.config;
 
-import org.av360.maverick.graph.feature.applications.store.ApplicationsStore;
-import org.av360.maverick.graph.model.security.Authorities;
-import org.av360.maverick.graph.tests.config.TestSecurityConfig;
+import org.av360.maverick.graph.feature.applications.client.ApplicationsTestClient;
+import org.av360.maverick.graph.model.enums.RepositoryType;
 import org.av360.maverick.graph.tests.util.ApiTestsBase;
-import org.springframework.beans.factory.annotation.Autowired;
-import reactor.test.StepVerifier;
+import org.junit.jupiter.api.BeforeEach;
+
+import java.util.Map;
 
 public class ApplicationsTestsBase extends ApiTestsBase  {
 
+    protected ApplicationsTestClient applicationsTestClient;
 
-    private ApplicationsStore applicationsStore;
-
-    @Autowired
-    public void setStores(ApplicationsStore applicationsStore) {
-        this.applicationsStore = applicationsStore;
+    @BeforeEach
+    public void setup() {
+        applicationsTestClient = new ApplicationsTestClient(super.webClient);
     }
 
-    @Override
-    protected void resetRepository() {
-        StepVerifier.create(this.applicationsStore.reset(TestSecurityConfig.createAuthenticationToken(), Authorities.SYSTEM)).verifyComplete();
+    protected void resetRepository(String label) {
+        super.printCleanUp();
+        adminTestClient.reset(RepositoryType.ENTITIES, Map.of("X-Application", label));
+        adminTestClient.reset(RepositoryType.TRANSACTIONS, Map.of("X-Application", label));
+        adminTestClient.reset(RepositoryType.APPLICATION, Map.of());
+    }
 
+    protected void resetRepository() {
+
+        super.printCleanUp();
+        adminTestClient.reset(RepositoryType.APPLICATION, Map.of());
         super.resetRepository();
     }
 }

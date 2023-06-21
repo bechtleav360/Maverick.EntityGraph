@@ -5,14 +5,15 @@ package org.av360.maverick.graph.feature.applications.security;
 import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.feature.applications.config.ReactiveApplicationContextHolder;
 import org.av360.maverick.graph.feature.applications.config.RequestedApplicationFilter;
-import org.av360.maverick.graph.feature.applications.domain.ApplicationsService;
-import org.av360.maverick.graph.feature.applications.domain.SubscriptionsService;
-import org.av360.maverick.graph.feature.applications.domain.errors.InvalidApplication;
-import org.av360.maverick.graph.feature.applications.domain.model.Application;
-import org.av360.maverick.graph.model.security.AdminToken;
+import org.av360.maverick.graph.feature.applications.services.ApplicationsService;
+import org.av360.maverick.graph.feature.applications.services.SubscriptionsService;
+import org.av360.maverick.graph.feature.applications.services.errors.InvalidApplication;
+import org.av360.maverick.graph.feature.applications.services.model.Application;
+import org.av360.maverick.graph.model.context.RequestDetails;
+import org.av360.maverick.graph.model.context.SessionContext;
+import org.av360.maverick.graph.model.security.AdminAuthentication;
 import org.av360.maverick.graph.model.security.ApiKeyAuthenticationToken;
 import org.av360.maverick.graph.model.security.Authorities;
-import org.av360.maverick.graph.model.security.RequestDetails;
 import org.av360.maverick.graph.model.util.StreamsLogger;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.authentication.ReactiveAuthenticationManager;
@@ -65,11 +66,11 @@ public class ApplicationAuthenticationManager implements ReactiveAuthenticationM
             return ReactiveApplicationContextHolder.getRequestedApplicationLabel()
                     .switchIfEmpty(this.checkPath(authentication))
                     .filter(StringUtils::hasLength)
-                    .flatMap(label -> this.applicationsService.getApplicationByLabel(label, authentication)
+                    .flatMap(label -> this.applicationsService.getApplicationByLabel(label, new SessionContext().withAuthentication(authentication))
                             .switchIfEmpty(Mono.error(new InvalidApplication(label))))
                     .flatMap(app -> this.addRequestedApplicationToAuthentication(app, authentication))
                     .flatMap(requestedApplication -> {
-                        if (authentication instanceof AdminToken token) {
+                        if (authentication instanceof AdminAuthentication token) {
                             log.trace("Authentication has system authority and application scope '{}' requested.", requestedApplication.label());
                             return Mono.just(SubscriptionToken.fromAdminToken(token, requestedApplication));
 
@@ -91,17 +92,19 @@ public class ApplicationAuthenticationManager implements ReactiveAuthenticationM
     }
 
     private Mono<String> checkPath(Authentication authentication) {
-        log.warn("Application label not found in thread context, verifying in request details within authentication.");
-        if(authentication.getDetails() instanceof RequestDetails requestDetails) {
-            try {
-                Optional<String> requestedApplication = RequestedApplicationFilter.getRequestedApplicationFromRequestDetails(requestDetails);
-                return requestedApplication.map(Mono::just).orElseGet(Mono::empty);
-
-            } catch (IOException e) {
-                return Mono.error(e);
+        return Mono.<String>create(sink -> {
+            if(authentication.getDetails() instanceof RequestDetails requestDetails) {
+                try {
+                    Optional<String> requestedApplication = RequestedApplicationFilter.getRequestedApplicationFromRequestDetails(requestDetails);
+                    requestedApplication.ifPresentOrElse(sink::success, sink::success);
+                } catch (IOException e) {
+                    sink.error(e);
+                }
             }
-        }
-        return Mono.empty();
+        }).doOnSubscribe(subscription -> log.debug("Application label not found in thread context, verifying in request details within authentication."));
+
+
+
     }
 
     /**
@@ -126,7 +129,7 @@ public class ApplicationAuthenticationManager implements ReactiveAuthenticationM
     }
 
     private Mono<Authentication> defaultFallback(Authentication authentication) {
-        if (authentication instanceof AdminToken token) {
+        if (authentication instanceof AdminAuthentication token) {
             log.trace("Authentication has system authority, but not application scope requested.");
             return Mono.just(authentication);
         } else if (authentication instanceof ApiKeyAuthenticationToken token) {
@@ -148,9 +151,9 @@ public class ApplicationAuthenticationManager implements ReactiveAuthenticationM
      * @return
      */
     protected Mono<? extends ApiKeyAuthenticationToken> checkSubscriptionKey(ApiKeyAuthenticationToken token) {
-        if (token instanceof AdminToken) return Mono.just(token);
+        if (token instanceof AdminAuthentication) return Mono.just(token);
 
-        return this.subscriptionsService.getSubscription(token.getApiKey().orElseThrow(), token)
+        return this.subscriptionsService.getSubscription(token.getApiKey().orElseThrow(), new SessionContext().withAuthentication(token))
                 .map(subscription -> {
                     SubscriptionToken subscriptionToken = SubscriptionToken.fromApiKeyAuthentication(token, subscription, subscription.application());
                     subscriptionToken.setRequestedApplication(subscription.application());
@@ -162,9 +165,9 @@ public class ApplicationAuthenticationManager implements ReactiveAuthenticationM
     }
 
     protected Mono<? extends ApiKeyAuthenticationToken> checkSubscriptionKeyForRequestedApplication(ApiKeyAuthenticationToken token, Application requestedApplication) {
-        if (token instanceof AdminToken) return Mono.just(token);
+        if (token instanceof AdminAuthentication) return Mono.just(token);
 
-        return this.subscriptionsService.getSubscription(token.getApiKey().orElseThrow(), token)
+        return this.subscriptionsService.getSubscription(token.getApiKey().orElseThrow(), new SessionContext().withAuthentication(token))
                 .map(subscription -> {
 
                     SubscriptionToken st = SubscriptionToken.fromApiKeyAuthentication(token, subscription, subscription.application());

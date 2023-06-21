@@ -6,10 +6,12 @@ import org.av360.maverick.graph.api.converter.encoder.BindingSetEncoder;
 import org.av360.maverick.graph.api.converter.encoder.BufferedStatementsEncoder;
 import org.av360.maverick.graph.api.converter.encoder.StatementsEncoder;
 import org.av360.maverick.graph.api.converter.encoder.TupleQueryResultsEncoder;
+import org.av360.maverick.graph.model.enums.RepositoryType;
 import org.av360.maverick.graph.services.SchemaServices;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.convert.converter.Converter;
 import org.springframework.http.codec.ServerCodecConfigurer;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.web.reactive.accept.RequestedContentTypeResolverBuilder;
@@ -57,6 +59,17 @@ public class WebFluxConfiguration implements WebFluxConfigurer {
                         ctx = ctx.put(ReactiveRequestUriContextHolder.CONTEXT_HEADERS_KEY, request.getHeaders());
                         return ctx;
                     });
+        };
+    }
+
+
+    @Bean
+    public Converter<String, RepositoryType> convertRepositoryEnum() {
+        return new Converter<String, RepositoryType>() {
+            @Override
+            public RepositoryType convert(String source) {
+                return RepositoryType.valueOf(source.toUpperCase());
+            }
         };
     }
 

@@ -36,7 +36,7 @@
 
     <description>Provides access to the graph through json-ld api</description>
     <properties>
-        <revision>0.2.7.1</revision>
+        <revision>0.3.0</revision>
         <maven.compiler.source>${java.version}</maven.compiler.source>
         <maven.compiler.target>${java.version}</maven.compiler.target>
         <java.version>17</java.version>
@@ -57,6 +57,11 @@
     <dependencyManagement>
 
         <dependencies>
+            <dependency>
+                <groupId>com.tngtech.archunit</groupId>
+                <artifactId>archunit</artifactId>
+                <version>1.0.1</version>
+            </dependency>
             <dependency>
                 <groupId>ch.qos.logback</groupId>
                 <artifactId>logback-core</artifactId>
@@ -109,7 +114,7 @@
             <dependency>
                 <groupId>org.eclipse.rdf4j</groupId>
                 <artifactId>rdf4j-bom</artifactId>
-                <version>4.3.1</version>
+                <version>4.3.2</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
