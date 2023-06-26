@@ -1,14 +1,8 @@
 package org.av360.maverick.graph.feature.applications.config;
 
-import org.av360.maverick.graph.feature.applications.decorators.DelegatingContentResolver;
-import org.av360.maverick.graph.feature.applications.decorators.DelegatingIdentifierServices;
-import org.av360.maverick.graph.feature.applications.decorators.DelegatingJobSchedulingService;
-import org.av360.maverick.graph.feature.applications.decorators.DelegatingNavigationServices;
+import org.av360.maverick.graph.feature.applications.decorators.*;
 import org.av360.maverick.graph.feature.applications.services.ApplicationsService;
-import org.av360.maverick.graph.services.ContentLocationResolverService;
-import org.av360.maverick.graph.services.IdentifierServices;
-import org.av360.maverick.graph.services.JobSchedulingService;
-import org.av360.maverick.graph.services.NavigationServices;
+import org.av360.maverick.graph.services.*;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.BeanPostProcessor;
@@ -42,6 +36,9 @@ public class DefaultBeansConfiguration implements BeanPostProcessor {
         }
         else if(bean instanceof JobSchedulingService delegate) {
             return new DelegatingJobSchedulingService(delegate);
+        }
+        else if(bean instanceof ConfigurationService delegate) {
+            return new DelegatingConfigurationService(delegate, this.applicationsService);
         }
         else return bean;
     }
