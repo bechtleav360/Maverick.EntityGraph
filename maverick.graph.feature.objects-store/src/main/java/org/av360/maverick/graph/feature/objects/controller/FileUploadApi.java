@@ -10,7 +10,7 @@ import org.av360.maverick.graph.feature.objects.services.FileServices;
 import org.av360.maverick.graph.model.api.ContentApi;
 import org.av360.maverick.graph.model.enums.RdfMimeTypes;
 import org.av360.maverick.graph.model.rdf.AnnotatedStatement;
-import org.av360.maverick.graph.store.rdf.fragments.TripleModel;
+import org.av360.maverick.graph.model.rdf.Triples;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.annotation.Order;
 import org.springframework.core.io.buffer.DataBuffer;
@@ -97,7 +97,7 @@ public class FileUploadApi extends AbstractController implements ContentApi {
                 .flatMap(ctx ->
                         fileServices.store(id, bytes, prefixedKey, filename, lang, ctx)
                 )
-                .flatMapIterable(TripleModel::asStatements)
+                .flatMapIterable(Triples::asStatements)
                 .doOnSubscribe(s -> {
                     if (log.isDebugEnabled())
                         log.debug("Request to set property '{}' of entity '{}' to file with name '{}'", prefixedKey, id, filename);

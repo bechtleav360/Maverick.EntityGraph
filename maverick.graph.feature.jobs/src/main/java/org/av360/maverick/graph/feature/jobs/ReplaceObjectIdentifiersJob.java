@@ -3,6 +3,7 @@ package org.av360.maverick.graph.feature.jobs;
 import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.model.context.SessionContext;
 import org.av360.maverick.graph.model.entities.Job;
+import org.av360.maverick.graph.model.entities.Transaction;
 import org.av360.maverick.graph.model.enums.RepositoryType;
 import org.av360.maverick.graph.model.errors.InvalidConfiguration;
 import org.av360.maverick.graph.model.vocabulary.Local;
@@ -66,7 +67,7 @@ public class ReplaceObjectIdentifiersJob implements Job {
             Set<Statement> removableStatements,
             Model convertedStatements,
             @Nullable Statement originalIdentifierStatement,
-            RdfTransaction transaction
+            Transaction transaction
     ) {
     }
 
@@ -99,30 +100,30 @@ public class ReplaceObjectIdentifiersJob implements Job {
 
 
 
-    private Flux<RdfTransaction> checkForLinkedObjectIdentifiers(SessionContext ctx) {
+    private Flux<Transaction> checkForLinkedObjectIdentifiers(SessionContext ctx) {
         return this.loadObjectStatements(ctx)
                 .flatMap(this::convertObjectStatements)
                 .flatMap(bag -> this.insertStatements(bag, ctx))
                 .flatMap(bag -> this.deleteStatements(bag, ctx))
                 .buffer(100)
                 .flatMap(transactions -> this.commit(transactions, ctx))
-                .doOnNext(transaction -> Assert.isTrue(transaction.hasStatement(null, Transactions.STATUS, Transactions.SUCCESS), "Failed transaction: \n" + transaction))
+                .doOnNext(transaction -> Assert.isTrue(transaction.get(Transactions.GRAPH_PROVENANCE).contains(null, Transactions.STATUS, Transactions.SUCCESS), "Failed transaction: \n" + transaction))
                 .buffer(5)
                 .flatMap(transactions -> this.storeTransactions(transactions, ctx));
     }
 
 
-    private Flux<RdfTransaction> commit(List<RdfTransaction> transactions, SessionContext ctx) {
+    private Flux<Transaction> commit(List<Transaction> transactions, SessionContext ctx) {
         // FIXME: assert system authentication
         return this.entityServices.getStore(ctx).commit(transactions, ctx.getEnvironment());
     }
 
-    private Flux<RdfTransaction> storeTransactions(Collection<RdfTransaction> transactions, SessionContext ctx) {
+    private Flux<Transaction> storeTransactions(Collection<Transaction> transactions, SessionContext ctx) {
         //FIXME: through event
         return this.transactionsService.getStore(ctx).store(transactions, ctx.getEnvironment());
     }
 
-    private Mono<RdfTransaction> deleteStatements(StatementsBag statementsBag, SessionContext ctx) {
+    private Mono<Transaction> deleteStatements(StatementsBag statementsBag, SessionContext ctx) {
         ArrayList<Statement> statements = new ArrayList<>(statementsBag.removableStatements());
         return this.entityServices.getStore(ctx).removeStatements(statements, statementsBag.transaction());
     }

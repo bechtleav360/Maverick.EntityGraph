@@ -78,9 +78,6 @@ public class TripleModel implements Triples {
         return StreamSupport.stream(statements.spliterator(), true);
     }
 
-    public Stream<Statement> streamStatements() {
-        return this.streamStatements(null, null, null);
-    }
 
     public List<Statement> listStatements(Resource subject, IRI predicate, Value object) {
         return this.streamStatements(subject, predicate, object).collect(Collectors.toList());
@@ -90,13 +87,10 @@ public class TripleModel implements Triples {
         return this.streamStatements(null, null, null, contexts);
     }
 
-    public Iterable<AnnotatedStatement> asStatements() {
-        return this.streamStatements().map(statement -> AnnotatedStatement.wrap(statement, this.getNamespaces())).toList();
-    }
 
-    public Iterable<AnnotatedStatement> asStatements(Resource... context) {
-        return this.streamStatements(context).map(statement -> AnnotatedStatement.wrap(statement, this.getNamespaces())).toList();
-    }
+
+
+
 
 
     public Stream<Value> streamValues(Resource subject, IRI predicate) {

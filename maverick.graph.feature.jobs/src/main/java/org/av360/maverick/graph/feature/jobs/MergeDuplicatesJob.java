@@ -4,12 +4,12 @@ package org.av360.maverick.graph.feature.jobs;
 import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.model.context.SessionContext;
 import org.av360.maverick.graph.model.entities.Job;
+import org.av360.maverick.graph.model.entities.Transaction;
 import org.av360.maverick.graph.model.enums.RepositoryType;
 import org.av360.maverick.graph.model.vocabulary.SDO;
 import org.av360.maverick.graph.services.EntityServices;
 import org.av360.maverick.graph.services.QueryServices;
 import org.av360.maverick.graph.services.ValueServices;
-import org.av360.maverick.graph.store.rdf.fragments.RdfTransaction;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
@@ -196,12 +196,12 @@ public class MergeDuplicatesJob implements Job {
                 .then();
     }
 
-    private Mono<RdfTransaction> removeDuplicate(IRI object, SessionContext ctx) {
+    private Mono<Transaction> removeDuplicate(IRI object, SessionContext ctx) {
         // not sure if we should use the entity services (which handle authentication), or let the jobs always access only the store layer
         return this.entityServices.remove(object, ctx);
     }
 
-    private Mono<RdfTransaction> relinkEntity(IRI subject, IRI predicate, Value object, Value id, SessionContext ctx) {
+    private Mono<Transaction> relinkEntity(IRI subject, IRI predicate, Value object, Value id, SessionContext ctx) {
         return this.valueServices.replace(subject, predicate, object, id, ctx);
     }
 

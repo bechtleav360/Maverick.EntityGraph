@@ -11,10 +11,10 @@ import org.av360.maverick.graph.api.controller.AbstractController;
 import org.av360.maverick.graph.model.api.ValuesAPI;
 import org.av360.maverick.graph.model.enums.RdfMimeTypes;
 import org.av360.maverick.graph.model.rdf.AnnotatedStatement;
+import org.av360.maverick.graph.model.rdf.Triples;
 import org.av360.maverick.graph.services.EntityServices;
 import org.av360.maverick.graph.services.SchemaServices;
 import org.av360.maverick.graph.services.ValueServices;
-import org.av360.maverick.graph.store.rdf.fragments.TripleModel;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.util.Assert;
@@ -98,7 +98,7 @@ public class ValuesController extends AbstractController implements ValuesAPI {
 
         return super.acquireContext()
                 .flatMap(ctx -> values.insertValue(id, prefixedKey, value, lang, ctx))
-                .flatMapIterable(TripleModel::asStatements)
+                .flatMapIterable(Triples::asStatements)
                 .doOnSubscribe(s -> {
                     if (log.isDebugEnabled())
                         log.debug("Request to set property '{}' of entity '{}' to value '{}'", prefixedKey, id, value.length() > 64 ? value.substring(0, 64) : value);
@@ -125,7 +125,7 @@ public class ValuesController extends AbstractController implements ValuesAPI {
 
         return super.acquireContext()
                 .flatMap(ctx -> values.removeLiteral(id, prefixedKey, lang, ctx))
-                .flatMapIterable(TripleModel::asStatements)
+                .flatMapIterable(Triples::asStatements)
                 .doOnSubscribe(s -> {
                     if (log.isDebugEnabled()) log.debug("Deleted property '{}' of entity '{}'", prefixedKey, id);
                 });

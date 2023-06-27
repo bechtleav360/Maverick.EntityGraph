@@ -2,6 +2,7 @@ package org.av360.maverick.graph.jobs;
 
 import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.model.context.SessionContext;
+import org.av360.maverick.graph.model.entities.Transaction;
 import org.av360.maverick.graph.model.enums.RepositoryType;
 import org.av360.maverick.graph.model.rdf.AnnotatedStatement;
 import org.av360.maverick.graph.model.rdf.Triples;
@@ -9,7 +10,6 @@ import org.av360.maverick.graph.services.EntityServices;
 import org.av360.maverick.graph.services.QueryServices;
 import org.av360.maverick.graph.store.EntityStore;
 import org.av360.maverick.graph.store.rdf.fragments.RdfEntity;
-import org.av360.maverick.graph.store.rdf.fragments.RdfTransaction;
 import org.av360.maverick.graph.store.rdf.helpers.RdfUtils;
 import org.av360.maverick.graph.store.rdf.helpers.TriplesCollector;
 import org.av360.maverick.graph.tests.config.TestSecurityConfig;
@@ -72,7 +72,7 @@ public class EntityServicesClient {
         importFileMono(resource).block();
     }
 
-    public Mono<RdfTransaction> importFileMono(Resource resource) throws IOException {
+    public Mono<Transaction> importFileMono(Resource resource) throws IOException {
         Flux<DataBuffer> read = DataBufferUtils.read(resource, new DefaultDataBufferFactory(), 1024);
         return this.parse(read, getFormat(resource))
                 .flatMap(triples -> this.entityServices.create(triples, Map.of(), TestSecurityConfig.createTestContext()))

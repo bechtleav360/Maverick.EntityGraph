@@ -3,8 +3,8 @@ package org.av360.maverick.graph.jobs;
 import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.feature.jobs.ReplaceSubjectIdentifiersJob;
 import org.av360.maverick.graph.model.context.SessionContext;
+import org.av360.maverick.graph.model.entities.Transaction;
 import org.av360.maverick.graph.services.EntityServices;
-import org.av360.maverick.graph.store.rdf.fragments.RdfTransaction;
 import org.av360.maverick.graph.tests.config.TestRepositoryConfig;
 import org.av360.maverick.graph.tests.config.TestSecurityConfig;
 import org.av360.maverick.graph.tests.util.TestsBase;
@@ -59,7 +59,7 @@ class TestReplaceSubjectIdentifiers extends TestsBase {
         super.printStart("testReplaceAnonymousIdentifiers");
         SessionContext ctx = TestSecurityConfig.createTestContext();
 
-        Mono<RdfTransaction> importMono = entityServices.importFile(new ClassPathResource("requests/create-valid.ttl"), RDFFormat.TURTLE, ctx).doOnSubscribe(sub -> super.printStep());
+        Mono<Transaction> importMono = entityServices.importFile(new ClassPathResource("requests/create-valid.ttl"), RDFFormat.TURTLE, ctx).doOnSubscribe(sub -> super.printStep());
         Mono<Model> readModelMono = entityServices.getModel(ctx).doOnSubscribe(sub -> super.printStep());
         Mono<Void> actionMono = scheduled.run(ctx).doOnSubscribe(sub -> super.printStep());
 
@@ -89,7 +89,7 @@ class TestReplaceSubjectIdentifiers extends TestsBase {
         super.printStart("testReplaceExternalIdentifiers");
         SessionContext ctx = TestSecurityConfig.createTestContext();
 
-        Mono<RdfTransaction> s1 = entityServices.importFile(new ClassPathResource("requests/create-valid-ext.ttl"), RDFFormat.TURTLE, ctx).doOnSubscribe(sub -> super.printStep());
+        Mono<Transaction> s1 = entityServices.importFile(new ClassPathResource("requests/create-valid-ext.ttl"), RDFFormat.TURTLE, ctx).doOnSubscribe(sub -> super.printStep());
         Mono<Model> s3 = entityServices.getModel(ctx).doOnNext(model -> super.printModel(model, RDFFormat.TURTLE)).doOnSubscribe(sub -> super.printStep());
         Mono<Void> s2 = scheduled.run(ctx).doOnSubscribe(sub -> super.printStep());
 
@@ -122,7 +122,7 @@ class TestReplaceSubjectIdentifiers extends TestsBase {
 
         // Mono<Transaction> tx1 = entityServicesClient.importFileMono(new ClassPathResource("requests/create-esco.ttl"));
 
-        Mono<RdfTransaction> s1 = entityServices.importFile(new ClassPathResource("requests/create-esco.ttl"), RDFFormat.TURTLE, ctx).doOnSubscribe(sub -> super.printStep());
+        Mono<Transaction> s1 = entityServices.importFile(new ClassPathResource("requests/create-esco.ttl"), RDFFormat.TURTLE, ctx).doOnSubscribe(sub -> super.printStep());
         Mono<Void> s2 = scheduled.run(ctx).doOnSubscribe(sub -> super.printStep());
         Mono<Model> s3 = entityServices.getModel(ctx).doOnNext(model -> super.printModel(model, RDFFormat.TURTLE)).doOnSubscribe(sub -> super.printStep());
 

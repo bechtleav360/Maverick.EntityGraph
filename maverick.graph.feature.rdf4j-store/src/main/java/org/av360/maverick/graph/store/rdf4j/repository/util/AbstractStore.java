@@ -5,7 +5,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import org.av360.maverick.graph.model.context.Environment;
 import org.av360.maverick.graph.model.context.SessionContext;
-import org.av360.maverick.graph.model.enums.Activity;
+import org.av360.maverick.graph.model.entities.Transaction;
 import org.av360.maverick.graph.model.enums.RepositoryType;
 import org.av360.maverick.graph.model.errors.InsufficientPrivilegeException;
 import org.av360.maverick.graph.model.rdf.AnnotatedStatement;
@@ -252,28 +252,29 @@ public abstract class AbstractStore implements TripleStore, StatementsAware, Mod
 
 
     @Override
-    public Flux<RdfTransaction> commit(final Collection<RdfTransaction> transactions, Environment environment, boolean merge) {
+    public Flux<Transaction> commit(final Collection<Transaction> transactions, Environment environment, boolean merge) {
         return this.applyManyWithConnection(environment, connection -> {
             connection.begin();
 
             if (merge) {
                 RdfTransaction merged = new RdfTransaction();
                 transactions.forEach(rdfTransaction -> {
-                    merged.getModel().addAll(rdfTransaction.getModel());
+                    merged.getModel().addAll(rdfTransaction.get());
                 });
                 transactions.clear();
                 transactions.add(merged);
             }
 
 
-            Set<RdfTransaction> result = transactions.stream().peek(trx -> {
+            Set<Transaction> result = transactions.stream().peek(trx -> {
                 synchronized (connection) {
                     getLogger().trace("Committing transaction '{}' to repository '{}'", trx.getIdentifier().getLocalName(), connection.getRepository().toString());
                     // FIXME: the approach based on the context works only as long as the statements in the graph are all within the global context only
                     // with this approach, we cannot insert a statement to a context (since it is already in GRAPH_CREATED), every st can only be in one context
                     ValueFactory vf = connection.getValueFactory();
-                    Set<Statement> insertStatements = trx.getModel().filter(null, null, null, Transactions.GRAPH_CREATED).stream().map(s -> vf.createStatement(s.getSubject(), s.getPredicate(), s.getObject())).collect(Collectors.toSet());
-                    Set<Statement> removeStatements = trx.getModel().filter(null, null, null, Transactions.GRAPH_DELETED).stream().map(s -> vf.createStatement(s.getSubject(), s.getPredicate(), s.getObject())).collect(Collectors.toSet());
+                    Model insertStatements = trx.get(Transactions.GRAPH_CREATED);
+                    Model removeStatements = trx.get(Transactions.GRAPH_DELETED);
+
                     try {
                         if (insertStatements.size() > 0) {
                             connection.add(insertStatements);
@@ -367,17 +368,16 @@ public abstract class AbstractStore implements TripleStore, StatementsAware, Mod
     }
 
     @Override
-    public Mono<RdfTransaction> insertModel(Model model, RdfTransaction transaction) {
+    public Mono<Transaction> insertModel(Model model, Transaction transaction) {
         Assert.notNull(transaction, "Transaction cannot be null");
         if (getLogger().isTraceEnabled())
             getLogger().trace("Insert planned for {} statements in transaction '{}'.", model.size(), transaction.getIdentifier().getLocalName());
 
-
         transaction = transaction
-                .insert(model, Activity.INSERTED)
-                .affected(model);
+                .inserts(model)
+                .affects(model);
 
-        return transaction.asMono();
+        return Mono.just(transaction);
     }
 
 
@@ -408,31 +408,29 @@ public abstract class AbstractStore implements TripleStore, StatementsAware, Mod
 
 
     @Override
-    public Mono<RdfTransaction> removeStatements(Collection<Statement> statements, RdfTransaction transaction) {
+    public Mono<Transaction> removeStatements(Collection<Statement> statements, Transaction transaction) {
         Assert.notNull(transaction, "Transaction cannot be null");
         if (getLogger().isTraceEnabled())
             getLogger().trace("Removal planned for {} statements in transaction '{}'.", statements.size(), transaction.getIdentifier().getLocalName());
 
-        return transaction
-                .remove(statements, Activity.REMOVED)
-                .asMono();
+        return Mono.just(transaction.removes(statements));
     }
 
     @Override
-    public Mono<RdfTransaction> addStatement(Resource subject, IRI predicate, Value literal, RdfTransaction transaction) {
+    public Mono<Transaction> addStatement(Resource subject, IRI predicate, Value literal, Transaction transaction) {
         return this.addStatement(subject, predicate, literal, null, transaction);
     }
 
     @Override
-    public Mono<RdfTransaction> addStatement(Resource subject, IRI predicate, Value literal, @Nullable Resource context, RdfTransaction transaction) {
+    public Mono<Transaction> addStatement(Resource subject, IRI predicate, Value literal, @Nullable Resource context, Transaction transaction) {
         if (getLogger().isTraceEnabled())
             getLogger().trace("Marking statement for insert in transaction {}: {} - {} - {}", transaction.getIdentifier().getLocalName(), subject, predicate, literal);
 
 
-        return transaction
-                .insert(subject, predicate, literal, context, Activity.UPDATED)
-                .affected(subject, predicate, literal)
-                .asMono();
+        Transaction trx = transaction
+                .inserts(subject, predicate, literal, context)
+                .affects(subject, predicate, literal);
+        return Mono.just(trx);
     }
 
 

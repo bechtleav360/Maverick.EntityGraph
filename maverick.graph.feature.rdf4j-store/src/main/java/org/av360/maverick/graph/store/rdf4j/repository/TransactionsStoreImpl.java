@@ -2,9 +2,10 @@ package org.av360.maverick.graph.store.rdf4j.repository;
 
 import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.model.context.Environment;
+import org.av360.maverick.graph.model.entities.Transaction;
 import org.av360.maverick.graph.model.enums.RepositoryType;
+import org.av360.maverick.graph.model.vocabulary.Transactions;
 import org.av360.maverick.graph.store.TransactionsStore;
-import org.av360.maverick.graph.store.rdf.fragments.RdfTransaction;
 import org.av360.maverick.graph.store.rdf4j.repository.util.AbstractStore;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Value;
@@ -25,12 +26,12 @@ public class TransactionsStoreImpl extends AbstractStore implements Transactions
 
 
     @Override
-    public Flux<RdfTransaction> store(Collection<RdfTransaction> transactions, Environment environment) {
+    public Flux<Transaction> store(Collection<Transaction> transactions, Environment environment) {
         return this.applyManyWithConnection(environment, connection -> {
             transactions.forEach(trx -> {
                 try {
                     connection.begin();
-                    connection.add(trx.getModel());
+                    connection.add(trx.get(Transactions.GRAPH_PROVENANCE));
                     connection.commit();
                 } catch (Exception e) {
                     log.error("Error while storing transaction, performing rollback.", e);

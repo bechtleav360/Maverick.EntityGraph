@@ -2,10 +2,10 @@ package org.av360.maverick.graph.services;
 
 import jakarta.annotation.Nullable;
 import org.av360.maverick.graph.model.context.SessionContext;
+import org.av360.maverick.graph.model.entities.Transaction;
 import org.av360.maverick.graph.model.rdf.Triples;
 import org.av360.maverick.graph.store.EntityStore;
 import org.av360.maverick.graph.store.rdf.fragments.RdfEntity;
-import org.av360.maverick.graph.store.rdf.fragments.RdfTransaction;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.rio.RDFFormat;
@@ -53,20 +53,20 @@ public interface EntityServices {
     /**
      * Deletes an entity with all its values from the store.
      *
-     * @param entityIri The unique entity identifier as IRI
-     * @param authentication   The current authentication
+     * @param entityIri      The unique entity identifier as IRI
+     * @param authentication The current authentication
      * @return Transaction with affected statements
      */
-    Mono<RdfTransaction> remove(IRI entityIri, SessionContext ctx);
+    Mono<Transaction> remove(IRI entityIri, SessionContext ctx);
 
     /**
      * Deletes an entity with all its values from the store.
      *
-     * @param entityKey The unique entity identifier as String
-     * @param authentication   The current authentication
+     * @param entityKey      The unique entity identifier as String
+     * @param authentication The current authentication
      * @return Transaction with affected statements
      */
-    Mono<RdfTransaction> remove(String entityKey, SessionContext ctx);
+    Mono<Transaction> remove(String entityKey, SessionContext ctx);
 
     /**
      * Creates entities from the incoming set of triples
@@ -76,10 +76,10 @@ public interface EntityServices {
      * @param authentication The current authentication
      * @return Transaction with affected statements
      */
-    Mono<RdfTransaction> create(Triples triples, Map<String, String> parameters, SessionContext ctx);
+    Mono<Transaction> create(Triples triples, Map<String, String> parameters, SessionContext ctx);
 
 
-    Mono<RdfTransaction> linkEntityTo(String entityKey, IRI predicate, Triples linkedEntities, SessionContext ctx);
+    Mono<Transaction> linkEntityTo(String entityKey, IRI predicate, Triples linkedEntities, SessionContext ctx);
 
     /**
      * Retrieves a complete entity representation (identifier, values and relations) from store.
@@ -103,7 +103,7 @@ public interface EntityServices {
 
     EntityStore getStore(SessionContext ctx);
 
-    Mono<RdfTransaction> importFile(Resource resource, RDFFormat format, SessionContext ctx);
+    Mono<Transaction> importFile(Resource resource, RDFFormat format, SessionContext ctx);
 
     Mono<Model> getModel(SessionContext ctx);
 }

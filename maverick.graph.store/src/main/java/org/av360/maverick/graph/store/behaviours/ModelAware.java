@@ -1,7 +1,7 @@
 package org.av360.maverick.graph.store.behaviours;
 
 import org.av360.maverick.graph.model.context.Environment;
-import org.av360.maverick.graph.store.rdf.fragments.RdfTransaction;
+import org.av360.maverick.graph.model.entities.Transaction;
 import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.impl.LinkedHashModel;
@@ -33,7 +33,7 @@ public interface ModelAware extends TripleStore {
      * @param transaction
      * @return Returns the transaction statements
      */
-    Mono<RdfTransaction> insertModel(Model model, RdfTransaction transaction);
+    Mono<Transaction> insertModel(Model model, Transaction transaction);
 
     Mono<Model> getModel(Environment environment);
 

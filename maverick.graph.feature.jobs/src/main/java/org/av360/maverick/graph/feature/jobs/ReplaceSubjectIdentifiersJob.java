@@ -3,6 +3,7 @@ package org.av360.maverick.graph.feature.jobs;
 import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.model.context.SessionContext;
 import org.av360.maverick.graph.model.entities.Job;
+import org.av360.maverick.graph.model.entities.Transaction;
 import org.av360.maverick.graph.model.enums.RepositoryType;
 import org.av360.maverick.graph.model.errors.InvalidConfiguration;
 import org.av360.maverick.graph.model.vocabulary.Local;
@@ -112,7 +113,7 @@ public class ReplaceSubjectIdentifiersJob implements Job {
     /**
      * First run: replace only subject identifiers, move old identifier in temporary property
      */
-    private Flux<RdfTransaction> checkForExternalSubjectIdentifiers(SessionContext ctx) {
+    private Flux<Transaction> checkForExternalSubjectIdentifiers(SessionContext ctx) {
         return findSubjectCandidates(ctx)
                 .flatMap(value -> this.loadSubjectStatements(value, ctx))
                 .flatMap(bag -> this.convertSubjectStatements(bag, ctx))
@@ -120,7 +121,7 @@ public class ReplaceSubjectIdentifiersJob implements Job {
                 .flatMap(bag -> this.deleteStatements(bag, ctx))
                 .buffer(50)
                 .flatMap(transactions -> this.commit(transactions, ctx))
-                .doOnNext(transaction -> Assert.isTrue(transaction.hasStatement(null, Transactions.STATUS, Transactions.SUCCESS), "Failed transaction: \n" + transaction))
+                .doOnNext(transaction -> Assert.isTrue(transaction.get().contains(null, Transactions.STATUS, Transactions.SUCCESS), "Failed transaction: \n" + transaction))
                 .buffer(5)
                 .flatMap(transactions -> this.storeTransactions(transactions, ctx));
     }
@@ -146,18 +147,18 @@ public class ReplaceSubjectIdentifiersJob implements Job {
 
 
 
-    private Flux<RdfTransaction> commit(List<RdfTransaction> transactions, SessionContext ctx) {
+    private Flux<Transaction> commit(List<Transaction> transactions, SessionContext ctx) {
         // log.trace("Committing {} transactions", transactions.size());
         return this.entityServices.getStore(ctx).commit(transactions, ctx.getEnvironment(), true)
                 .doOnComplete(() -> log.trace("Committed {} transactions in job {}", transactions.size(), this.getName()));
     }
 
-    private Flux<RdfTransaction> storeTransactions(Collection<RdfTransaction> transactions, SessionContext ctx) {
+    private Flux<Transaction> storeTransactions(Collection<Transaction> transactions, SessionContext ctx) {
         //FIXME: through event
         return this.transactionsService.getStore(ctx).store(transactions, ctx.getEnvironment());
     }
 
-    private Mono<RdfTransaction> deleteStatements(StatementsBag statementsBag, SessionContext ctx) {
+    private Mono<Transaction> deleteStatements(StatementsBag statementsBag, SessionContext ctx) {
         ArrayList<Statement> statements = new ArrayList<>(statementsBag.removableStatements());
 
         return entityServices.getStore(ctx).removeStatements(statements, statementsBag.transaction());

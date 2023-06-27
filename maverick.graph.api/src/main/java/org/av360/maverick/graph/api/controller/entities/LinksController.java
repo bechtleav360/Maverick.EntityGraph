@@ -9,6 +9,7 @@ import org.av360.maverick.graph.api.controller.AbstractController;
 import org.av360.maverick.graph.model.api.LinksAPI;
 import org.av360.maverick.graph.model.enums.RdfMimeTypes;
 import org.av360.maverick.graph.model.rdf.AnnotatedStatement;
+import org.av360.maverick.graph.model.rdf.Triples;
 import org.av360.maverick.graph.services.EntityServices;
 import org.av360.maverick.graph.services.SchemaServices;
 import org.av360.maverick.graph.services.ValueServices;
@@ -86,7 +87,7 @@ public class LinksController extends AbstractController implements LinksAPI {
 
         return super.acquireContext()
                 .flatMap(ctx -> this.values.insertLink(source_id, prefixedKey, target_id, ctx))
-                .flatMapIterable(TripleModel::asStatements)
+                .flatMapIterable(Triples::asStatements)
                 .doOnSubscribe((Subscription s) -> {
                     if (log.isDebugEnabled())
                         log.debug("Request to create link '{}' between entity '{}' and entity '{}'", prefixedKey, source_id, target_id);
@@ -104,7 +105,7 @@ public class LinksController extends AbstractController implements LinksAPI {
         return super.acquireContext()
                 .flatMap(ctx -> this.values.removeLink(source_id, prefixedKey, target_id, ctx))
                 .flatMap(Mono::just)
-                .flatMapIterable(TripleModel::asStatements)
+                .flatMapIterable(Triples::asStatements)
                 .doOnSubscribe(s -> {
                     if (log.isDebugEnabled())
                         log.debug("Request to remove link '{}' between entity '{}' and entity '{}'", prefixedKey, source_id, target_id);

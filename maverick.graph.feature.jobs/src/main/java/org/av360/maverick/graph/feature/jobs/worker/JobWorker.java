@@ -48,7 +48,7 @@ public class JobWorker {
         // we should always have only job running in one scope, to prevent read/write conflicts
         requestedJobs.peek().ifPresent(jobIdentifier -> {
             if(StringUtils.hasLength(this.activeJobs.get(jobIdentifier.scope()))) {
-                log.debug("Job '{}' in scope '{}' still running, skipping scheduled run of job '{}'.", this.activeJobs.get(jobIdentifier.scope()), jobIdentifier.scope(), jobIdentifier.name());
+                log.debug("Job '{}' in scope '{}' still running, skipping scheduled run of job '{}' in same scope.", this.activeJobs.get(jobIdentifier.scope()), jobIdentifier.scope(), jobIdentifier.name());
                 requestedJobs.delayFirst();
                 meterRegistry.counter("graph.jobs.counter", "name", jobIdentifier.name(), "scope", jobIdentifier.scope(), "status", "hold").increment();
                 return;

@@ -1,8 +1,8 @@
 package org.av360.maverick.graph.services;
 
 import org.av360.maverick.graph.model.context.SessionContext;
+import org.av360.maverick.graph.model.entities.Transaction;
 import org.av360.maverick.graph.store.rdf.fragments.RdfEntity;
-import org.av360.maverick.graph.store.rdf.fragments.RdfTransaction;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Statement;
@@ -16,25 +16,25 @@ public interface ValueServices {
     /**
      * Sets the value. Replaces an existing value with the same predicate, except a different @-tag has been set
      *
-     * @param entityKey         The unique local identifier of the entity
-     * @param property          Prefixed key of the predicate
-     * @param value             The new value
-     * @param languageTag       Optional language tag
-     * @param authentication    The current authentication
+     * @param entityKey      The unique local identifier of the entity
+     * @param property       Prefixed key of the predicate
+     * @param value          The new value
+     * @param languageTag    Optional language tag
+     * @param authentication The current authentication
      * @return The transaction information.
      */
-    Mono<RdfTransaction> insertValue(String entityKey, String property, String value, @Nullable String languageTag, SessionContext ctx);
+    Mono<Transaction> insertValue(String entityKey, String property, String value, @Nullable String languageTag, SessionContext ctx);
 
     /**
      * Sets the value. Replaces an existing value with the same predicate, except a different @-tag has been set
      *
-     * @param entityKey The unique local identifier of the entity
-     * @param property     Prefixed key of the predicate
-     * @param targetKey       The target key
-     * @param authentication   The current authentication
+     * @param entityKey      The unique local identifier of the entity
+     * @param property       Prefixed key of the predicate
+     * @param targetKey      The target key
+     * @param authentication The current authentication
      * @return The transaction information.
      */
-    Mono<RdfTransaction> insertLink(String entityKey, String property, String targetKey, SessionContext ctx);
+    Mono<Transaction> insertLink(String entityKey, String property, String targetKey, SessionContext ctx);
 
     /**
      * @param entityIdentifier The unique local identifier of the entity
@@ -43,7 +43,7 @@ public interface ValueServices {
      * @param authentication   The current authentication
      * @return The transaction information.
      */
-    Mono<RdfTransaction> insertValue(IRI entityIdentifier, IRI predicate, Value value, SessionContext ctx);
+    Mono<Transaction> insertValue(IRI entityIdentifier, IRI predicate, Value value, SessionContext ctx);
 
 
     /**
@@ -55,16 +55,16 @@ public interface ValueServices {
      * @param authentication   The current authentication
      * @return The transaction information.
      */
-    Mono<RdfTransaction> insertEmbedded(IRI entityIdentifier, IRI predicate, Resource value, Set<Statement> embedded, SessionContext ctx);
+    Mono<Transaction> insertEmbedded(IRI entityIdentifier, IRI predicate, Resource value, Set<Statement> embedded, SessionContext ctx);
 
     /**
-     * @param entityKey         The unique local identifier of the entity
-     * @param prefixedProperty  Prefixed name of the predicate
-     * @param lang              Optional language tag
-     * @param authentication    The current authentication
+     * @param entityKey        The unique local identifier of the entity
+     * @param prefixedProperty Prefixed name of the predicate
+     * @param lang             Optional language tag
+     * @param authentication   The current authentication
      * @return The transaction information.
      */
-    Mono<RdfTransaction> removeLiteral(String entityKey, String prefixedProperty, String lang, SessionContext ctx);
+    Mono<Transaction> removeLiteral(String entityKey, String prefixedProperty, String lang, SessionContext ctx);
 
     /**
      * @param entityIdentifier The unique and qualified local identifier of the entity
@@ -73,17 +73,17 @@ public interface ValueServices {
      * @param authentication   The current authentication
      * @return The transaction information.
      */
-    Mono<RdfTransaction> removeValue(IRI entityIdentifier, IRI predicate, @Nullable String lang, SessionContext ctx);
+    Mono<Transaction> removeValue(IRI entityIdentifier, IRI predicate, @Nullable String lang, SessionContext ctx);
 
 
     /**
-     * @param entityKey         The unique local identifier of the entity
-     * @param prefixedProperty  Prefixed name of the predicate
-     * @param targetKey         The target key
-     * @param authentication    The current authentication
+     * @param entityKey        The unique local identifier of the entity
+     * @param prefixedProperty Prefixed name of the predicate
+     * @param targetKey        The target key
+     * @param authentication   The current authentication
      * @return The transaction information.
      */
-    Mono<RdfTransaction> removeLink(String entityKey, String prefixedProperty, String targetKey, SessionContext ctx);
+    Mono<Transaction> removeLink(String entityKey, String prefixedProperty, String targetKey, SessionContext ctx);
 
 
     /**
@@ -94,7 +94,7 @@ public interface ValueServices {
      * @param authentication   The current authentication
      * @return The transaction information.
      */
-    Mono<RdfTransaction> replace(IRI entityIdentifier, IRI predicate, Value oldValue, Value newValue, SessionContext ctx);
+    Mono<Transaction> replace(IRI entityIdentifier, IRI predicate, Value oldValue, Value newValue, SessionContext ctx);
 
     Mono<RdfEntity> listLinks(String id, String prefixedKey, SessionContext ctx);
 }
