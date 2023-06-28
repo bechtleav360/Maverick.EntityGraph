@@ -20,15 +20,7 @@ public class DelegatingConfigurationService implements ConfigurationService {
     public Mono<String> getValue(String key, SessionContext ctx) {
         String applicationLabel = ctx.getEnvironment().getScope().label();
         return applicationsService.getApplication(applicationLabel, ctx)
-                .flatMap(application -> {
-                    String result = application.configuration().get(key).toString();
-
-                    if (result != null) {
-                        return Mono.just(result);
-                    } else {
-                        return delegate.getValue(key, ctx);
-                    }
-                })
-                .switchIfEmpty(delegate.getValue(key, ctx));
+                .flatMap(application -> Mono.justOrEmpty(application.configuration().get(key).toString()))
+                .onErrorResume(e -> delegate.getValue(key, ctx));
     }
 }
