@@ -60,7 +60,8 @@ public class AdminRestController extends AbstractController {
             // @ApiParam(example = "text/turtle")
             @RequestParam(required = false, defaultValue = "entities", value = "entities") @Parameter(name = "repository", description = "The repository type in which the query should search.")
             RepositoryType repositoryType,
-            @RequestHeader(HttpHeaders.ACCEPT)
+            @RequestHeader(HttpHeaders.CONTENT_TYPE)
+            @Parameter(description = "The RDF format of the content",schema = @Schema(type = "string", allowableValues = {"text/turtle", "application/n3", "application/n-triples", "application/rdf+xml", "application/ld+json", "application/n-quads", "application/vnd.hdt"}))
             String mimetype
             ) {
         Assert.isTrue(StringUtils.hasLength(mimetype), "Mimetype is a required parameter");
