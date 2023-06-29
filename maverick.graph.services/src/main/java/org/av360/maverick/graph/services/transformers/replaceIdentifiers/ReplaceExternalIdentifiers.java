@@ -1,6 +1,7 @@
 package org.av360.maverick.graph.services.transformers.replaceIdentifiers;
 
 import lombok.extern.slf4j.Slf4j;
+import org.av360.maverick.graph.model.context.Environment;
 import org.av360.maverick.graph.model.vocabulary.Local;
 import org.av360.maverick.graph.services.IdentifierServices;
 import org.av360.maverick.graph.services.transformers.Transformer;
@@ -37,9 +38,9 @@ public class ReplaceExternalIdentifiers extends AbstractIdentifierReplace implem
 
 
     @Override
-    public Mono<? extends Model> handle(Model triples, Map<String, String> parameters) {
+    public Mono<? extends Model> handle(Model triples, Map<String, String> parameters, Environment environment) {
 
-        return this.buildIdentifierMappings(triples)
+        return this.buildIdentifierMappings(triples, environment)
                 .collect(Collectors.toSet())
                 .flatMap(mappings -> replaceIdentifiers(mappings, triples))
                 .flatMap(mappings -> preserveExternalIdentifiers(mappings, triples))
@@ -55,7 +56,7 @@ public class ReplaceExternalIdentifiers extends AbstractIdentifierReplace implem
     }
 
 
-    public Flux<IdentifierMapping> buildIdentifierMappings(Model model) {
+    public Flux<IdentifierMapping> buildIdentifierMappings(Model model, Environment environment) {
 
         /*
         return Flux.create(sink -> {
@@ -75,7 +76,7 @@ public class ReplaceExternalIdentifiers extends AbstractIdentifierReplace implem
                 .map(val -> (IRI) val)
                 .filter(iri -> !iri.stringValue().startsWith(Local.URN_PREFIX))
                 .flatMap(iri ->
-                        identifierServices.asReproducibleIRI(Local.Entities.NAMESPACE, iri)
+                        identifierServices.asReproducibleIRI(Local.Entities.NAMESPACE, environment, iri)
                                 .map(generated -> new IdentifierMapping(iri, generated))
                 );
 

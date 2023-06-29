@@ -1,5 +1,6 @@
 package org.av360.maverick.graph.services;
 
+import org.av360.maverick.graph.model.context.Environment;
 import org.av360.maverick.graph.model.identifier.ChecksumIdentifier;
 import org.av360.maverick.graph.model.identifier.LocalIdentifier;
 import org.av360.maverick.graph.model.identifier.RandomIdentifier;
@@ -12,25 +13,25 @@ import java.io.Serializable;
 
 public interface IdentifierServices {
 
-    Mono<String> validate(String identifier);
+    Mono<String> validate(String identifier, Environment environment);
 
 
-    Mono<IRI> asIRI(String key, String namespace);
+    Mono<IRI> asIRI(String key, String namespace, Environment environment);
 
-    default Mono<IRI> asIRI(String key) {
-        return this.asIRI(key, Local.Entities.NAMESPACE);
+    default Mono<IRI> asIRI(String key, Environment environment) {
+        return this.asIRI(key, Local.Entities.NAMESPACE, environment);
     }
 
-    default Mono<IRI> asRandomIRI(String namespace) {
+    default Mono<IRI> asRandomIRI(String namespace, Environment environment) {
         return Mono.just(createRandomIdentifier(namespace));
     }
 
-    default Mono<IRI> asReproducibleIRI(String namespace, Serializable... parts) {
+    default Mono<IRI> asReproducibleIRI(String namespace, Environment environment, Serializable... parts) {
         return Mono.just(createReproducibleIdentifier(namespace, parts));
     }
 
-    default Mono<IRI> asReproducibleIRI(Namespace namespace, Serializable... parts) {
-        return asReproducibleIRI(namespace.getName(), parts);
+    default Mono<IRI> asReproducibleIRI(Namespace namespace, Environment environment, Serializable... parts) {
+        return asReproducibleIRI(namespace.getName(), environment, parts);
     }
 
     static LocalIdentifier createRandomIdentifier(String namespace) {
@@ -46,7 +47,7 @@ public interface IdentifierServices {
     }
 
 
-    default Mono<IRI> asRandomIRI(Namespace ns) {
-        return asRandomIRI(ns.getName());
+    default Mono<IRI> asRandomIRI(Namespace ns, Environment environment) {
+        return asRandomIRI(ns.getName(), environment);
     }
 }

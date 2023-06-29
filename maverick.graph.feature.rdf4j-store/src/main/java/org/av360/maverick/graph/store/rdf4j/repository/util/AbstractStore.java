@@ -287,6 +287,7 @@ public abstract class AbstractStore implements TripleStore, StatementsAware, Mod
                             connection.prepare();
                             connection.commit();
                             getLogger().debug("Transaction '{}' completed with {} inserted statements and {} removed statements in repository '{}'.", trx.getIdentifier().getLocalName(), insertStatements.size(), removeStatements.size(), connection.getRepository());
+
                         }
 
                         trx.setCompleted();

@@ -75,14 +75,14 @@ public class AssignInternalTypesJob implements Job {
         return this.findCandidates(ctx)
                 .doOnNext(res -> log.trace("Convert type of resource with id '{}'", res.stringValue()))
                 .flatMap(res -> this.loadFragment(ctx, res))
-                .flatMap(localTypesTransformer::handle)
+                .flatMap(fragment -> this.localTypesTransformer.handle(fragment, ctx.getEnvironment()))
                 .collect(new MergingModelCollector())
                 .doOnNext(model -> log.trace("Collected {} statements for new types", model.size()))
                 .flatMap(model -> this.entityServices.getStore(ctx).insertModel(model, new RdfTransaction()))
                 .flatMapMany(trx -> this.entityServices.getStore(ctx).commit(trx, ctx.getEnvironment()))
                 .doOnNext(transaction -> Assert.isTrue(transaction.get().contains(null, Transactions.STATUS, Transactions.SUCCESS), "Failed transaction: \n" + transaction))
                 .buffer(100)
-                .flatMap(transactions -> this.transactionsService.save(transactions, ctx.getEnvironment()))
+                .flatMap(transactions -> this.transactionsService.save(transactions, ctx))
                 .doOnError(throwable -> log.error("Exception while assigning internal types: {}", throwable.getMessage()))
                 .doOnSubscribe(sub -> {
                     log.trace("Checking for entities with missing internal type definitions.");

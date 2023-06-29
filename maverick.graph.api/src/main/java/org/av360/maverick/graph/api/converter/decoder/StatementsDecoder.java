@@ -16,6 +16,8 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.io.InputStream;
+import java.io.StringReader;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 
@@ -59,14 +61,15 @@ public class StatementsDecoder implements Decoder<Triples> {
 
         return DataBufferUtils.join(publisher)
                 .flatMap(dataBuffer -> {
-
-
                     RDFParser parser = RdfUtils.getParserFactory(mimeType).orElseThrow().getParser();
                     TriplesCollector handler = RdfUtils.getTriplesCollector();
 
                     try (InputStream is = dataBuffer.asInputStream(true)) {
+                        var result = new String(is.readAllBytes(), StandardCharsets.UTF_8);
+                        log.info(result);
+
                         parser.setRDFHandler(handler);
-                        parser.parse(is);
+                        parser.parse(new StringReader(result));
                         log.debug("Parsed payload of mimetype '{}' with {} statements", mimeType.toString(), handler.getTriples().getModel().size());
                         return Mono.just(handler.getTriples());
                     } catch (Exception e) {

@@ -24,11 +24,11 @@ application:
         enabled: true
         scheduled:
           detectDuplicates:
-            enabled: false
+            enabled: true
           replaceIdentifiers:
-            enabled: false
+            enabled: true
           typeCoercion:
-            enabled: false
+            enabled: true
           exportApplication:
             enabled: false
             defaultLocalPath: "D:/Graphen/entities/exports"

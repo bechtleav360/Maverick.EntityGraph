@@ -115,7 +115,7 @@ public class ReplaceSubjectIdentifiersJob implements Job {
      */
     private Flux<Transaction> checkForExternalSubjectIdentifiers(SessionContext ctx) {
         return findSubjectCandidates(ctx)
-                .flatMap(value -> this.loadSubjectStatements(value, ctx))
+                .flatMap(value -> this.loadFragment(value, ctx))
                 .flatMap(bag -> this.convertSubjectStatements(bag, ctx))
                 .flatMap(bag -> this.insertStatements(bag, ctx))
                 .flatMap(bag -> this.deleteStatements(bag, ctx))
@@ -136,7 +136,7 @@ public class ReplaceSubjectIdentifiersJob implements Job {
                     FILTER STRSTARTS(str(?a), "%s").
                     }
                   }
-                  LIMIT 5000
+                  LIMIT 10000
                 """;
         String query = String.format(tpl, Local.Entities.NAMESPACE);
         return this.queryServices.queryValues(query, RepositoryType.ENTITIES, ctx)
@@ -169,13 +169,29 @@ public class ReplaceSubjectIdentifiersJob implements Job {
     }
 
 
+    private Mono<StatementsBag> convertSubjectStatementsNew(StatementsBag bag, SessionContext ctx) {
+        LinkedHashModel model = new LinkedHashModel();
+        model.addAll(bag.removableStatements());
+        // FIXME: not implemented yet, use the handle method in the job
+
+        this.replaceExternalIdentifiers.handle(model, Map.of(), ctx.getEnvironment())
+                .then(this.replaceAnonymousIdentifiers.handle(model, Map.of(), ctx.getEnvironment()))
+                .then();
+
+
+
+        return Mono.empty();
+
+    }
+
+
     private Mono<StatementsBag> convertSubjectStatements(StatementsBag bag, SessionContext ctx) {
         LinkedHashModel model = new LinkedHashModel();
         model.addAll(bag.removableStatements());
 
         return Mono.zip(
-                this.replaceExternalIdentifiers.buildIdentifierMappings(model).collectList(),
-                this.replaceAnonymousIdentifiers.buildIdentifierMappings(model).collectList()
+                this.replaceExternalIdentifiers.buildIdentifierMappings(model, ctx.getEnvironment()).collectList(),
+                this.replaceAnonymousIdentifiers.buildIdentifierMappings(model, ctx.getEnvironment()).collectList()
         ).map(pair -> {
             Map<Resource, IRI> map = new HashMap<>();
             pair.getT1().forEach(mapping -> map.put(mapping.oldIdentifier(), mapping.newIdentifier()));
@@ -194,10 +210,9 @@ public class ReplaceSubjectIdentifiersJob implements Job {
             bag.convertedStatements().addAll(modelBuilder.build());
             return bag;
         }).doOnSubscribe(sub -> log.trace("Converting subjects for resource '{}' with {} removableStatements", bag.candidateIdentifier(), bag.removableStatements().size()));
-
     }
 
-    public Mono<StatementsBag> loadSubjectStatements(Resource candidate, SessionContext ctx) {
+    public Mono<StatementsBag> loadFragment(Resource candidate, SessionContext ctx) {
         return this.entityServices.getStore(ctx).getFragment(candidate, ctx.getEnvironment())
                 .map(fragment -> new StatementsBag(candidate, Collections.synchronizedSet(fragment.getModel()), new LinkedHashModel(), null, new RdfTransaction()));
 

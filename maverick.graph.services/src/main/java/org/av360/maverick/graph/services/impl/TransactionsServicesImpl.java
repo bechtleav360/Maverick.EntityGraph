@@ -2,7 +2,6 @@ package org.av360.maverick.graph.services.impl;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.NotImplementedException;
-import org.av360.maverick.graph.model.context.Environment;
 import org.av360.maverick.graph.model.context.SessionContext;
 import org.av360.maverick.graph.model.entities.Transaction;
 import org.av360.maverick.graph.model.security.Authorities;
@@ -45,7 +44,7 @@ public class TransactionsServicesImpl implements TransactionsService {
 
     @Override
     @RequiresPrivilege(Authorities.MAINTAINER_VALUE)
-    public Mono<List<Transaction>> save(List<Transaction> transactions, Environment environment) {
-        return this.transactionsStore.store(transactions, environment).collectList();
+    public Mono<List<Transaction>> save(List<Transaction> transactions, SessionContext context) {
+        return this.transactionsStore.store(transactions, context.getEnvironment()).collectList();
     }
 }
