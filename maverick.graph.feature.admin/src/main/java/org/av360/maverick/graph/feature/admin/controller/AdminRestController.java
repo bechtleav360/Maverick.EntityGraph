@@ -53,7 +53,7 @@ public class AdminRestController extends AbstractController {
 
 
     //@ApiOperation(value = "Import RDF into entity repository", tags = {})
-    @PostMapping(value = "/import/content", consumes = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.N3_VALUE, RdfMimeTypes.RDFXML_VALUE, RdfMimeTypes.BINARY_VALUE, RdfMimeTypes.NQUADS_VALUE, RdfMimeTypes.TURTLESTAR_VALUE})
+    @PostMapping(value = "/import/content", consumes = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.NTRIPLES_VALUE, RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.N3_VALUE, RdfMimeTypes.RDFXML_VALUE, RdfMimeTypes.BINARY_VALUE, RdfMimeTypes.NQUADS_VALUE, RdfMimeTypes.TURTLESTAR_VALUE})
     @ResponseStatus(HttpStatus.ACCEPTED)
     Mono<Void> importEntities(
             @RequestBody @Parameter(name = "data", description = "The rdf data.") Flux<DataBuffer> bytes,
