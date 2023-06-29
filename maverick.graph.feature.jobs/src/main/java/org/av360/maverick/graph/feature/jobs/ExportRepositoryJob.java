@@ -28,6 +28,8 @@ import software.amazon.awssdk.services.s3.model.PutObjectResponse;
 import java.io.*;
 import java.net.URI;
 import java.nio.ByteBuffer;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
@@ -52,8 +54,6 @@ public class ExportRepositoryJob implements Job {
     }
 
     protected String resolveLocalStorageDirectory(SessionContext ctx) {
-        // FIXME: @mumi, we don't want a dependency to the application feature here... the jobs module should also work if the applications module is inactive.
-        // Solution: create a ConfigurationService (interface in model), which has a default implementation and a decorator in the applications module
         return configurationService.getValue("export_local_path", ctx).block();
     }
     protected String resolveS3Host(SessionContext ctx) {
@@ -132,13 +132,15 @@ public class ExportRepositoryJob implements Job {
     private Mono<Void> saveRdfToLocalPath(Flux<DataBuffer> dataBufferFlux, SessionContext ctx) {
         String filename = Objects.nonNull(ctx.getEnvironment().getScope()) ? ctx.getEnvironment().getScope().label() : "default";
 
-        return DataBufferUtils.write(
-                dataBufferFlux,
-                Paths.get(
-                        this.resolveLocalStorageDirectory(ctx),
-                        "%s.ttl".formatted(filename)
-                )
-        ).then();
+        Path directoryPath = Paths.get(this.resolveLocalStorageDirectory(ctx));
+        try {
+            Files.createDirectories(directoryPath);
+        } catch (IOException e) {
+            return Mono.error(new RuntimeException("Error creating directories for export", e));
+        }
+
+        Path filePath = directoryPath.resolve("%s.ttl".formatted(filename));
+        return DataBufferUtils.write(dataBufferFlux, filePath).then();
     }
 
     private Mono<PutObjectResponse> uploadRdfToS3(S3AsyncClient s3Client, Flux<DataBuffer> dataBufferFlux, SessionContext ctx) {
