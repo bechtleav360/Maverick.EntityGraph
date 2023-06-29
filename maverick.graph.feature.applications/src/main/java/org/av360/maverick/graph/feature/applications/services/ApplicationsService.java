@@ -155,9 +155,9 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
                 .then(this.getApplication(application.key(), ctx))
                 .doOnSuccess(app -> {
                     this.eventPublisher.publishEvent(new ApplicationUpdatedEvent(app));
-                    log.debug("Updated configuration key '{}' of node with label '{}'", app.key(), app.label());
+                    log.debug("Updated configuration key '{}' of application with label '{}'", configKey, app.label());
                 })
-                .doOnSubscribe(StreamsLogger.debug(log, "Updating configuration key '{}' for node with label '{}'", configKey, application.label()));
+                .doOnSubscribe(StreamsLogger.debug(log, "Updating configuration key '{}' for application with label '{}'", configKey, application.label()));
     }
     @RequiresPrivilege(Authorities.MAINTAINER_VALUE)
     public Mono<Void> deleteConfigurationItem(Application application, String configurationKey, SessionContext ctx) {
