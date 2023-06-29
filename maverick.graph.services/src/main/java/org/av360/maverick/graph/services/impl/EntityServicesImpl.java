@@ -2,6 +2,7 @@ package org.av360.maverick.graph.services.impl;
 
 import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.model.context.SessionContext;
+import org.av360.maverick.graph.model.entities.Transaction;
 import org.av360.maverick.graph.model.enums.Activity;
 import org.av360.maverick.graph.model.enums.RepositoryType;
 import org.av360.maverick.graph.model.errors.InconsistentModelException;
@@ -157,7 +158,7 @@ public class EntityServicesImpl implements EntityServices {
     @Override
     @RequiresPrivilege(Authorities.READER_VALUE)
     public Mono<RdfEntity> findByKey(String entityKey, SessionContext ctx) {
-        return identifierServices.asIRI(entityKey)
+        return identifierServices.asIRI(entityKey, ctx.getEnvironment())
                 .flatMap(entityIdentifier -> this.get(entityIdentifier, 1, ctx));
     }
 
@@ -198,7 +199,7 @@ public class EntityServicesImpl implements EntityServices {
 
     @RequiresPrivilege(Authorities.READER_VALUE)
     public Mono<IRI> resolveAndVerify(String key, SessionContext ctx) {
-        return this.identifierServices.asIRI(key)
+        return this.identifierServices.asIRI(key, ctx.getEnvironment())
                 .filterWhen(iri -> this.contains(iri, ctx))
                 .switchIfEmpty(Mono.error(new EntityNotFound(key)))
                 .doOnSuccess(res -> log.trace("Resolved entity key {} to qualified identifier {}", key, res.stringValue()));
@@ -221,7 +222,7 @@ public class EntityServicesImpl implements EntityServices {
 
     @Override
     @RequiresPrivilege(Authorities.MAINTAINER_VALUE)
-    public Mono<RdfTransaction> importFile(org.springframework.core.io.Resource resource, RDFFormat format, SessionContext context) {
+    public Mono<Transaction> importFile(org.springframework.core.io.Resource resource, RDFFormat format, SessionContext context) {
         Flux<DataBuffer> publisher = ValidateReactive.notNull(resource)
                 .then(ValidateReactive.isTrue(resource.exists(), "Resource does not exist: "+resource.toString()))
                 .thenMany(DataBufferUtils.read(resource, new DefaultDataBufferFactory(), 1024));
@@ -254,7 +255,7 @@ public class EntityServicesImpl implements EntityServices {
 
     @Override
     @RequiresPrivilege(Authorities.MAINTAINER_VALUE)
-    public Mono<RdfTransaction> remove(IRI entityIri, SessionContext ctx) {
+    public Mono<Transaction> remove(IRI entityIri, SessionContext ctx) {
         return this.entityStore.listStatements(entityIri, null, null, ctx.getEnvironment())
                 .flatMap(statements -> this.entityStore.removeStatements(statements, new RdfTransaction()))
                 .flatMap(trx -> this.entityStore.commit(trx, ctx.getEnvironment()))
@@ -266,16 +267,17 @@ public class EntityServicesImpl implements EntityServices {
 
     @Override
     @RequiresPrivilege(Authorities.MAINTAINER_VALUE)
-    public Mono<RdfTransaction> remove(String entityKey, SessionContext ctx) {
-        return this.identifierServices.asIRI(entityKey).flatMap(iri -> this.remove(iri, ctx));
+    public Mono<Transaction> remove(String entityKey, SessionContext ctx) {
+        return this.identifierServices.asIRI(entityKey, ctx.getEnvironment()).flatMap(iri -> this.remove(iri, ctx));
     }
 
     @Override
     @RequiresPrivilege(Authorities.CONTRIBUTOR_VALUE)
-    public Mono<RdfTransaction> create(Triples triples, Map<String, String> parameters,  SessionContext ctx) {
+    public Mono<Transaction> create(Triples triples, Map<String, String> parameters, SessionContext ctx) {
 
+        // Mono.just(new RdfTransaction().inserts(triples.getModel()))
 
-        return this.prepareEntity(triples, parameters, new RdfTransaction())
+        return this.prepareEntity(triples, parameters, new RdfTransaction(), ctx)
                 .flatMap(transaction -> entityStore.commit(transaction, ctx.getEnvironment()))
                 .doOnSuccess(transaction -> {
                     eventPublisher.publishEvent(new EntityCreatedEvent(transaction));
@@ -300,7 +302,7 @@ public class EntityServicesImpl implements EntityServices {
     @Override
     @Deprecated
     @RequiresPrivilege(Authorities.CONTRIBUTOR_VALUE)
-    public Mono<RdfTransaction> linkEntityTo(String id, IRI predicate, Triples linkedEntities, SessionContext ctx) {
+    public Mono<Transaction> linkEntityTo(String id, IRI predicate, Triples linkedEntities, SessionContext ctx) {
 
 
         /*
@@ -308,20 +310,20 @@ public class EntityServicesImpl implements EntityServices {
                 the incoming model can contain multiple entities, all will be linked to
                 the model cannot contain the link statements itself (we are creating them)
          */
-        return this.identifierServices.asIRI(id)
+        return this.identifierServices.asIRI(id, ctx.getEnvironment())
                 .flatMap(iri -> {
                     return this.entityStore.getFragment(iri, 0, ctx.getEnvironment())
                             .switchIfEmpty(Mono.error(new EntityNotFound(id)))
 
                             /* store the new entities */
-                            .map(entity -> new RdfTransaction().affected(entity))
-                            .flatMap(transaction -> this.prepareEntity(linkedEntities, new HashMap<>(), transaction))
+                            .map(entity -> new RdfTransaction().affects(entity))
+                            .flatMap(transaction -> this.prepareEntity(linkedEntities, new HashMap<>(), transaction, ctx))
 
                             /* store the links */
                             .map(transaction -> {
-                                transaction.listModifiedResources(Activity.INSERTED, Activity.UPDATED)
+                                transaction.affectedSubjects(Activity.INSERTED, Activity.UPDATED)
                                         .forEach(value -> {
-                                            transaction.insert(iri, predicate, value, null, Activity.UPDATED);
+                                            transaction.inserts(iri, predicate, value);
                                         });
 
                                 return transaction;
@@ -337,7 +339,7 @@ public class EntityServicesImpl implements EntityServices {
     /**
      * Make sure you store the transaction once you are finished
      */
-    protected Mono<RdfTransaction> prepareEntity(Triples triples, Map<String, String> parameters, RdfTransaction transaction) {
+    protected Mono<Transaction> prepareEntity(Triples triples, Map<String, String> parameters, RdfTransaction transaction, SessionContext context) {
         if (log.isTraceEnabled())
             log.trace("Validating and transforming {} statements for new entity. Parameters: {}", triples.streamStatements().count(), parameters.size() > 0 ? parameters : "none");
 
@@ -352,7 +354,7 @@ public class EntityServicesImpl implements EntityServices {
 
                 .flatMap(model -> {
                     /* transform */
-                    return transformers.handle(model, parameters);
+                    return transformers.handle(model, parameters, context.getEnvironment());
 
                     /* TODO: check if create of resource of given type is supported or is it delegated to connector */
 
@@ -388,7 +390,7 @@ public class EntityServicesImpl implements EntityServices {
     public Mono<Boolean> valueIsSet(String id, String predicatePrefix, String predicateKey, SessionContext ctx) {
         LocalIRI entityIdentifier = LocalIRI.withDefaultNamespace(id);
 
-        return this.identifierServices.asIRI(id)
+        return this.identifierServices.asIRI(id, ctx.getEnvironment())
                 .flatMap(iri ->
                         schemaServices.getNamespaceFor(predicatePrefix)
                                 .map(ns -> LocalIRI.withDefinedNamespace(ns, predicateKey))

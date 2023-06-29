@@ -30,7 +30,7 @@ application:
           typeCoercion:
             enabled: true
           exportApplication:
-            enabled: true
+            enabled: false
             defaultLocalPath: "D:/Graphen/entities/exports"
       navigation:
         enabled: true

@@ -10,6 +10,7 @@ import org.av360.maverick.graph.model.vocabulary.Local;
 import org.av360.maverick.graph.model.vocabulary.Transactions;
 import org.av360.maverick.graph.services.EntityServices;
 import org.av360.maverick.graph.services.QueryServices;
+import org.av360.maverick.graph.services.TransactionsService;
 import org.av360.maverick.graph.services.transformers.types.AssignLocalTypes;
 import org.av360.maverick.graph.store.TransactionsStore;
 import org.av360.maverick.graph.store.rdf.fragments.RdfTransaction;
@@ -25,7 +26,6 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import javax.annotation.Nullable;
-import java.util.List;
 import java.util.Objects;
 
 /**
@@ -51,12 +51,15 @@ public class AssignInternalTypesJob implements Job {
     private final EntityServices entityServices;
     private final QueryServices queryServices;
 
+    private  final TransactionsService transactionsService;
+
     private final AssignLocalTypes localTypesTransformer;
     private final TransactionsStore transactionsStore;
 
-    public AssignInternalTypesJob(EntityServices entityServices, QueryServices queryServices, @Autowired(required = false) @Nullable AssignLocalTypes localTypesTransformer, TransactionsStore transactionsStore) {
+    public AssignInternalTypesJob(EntityServices entityServices, QueryServices queryServices, TransactionsService transactionsService, @Autowired(required = false) @Nullable AssignLocalTypes localTypesTransformer, TransactionsStore transactionsStore) {
         this.entityServices = entityServices;
         this.queryServices = queryServices;
+        this.transactionsService = transactionsService;
         this.localTypesTransformer = localTypesTransformer;
         this.transactionsStore = transactionsStore;
     }
@@ -66,19 +69,20 @@ public class AssignInternalTypesJob implements Job {
         return NAME;
     }
 
-    public Mono<Void>   run(SessionContext ctx) {
+    public Mono<Void> run(SessionContext ctx) {
         if(Objects.isNull(this.localTypesTransformer)) return Mono.error(new InvalidConfiguration("Type Coercion Transformer is disabled"));
 
         return this.findCandidates(ctx)
                 .doOnNext(res -> log.trace("Convert type of resource with id '{}'", res.stringValue()))
                 .flatMap(res -> this.loadFragment(ctx, res))
-                .flatMap(localTypesTransformer::handle)
+                .flatMap(fragment -> this.localTypesTransformer.handle(fragment, ctx.getEnvironment()))
                 .collect(new MergingModelCollector())
                 .doOnNext(model -> log.trace("Collected {} statements for new types", model.size()))
                 .flatMap(model -> this.entityServices.getStore(ctx).insertModel(model, new RdfTransaction()))
                 .flatMapMany(trx -> this.entityServices.getStore(ctx).commit(trx, ctx.getEnvironment()))
-                .doOnNext(transaction -> Assert.isTrue(transaction.hasStatement(null, Transactions.STATUS, Transactions.SUCCESS), "Failed transaction: \n" + transaction))
-                .flatMap(transaction -> this.transactionsStore.store(List.of(transaction), ctx.getEnvironment()))
+                .doOnNext(transaction -> Assert.isTrue(transaction.get().contains(null, Transactions.STATUS, Transactions.SUCCESS), "Failed transaction: \n" + transaction))
+                .buffer(100)
+                .flatMap(transactions -> this.transactionsService.save(transactions, ctx))
                 .doOnError(throwable -> log.error("Exception while assigning internal types: {}", throwable.getMessage()))
                 .doOnSubscribe(sub -> {
                     log.trace("Checking for entities with missing internal type definitions.");

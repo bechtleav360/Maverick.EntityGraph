@@ -1,7 +1,7 @@
 package org.av360.maverick.graph.feature.applications.decorators;
 
 import lombok.extern.slf4j.Slf4j;
-import org.av360.maverick.graph.feature.applications.config.ReactiveApplicationContextHolder;
+import org.av360.maverick.graph.model.context.Environment;
 import org.av360.maverick.graph.model.identifier.LocalIdentifier;
 import org.av360.maverick.graph.services.IdentifierServices;
 import org.eclipse.rdf4j.model.IRI;
@@ -35,35 +35,35 @@ public class DelegatingIdentifierServices implements IdentifierServices {
 
 
     @Override
-    public Mono<String> validate(String identifier) {
+    public Mono<String> validate(String identifier, Environment environment) {
         if(identifier.contains(".")) return Mono.just(identifier);
 
-        return ReactiveApplicationContextHolder.getRequestedApplicationLabel()
-                .map(label -> String.format("%s.%s", label, identifier))
-                .switchIfEmpty(delegate.validate(identifier));
+        if(environment.hasScope()) {
+            return Mono.just(String.format("%s.%s", environment.getScope().label(), identifier));
+        } else return delegate.validate(identifier, environment);
 
     }
 
     @Override
-    public Mono<IRI> asIRI(String key, String namespace) {
-        return this.validate(key)
-                .flatMap(validatedKey -> delegate.asIRI(validatedKey, namespace));
+    public Mono<IRI> asIRI(String key, String namespace, Environment environment) {
+        return this.validate(key, environment)
+                .flatMap(validatedKey -> delegate.asIRI(validatedKey, namespace, environment));
     }
 
 
     @Override
-    public Mono<IRI> asReproducibleIRI(String namespace, Serializable... parts) {
+    public Mono<IRI> asReproducibleIRI(String namespace, Environment environment, Serializable... parts) {
         LocalIdentifier identifier = IdentifierServices.createReproducibleIdentifier(namespace, parts);
-        return this.validate(identifier.getLocalName())
+        return this.validate(identifier.getLocalName(), environment)
                 .map(validatedKey -> valueFactory.createIRI(namespace, validatedKey));
 
 
 
     }
     @Override
-    public Mono<IRI> asRandomIRI(String namespace) {
+    public Mono<IRI> asRandomIRI(String namespace, Environment environment) {
         LocalIdentifier identifier = IdentifierServices.createRandomIdentifier(namespace);
-        return this.validate(identifier.getLocalName())
+        return this.validate(identifier.getLocalName(), environment)
                 .map(validatedKey -> valueFactory.createIRI(namespace, validatedKey));
 
     }

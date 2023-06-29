@@ -11,11 +11,9 @@ import org.eclipse.rdf4j.model.*;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.vocabulary.PROV;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
-import reactor.core.publisher.Mono;
 
 import javax.annotation.Nullable;
 import java.util.*;
-import java.util.stream.Stream;
 
 /**
  * The Transaction consists of three models:
@@ -48,7 +46,15 @@ public class RdfTransaction extends TripleModel implements Transaction {
     }
 
 
-    public RdfTransaction remove(Collection<Statement> statements, Activity activity) {
+    public Transaction removes(Collection<Statement> statements) {
+        return this.include(statements, Activity.REMOVED);
+    }
+
+    public IRI getIdentifier() {
+        return this.transactionIdentifier;
+    }
+
+    private RdfTransaction remove(Collection<Statement> statements, Activity activity) {
         super.getBuilder().add(statements, Transactions.GRAPH_DELETED);
 
         statements.stream().map(Statement::getSubject).distinct().forEach(resource -> {
@@ -57,16 +63,13 @@ public class RdfTransaction extends TripleModel implements Transaction {
         return this;
     }
 
-    public RdfTransaction remove(Statement sts, Activity activity) {
-        return this.remove(List.of(sts), activity);
-    }
 
-    public RdfTransaction remove(Resource subject, IRI predicate, Value value, Activity activity) {
-        return this.remove(SimpleValueFactory.getInstance().createStatement(subject, predicate, value), activity);
-    }
-
-    public RdfTransaction insert(Collection<Statement> statements, Activity activity) {
-        super.getBuilder().add(statements, Transactions.GRAPH_CREATED, Transactions.GRAPH_AFFECTED);
+    public RdfTransaction include(Collection<Statement> statements, Activity activity) {
+        switch (activity) {
+            case INSERTED, UPDATED -> super.getBuilder().add(statements, Transactions.GRAPH_CREATED, Transactions.GRAPH_AFFECTED);
+            case REMOVED -> super.getBuilder().add(statements, Transactions.GRAPH_DELETED, Transactions.GRAPH_AFFECTED);
+            default -> super.getBuilder().add(statements, Transactions.GRAPH_AFFECTED);
+        }
 
         statements.stream().map(Statement::getSubject).distinct().forEach(resource -> {
             super.getModel().add(transactionIdentifier, activity.toIRI(), resource, Transactions.GRAPH_PROVENANCE);
@@ -75,21 +78,21 @@ public class RdfTransaction extends TripleModel implements Transaction {
         return this;
     }
 
-    public RdfTransaction insert(Statement sts, Activity activity) {
-        return this.insert(List.of(sts), activity);
+    public RdfTransaction include(Statement sts, Activity activity) {
+        return this.include(List.of(sts), activity);
     }
 
-    public RdfTransaction insert(Resource subject, IRI predicate, Value value, @Nullable Resource context, Activity activity) {
-        return this.insert(SimpleValueFactory.getInstance().createStatement(subject, predicate, value, context), activity);
+    public RdfTransaction include(Resource subject, IRI predicate, Value value, @Nullable Resource context, Activity activity) {
+        return this.include(SimpleValueFactory.getInstance().createStatement(subject, predicate, value, context), activity);
     }
 
 
-    public RdfTransaction affected(TripleModel wrappedModel) {
-        return this.affected(wrappedModel.getModel());
+    public RdfTransaction affects(TripleModel wrappedModel) {
+        return this.affects(wrappedModel.getModel());
     }
 
-    public RdfTransaction affected(Statement statement) {
-        return this.affected(List.of(statement));
+    public RdfTransaction affects(Statement statement) {
+        return this.affects(List.of(statement));
     }
 
     /**
@@ -98,25 +101,33 @@ public class RdfTransaction extends TripleModel implements Transaction {
      * @param statements
      * @return
      */
-    public RdfTransaction affected(Collection<Statement> statements) {
+    public RdfTransaction affects(Collection<Statement> statements) {
         super.getBuilder().add(statements, Transactions.GRAPH_AFFECTED);
         return this;
     }
 
-    public RdfTransaction affected(Stream<Statement> statements) {
-        return this.affected(statements.toList());
+
+    public Transaction inserts(Collection<Statement> statements) {
+        return this.include(statements, Activity.INSERTED);
     }
 
-    public RdfTransaction affected(Resource subject, IRI predicate, Value value) {
-        return this.affected(SimpleValueFactory.getInstance().createStatement(subject, predicate, value));
-    }
+
+
 
 
     public static boolean isTransaction(Model model) {
         return model.contains(null, RDF.TYPE, Transactions.TRANSACTION);
     }
 
-    public List<Value> listModifiedResources(Activity... activities) {
+
+
+    @Override
+    public Model get() {
+        return super.getModel();
+    }
+
+
+    public List<Value> affectedSubjects(Activity... activities) {
         List<Value> result = new ArrayList<>();
         Arrays.stream(activities).forEach(activity -> {
             List<Value> values = super.streamStatements(transactionIdentifier, activity.toIRI(), null).map(Statement::getObject).toList();
@@ -148,13 +159,6 @@ public class RdfTransaction extends TripleModel implements Transaction {
 
     }
 
-    public Mono<RdfTransaction> asMono() {
-        return Mono.just(this);
-    }
-
-    public IRI getIdentifier() {
-        return this.transactionIdentifier;
-    }
 
 
     private static class StatementComparator implements Comparator<Statement> {

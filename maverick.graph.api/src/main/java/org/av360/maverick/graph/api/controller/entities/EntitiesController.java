@@ -101,7 +101,7 @@ public class EntitiesController extends AbstractController implements EntitiesAP
 
         return super.acquireContext()
                 .flatMap(ctx -> entityServices.create(request, Map.of(), ctx))
-                .flatMapIterable(TripleModel::asStatements)
+                .flatMapIterable(Triples::asStatements)
                 .doOnSubscribe(s -> {
                     if (log.isDebugEnabled()) log.debug("Request to create a new Entity");
                     if (log.isTraceEnabled()) log.trace("Payload: \n {}", request);
@@ -120,7 +120,7 @@ public class EntitiesController extends AbstractController implements EntitiesAP
                         schemaServices.resolvePrefixedName(prefixedKey)
                                 .flatMap(predicate -> entityServices.linkEntityTo(id, predicate, value, ctx))
                 )
-                .flatMapIterable(TripleModel::asStatements)
+                .flatMapIterable(Triples::asStatements)
                 .doOnSubscribe(s -> {
                     if (log.isDebugEnabled())
                         log.debug("Request to add embedded entities as property '{}' to entity '{}'", prefixedKey, id);
@@ -135,7 +135,7 @@ public class EntitiesController extends AbstractController implements EntitiesAP
     public Flux<AnnotatedStatement> delete(@PathVariable String id) {
         return super.acquireContext()
                 .flatMap(ctx -> entityServices.remove(id, ctx))
-                .flatMapIterable(TripleModel::asStatements)
+                .flatMapIterable(Triples::asStatements)
                 .doOnSubscribe(s -> {
                     if (log.isDebugEnabled()) log.debug("Delete an Entity");
                     if (log.isTraceEnabled()) log.trace("id: \n {}", id);

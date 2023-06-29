@@ -30,7 +30,7 @@ application:
             enabled: true
           exportApplication:
             enabled: true
-            defaultLocalPath: "D:/Graphen/entities/exports"
+            defaultLocalPath: "C:/Exports"
             defaultS3Host: "http://127.0.0.1:9000"
             defaultS3BucketId: "test"
       navigation:

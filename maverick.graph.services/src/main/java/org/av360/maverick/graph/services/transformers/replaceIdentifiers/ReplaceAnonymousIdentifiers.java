@@ -1,12 +1,12 @@
 package org.av360.maverick.graph.services.transformers.replaceIdentifiers;
 
 import lombok.extern.slf4j.Slf4j;
+import org.av360.maverick.graph.model.context.Environment;
 import org.av360.maverick.graph.model.identifier.LocalIdentifier;
 import org.av360.maverick.graph.model.vocabulary.Local;
 import org.av360.maverick.graph.model.vocabulary.SDO;
 import org.av360.maverick.graph.services.IdentifierServices;
 import org.av360.maverick.graph.services.transformers.Transformer;
-import org.av360.maverick.graph.store.rdf.fragments.TripleModel;
 import org.eclipse.rdf4j.model.*;
 import org.eclipse.rdf4j.model.vocabulary.*;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -40,12 +40,8 @@ public class ReplaceAnonymousIdentifiers extends AbstractIdentifierReplace imple
 
 
 
-    public Mono<TripleModel> handle(TripleModel triples, Map<String, String> parameters) {
-        return this.handle(triples.getModel(), parameters).map(TripleModel::new);
-    }
-
-    public Mono<Model> handle(Model triples, Map<String, String> parameters) {
-        return this.buildIdentifierMappings(triples)
+    public Mono<Model> handle(Model triples, Map<String, String> parameters, Environment environment) {
+        return this.buildIdentifierMappings(triples, environment)
                 .collect(Collectors.toSet())
                 .flatMap(mappings -> replaceIdentifiers(mappings, triples))
                 .doOnSuccess(mappings -> {
@@ -59,7 +55,7 @@ public class ReplaceAnonymousIdentifiers extends AbstractIdentifierReplace imple
                 .doFinally(signalType -> log.trace("Finished checks for anonymous identifiers"));
     }
 
-    public Flux<IdentifierMapping> buildIdentifierMappings(Model model) {
+    public Flux<IdentifierMapping> buildIdentifierMappings(Model model, Environment environment) {
         Set<BNode> collect = new HashSet<>();
         model.forEach(statement -> {
             if(statement.getPredicate().equals(Local.ORIGINAL_IDENTIFIER)) return;
@@ -75,21 +71,21 @@ public class ReplaceAnonymousIdentifiers extends AbstractIdentifierReplace imple
 
         return Flux.fromIterable(collect)
                 .flatMap(val ->
-                        createLocalIdentifierFrom(val, model)
+                        createLocalIdentifierFrom(val, model, environment)
                             .map(localIdentifier -> new IdentifierMapping(val, localIdentifier))
                 );
     }
 
-    protected Mono<IRI> createLocalIdentifierFrom(BNode subj, Model model) {
+    protected Mono<IRI> createLocalIdentifierFrom(BNode subj, Model model, Environment environment) {
 
         Optional<Value> charProp = this.findCharacteristicProperty(subj, model);
         Optional<Value> entityType = model.filter(subj, RDF.TYPE, null).stream().map(Statement::getObject).findFirst();
         LocalIdentifier identifier;
         if (charProp.isPresent() && entityType.isPresent()) {
             // we build the identifier from entity type and value
-            return identifierServices.asReproducibleIRI(Local.Entities.NS, entityType.get(), charProp.get());
+            return identifierServices.asReproducibleIRI(Local.Entities.NS, environment, entityType.get(), charProp.get());
         } else {
-            return identifierServices.asRandomIRI(Local.Entities.NS);
+            return identifierServices.asRandomIRI(Local.Entities.NS, environment);
         }
     }
 

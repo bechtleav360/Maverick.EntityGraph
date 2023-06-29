@@ -1,6 +1,7 @@
 package org.av360.maverick.graph.services.transformers;
 
 import lombok.extern.slf4j.Slf4j;
+import org.av360.maverick.graph.model.context.Environment;
 import org.av360.maverick.graph.services.EntityServices;
 import org.av360.maverick.graph.services.QueryServices;
 import org.av360.maverick.graph.services.SchemaServices;
@@ -48,14 +49,14 @@ public class DelegatingTransformer implements Transformer {
     }
 
     @Override
-    public Mono<? extends Model> handle(Model triples, Map<String, String> parameters) {
+    public Mono<? extends Model> handle(Model triples, Map<String, String> parameters, Environment environment) {
         if (this.transformers == null) {
             log.trace("No transformers registered, skip.");
             return Mono.just(triples);
         }
 
         return Flux.fromIterable(transformers)
-                .reduce(Mono.just(triples), (modelMono, transformer) -> modelMono.map(model -> transformer.handle(model, parameters))
+                .reduce(Mono.just(triples), (modelMono, transformer) -> modelMono.map(model -> transformer.handle(model, parameters, environment))
                         .flatMap(mono -> mono)).flatMap(mono -> mono);
     }
 }

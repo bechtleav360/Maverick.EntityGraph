@@ -3,6 +3,7 @@ package org.av360.maverick.graph.feature.jobs;
 import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.model.context.SessionContext;
 import org.av360.maverick.graph.model.entities.Job;
+import org.av360.maverick.graph.model.entities.Transaction;
 import org.av360.maverick.graph.model.enums.RepositoryType;
 import org.av360.maverick.graph.model.errors.InvalidConfiguration;
 import org.av360.maverick.graph.model.vocabulary.Local;
@@ -112,15 +113,15 @@ public class ReplaceSubjectIdentifiersJob implements Job {
     /**
      * First run: replace only subject identifiers, move old identifier in temporary property
      */
-    private Flux<RdfTransaction> checkForExternalSubjectIdentifiers(SessionContext ctx) {
+    private Flux<Transaction> checkForExternalSubjectIdentifiers(SessionContext ctx) {
         return findSubjectCandidates(ctx)
-                .flatMap(value -> this.loadSubjectStatements(value, ctx))
+                .flatMap(value -> this.loadFragment(value, ctx))
                 .flatMap(bag -> this.convertSubjectStatements(bag, ctx))
                 .flatMap(bag -> this.insertStatements(bag, ctx))
                 .flatMap(bag -> this.deleteStatements(bag, ctx))
                 .buffer(50)
                 .flatMap(transactions -> this.commit(transactions, ctx))
-                .doOnNext(transaction -> Assert.isTrue(transaction.hasStatement(null, Transactions.STATUS, Transactions.SUCCESS), "Failed transaction: \n" + transaction))
+                .doOnNext(transaction -> Assert.isTrue(transaction.get().contains(null, Transactions.STATUS, Transactions.SUCCESS), "Failed transaction: \n" + transaction))
                 .buffer(5)
                 .flatMap(transactions -> this.storeTransactions(transactions, ctx));
     }
@@ -135,7 +136,7 @@ public class ReplaceSubjectIdentifiersJob implements Job {
                     FILTER STRSTARTS(str(?a), "%s").
                     }
                   }
-                  LIMIT 5000
+                  LIMIT 10000
                 """;
         String query = String.format(tpl, Local.Entities.NAMESPACE);
         return this.queryServices.queryValues(query, RepositoryType.ENTITIES, ctx)
@@ -146,18 +147,18 @@ public class ReplaceSubjectIdentifiersJob implements Job {
 
 
 
-    private Flux<RdfTransaction> commit(List<RdfTransaction> transactions, SessionContext ctx) {
+    private Flux<Transaction> commit(List<Transaction> transactions, SessionContext ctx) {
         // log.trace("Committing {} transactions", transactions.size());
         return this.entityServices.getStore(ctx).commit(transactions, ctx.getEnvironment(), true)
                 .doOnComplete(() -> log.trace("Committed {} transactions in job {}", transactions.size(), this.getName()));
     }
 
-    private Flux<RdfTransaction> storeTransactions(Collection<RdfTransaction> transactions, SessionContext ctx) {
+    private Flux<Transaction> storeTransactions(Collection<Transaction> transactions, SessionContext ctx) {
         //FIXME: through event
         return this.transactionsService.getStore(ctx).store(transactions, ctx.getEnvironment());
     }
 
-    private Mono<RdfTransaction> deleteStatements(StatementsBag statementsBag, SessionContext ctx) {
+    private Mono<Transaction> deleteStatements(StatementsBag statementsBag, SessionContext ctx) {
         ArrayList<Statement> statements = new ArrayList<>(statementsBag.removableStatements());
 
         return entityServices.getStore(ctx).removeStatements(statements, statementsBag.transaction());
@@ -168,13 +169,29 @@ public class ReplaceSubjectIdentifiersJob implements Job {
     }
 
 
+    private Mono<StatementsBag> convertSubjectStatementsNew(StatementsBag bag, SessionContext ctx) {
+        LinkedHashModel model = new LinkedHashModel();
+        model.addAll(bag.removableStatements());
+        // FIXME: not implemented yet, use the handle method in the job
+
+        this.replaceExternalIdentifiers.handle(model, Map.of(), ctx.getEnvironment())
+                .then(this.replaceAnonymousIdentifiers.handle(model, Map.of(), ctx.getEnvironment()))
+                .then();
+
+
+
+        return Mono.empty();
+
+    }
+
+
     private Mono<StatementsBag> convertSubjectStatements(StatementsBag bag, SessionContext ctx) {
         LinkedHashModel model = new LinkedHashModel();
         model.addAll(bag.removableStatements());
 
         return Mono.zip(
-                this.replaceExternalIdentifiers.buildIdentifierMappings(model).collectList(),
-                this.replaceAnonymousIdentifiers.buildIdentifierMappings(model).collectList()
+                this.replaceExternalIdentifiers.buildIdentifierMappings(model, ctx.getEnvironment()).collectList(),
+                this.replaceAnonymousIdentifiers.buildIdentifierMappings(model, ctx.getEnvironment()).collectList()
         ).map(pair -> {
             Map<Resource, IRI> map = new HashMap<>();
             pair.getT1().forEach(mapping -> map.put(mapping.oldIdentifier(), mapping.newIdentifier()));
@@ -193,10 +210,9 @@ public class ReplaceSubjectIdentifiersJob implements Job {
             bag.convertedStatements().addAll(modelBuilder.build());
             return bag;
         }).doOnSubscribe(sub -> log.trace("Converting subjects for resource '{}' with {} removableStatements", bag.candidateIdentifier(), bag.removableStatements().size()));
-
     }
 
-    public Mono<StatementsBag> loadSubjectStatements(Resource candidate, SessionContext ctx) {
+    public Mono<StatementsBag> loadFragment(Resource candidate, SessionContext ctx) {
         return this.entityServices.getStore(ctx).getFragment(candidate, ctx.getEnvironment())
                 .map(fragment -> new StatementsBag(candidate, Collections.synchronizedSet(fragment.getModel()), new LinkedHashModel(), null, new RdfTransaction()));
 

@@ -68,6 +68,7 @@ public class SchemaServicesImpl implements SchemaServices {
                         || DC.getClassifierTypes().contains(iri)
                         || DCTERMS.getClassifierTypes().contains(iri)
                         || SKOS.getClassifierTypes().contains(iri)
+                        || SKOSXL.getClassifierTypes().contains(iri)
                         || ICAL.getClassifierTypes().contains(iri)
                         || ESCO.getClassifierTypes().contains(iri)
                         || FOAF.getClassifierTypes().contains(iri)

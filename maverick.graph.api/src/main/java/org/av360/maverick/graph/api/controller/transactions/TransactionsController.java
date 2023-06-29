@@ -7,8 +7,8 @@ import org.av360.maverick.graph.api.controller.AbstractController;
 import org.av360.maverick.graph.model.enums.RdfMimeTypes;
 import org.av360.maverick.graph.model.identifier.LocalIdentifier;
 import org.av360.maverick.graph.model.rdf.AnnotatedStatement;
+import org.av360.maverick.graph.model.rdf.Triples;
 import org.av360.maverick.graph.services.TransactionsService;
-import org.av360.maverick.graph.store.rdf.fragments.TripleModel;
 import org.springframework.http.HttpStatus;
 import org.springframework.util.Assert;
 import org.springframework.web.bind.annotation.*;
@@ -22,13 +22,13 @@ import reactor.core.publisher.Flux;
 //@Api(tags = "Transactions")
 @Slf4j(topic = "graph.ctrl.api.transactions")
 @SecurityRequirement(name = "api_key")
-public class Transactions extends AbstractController {
+public class TransactionsController extends AbstractController {
 
     protected final ObjectMapper objectMapper;
     protected final TransactionsService transactionsService;
 
 
-    public Transactions(ObjectMapper objectMapper, TransactionsService transactionsService) {
+    public TransactionsController(ObjectMapper objectMapper, TransactionsService transactionsService) {
         this.objectMapper = objectMapper;
         this.transactionsService = transactionsService;
     }
@@ -42,7 +42,7 @@ public class Transactions extends AbstractController {
         // FIXME: marker to use transactions repository
         return super.acquireContext()
                 .flatMap(ctx -> transactionsService.find(id, ctx))
-                .flatMapIterable(TripleModel::asStatements)
+                .flatMapIterable(Triples::asStatements)
                 .doOnSubscribe(s -> {
                     if (log.isTraceEnabled()) log.trace("Reading transaction with id: {}", id);
                 });
@@ -56,7 +56,7 @@ public class Transactions extends AbstractController {
         // FIXME: marker to use transactions repository
         return super.acquireContext()
                 .flatMapMany(ctx -> transactionsService.list(limit, offset, ctx))
-                .flatMapIterable(TripleModel::asStatements)
+                .flatMapIterable(Triples::asStatements)
                 .doOnSubscribe(s -> {
                     if (log.isTraceEnabled()) log.trace("Listing last {} transactions with offset {}", limit, offset);
                 });

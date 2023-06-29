@@ -3,9 +3,9 @@ package org.av360.maverick.graph.jobs;
 import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.feature.jobs.MergeDuplicatesJob;
 import org.av360.maverick.graph.model.context.SessionContext;
+import org.av360.maverick.graph.model.entities.Transaction;
 import org.av360.maverick.graph.model.vocabulary.SDO;
 import org.av360.maverick.graph.services.EntityServices;
-import org.av360.maverick.graph.store.rdf.fragments.RdfTransaction;
 import org.av360.maverick.graph.tests.config.TestSecurityConfig;
 import org.av360.maverick.graph.tests.util.TestsBase;
 import org.eclipse.rdf4j.model.Model;
@@ -91,8 +91,8 @@ public class MergeDuplicateTests extends TestsBase  {
     public void createEmbeddedEntitiesWithSharedItemsInSeparateRequests() throws InterruptedException, IOException {
         SessionContext ctx = TestSecurityConfig.createTestContext();
         log.info("---------- Running test: Create embedded with shared items in separate requests ---------- ");
-        Mono<RdfTransaction> tx1 = entityServicesClient.importFile(new ClassPathResource("requests/create-valid_multipleWithEmbedded.ttl"), RDFFormat.TURTLE, ctx).doOnSubscribe(sub -> log.trace("-------- 1"));
-        Mono<RdfTransaction> tx2 = entityServicesClient.importFile(new ClassPathResource("requests/create-valid_withEmbedded.ttl"), RDFFormat.TURTLE, ctx).doOnSubscribe(sub -> log.trace("-------- 2"));
+        Mono<Transaction> tx1 = entityServicesClient.importFile(new ClassPathResource("requests/create-valid_multipleWithEmbedded.ttl"), RDFFormat.TURTLE, ctx).doOnSubscribe(sub -> log.trace("-------- 1"));
+        Mono<Transaction> tx2 = entityServicesClient.importFile(new ClassPathResource("requests/create-valid_withEmbedded.ttl"), RDFFormat.TURTLE, ctx).doOnSubscribe(sub -> log.trace("-------- 2"));
         Mono<Void> scheduler = this.scheduledDetectDuplicates.run(ctx).doOnSubscribe(sub -> log.trace("-------- 3"));
         Mono<Model> getAll = entityServicesClient.getModel(ctx);
 

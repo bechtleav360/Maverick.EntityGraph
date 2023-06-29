@@ -3,12 +3,12 @@ package org.av360.maverick.graph.feature.objects.services;
 import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.feature.objects.model.LocalStorageDetails;
 import org.av360.maverick.graph.model.context.SessionContext;
+import org.av360.maverick.graph.model.entities.Transaction;
 import org.av360.maverick.graph.model.enums.UriSchemes;
 import org.av360.maverick.graph.model.vocabulary.Local;
 import org.av360.maverick.graph.model.vocabulary.SDO;
 import org.av360.maverick.graph.services.*;
 import org.av360.maverick.graph.store.rdf.fragments.RdfEntity;
-import org.av360.maverick.graph.store.rdf.fragments.RdfTransaction;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Value;
@@ -57,11 +57,11 @@ public class FileServices {
         dataBufferFactory = new DefaultDataBufferFactory();
     }
 
-    public Mono<RdfTransaction> store(String entityKey, Flux<DataBuffer> bytes, String prefixedPoperty, String filename, @Nullable String language, SessionContext ctx) {
+    public Mono<Transaction> store(String entityKey, Flux<DataBuffer> bytes, String prefixedPoperty, String filename, @Nullable String language, SessionContext ctx) {
         return entityServices.resolveAndVerify(entityKey, ctx)
                 .flatMap(entityId -> Mono.zip(
                         Mono.just(new LocalStorageDetails().setEntityId(entityId).setFilename(filename).setLanguage(language)),
-                        identifierServices.asReproducibleIRI(Local.Entities.NS, entityId.getLocalName(), filename),
+                        identifierServices.asReproducibleIRI(Local.Entities.NS, ctx.getEnvironment(), entityId.getLocalName(), filename),
                         schemaServices.resolvePrefixedName(prefixedPoperty)
                 ))
                 .flatMap(pair -> Mono.zip(

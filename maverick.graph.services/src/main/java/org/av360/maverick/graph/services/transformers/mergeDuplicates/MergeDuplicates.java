@@ -2,6 +2,7 @@ package org.av360.maverick.graph.services.transformers.mergeDuplicates;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.Triple;
+import org.av360.maverick.graph.model.context.Environment;
 import org.av360.maverick.graph.model.identifier.ChecksumIdentifier;
 import org.av360.maverick.graph.services.transformers.Transformer;
 import org.eclipse.rdf4j.model.Model;
@@ -49,7 +50,7 @@ public class MergeDuplicates implements Transformer {
 
 
     @Override
-    public Mono<? extends Model> handle(Model model, Map<String, String> parameters) {
+    public Mono<? extends Model> handle(Model model, Map<String, String> parameters, Environment environment) {
 
         return Mono.just(model)
                 .doOnSubscribe(c -> log.debug("Check if linked entities already exist and merge if required."))

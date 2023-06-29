@@ -1,6 +1,7 @@
 package org.av360.maverick.graph.services.transformers.types;
 
 import lombok.extern.slf4j.Slf4j;
+import org.av360.maverick.graph.model.context.Environment;
 import org.av360.maverick.graph.model.vocabulary.Local;
 import org.av360.maverick.graph.services.SchemaServices;
 import org.av360.maverick.graph.services.transformers.Transformer;
@@ -36,7 +37,7 @@ public class AssignLocalTypes implements Transformer {
     }
 
     @Override
-    public Mono<? extends Model> handle(Model model, Map<String, String> parameters) {
+    public Mono<? extends Model> handle(Model model, Map<String, String> parameters, Environment environment) {
         Model result = new LinkedHashModel(model);
 
         return Flux.fromIterable(Collections.unmodifiableSet(model.subjects()))
@@ -46,9 +47,9 @@ public class AssignLocalTypes implements Transformer {
                 .doOnNext(sub -> {
                     log.warn("Subject with the following statements could not be identified for local type: \n {}", model.stream().toList());
                 })
-                .then(Mono.just(result))
-                .doOnSubscribe(c -> log.debug("Checking if internal types have to be added."))
-                .doFinally(signalType -> log.trace("Finished checks for internal types."));
+                .then(Mono.just(result));
+                //.doOnSubscribe(c -> log.trace("Checking if internal types have to be added."))
+                //.doFinally(signalType -> log.trace("Finished checks for internal types."));
     }
 
 
