@@ -53,7 +53,7 @@ import java.util.stream.Collectors;
 
 @Slf4j(topic = "graph.jobs.identifiers")
 @Component
-public class ReplaceObjectIdentifiersJob implements Job {
+public class ReplaceLinkedIdentifiersJob implements Job {
 
     public static String NAME = "replaceLinkedIdentifiers";
 
@@ -71,7 +71,7 @@ public class ReplaceObjectIdentifiersJob implements Job {
     ) {
     }
 
-    public ReplaceObjectIdentifiersJob(EntityStore store, TransactionsStore trxStore, EntityServices entityServices, TransactionsService transactionsService, ReplaceExternalIdentifiers transformer) {
+    public ReplaceLinkedIdentifiersJob(EntityStore store, TransactionsStore trxStore, EntityServices entityServices, TransactionsService transactionsService, ReplaceExternalIdentifiers transformer) {
         this.entityServices = entityServices;
         this.transactionsService = transactionsService;
         this.replaceExternalIdentifiers = transformer;

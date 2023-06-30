@@ -1,7 +1,7 @@
 package org.av360.maverick.graph.feature.jobs.schedulers;
 
 import lombok.extern.slf4j.Slf4j;
-import org.av360.maverick.graph.feature.jobs.ReplaceSubjectIdentifiersJob;
+import org.av360.maverick.graph.feature.jobs.ReplaceLinkedIdentifiersJob;
 import org.av360.maverick.graph.model.context.SessionContext;
 import org.av360.maverick.graph.model.events.JobScheduledEvent;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -13,7 +13,7 @@ import org.springframework.stereotype.Component;
  * If we have any global identifiers (externally set) or anonymous nodes in the repo, we have to replace them
  * with our internal identifiers. Otherwise, we cannot address the entities through our API.
  *
- * @see org.av360.maverick.graph.feature.jobs.ReplaceObjectIdentifiersJob
+ * @see ReplaceLinkedIdentifiersJob
  */
 @Slf4j(topic = "graph.jobs.identifiers")
 @Component
@@ -31,7 +31,7 @@ public class ScheduledReplaceObjectIdentifiers {
 //    @Scheduled(initialDelay = 90, fixedRate = 600, timeUnit = TimeUnit.SECONDS)
     @Scheduled(cron = "${application.features.modules.jobs.scheduled.replaceIdentifiers.defaultFrequency:0 */5 * * * ?}")
     public void checkForGlobalIdentifiersScheduled() {
-        JobScheduledEvent event = new JobScheduledEvent(ReplaceSubjectIdentifiersJob.NAME, new SessionContext().setSystemAuthentication());
+        JobScheduledEvent event = new JobScheduledEvent(ReplaceLinkedIdentifiersJob.NAME, new SessionContext().setSystemAuthentication());
         eventPublisher.publishEvent(event);
     }
 

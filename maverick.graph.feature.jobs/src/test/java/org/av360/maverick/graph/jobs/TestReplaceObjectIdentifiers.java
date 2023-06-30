@@ -1,7 +1,7 @@
 package org.av360.maverick.graph.jobs;
 
 import lombok.extern.slf4j.Slf4j;
-import org.av360.maverick.graph.feature.jobs.ReplaceObjectIdentifiersJob;
+import org.av360.maverick.graph.feature.jobs.ReplaceLinkedIdentifiersJob;
 import org.av360.maverick.graph.model.context.SessionContext;
 import org.av360.maverick.graph.model.vocabulary.Local;
 import org.av360.maverick.graph.model.vocabulary.SDO;
@@ -39,7 +39,7 @@ import java.io.IOException;
 class TestReplaceObjectIdentifiers extends TestsBase {
 
     @Autowired
-    private ReplaceObjectIdentifiersJob scheduled;
+    private ReplaceLinkedIdentifiersJob scheduled;
 
 
     @Autowired

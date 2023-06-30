@@ -1,7 +1,7 @@
 package org.av360.maverick.graph.feature.jobs.schedulers;
 
 import lombok.extern.slf4j.Slf4j;
-import org.av360.maverick.graph.feature.jobs.ReplaceObjectIdentifiersJob;
+import org.av360.maverick.graph.feature.jobs.ReplaceLinkedIdentifiersJob;
 import org.av360.maverick.graph.model.context.SessionContext;
 import org.av360.maverick.graph.model.events.JobScheduledEvent;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -29,7 +29,7 @@ public class ScheduledReplaceSubjectIdentifiers {
 //    @Scheduled(initialDelay = 120, fixedRate = 600, timeUnit = TimeUnit.SECONDS)
     @Scheduled(cron = "${application.features.modules.jobs.scheduled.replaceIdentifiers.defaultFrequency:0 */5 * * * ?}")
     public void checkForGlobalIdentifiersScheduled() {
-        JobScheduledEvent event = new JobScheduledEvent(ReplaceObjectIdentifiersJob.NAME, new SessionContext().setSystemAuthentication());
+        JobScheduledEvent event = new JobScheduledEvent(ReplaceLinkedIdentifiersJob.NAME, new SessionContext().setSystemAuthentication());
         eventPublisher.publishEvent(event);
     }
 

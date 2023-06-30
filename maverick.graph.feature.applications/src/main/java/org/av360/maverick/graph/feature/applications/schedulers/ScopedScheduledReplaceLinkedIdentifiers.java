@@ -38,7 +38,7 @@ public class ScopedScheduledReplaceLinkedIdentifiers extends ScopedJobScheduler 
 
     @Override
     String getJobLabel() {
-        return "replaceSubjectIdentifiers";
+        return "replaceLinkedIdentifiers";
     }
     @Override
     String getDefaultFrequency() {
