@@ -25,6 +25,7 @@ import org.av360.maverick.graph.model.identifier.LocalIdentifier;
 import org.av360.maverick.graph.model.security.Authorities;
 import org.av360.maverick.graph.model.util.StreamsLogger;
 import org.av360.maverick.graph.model.vocabulary.Local;
+import org.av360.maverick.graph.model.vocabulary.SDO;
 import org.av360.maverick.graph.services.IdentifierServices;
 import org.av360.maverick.graph.services.config.RequiresPrivilege;
 import org.av360.maverick.graph.store.rdf.helpers.BindingsAccessor;
@@ -133,18 +134,7 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
 
 
     }
-    @RequiresPrivilege(Authorities.MAINTAINER_VALUE)
-    private ModelBuilder buildConfigurationItem(String configKey, Serializable configValue, IRI applicationIdentifier, @Nullable ModelBuilder builder) {
-        if(Objects.isNull(builder)) builder = new ModelBuilder();
 
-        LocalIdentifier configNode = IdentifierServices.createRandomIdentifier(Local.Applications.NAMESPACE);
-        builder.add(configNode, RDF.TYPE, ApplicationTerms.CONFIGURATION_ITEM);
-        builder.add(configNode, ApplicationTerms.CONFIG_KEY, configKey);
-        builder.add(configNode, ApplicationTerms.CONFIG_VALUE, configValue.toString());
-        builder.add(configNode, ApplicationTerms.CONFIG_FOR, applicationIdentifier);
-
-        return builder;
-    }
     @RequiresPrivilege(Authorities.MAINTAINER_VALUE)
     public Mono<Application> createConfigurationItem(Application application, String configKey, Serializable configValue, SessionContext ctx) {
         this.assertUpdatePrivilege(application, ctx);
@@ -157,8 +147,21 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
                     this.eventPublisher.publishEvent(new ApplicationUpdatedEvent(app));
                     log.debug("Updated configuration key '{}' of node with label '{}'", app.key(), app.label());
                 })
-                .doOnSubscribe(StreamsLogger.debug(log, "Updating configuration key '{}' for node with label '{}'", configKey, application.label()));
+                .doOnSubscribe(StreamsLogger.debug(log, "Updating configuration key '{}' for application with label '{}'", configKey, application.label()));
     }
+
+    @RequiresPrivilege(Authorities.SYSTEM_VALUE)
+    public Mono<Void> setMetric(Application application, String key, Serializable value, SessionContext ctx) {
+        ModelBuilder m = this.buildMetricsItem(key, value, application.iri(), null);
+
+        return this.applicationsStore.insertModel(m.build(), ctx.updateEnvironment(env -> env.setRepositoryType(RepositoryType.APPLICATION)).getEnvironment())
+                .then()
+                .doOnSuccess(app -> {
+                    log.trace("Updated metrics '{}' of application with label '{}'", application.key(), application.label());
+                })
+                .doOnSubscribe(StreamsLogger.debug(log, "Updating configuration key '{}' for node with label '{}'", key, application.label()));
+    }
+
     @RequiresPrivilege(Authorities.MAINTAINER_VALUE)
     public Mono<Void> deleteConfigurationItem(Application application, String configurationKey, SessionContext ctx) {
         this.assertUpdatePrivilege(application, ctx);
@@ -185,7 +188,7 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
                     log.debug("Removed configuration item with key '{}' from application with label '{}'", configurationKey, application.label());
                 });
     }
-    @RequiresPrivilege(Authorities.MAINTAINER_VALUE)
+    @RequiresPrivilege(Authorities.READER_VALUE)
     public Flux<ConfigurationItem> listConfigurationItems(Application application, SessionContext ctx) {
         assertReadPrivilege(application, ctx);
 
@@ -201,7 +204,7 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
 
     }
 
-    @RequiresPrivilege(Authorities.SYSTEM_VALUE)
+    @RequiresPrivilege(Authorities.MAINTAINER_VALUE)
     public Mono<Void> delete(Application application, SessionContext context) {
         assertUpdatePrivilege(application, context);
 
@@ -219,7 +222,7 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
 
 
     }
-    @RequiresPrivilege(Authorities.CONTRIBUTOR_VALUE)
+    @RequiresPrivilege(Authorities.READER_VALUE)
     public Mono<Application> getApplication(String applicationKey, SessionContext ctx) {
 
         Application cached = this.caching_enabled ? this.cache.getIfPresent(applicationKey) : null;
@@ -241,29 +244,7 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
     }
 
 
-    private boolean verifyReadingPrivilege(Application requestedApplication, SessionContext ctx) {
-        boolean isPublic = requestedApplication.flags().isPublic();
-        boolean isSubscriber = (ctx.getAuthenticationOrThrow() instanceof SubscriptionToken subscriptionToken) && (subscriptionToken.getApplication().key().equalsIgnoreCase(requestedApplication.key()));
-        boolean isAdmin = Authorities.satisfies(Authorities.SYSTEM, ctx.getAuthenticationOrThrow().getAuthorities());
 
-        return isPublic || isSubscriber || isAdmin;
-    }
-
-    private void assertUpdatePrivilege(Application requestedApplication, SessionContext ctx) {
-        if(! this.verifyUpdatePrivilege(requestedApplication, ctx)) throw new InsufficientPrivilegeException("Unknown application or insufficient privilege.");
-    }
-    private void assertReadPrivilege(Application requestedApplication, SessionContext ctx) {
-        if(! this.verifyReadingPrivilege(requestedApplication, ctx)) throw new InsufficientPrivilegeException("Unknown application or insufficient privilege.");
-    }
-
-    private boolean verifyUpdatePrivilege(Application requestedApplication, SessionContext ctx) {
-        boolean isApplicationAdmin = (ctx.getAuthenticationOrThrow() instanceof SubscriptionToken subscriptionToken)
-                && (subscriptionToken.getApplication().key().equalsIgnoreCase(requestedApplication.key()))
-                && Authorities.satisfies(Authorities.APPLICATION, ctx.getAuthenticationOrThrow().getAuthorities());
-        boolean isAdmin = Authorities.satisfies(Authorities.SYSTEM, ctx.getAuthenticationOrThrow().getAuthorities());
-
-        return isApplicationAdmin || isAdmin;
-    }
     @RequiresPrivilege(Authorities.READER_VALUE)
     public Flux<Application> listApplications(SessionContext ctx) {
         try {
@@ -340,6 +321,56 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
     public void onApplicationEvent(GraphApplicationEvent event) {
         this.cache.invalidateAll();
         this.cache.cleanUp();
+    }
+
+
+
+    private ModelBuilder buildConfigurationItem(String configKey, Serializable configValue, IRI applicationIdentifier, @Nullable ModelBuilder builder) {
+        if(Objects.isNull(builder)) builder = new ModelBuilder();
+
+        LocalIdentifier configNode = IdentifierServices.createRandomIdentifier(Local.Applications.NAMESPACE);
+        builder.add(configNode, RDF.TYPE, ApplicationTerms.CONFIGURATION_ITEM);
+        builder.add(configNode, ApplicationTerms.CONFIG_KEY, configKey);
+        builder.add(configNode, ApplicationTerms.CONFIG_VALUE, configValue.toString());
+        builder.add(configNode, ApplicationTerms.CONFIG_FOR, applicationIdentifier);
+
+        return builder;
+    }
+
+    private ModelBuilder buildMetricsItem(String metricsName, Serializable value, IRI applicationIdentifier, @Nullable ModelBuilder builder) {
+        if(Objects.isNull(builder)) builder = new ModelBuilder();
+
+        LocalIdentifier configNode = IdentifierServices.createRandomIdentifier(Local.Applications.NAMESPACE);
+        builder.add(configNode, RDF.TYPE, SDO.QUANTITATIVE_VALUE);
+        builder.add(configNode, SDO.NAME, metricsName);
+        builder.add(configNode, SDO.VALUE, value);
+        builder.add(configNode, ApplicationTerms.METRIC_FOR, applicationIdentifier);
+
+        return builder;
+    }
+
+    private void assertUpdatePrivilege(Application requestedApplication, SessionContext ctx) {
+        if(! this.verifyUpdatePrivilege(requestedApplication, ctx)) throw new InsufficientPrivilegeException("Unknown application or insufficient privilege.");
+    }
+    private void assertReadPrivilege(Application requestedApplication, SessionContext ctx) {
+        if(! this.verifyReadingPrivilege(requestedApplication, ctx)) throw new InsufficientPrivilegeException("Unknown application or insufficient privilege.");
+    }
+
+    private boolean verifyReadingPrivilege(Application requestedApplication, SessionContext ctx) {
+        boolean isPublic = requestedApplication.flags().isPublic();
+        boolean isSubscriber = (ctx.getAuthenticationOrThrow() instanceof SubscriptionToken subscriptionToken) && (subscriptionToken.getApplication().key().equalsIgnoreCase(requestedApplication.key()));
+        boolean isAdmin = Authorities.satisfies(Authorities.SYSTEM, ctx.getAuthenticationOrThrow().getAuthorities());
+
+        return isPublic || isSubscriber || isAdmin;
+    }
+
+    private boolean verifyUpdatePrivilege(Application requestedApplication, SessionContext ctx) {
+        boolean isApplicationAdmin = (ctx.getAuthenticationOrThrow() instanceof SubscriptionToken subscriptionToken)
+                && (subscriptionToken.getApplication().key().equalsIgnoreCase(requestedApplication.key()))
+                && Authorities.satisfies(Authorities.APPLICATION, ctx.getAuthenticationOrThrow().getAuthorities());
+        boolean isAdmin = Authorities.satisfies(Authorities.SYSTEM, ctx.getAuthenticationOrThrow().getAuthorities());
+
+        return isApplicationAdmin || isAdmin;
     }
 
 

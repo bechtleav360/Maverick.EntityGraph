@@ -11,6 +11,7 @@ import java.util.Set;
 public class SDO {
 
 
+
     private static final ValueFactory vf = SimpleValueFactory.getInstance();
 
 
@@ -21,6 +22,9 @@ public class SDO {
     public static final IRI IN_LANGUAGE = vf.createIRI(NAMESPACE, "inLanguage");
     public static final IRI CONTENT_LOCATION = vf.createIRI(NAMESPACE, "contentLocation");
     public static final IRI SUBJECT_OF = vf.createIRI(NAMESPACE, "subjectOf");
+
+    public static final IRI VALUE = vf.createIRI(NAMESPACE, "value");
+    public static final IRI DATASET = vf.createIRI(NAMESPACE, "Dataset");;
     public static final IRI CONTENT_URL = vf.createIRI(NAMESPACE, "contentUrl");
     public static final IRI CONTENT_SIZE = vf.createIRI(NAMESPACE, "contentSize");
     public static final IRI UPLOAD_DATE = vf.createIRI(NAMESPACE, "uploadDate");

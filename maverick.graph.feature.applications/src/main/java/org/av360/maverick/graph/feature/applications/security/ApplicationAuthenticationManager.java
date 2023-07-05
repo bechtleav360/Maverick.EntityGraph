@@ -61,7 +61,7 @@ public class ApplicationAuthenticationManager implements ReactiveAuthenticationM
     public Mono<Authentication> authenticate(Authentication authentication) {
 
         try {
-            Assert.notNull(authentication, "Authentication is null in Authentication Manager");
+                Assert.notNull(authentication, "Authentication is null in Authentication Manager");
             if(authentication.isAuthenticated()) return Mono.just(authentication);
 
 

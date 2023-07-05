@@ -331,8 +331,9 @@ public abstract class AbstractStore implements TripleStore, StatementsAware, Mod
                             .filter(Value::isIRI)
                             .map(value -> connection.getStatements((IRI) value, null, null))
                             .flatMap(result -> result.stream())
-                            .filter(sts -> sts.getObject().isLiteral())
-                            .filter(sts -> sts.getObject().isLiteral() && sts.getObject().stringValue().length() < 50)
+                            .filter(sts -> ! (sts.getObject().isLiteral() && sts.getObject().stringValue().length() > 50))
+                            // .filter(sts -> sts.getObject().isLiteral() || sts.getPredicate().equals(RDF.TYPE))
+                            // .filter(sts -> sts.getObject().isLiteral() && sts.getObject().stringValue().length() < 50)
                             .collect(new ModelCollector());
                     // ModelCollector
                     entity.getModel().addAll(neighbours);
