@@ -62,6 +62,8 @@ public class ApplicationAuthenticationManager implements ReactiveAuthenticationM
 
         try {
             Assert.notNull(authentication, "Authentication is null in Authentication Manager");
+            if(authentication.isAuthenticated()) return Mono.just(authentication);
+
 
             return ReactiveApplicationContextHolder.getRequestedApplicationLabel()
                     .switchIfEmpty(this.checkPath(authentication))
@@ -93,6 +95,8 @@ public class ApplicationAuthenticationManager implements ReactiveAuthenticationM
 
     private Mono<String> checkPath(Authentication authentication) {
         return Mono.<String>create(sink -> {
+
+
             if(authentication.getDetails() instanceof RequestDetails requestDetails) {
                 try {
                     Optional<String> requestedApplication = RequestedApplicationFilter.getRequestedApplicationFromRequestDetails(requestDetails);
@@ -100,6 +104,8 @@ public class ApplicationAuthenticationManager implements ReactiveAuthenticationM
                 } catch (IOException e) {
                     sink.error(e);
                 }
+            } else {
+                sink.success();
             }
         }).doOnSubscribe(subscription -> log.debug("Application label not found in thread context, verifying in request details within authentication."));
 

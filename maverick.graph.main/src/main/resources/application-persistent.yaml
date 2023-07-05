@@ -21,7 +21,7 @@ application:
       admin:
         enabled: true
       jobs:
-        enabled: true
+        enabled: false
         scheduled:
           detectDuplicates:
             enabled: true
