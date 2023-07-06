@@ -11,10 +11,7 @@ import org.av360.maverick.graph.services.config.RequiresPrivilege;
 import org.av360.maverick.graph.store.behaviours.Searchable;
 import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.query.QueryLanguage;
-import org.eclipse.rdf4j.query.parser.ParsedQuery;
-import org.eclipse.rdf4j.query.parser.ParsedTupleQuery;
-import org.eclipse.rdf4j.query.parser.QueryParser;
-import org.eclipse.rdf4j.query.parser.QueryParserUtil;
+import org.eclipse.rdf4j.query.parser.*;
 import org.eclipse.rdf4j.sparqlbuilder.core.query.ConstructQuery;
 import org.eclipse.rdf4j.sparqlbuilder.core.query.SelectQuery;
 import org.springframework.stereotype.Service;
@@ -65,7 +62,7 @@ public class QueryServicesImpl implements QueryServices {
     public Flux<AnnotatedStatement> queryGraph(String queryStr, RepositoryType repositoryType, SessionContext ctx) {
         try {
             ParsedQuery parsedQuery = queryParser.parseQuery(queryStr, null);
-            if(parsedQuery instanceof  ParsedTupleQuery) {
+            if(parsedQuery instanceof ParsedGraphQuery) {
                 return this.queryGraphTrusted(queryStr, repositoryType, ctx);
             } else throw new InvalidQuery(queryStr);
         } catch (Exception | InvalidQuery e) {
