@@ -331,13 +331,10 @@ public abstract class AbstractStore implements TripleStore, StatementsAware, Mod
                             .filter(Value::isIRI)
                             .map(value -> connection.getStatements((IRI) value, null, null))
                             .flatMap(result -> result.stream())
-                            .filter(sts -> ! (sts.getObject().isLiteral() && sts.getObject().stringValue().length() > 50))
-                            // .filter(sts -> sts.getObject().isLiteral() || sts.getPredicate().equals(RDF.TYPE))
-                            // .filter(sts -> sts.getObject().isLiteral() && sts.getObject().stringValue().length() < 50)
+                            .filter(sts -> this.isLiteralStatement(sts) || this.isTypeStatement(sts))
                             .collect(new ModelCollector());
                     // ModelCollector
                     entity.getModel().addAll(neighbours);
-
                 }
                 // embedded level 1
 
@@ -349,6 +346,14 @@ public abstract class AbstractStore implements TripleStore, StatementsAware, Mod
                 throw e;
             }
         });
+    }
+
+    private boolean isLiteralStatement(Statement statement) {
+        return statement.getObject().isLiteral() && statement.getObject().stringValue().length() < 128;
+    }
+
+    private boolean isTypeStatement(Statement statement) {
+        return statement.getPredicate().equals(RDF.TYPE);
     }
 
     @Override
