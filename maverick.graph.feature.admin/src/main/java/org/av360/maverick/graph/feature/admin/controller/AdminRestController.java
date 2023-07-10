@@ -1,10 +1,12 @@
 package org.av360.maverick.graph.feature.admin.controller;
 
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.api.controller.AbstractController;
+import org.av360.maverick.graph.feature.admin.controller.dto.ImportFromEndpointRequest;
 import org.av360.maverick.graph.feature.admin.services.AdminServices;
 import org.av360.maverick.graph.model.enums.RdfMimeTypes;
 import org.av360.maverick.graph.model.enums.RepositoryType;
@@ -38,6 +40,7 @@ public class AdminRestController extends AbstractController {
 
     //@ApiOperation(value = "Empty repository", tags = {})
     @GetMapping(value = "/reset", produces = MediaType.TEXT_PLAIN_VALUE)
+    @Operation(summary = "Removes all statements within the repository")
     @ResponseStatus(HttpStatus.ACCEPTED)
     Mono<Void> resetRepository(
             @RequestParam(required = false, defaultValue = "entities", value = "entities") @Parameter(name = "repository", description = "The repository type in which the query should search.")
@@ -54,6 +57,7 @@ public class AdminRestController extends AbstractController {
 
     //@ApiOperation(value = "Import RDF into entity repository", tags = {})
     @PostMapping(value = "/import/content", consumes = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.NTRIPLES_VALUE, RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.N3_VALUE, RdfMimeTypes.RDFXML_VALUE, RdfMimeTypes.BINARY_VALUE, RdfMimeTypes.NQUADS_VALUE, RdfMimeTypes.TURTLESTAR_VALUE})
+    @Operation(summary = "Imports rdf content in request body into the target repository")
     @ResponseStatus(HttpStatus.ACCEPTED)
     Mono<Void> importEntities(
             @RequestBody @Parameter(name = "data", description = "The rdf data.") Flux<DataBuffer> bytes,
@@ -73,7 +77,24 @@ public class AdminRestController extends AbstractController {
                 .doOnSubscribe(s -> log.debug("Request to import a request of mimetype {}", mimetype));
     }
 
+    @PostMapping(value = "/import/endpoint", consumes = {MediaType.APPLICATION_JSON_VALUE})
+    @Operation(summary = "Imports rdf content from sparql endpoint into target repository")
+    @ResponseStatus(HttpStatus.ACCEPTED)
+    Mono<Void> importFromSparql(
+            @RequestBody @Parameter(name = "endpoint", description = "URL to the sparql endpoint.") ImportFromEndpointRequest importFromEndpointRequest,
+            @RequestParam(required = false, defaultValue = "entities", value = "entities") @Parameter(name = "repository", description = "The repository type to import to.")
+            RepositoryType repositoryType
+    ) {
+
+        return super.acquireContext()
+                .map(context -> context.updateEnvironment(env -> env.setRepositoryType(repositoryType)))
+                .flatMap(ctx -> adminServices.importFromEndpoint(importFromEndpointRequest.endpoint(), importFromEndpointRequest.headers(), 1000, 0, ctx))
+                .doOnError(throwable -> log.error("Error while importing to repository.", throwable))
+                .doOnSubscribe(s -> log.debug("Request to import a request from endpoint {}", importFromEndpointRequest.endpoint()));
+    }
+
     @PostMapping(value = "/import/file", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Operation(summary = "Imports rdf content from file into target repository")
     @ResponseStatus(HttpStatus.ACCEPTED)
     Mono<Void> importFile(
             @RequestPart

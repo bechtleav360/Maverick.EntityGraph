@@ -38,7 +38,7 @@ import java.math.BigInteger;
 @SuppressWarnings("javadoc")
 public class ComputeStatisticsJob implements Job {
 
-    public static String NAME = "computeApplicationStatistics";
+    public static String NAME = "computeStatistics";
     private final ApplicationsService applicationsService;
     private final QueryServices queryServices;
 

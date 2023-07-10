@@ -150,7 +150,7 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
                 .doOnSubscribe(StreamsLogger.debug(log, "Updating configuration key '{}' for application with label '{}'", configKey, application.label()));
     }
 
-    @RequiresPrivilege(Authorities.SYSTEM_VALUE)
+    @RequiresPrivilege(Authorities.MAINTAINER_VALUE)
     public Mono<Void> setMetric(Application application, String key, Serializable value, SessionContext ctx) {
         ModelBuilder m = this.buildMetricsItem(key, value, application.iri(), null);
 

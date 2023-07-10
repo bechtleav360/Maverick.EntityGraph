@@ -15,14 +15,14 @@ import org.springframework.stereotype.Component;
  */
 @Component
 @Slf4j(topic = "graph.jobs.duplicates")
-@ConditionalOnProperty({"application.features.modules.jobs.scheduled.detectDuplicates.enabled","application.features.modules.applications.enabled"})
+@ConditionalOnProperty({"application.features.modules.jobs.scheduled.computeStatistics.enabled","application.features.modules.applications.enabled"})
 
 public class ScopedComputeStatistics extends ScopedJobScheduler {
 
-    @Value("${application.features.modules.jobs.scheduled.detectDuplicates.compute_statistics:0 10 */2 * * ?}")
+    @Value("${application.features.modules.jobs.scheduled.computeStatistics:0 10 */2 * * ?}")
     String defaultFrequency;
 
-    public static final String CONFIG_KEY_DETECT_DUPLICATES_FREQUENCY = "compute_statistics";
+    public static final String CONFIG_KEY_DETECT_DUPLICATES_FREQUENCY = "computeStatistics";
 
     @Override
     String getFrequencyConfigurationKey() {

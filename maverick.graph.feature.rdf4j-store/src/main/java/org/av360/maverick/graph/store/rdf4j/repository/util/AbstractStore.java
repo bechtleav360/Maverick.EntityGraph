@@ -241,6 +241,8 @@ public abstract class AbstractStore implements TripleStore, StatementsAware, Mod
 
     }
 
+
+
     public Flux<IRI> types(Resource subj, Environment environment) {
         return this.applyManyWithConnection(environment, connection ->
                 connection.getStatements(subj, RDF.TYPE, null, false).stream()
@@ -375,6 +377,11 @@ public abstract class AbstractStore implements TripleStore, StatementsAware, Mod
             }
         });
 
+    }
+
+    @Override
+    public Mono<Void> importModel(Model model, Environment environment) {
+        return this.insertModel(model, environment);
     }
 
     @Override
