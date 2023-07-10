@@ -273,15 +273,18 @@ public abstract class AbstractStore implements TripleStore, StatementsAware, Mod
                     // with this approach, we cannot insert a statement to a context (since it is already in GRAPH_CREATED), every st can only be in one context
                     ValueFactory vf = connection.getValueFactory();
                     Model insertStatements = trx.get(Transactions.GRAPH_CREATED);
+                    Model updateStatements = trx.get(Transactions.GRAPH_UPDATED);
                     Model removeStatements = trx.get(Transactions.GRAPH_DELETED);
 
                     try {
                         if (insertStatements.size() > 0) {
                             connection.add(insertStatements);
                         }
+                        if (updateStatements.size() > 0) {
+                            connection.add(updateStatements);
+                        }
                         if (removeStatements.size() > 0) {
                             connection.remove(removeStatements);
-
                         }
                         if (insertStatements.size() > 0 || removeStatements.size() > 0) {
                             connection.prepare();
@@ -417,8 +420,8 @@ public abstract class AbstractStore implements TripleStore, StatementsAware, Mod
     @Override
     public Mono<Transaction> removeStatements(Collection<Statement> statements, Transaction transaction) {
         Assert.notNull(transaction, "Transaction cannot be null");
-        if (getLogger().isTraceEnabled())
-            getLogger().trace("Removal planned for {} statements in transaction '{}'.", statements.size(), transaction.getIdentifier().getLocalName());
+        if (getLogger().isDebugEnabled())
+            getLogger().debug("Removal planned for {} statements in transaction '{}'.", statements.size(), transaction.getIdentifier().getLocalName());
 
         return Mono.just(transaction.removes(statements));
     }

@@ -7,12 +7,14 @@ import org.av360.maverick.graph.model.identifier.DefaultIdentifierFactory;
 import org.av360.maverick.graph.model.rdf.AnnotatedStatement;
 import org.av360.maverick.graph.model.vocabulary.Local;
 import org.av360.maverick.graph.model.vocabulary.Transactions;
-import org.eclipse.rdf4j.model.*;
+import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Model;
+import org.eclipse.rdf4j.model.Statement;
+import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.vocabulary.PROV;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 
-import javax.annotation.Nullable;
 import java.util.*;
 
 /**
@@ -66,9 +68,10 @@ public class RdfTransaction extends TripleModel implements Transaction {
 
     public RdfTransaction include(Collection<Statement> statements, Activity activity) {
         switch (activity) {
-            case INSERTED, UPDATED -> super.getBuilder().add(statements, Transactions.GRAPH_CREATED, Transactions.GRAPH_AFFECTED);
-            case REMOVED -> super.getBuilder().add(statements, Transactions.GRAPH_DELETED, Transactions.GRAPH_AFFECTED);
-            default -> super.getBuilder().add(statements, Transactions.GRAPH_AFFECTED);
+            case INSERTED -> super.getBuilder().add(statements, Transactions.GRAPH_CREATED);
+            case UPDATED -> super.getBuilder().add(statements, Transactions.GRAPH_UPDATED);
+            case REMOVED -> super.getBuilder().add(statements, Transactions.GRAPH_DELETED);
+            default -> super.getBuilder().add(statements, Transactions.GRAPH_UPDATED);
         }
 
         statements.stream().map(Statement::getSubject).distinct().forEach(resource -> {
@@ -78,13 +81,6 @@ public class RdfTransaction extends TripleModel implements Transaction {
         return this;
     }
 
-    public RdfTransaction include(Statement sts, Activity activity) {
-        return this.include(List.of(sts), activity);
-    }
-
-    public RdfTransaction include(Resource subject, IRI predicate, Value value, @Nullable Resource context, Activity activity) {
-        return this.include(SimpleValueFactory.getInstance().createStatement(subject, predicate, value, context), activity);
-    }
 
 
     public RdfTransaction affects(TripleModel wrappedModel) {

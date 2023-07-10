@@ -32,9 +32,10 @@ public class Transactions {
     public static final IRI VERSION = PROV.QUALIFIED_REVISION;
 
 
-    public static final IRI GRAPH_DELETED = LocalIRI.from(Local.Transactions.NAMESPACE, "DeletedStatements");
-    public static final IRI GRAPH_CREATED = LocalIRI.from(Local.Transactions.NAMESPACE, "CreatedStatements");
-    public static final IRI GRAPH_AFFECTED = LocalIRI.from(Local.Transactions.NAMESPACE, "AffectedStatements");
+    public static final IRI GRAPH_DELETED = LocalIRI.from(Local.Transactions.NAMESPACE, "RemovedStatements");
+    public static final IRI GRAPH_CREATED = LocalIRI.from(Local.Transactions.NAMESPACE, "InsertedStatements");
+    public static final IRI GRAPH_UPDATED = LocalIRI.from(Local.Transactions.NAMESPACE, "UpdatedStatements");
+    public static final IRI GRAPH_AFFECTED = LocalIRI.from(Local.Transactions.NAMESPACE, "AffectedResource");
     public static final IRI GRAPH_PROVENANCE = LocalIRI.from(Local.Transactions.NAMESPACE, "ProvenanceStatements");
 
     public static final IRI FAILURE_REASON = LocalIRI.from(NAMESPACE, "reason");

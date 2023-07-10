@@ -36,11 +36,11 @@ public class JobWorker {
         this.requestedJobs = eventListener;
         this.registeredJobs = jobs;
         this.meterRegistry = meterRegistry;
-        this.scheduler = Schedulers.newBoundedElastic(5, 10, "jobs");
+        this.scheduler = Schedulers.newBoundedElastic(2, 10, "jobs");
         this.activeJobs = new HashMap<>();
     }
 
-    @Scheduled(fixedRate = 15, timeUnit = TimeUnit.SECONDS)
+    @Scheduled(fixedRate = 20, timeUnit = TimeUnit.SECONDS)
     public void runJob() {
         if(requestedJobs.peek().isEmpty()) return;
 

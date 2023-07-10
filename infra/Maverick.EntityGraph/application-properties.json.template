@@ -29,19 +29,19 @@
                     "scheduled": {
                         "detectDuplicates": {
                             "enabled": true,
-                            "defaultFrequency": "0/20 * * * * ?"
+                            "defaultFrequency": "* 10 * * * ?"
                         },
                         "replaceIdentifiers": {
                             "enabled": true,
-                            "defaultFrequency": "5/20 * * * * ?"
+                            "defaultFrequency": "* 30 * * * ?"
                         },
                         "typeCoercion": {
                             "enabled": true,
-                            "defaultFrequency": "10/20 * * * * ?"
+                            "defaultFrequency": "* 50 * * * ?"
                         },
                         "exportApplication": {
                             "enabled": true,
-                            "defaultFrequency": "10 2 * * * ?",
+                            "defaultFrequency": "* 0 3 * * ?",
                             "defaultLocalPath": "/var/files/exports",
                             "defaultS3Host": null,
                             "defaultS3BucketId": null
