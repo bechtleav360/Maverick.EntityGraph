@@ -9,6 +9,7 @@ import org.av360.maverick.graph.store.SchemaStore;
 import org.av360.maverick.graph.store.rdf4j.repository.util.AbstractStore;
 import org.eclipse.rdf4j.model.Namespace;
 import org.eclipse.rdf4j.model.ValueFactory;
+import org.eclipse.rdf4j.model.impl.SimpleNamespace;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.util.Namespaces;
 import org.slf4j.Logger;
@@ -34,6 +35,7 @@ public class VocabularyStoreImpl extends AbstractStore implements SchemaStore {
         namespaces.add(Local.Transactions.NS);
         namespaces.add(Local.Versions.NS);
         namespaces.add(SDO.NS);
+        namespaces.add(new SimpleNamespace("sdox", "https://w3id.org/av360/meg/schema-xt/"));
     }
 
 

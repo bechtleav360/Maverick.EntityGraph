@@ -14,8 +14,8 @@ public class Transactions {
     public static final Literal FAILURE = SimpleValueFactory.getInstance().createLiteral("failure");
 
 
-    public static final String NAMESPACE = "http://bechtleav360.github.io/vocab/transactions#";
-    public static final String PREFIX = "trx";
+    public static final String NAMESPACE = "https://w3id.org/av360/megt#";
+    public static final String PREFIX = "megt";
     // FIXME: make configurable
     public static final Namespace NS = EntityNamespace.of(PREFIX, NAMESPACE);
 
