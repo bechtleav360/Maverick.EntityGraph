@@ -35,8 +35,8 @@
 # 4 - Entity API complete
 
 - [x] Paging support
-- [ ] (in progress) Application support in request path
-- [ ] Navigation through Graph in Browser
+- [x] (in progress) Application support in request path
+- [x] Navigation through Graph in Browser
 - [ ] Manipulate recommendation layer
 - [ ] Query parameter
 - [ ] 
