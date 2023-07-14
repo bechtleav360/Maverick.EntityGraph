@@ -60,7 +60,7 @@ public class DelegatingContentResolver implements ContentLocationResolverService
                     }
 
                     return this.resolvePath(contentDir, entityID.getLocalName(), filename, language)
-                            .map(path -> new ContentLocation(path.toUri(), "/content/s/%s/%s".formatted(application.label(), this.normalizeLocalname(contentId))));
+                            .map(path -> new ContentLocation(path.toUri(), "/content/s/%s/%s".formatted(application.label(), this.normalizeLocalname(contentId)), filename, language));
 
 
                 })

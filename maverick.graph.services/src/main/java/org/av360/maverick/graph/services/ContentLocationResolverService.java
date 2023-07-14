@@ -18,7 +18,7 @@ public interface ContentLocationResolverService {
     Mono<Path> resolvePath(String baseDirectory, String entityKey,  String filename, @Nullable String language);
 
     String getDefaultBaseDirectory();
-    record ContentLocation(URI storageURI, String apiPath) {}
+    record ContentLocation(URI storageURI, String apiPath, String filename, String language) {}
 
     Mono<ContentLocation> resolveContentLocation(IRI entityId, IRI contentId, String filename, @Nullable String language, SessionContext ctx);
 }

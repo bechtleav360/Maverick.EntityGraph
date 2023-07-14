@@ -39,7 +39,7 @@ public class DefaultContentLocationResolver implements ContentLocationResolverSe
 
 
         return resolvePath(getDefaultBaseDirectory(), entityID.getLocalName(), filename, language)
-                .map(path -> new ContentLocation(path.toUri(), "/content/%s".formatted(contentId.getLocalName())));
+                .map(path -> new ContentLocation(path.toUri(), "/content/%s".formatted(contentId.getLocalName()), filename, language));
 
     }
 

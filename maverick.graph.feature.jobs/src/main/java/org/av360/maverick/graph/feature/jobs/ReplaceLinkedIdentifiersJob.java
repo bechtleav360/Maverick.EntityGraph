@@ -9,6 +9,7 @@ import org.av360.maverick.graph.model.errors.InvalidConfiguration;
 import org.av360.maverick.graph.model.vocabulary.Local;
 import org.av360.maverick.graph.model.vocabulary.Transactions;
 import org.av360.maverick.graph.services.EntityServices;
+import org.av360.maverick.graph.services.QueryServices;
 import org.av360.maverick.graph.services.TransactionsService;
 import org.av360.maverick.graph.services.transformers.replaceIdentifiers.ReplaceExternalIdentifiers;
 import org.av360.maverick.graph.store.EntityStore;
@@ -17,7 +18,9 @@ import org.av360.maverick.graph.store.rdf.fragments.RdfTransaction;
 import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Statement;
+import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.impl.LinkedHashModel;
+import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.util.ModelBuilder;
 import org.eclipse.rdf4j.model.vocabulary.OWL;
 import org.springframework.stereotype.Component;
@@ -60,6 +63,7 @@ public class ReplaceLinkedIdentifiersJob implements Job {
     private final EntityServices entityServices;
     private final TransactionsService transactionsService;
     private final ReplaceExternalIdentifiers replaceExternalIdentifiers;
+    private final QueryServices queryServices;
 
 
     private record StatementsBag(
@@ -71,10 +75,11 @@ public class ReplaceLinkedIdentifiersJob implements Job {
     ) {
     }
 
-    public ReplaceLinkedIdentifiersJob(EntityStore store, TransactionsStore trxStore, EntityServices entityServices, TransactionsService transactionsService, ReplaceExternalIdentifiers transformer) {
+    public ReplaceLinkedIdentifiersJob(EntityStore store, TransactionsStore trxStore, EntityServices entityServices, TransactionsService transactionsService, ReplaceExternalIdentifiers transformer, QueryServices queryServices) {
         this.entityServices = entityServices;
         this.transactionsService = transactionsService;
         this.replaceExternalIdentifiers = transformer;
+        this.queryServices = queryServices;
     }
 
     @Override
@@ -166,6 +171,51 @@ public class ReplaceLinkedIdentifiersJob implements Job {
                                         .collect(Collectors.toSet()))
                                 .map(statements -> new StatementsBag((Resource) st.getObject(), new HashSet<>(statements), new LinkedHashModel(), st, new RdfTransaction()))
                 );
+    }
+
+    public Flux<StatementsBag> loadObjectStatementsWithQuery(SessionContext ctx) {
+        String query = """
+                SELECT DISTINCT ?subject ?object 
+                WHERE {
+                  ?subject <%s> ?object .
+                }
+                LIMIT 10000
+                """.formatted(Local.ORIGINAL_IDENTIFIER);
+
+
+        return  this.queryServices.queryValues(query, RepositoryType.ENTITIES, ctx)
+                .map(bindings -> SimpleValueFactory.getInstance().createStatement(
+                        (Resource) bindings.getValue("subject"),
+                        Local.ORIGINAL_IDENTIFIER,
+                        bindings.getValue("object")
+                ))
+                .filter(statement -> statement.getObject().isResource())
+                .flatMap(st ->
+                        this.entityServices.getStore(ctx).listStatements(null, null, st.getObject(), ctx.getEnvironment())
+                                .map(statements -> statements.stream()
+                                        .filter(s -> ! s.getPredicate().equals(Local.ORIGINAL_IDENTIFIER))
+                                        .filter(s -> ! s.getPredicate().equals(OWL.SAMEAS))
+                                        .collect(Collectors.toSet()))
+                                .map(statements -> new StatementsBag((Resource) st.getObject(), new HashSet<>(statements), new LinkedHashModel(), st, new RdfTransaction()))
+                );
+    }
+
+
+    private Flux<Resource> findSubjectCandidates(SessionContext ctx) {
+        String tpl = """
+                SELECT DISTINCT ?a WHERE {
+                  ?a a ?c .
+                  FILTER NOT EXISTS {
+                    FILTER STRSTARTS(str(?a), "%s").
+                    }
+                  }
+                  LIMIT 10000
+                """;
+        String query = String.format(tpl, Local.Entities.NAMESPACE);
+        return this.queryServices.queryValues(query, RepositoryType.ENTITIES, ctx)
+                .map(bindings -> bindings.getValue("a"))
+                .filter(Value::isResource)
+                .map(value -> (Resource) value);
     }
 
 

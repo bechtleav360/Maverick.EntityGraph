@@ -60,7 +60,7 @@ public class FileUploadApi extends AbstractController implements ContentApi {
                     ResponseEntity.BodyBuilder result = ResponseEntity.ok();
 
                     try {
-                        String mediaType = Files.probeContentType(Path.of(fileAccessResult.file()));
+                        String mediaType = Files.probeContentType(Path.of(fileAccessResult.filename()));
                         if(! StringUtils.hasLength(mediaType)) throw new IOException();
                         result.header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + fileAccessResult.file().toString() + "\"");
                         result.contentType(MediaType.parseMediaType(mediaType+"; charset=utf-8"));
