@@ -47,7 +47,7 @@ inPath/c, from w1, to p3
 
 ## RDF-Star
 
-.. is a concise syntax for reification, aka making statements about statements. In practice it means that we can define
+.. is a concise syntax for reification, aka making statements about statements. In practice, it means that we can define
 attributes on edges.
 
 Example (from https://w3c.github.io/cougar.graph.model.rdf-star/cg-spec/editors_draft.html)

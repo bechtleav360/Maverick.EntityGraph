@@ -433,10 +433,7 @@ public abstract class AbstractStore implements TripleStore, StatementsAware, Mod
         return Mono.just(transaction.removes(statements));
     }
 
-    @Override
-    public Mono<Transaction> addStatement(Resource subject, IRI predicate, Value literal, Transaction transaction) {
-        return this.addStatement(subject, predicate, literal, null, transaction);
-    }
+
 
     @Override
     public Mono<Transaction> addStatement(Resource subject, IRI predicate, Value literal, @Nullable Resource context, Transaction transaction) {
