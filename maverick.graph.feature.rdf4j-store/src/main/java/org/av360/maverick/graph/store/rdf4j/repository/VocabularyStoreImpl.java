@@ -36,6 +36,7 @@ public class VocabularyStoreImpl extends AbstractStore implements SchemaStore {
         namespaces.add(Local.Versions.NS);
         namespaces.add(SDO.NS);
         namespaces.add(new SimpleNamespace("sdox", "https://w3id.org/av360/meg/schema-xt/"));
+        namespaces.add(new SimpleNamespace("schema", "http://schema.org"));
     }
 
 
