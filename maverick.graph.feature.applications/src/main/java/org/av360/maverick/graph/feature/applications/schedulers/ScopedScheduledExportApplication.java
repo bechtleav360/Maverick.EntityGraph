@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component;
 public class ScopedScheduledExportApplication extends ScopedJobScheduler {
     public static final String CONFIG_KEY_EXPORT_FREQUENCY = "export_frequency";
 
-    @Value("${application.features.modules.jobs.scheduled.exportApplication.defaultFrequency:0 */5 * * * ?}")
+    @Value("${application.features.modules.jobs.scheduled.exportApplication.defaultFrequency:@midnight}")
     String defaultFrequency;
 
     public ScopedScheduledExportApplication() {

@@ -14,7 +14,7 @@ import org.springframework.stereotype.Component;
 public class ScopedScheduledTypeCoercion extends ScopedJobScheduler {
     public static final String CONFIG_KEY_ASSIGN_INTERNAL_TYPES_FREQUENCY = "assign_internal_types_frequency";
 
-    @Value("${application.features.modules.jobs.scheduled.typeCoercion.defaultFrequency:0 */5 * * * ?}")
+    @Value("${application.features.modules.jobs.scheduled.typeCoercion.defaultFrequency:@midnight}")
     String defaultFrequency;
 
     @Override

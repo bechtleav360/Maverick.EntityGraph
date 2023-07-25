@@ -25,7 +25,7 @@ public class ScopedScheduledReplaceIdentifiers extends ScopedJobScheduler {
 
     public static final String CONFIG_KEY_REPLACE_IDENTIFIERS_FREQUENCY = "replace_identifiers_frequency";
 
-    @Value("${application.features.modules.jobs.scheduled.replaceIdentifiers.defaultFrequency:0 */5 * * * ?}")
+    @Value("${application.features.modules.jobs.scheduled.replaceIdentifiers.defaultFrequency:@midnight}")
     String defaultFrequency;
     public ScopedScheduledReplaceIdentifiers() {
 

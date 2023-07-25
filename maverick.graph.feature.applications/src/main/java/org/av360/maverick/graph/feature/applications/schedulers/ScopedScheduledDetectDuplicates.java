@@ -43,7 +43,7 @@ import org.springframework.stereotype.Component;
 
 public class ScopedScheduledDetectDuplicates extends ScopedJobScheduler {
 
-    @Value("${application.features.modules.jobs.scheduled.detectDuplicates.defaultFrequency:0 */5 * * * ?}")
+    @Value("${application.features.modules.jobs.scheduled.detectDuplicates.defaultFrequency:@midnight}")
     String defaultFrequency;
 
     public static final String CONFIG_KEY_DETECT_DUPLICATES_FREQUENCY = "detect_duplicates_frequency";
