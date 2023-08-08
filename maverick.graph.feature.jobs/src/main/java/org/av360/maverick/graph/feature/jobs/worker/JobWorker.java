@@ -2,6 +2,7 @@ package org.av360.maverick.graph.feature.jobs.worker;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import lombok.extern.slf4j.Slf4j;
+import org.av360.maverick.graph.feature.jobs.model.ScheduledJob;
 import org.av360.maverick.graph.model.entities.Job;
 import org.av360.maverick.graph.model.events.JobScheduledEvent;
 import org.av360.maverick.graph.model.security.Authorities;
@@ -31,7 +32,7 @@ public class JobWorker {
     private final JobQueue requestedJobs;
     private final List<Job> registeredJobs;
 
-    private final List<Job> submittedJobs;
+    private final List<ScheduledJob> submittedJobs;
 
     private final MeterRegistry meterRegistry;
     private final ThreadPoolTaskScheduler taskScheduler;
@@ -44,13 +45,14 @@ public class JobWorker {
         this.submittedJobs = new ArrayList<>();
         this.meterRegistry = meterRegistry;
         this.scheduler = Schedulers.newBoundedElastic(2, 10, "jobs");
-        this.taskScheduler = new TaskSchedulerBuilder().poolSize(3).threadNamePrefix("jobs").build();
-
+        this.taskScheduler = new TaskSchedulerBuilder().poolSize(1).threadNamePrefix("jobs").build();
+        this.taskScheduler.initialize();
         this.activeJobs = new HashMap<>();
     }
 
     @Scheduled(fixedRate = 5, timeUnit = TimeUnit.SECONDS)
     public void runJob() {
+
         if(requestedJobs.peek().isEmpty()) return;
 
 
@@ -64,13 +66,18 @@ public class JobWorker {
                     // jobs always run with System authentication
                     .doOnNext(ctx -> ctx.withAuthority(Authorities.MAINTAINER))
                     .doOnNext(context -> {
-                        log.debug("Scheduling job '{}' in {}.", event.getJobIdentifier(), event.getSessionContext().getEnvironment());
-                        Job job = requestedJob.get().withContext(context).withIdentifier(event.getJobIdentifier());
+                        // check if job with this identifier is already scheduled
 
-                        Mono.fromFuture(this.taskScheduler.submitCompletable(job))
+                        // else create a new scheduled Job
+                        log.debug("Scheduling job '{}' in {}.", event.getJobIdentifier(), event.getSessionContext().getEnvironment());
+                        ScheduledJob scheduledJob = new ScheduledJob(requestedJob.get(), context, event.getJobIdentifier());
+
+
+
+                        Mono.fromFuture(this.taskScheduler.submitCompletable(scheduledJob))
                                 .doOnSubscribe(subscription -> {
-                                    job.setSubmitted();
-                                    this.submittedJobs.add(job);
+                                    scheduledJob.setSubmitted();
+                                    this.submittedJobs.add(scheduledJob);
 
                                 })
                                 .doOnSuccess(success -> {
@@ -97,20 +104,21 @@ public class JobWorker {
     }
 
 
-    public List<Job> getActiveJobs() {
-        return this.submittedJobs.stream().filter(Job::isActive).collect(Collectors.toList());
+    public List<ScheduledJob> getActiveJobs() {
+        return this.submittedJobs.stream().filter(ScheduledJob::isActive).collect(Collectors.toList());
     }
 
-    public List<Job> getSubmittedJobs() {
-        return this.submittedJobs.stream().filter(Job::isSubmitted).collect(Collectors.toList());
+    public List<ScheduledJob> getSubmittedJobs() {
+        return this.submittedJobs.stream().filter(ScheduledJob::isSubmitted).collect(Collectors.toList());
     }
 
-    public List<Job> getFailedJobs() {
-        return this.submittedJobs.stream().filter(Job::isFailed).limit(5).collect(Collectors.toList());
+    public List<ScheduledJob> getFailedJobs() {
+        return this.submittedJobs.stream().filter(ScheduledJob::isFailed).limit(5).collect(Collectors.toList());
     }
 
-    public List<Job> getCompletedJobs() {
-        return this.submittedJobs.stream().filter(Job::isCompleted).limit(5).collect(Collectors.toList());
+    public List<ScheduledJob> getCompletedJobs() {
+        List<ScheduledJob> collect = this.submittedJobs.stream().filter(ScheduledJob::isCompleted).limit(5).collect(Collectors.toList());
+        return collect;
     }
 
 }

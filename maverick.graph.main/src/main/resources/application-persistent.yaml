@@ -21,7 +21,7 @@ application:
       admin:
         enabled: true
       jobs:
-        enabled: false
+        enabled: true
         scheduled:
           detectDuplicates:
             enabled: true
@@ -58,8 +58,8 @@ application:
 spring:
   security:
     user:
-      name: "xxx"
-      password: "xx"
+      name: "user"
+      password: "123"
 
 logging:
   file:

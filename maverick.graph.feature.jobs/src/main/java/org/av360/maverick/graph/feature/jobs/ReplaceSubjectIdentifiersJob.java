@@ -54,7 +54,7 @@ import java.util.*;
 
 @Slf4j(topic = "graph.jobs.identifiers")
 @Component
-public class ReplaceSubjectIdentifiersJob extends Job {
+public class ReplaceSubjectIdentifiersJob implements Job {
 
     public static String NAME = "replaceSubjectIdentifiers";
 

@@ -45,7 +45,7 @@ import java.util.Objects;
 @Service
 @Slf4j(topic = "graph.jobs.coercion")
 @SuppressWarnings("javadoc")
-public class AssignInternalTypesJob extends Job {
+public class AssignInternalTypesJob implements Job {
 
     public static String NAME = "typeCoercion";
     private final EntityServices entityServices;

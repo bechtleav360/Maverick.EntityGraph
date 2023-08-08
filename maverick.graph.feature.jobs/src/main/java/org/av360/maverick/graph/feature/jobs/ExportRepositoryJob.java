@@ -38,7 +38,7 @@ import java.util.Objects;
 
 @Service
 @Slf4j(topic = "graph.feat.jobs.exports")
-public class ExportRepositoryJob extends Job {
+public class ExportRepositoryJob implements Job {
 
     public static String NAME = "exportApplication";
     private final EntityServices entityServices;

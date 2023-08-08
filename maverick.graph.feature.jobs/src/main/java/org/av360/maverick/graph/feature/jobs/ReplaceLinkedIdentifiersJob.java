@@ -56,7 +56,7 @@ import java.util.stream.Collectors;
 
 @Slf4j(topic = "graph.jobs.identifiers")
 @Component
-public class ReplaceLinkedIdentifiersJob extends Job {
+public class ReplaceLinkedIdentifiersJob implements Job {
 
     public static String NAME = "replaceLinkedIdentifiers";
 

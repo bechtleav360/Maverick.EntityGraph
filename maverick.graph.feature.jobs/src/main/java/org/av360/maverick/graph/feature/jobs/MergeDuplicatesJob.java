@@ -65,7 +65,7 @@ import java.util.TreeSet;
  */
 @Service
 @Slf4j(topic = "graph.jobs.duplicates")
-public class MergeDuplicatesJob extends Job {
+public class MergeDuplicatesJob implements Job {
 
     public static String NAME = "detectDuplicates";
     private final EntityServices entityServices;
