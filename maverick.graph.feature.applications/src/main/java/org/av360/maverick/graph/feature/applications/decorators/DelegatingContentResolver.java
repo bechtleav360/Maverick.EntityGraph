@@ -4,7 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.feature.applications.security.SubscriptionToken;
 import org.av360.maverick.graph.feature.applications.services.ApplicationsService;
 import org.av360.maverick.graph.model.context.SessionContext;
-import org.av360.maverick.graph.model.enums.ConfigurationItemKeys;
+import org.av360.maverick.graph.model.enums.ConfigurationKeysRegistry;
 import org.av360.maverick.graph.model.errors.InsufficientPrivilegeException;
 import org.av360.maverick.graph.model.security.Authorities;
 import org.av360.maverick.graph.services.ContentLocationResolverService;
@@ -19,10 +19,13 @@ import java.nio.file.Path;
 public class DelegatingContentResolver implements ContentLocationResolverService {
     private final ContentLocationResolverService delegate;
     private final ApplicationsService applicationsService;
+    public static final String CONFIG_KEY_CONTENT_PATH = "content_path";
+
 
     public DelegatingContentResolver(ContentLocationResolverService delegate, ApplicationsService applicationsService) {
         this.delegate = delegate;
         this.applicationsService = applicationsService;
+        ConfigurationKeysRegistry.add(CONFIG_KEY_CONTENT_PATH, "Directory where binary objects and files for this application should be stored.");
     }
 
 
@@ -55,8 +58,8 @@ public class DelegatingContentResolver implements ContentLocationResolverService
 
 
                     String contentDir = delegate.getDefaultBaseDirectory();
-                    if(application.configuration().containsKey(ConfigurationItemKeys.LOCAL_CONTENT_PATH.toString())) {
-                        contentDir = application.configuration().get(ConfigurationItemKeys.LOCAL_CONTENT_PATH.toString()).toString();
+                    if(application.configuration().containsKey(CONFIG_KEY_CONTENT_PATH)) {
+                        contentDir = application.configuration().get(CONFIG_KEY_CONTENT_PATH).toString();
                     }
 
                     return this.resolvePath(contentDir, entityID.getLocalName(), filename, language)

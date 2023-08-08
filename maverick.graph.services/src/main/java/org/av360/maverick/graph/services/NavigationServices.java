@@ -1,5 +1,6 @@
 package org.av360.maverick.graph.services;
 
+import jakarta.annotation.Nullable;
 import org.av360.maverick.graph.model.context.SessionContext;
 import org.av360.maverick.graph.model.rdf.AnnotatedStatement;
 import org.eclipse.rdf4j.model.IRI;
@@ -12,7 +13,7 @@ public interface NavigationServices {
 
     Flux<AnnotatedStatement> start(SessionContext ctx);
 
-    Flux<AnnotatedStatement> list(Map<String, String> requestParams, SessionContext ctx);
+    Flux<AnnotatedStatement> list(Map<String, String> requestParams, SessionContext ctx, @Nullable String query);
 
     Flux<AnnotatedStatement> browse(Map<String, String> params, SessionContext ctx);
 

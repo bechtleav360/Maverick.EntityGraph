@@ -29,6 +29,7 @@ import static org.av360.maverick.graph.feature.applications.schedulers.ScopedSch
 public class ScopedScheduledReplaceLinkedIdentifiers extends ScopedJobScheduler {
     private final Map<String, ScheduledFuture<?>> scheduledTasks = new ConcurrentHashMap<>();
 
+
     @Value("${application.features.modules.jobs.scheduled.replaceIdentifiers.defaultFrequency:@midnight}")
     String defaultFrequency;
     @Override

@@ -1,6 +1,7 @@
 package org.av360.maverick.graph.feature.applications.schedulers;
 
 import lombok.extern.slf4j.Slf4j;
+import org.av360.maverick.graph.model.enums.ConfigurationKeysRegistry;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
@@ -28,7 +29,7 @@ public class ScopedScheduledReplaceIdentifiers extends ScopedJobScheduler {
     @Value("${application.features.modules.jobs.scheduled.replaceIdentifiers.defaultFrequency:@midnight}")
     String defaultFrequency;
     public ScopedScheduledReplaceIdentifiers() {
-
+        ConfigurationKeysRegistry.add(CONFIG_KEY_REPLACE_IDENTIFIERS_FREQUENCY, "Frequency as Cron Job Pattern for replacing identifiers");
     }
 
     @Override

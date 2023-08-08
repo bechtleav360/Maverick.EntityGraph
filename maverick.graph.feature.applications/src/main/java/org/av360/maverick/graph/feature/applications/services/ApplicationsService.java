@@ -141,8 +141,11 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
 
         ModelBuilder m = this.buildConfigurationItem(configKey, configValue, application.iri(), null);
 
-        return this.applicationsStore.insertModel(m.build(), ctx.updateEnvironment(env -> env.setRepositoryType(RepositoryType.APPLICATION)).getEnvironment())
-                .then(this.getApplication(application.key(), ctx))
+
+        Mono<Void> deleteMono = this.deleteConfigurationItem(application, configKey, ctx);
+        Mono<Void> insertMono = this.applicationsStore.insertModel(m.build(), ctx.updateEnvironment(env -> env.setRepositoryType(RepositoryType.APPLICATION)).getEnvironment());
+
+        return deleteMono.then(insertMono).then(this.getApplication(application.key(), ctx, true))
                 .doOnSuccess(app -> {
                     this.eventPublisher.publishEvent(new ApplicationUpdatedEvent(app));
                     log.debug("Updated configuration key '{}' of node with label '{}'", app.key(), app.label());
@@ -224,8 +227,14 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
     }
     @RequiresPrivilege(Authorities.READER_VALUE)
     public Mono<Application> getApplication(String applicationKey, SessionContext ctx) {
+        return this.getApplication(applicationKey, ctx, false);
+    }
 
-        Application cached = this.caching_enabled ? this.cache.getIfPresent(applicationKey) : null;
+
+    @RequiresPrivilege(Authorities.READER_VALUE)
+    public Mono<Application> getApplication(String applicationKey, SessionContext ctx, boolean ignoreCache) {
+
+        Application cached = this.caching_enabled && !ignoreCache ? this.cache.getIfPresent(applicationKey) : null;
         Mono<Application> response = null;
         if (Objects.isNull(cached)) {
             // rebuild cache
@@ -234,6 +243,7 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
                         boolean res = application.key().equalsIgnoreCase(applicationKey);
                         return res;
                     })
+                    .doOnNext(next -> log.trace("next"))
                     .switchIfEmpty(Mono.error(new InvalidApplication(applicationKey)))
                     .single();
         } else {
@@ -242,8 +252,6 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
 
         return response.filter(application -> verifyReadingPrivilege(application, ctx));
     }
-
-
 
     @RequiresPrivilege(Authorities.READER_VALUE)
     public Flux<Application> listApplications(SessionContext ctx) {

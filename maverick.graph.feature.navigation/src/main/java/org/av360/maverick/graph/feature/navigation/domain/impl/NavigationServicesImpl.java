@@ -97,7 +97,7 @@ public class NavigationServicesImpl implements NavigationServices {
     public Flux<AnnotatedStatement> browse(Map<String, String> params, SessionContext ctx) {
         if (params.containsKey("entities")) {
             if (params.get("entities").equalsIgnoreCase("list"))
-                return this.list(params, ctx);
+                return this.list(params, ctx, null);
             else if (StringUtils.hasLength(params.get("entities"))) {
                 return this.entityServices.find(params.get("entities"), null, ctx).flatMapIterable(TripleModel::asStatements);
             }
@@ -109,7 +109,7 @@ public class NavigationServicesImpl implements NavigationServices {
 
 
     @RequiresPrivilege(Authorities.READER_VALUE)
-    public Flux<AnnotatedStatement> list(Map<String, String> params, SessionContext ctx) {
+    public Flux<AnnotatedStatement> list(Map<String, String> params, SessionContext ctx, String query) {
         Integer limit = Optional.ofNullable(params.get("limit")).map(Integer::parseInt).orElse(defaultLimit);
         Integer offset = Optional.ofNullable(params.get("offset")).map(Integer::parseInt).orElse(0);
         params.put("limit", limit.toString());
@@ -117,7 +117,7 @@ public class NavigationServicesImpl implements NavigationServices {
 
 
 
-        return this.entityServices.list(limit, offset, ctx)
+        return this.entityServices.list(limit, offset, ctx, query)
                 .collectList()
                 .map(list -> {
                     ModelBuilder builder = new ModelBuilder();

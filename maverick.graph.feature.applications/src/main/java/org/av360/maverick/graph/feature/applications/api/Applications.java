@@ -11,6 +11,7 @@ import org.av360.maverick.graph.feature.applications.api.dto.Responses;
 import org.av360.maverick.graph.feature.applications.services.ApplicationsService;
 import org.av360.maverick.graph.feature.applications.services.SubscriptionsService;
 import org.av360.maverick.graph.feature.applications.services.errors.InvalidApplication;
+import org.av360.maverick.graph.model.enums.ConfigurationKeysRegistry;
 import org.av360.maverick.graph.model.enums.RepositoryType;
 import org.av360.maverick.graph.model.rdf.AnnotatedStatement;
 import org.av360.maverick.graph.services.QueryServices;
@@ -20,6 +21,8 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+
+import java.util.Map;
 
 @RestController
 @RequestMapping(path = "/api/applications")
@@ -191,7 +194,7 @@ public class Applications extends AbstractController {
     }
 
 
-    @PostMapping(value = "/query", consumes = "text/plain", produces = {"text/turtle", "node/ld+json"})
+    @PostMapping(value = "/query", consumes = "text/plain", produces = {"text/turtle", "application/ld+json"})
     @ResponseStatus(HttpStatus.ACCEPTED)
     @io.swagger.v3.oas.annotations.parameters.RequestBody(
             description = "Sparql Construct Query",
@@ -205,6 +208,16 @@ public class Applications extends AbstractController {
                 .doOnSubscribe(s -> {
                     if (log.isDebugEnabled()) log.debug("Request to dump node graph");
                 });
+    }
+
+
+    @GetMapping(value = "/configuration/keys", produces = {"application/json"})
+    @ResponseStatus(HttpStatus.ACCEPTED)
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(
+            description = "Returns a list of supported configuration keys"
+    )
+    Map<String, String> listSupportedConfigurations() {
+        return ConfigurationKeysRegistry.get();
     }
 
 

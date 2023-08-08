@@ -62,16 +62,13 @@ import java.util.Map;
 @Service
 public class EntityServicesImpl implements EntityServices {
 
-
     private final EntityStore entityStore;
-
     private final SchemaServices schemaServices;
     private final QueryServices queryServices;
     private final IdentifierServices identifierServices;
     private final ApplicationEventPublisher eventPublisher;
     private DelegatingValidator validators;
     private DelegatingTransformer transformers;
-
 
     public EntityServicesImpl(EntityStore graph,
                               SchemaServices schemaServices, QueryServices queryServices, IdentifierServices identifierServices, ApplicationEventPublisher eventPublisher) {
@@ -91,10 +88,19 @@ public class EntityServicesImpl implements EntityServices {
                 .switchIfEmpty(Mono.error(new EntityNotFound(entityIri)));
     }
 
+
     @Override
     @RequiresPrivilege(Authorities.READER_VALUE)
     public Flux<RdfEntity> list(int limit, int offset, SessionContext ctx) {
-        String query = """
+        return this.list(limit, offset, ctx, null);
+    }
+
+    @Override
+    @RequiresPrivilege(Authorities.READER_VALUE)
+    public Flux<RdfEntity> list(int limit, int offset, SessionContext ctx, String query) {
+
+        if(! StringUtils.hasLength(query)) {
+            query = """
                         
                     PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
                     PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
@@ -118,7 +124,9 @@ public class EntityServicesImpl implements EntityServices {
                       ?id a ?type .
                     }
                     GROUP BY ?id  ?sct ?dct ?rdt ?skt
-                """.replace("$limit", limit + "").replace("$offset", offset + "");
+                """;
+        }
+        query = query.replace("$limit", limit + "").replace("$offset", offset + "");
 
         return this.queryServices.queryValuesTrusted(query, RepositoryType.ENTITIES, ctx)
                 .map(BindingsAccessor::new)

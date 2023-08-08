@@ -3,6 +3,7 @@ package org.av360.maverick.graph.feature.jobs;
 import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.model.context.SessionContext;
 import org.av360.maverick.graph.model.entities.Job;
+import org.av360.maverick.graph.model.enums.ConfigurationKeysRegistry;
 import org.av360.maverick.graph.model.util.ValidateReactive;
 import org.av360.maverick.graph.services.ConfigurationService;
 import org.av360.maverick.graph.services.EntityServices;
@@ -44,9 +45,16 @@ public class ExportRepositoryJob implements Job {
     private final EntityServices entityServices;
     private final ConfigurationService configurationService;
 
+    public static final String CONFIG_KEY_EXPORT_LOCAL_PATH = "export_local_path";
+    public static final String CONFIG_KEY_EXPORT_S3_HOST = "export_s3_host";
+    public static final String CONFIG_KEY_EXPORT_S3_BUCKET = "export_s3_bucket";
+
     public ExportRepositoryJob(EntityServices service,  ConfigurationService configurationService) {
         this.entityServices = service;
         this.configurationService = configurationService;
+        ConfigurationKeysRegistry.add(CONFIG_KEY_EXPORT_LOCAL_PATH, "Local directory for exporting files.");
+        ConfigurationKeysRegistry.add(CONFIG_KEY_EXPORT_S3_HOST, "Name of S3 host for exporting files.");
+        ConfigurationKeysRegistry.add(CONFIG_KEY_EXPORT_S3_BUCKET, "Name of S3 bucket for exporting files.");
     }
 
     @Override
@@ -55,13 +63,13 @@ public class ExportRepositoryJob implements Job {
     }
 
     protected String resolveLocalStorageDirectory(SessionContext ctx) {
-        return configurationService.getValue("export_local_path", ctx).block();
+        return configurationService.getValue(CONFIG_KEY_EXPORT_LOCAL_PATH, ctx).block();
     }
     protected String resolveS3Host(SessionContext ctx) {
-        return configurationService.getValue("export_s3_host", ctx).block();
+        return configurationService.getValue(CONFIG_KEY_EXPORT_S3_HOST, ctx).block();
     }
     protected String resolveS3Bucket(SessionContext ctx) {
-        return configurationService.getValue("export_s3_bucket", ctx).block();
+        return configurationService.getValue(CONFIG_KEY_EXPORT_S3_BUCKET, ctx).block();
     }
 
     @Override
