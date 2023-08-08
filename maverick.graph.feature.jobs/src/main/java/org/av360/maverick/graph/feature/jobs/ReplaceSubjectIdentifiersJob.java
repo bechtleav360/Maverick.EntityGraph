@@ -54,7 +54,7 @@ import java.util.*;
 
 @Slf4j(topic = "graph.jobs.identifiers")
 @Component
-public class ReplaceSubjectIdentifiersJob implements Job {
+public class ReplaceSubjectIdentifiersJob extends Job {
 
     public static String NAME = "replaceSubjectIdentifiers";
 
@@ -136,7 +136,7 @@ public class ReplaceSubjectIdentifiersJob implements Job {
                     FILTER STRSTARTS(str(?a), "%s").
                     }
                   }
-                  LIMIT 10000
+                  LIMIT 1000
                 """;
         String query = String.format(tpl, Local.Entities.NAMESPACE);
         return this.queryServices.queryValues(query, RepositoryType.ENTITIES, ctx)

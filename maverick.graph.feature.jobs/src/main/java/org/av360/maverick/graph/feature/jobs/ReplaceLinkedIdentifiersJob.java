@@ -56,7 +56,7 @@ import java.util.stream.Collectors;
 
 @Slf4j(topic = "graph.jobs.identifiers")
 @Component
-public class ReplaceLinkedIdentifiersJob implements Job {
+public class ReplaceLinkedIdentifiersJob extends Job {
 
     public static String NAME = "replaceLinkedIdentifiers";
 
@@ -179,7 +179,7 @@ public class ReplaceLinkedIdentifiersJob implements Job {
                 WHERE {
                   ?subject <%s> ?object .
                 }
-                LIMIT 10000
+                LIMIT 1000
                 """.formatted(Local.ORIGINAL_IDENTIFIER);
 
 
@@ -209,7 +209,7 @@ public class ReplaceLinkedIdentifiersJob implements Job {
                     FILTER STRSTARTS(str(?a), "%s").
                     }
                   }
-                  LIMIT 10000
+                  LIMIT 1000
                 """;
         String query = String.format(tpl, Local.Entities.NAMESPACE);
         return this.queryServices.queryValues(query, RepositoryType.ENTITIES, ctx)

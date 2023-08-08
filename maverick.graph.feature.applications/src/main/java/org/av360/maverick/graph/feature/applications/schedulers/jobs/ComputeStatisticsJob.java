@@ -36,7 +36,7 @@ import java.math.BigInteger;
 @Service
 @Slf4j(topic = "graph.jobs.coercion")
 @SuppressWarnings("javadoc")
-public class ComputeStatisticsJob implements Job {
+public class ComputeStatisticsJob extends Job {
 
     public static String NAME = "computeStatistics";
     private final ApplicationsService applicationsService;

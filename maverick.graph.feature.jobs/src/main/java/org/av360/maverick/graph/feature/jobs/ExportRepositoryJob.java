@@ -1,7 +1,6 @@
 package org.av360.maverick.graph.feature.jobs;
 
 import lombok.extern.slf4j.Slf4j;
-import org.av360.maverick.graph.feature.applications.services.ApplicationsService;
 import org.av360.maverick.graph.model.context.SessionContext;
 import org.av360.maverick.graph.model.entities.Job;
 import org.av360.maverick.graph.model.util.ValidateReactive;
@@ -10,7 +9,6 @@ import org.av360.maverick.graph.services.EntityServices;
 import org.eclipse.rdf4j.rio.RDFFormat;
 import org.eclipse.rdf4j.rio.RDFWriter;
 import org.eclipse.rdf4j.rio.RDFWriterRegistry;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.core.io.buffer.DataBufferUtils;
 import org.springframework.core.io.buffer.DefaultDataBufferFactory;
@@ -25,7 +23,10 @@ import software.amazon.awssdk.services.s3.S3AsyncClient;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectResponse;
 
-import java.io.*;
+import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.io.PipedInputStream;
+import java.io.PipedOutputStream;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
@@ -37,7 +38,7 @@ import java.util.Objects;
 
 @Service
 @Slf4j(topic = "graph.feat.jobs.exports")
-public class ExportRepositoryJob implements Job {
+public class ExportRepositoryJob extends Job {
 
     public static String NAME = "exportApplication";
     private final EntityServices entityServices;
