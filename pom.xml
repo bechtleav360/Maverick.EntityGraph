@@ -8,7 +8,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.1.0</version>
+        <version>3.1.2</version>
         <relativePath/>
         <!-- lookup parent from repository -->
     </parent>
@@ -44,6 +44,7 @@
         <micrometer-tracing.version>1.0.0</micrometer-tracing.version>
         <jackson.version>2.15.0</jackson.version>
         <logback.version>1.4.7</logback.version>
+        <rdf4j.version>4.3.4</rdf4j.version>
     </properties>
 
     <dependencies>
@@ -114,7 +115,7 @@
             <dependency>
                 <groupId>org.eclipse.rdf4j</groupId>
                 <artifactId>rdf4j-bom</artifactId>
-                <version>4.3.2</version>
+                <version>${rdf4j.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>

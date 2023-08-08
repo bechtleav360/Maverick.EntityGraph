@@ -45,7 +45,7 @@ import java.util.Objects;
 @Service
 @Slf4j(topic = "graph.jobs.coercion")
 @SuppressWarnings("javadoc")
-public class AssignInternalTypesJob implements Job {
+public class AssignInternalTypesJob extends Job {
 
     public static String NAME = "typeCoercion";
     private final EntityServices entityServices;
@@ -126,7 +126,7 @@ public class AssignInternalTypesJob implements Job {
                     FILTER NOT EXISTS { ?entity a <%s> . }
                     FILTER NOT EXISTS { ?entity a <%s> . }
                     FILTER NOT EXISTS { ?entity a <%s> . }
-                } LIMIT 10000
+                } LIMIT 1000
                 """;
         String query = String.format(tpl, Local.Entities.TYPE_INDIVIDUAL, Local.Entities.TYPE_CLASSIFIER, Local.Entities.TYPE_EMBEDDED);
         return this.queryServices.queryValues(query, RepositoryType.ENTITIES, ctx)

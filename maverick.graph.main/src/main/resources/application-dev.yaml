@@ -88,8 +88,10 @@ management:
   endpoints:
     web:
       exposure:
-        include: "health, info, env, beans, git, loggers, metrics, scheduledTasks, logfile, mappings, prometheus"
+        include: "health, info, env, beans, git, loggers, metrics, scheduledTasks, logfile, mappings, prometheus, jobs"
   endpoint:
+    jobs:
+      enabled: true
     discovery:
       enabled: true
     health:
