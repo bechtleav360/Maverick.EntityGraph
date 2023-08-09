@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
+import java.util.List;
 import java.util.Optional;
 
 @Slf4j(topic = "graph.jobs")
@@ -33,6 +34,10 @@ public class JobQueue implements ApplicationListener<JobScheduledEvent> {
 
             log.trace("Current job queue: "+this.publishedJobs);
         }
+    }
+
+    public List<JobScheduledEvent> list() {
+        return publishedJobs.stream().toList();
     }
 
     public record JobIdentifier(String name, String scope) {}

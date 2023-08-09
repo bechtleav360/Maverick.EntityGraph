@@ -258,7 +258,7 @@ public class MergeDuplicatesJob implements Job {
                     Value sharedValueVal = binding.getValue(sharedValue.getVarName());
                     Value typeVal = binding.getValue(type.getVarName());
                     return new DuplicateCandidate(sharedProperty, typeVal.stringValue(), sharedValueVal.stringValue());
-                }).timeout(Duration.of(10, ChronoUnit.SECONDS));
+                }).timeout(Duration.of(60, ChronoUnit.SECONDS));
 
     }
 

@@ -14,10 +14,7 @@ import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -31,7 +28,7 @@ public class JobWorker {
     private final JobQueue requestedJobs;
     private final List<Job> registeredJobs;
 
-    private final List<ScheduledJob> submittedJobs;
+    private final Deque<ScheduledJob> submittedJobs;
 
     private final MeterRegistry meterRegistry;
     private final ThreadPoolTaskScheduler taskScheduler;
@@ -41,7 +38,7 @@ public class JobWorker {
         this.builders = builders;
         this.requestedJobs = eventListener;
         this.registeredJobs = jobs;
-        this.submittedJobs = new ArrayList<>();
+        this.submittedJobs = new ArrayDeque<>();
         this.meterRegistry = meterRegistry;
         this.taskScheduler = new TaskSchedulerBuilder().poolSize(1).threadNamePrefix("jobs").build();
         this.taskScheduler.initialize();
@@ -51,7 +48,6 @@ public class JobWorker {
     public void runJob() {
 
         if(requestedJobs.peek().isEmpty()) return;
-
 
 
         // we should always have only job running in one scope, to prevent read/write conflicts
@@ -70,12 +66,7 @@ public class JobWorker {
             }
 
 
-
-
             Job requestedJob = this.getRegisteredJobs().stream().filter(job -> job.getName().equalsIgnoreCase(event.getJobName())).findFirst().orElseThrow();
-
-
-
 
 
             Flux.fromIterable(this.builders)
@@ -120,21 +111,27 @@ public class JobWorker {
         return registeredJobs;
     }
 
+    public List<JobScheduledEvent> getRequestedJobs() {
+        return this.requestedJobs.list();
+    }
+
 
     public List<ScheduledJob> getActiveJobs() {
         return this.submittedJobs.stream().filter(ScheduledJob::isActive).collect(Collectors.toList());
     }
 
     public List<ScheduledJob> getSubmittedJobs() {
-        return this.submittedJobs.stream().filter(ScheduledJob::isSubmitted).collect(Collectors.toList());
+        return this.submittedJobs.stream().filter(ScheduledJob::isSubmitted).sorted(Comparator.comparing(ScheduledJob::getSubmissionTime)).collect(Collectors.toList());
     }
 
+
+
     public List<ScheduledJob> getFailedJobs() {
-        return this.submittedJobs.stream().filter(ScheduledJob::isFailed).limit(5).collect(Collectors.toList());
+        return this.submittedJobs.stream().filter(ScheduledJob::isFailed).sorted(Comparator.comparing(ScheduledJob::getCompletionTime)).limit(5).collect(Collectors.toList());
     }
 
     public List<ScheduledJob> getCompletedJobs() {
-        List<ScheduledJob> collect = this.submittedJobs.stream().filter(ScheduledJob::isCompleted).limit(5).collect(Collectors.toList());
+        List<ScheduledJob> collect = this.submittedJobs.stream().filter(ScheduledJob::isCompleted).sorted(Comparator.comparing(ScheduledJob::getCompletionTime)).limit(5).collect(Collectors.toList());
         return collect;
     }
 
