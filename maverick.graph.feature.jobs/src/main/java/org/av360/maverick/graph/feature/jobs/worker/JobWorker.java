@@ -13,10 +13,11 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import reactor.core.scheduler.Scheduler;
-import reactor.core.scheduler.Schedulers;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -27,8 +28,6 @@ public class JobWorker {
     private final Set<SessionContextBuilderService> builders;
 
 
-    private final Scheduler scheduler;
-    private final Map<String, String> activeJobs;
     private final JobQueue requestedJobs;
     private final List<Job> registeredJobs;
 
@@ -44,10 +43,8 @@ public class JobWorker {
         this.registeredJobs = jobs;
         this.submittedJobs = new ArrayList<>();
         this.meterRegistry = meterRegistry;
-        this.scheduler = Schedulers.newBoundedElastic(2, 10, "jobs");
         this.taskScheduler = new TaskSchedulerBuilder().poolSize(1).threadNamePrefix("jobs").build();
         this.taskScheduler.initialize();
-        this.activeJobs = new HashMap<>();
     }
 
     @Scheduled(fixedRate = 5, timeUnit = TimeUnit.SECONDS)
@@ -56,21 +53,41 @@ public class JobWorker {
         if(requestedJobs.peek().isEmpty()) return;
 
 
+
         // we should always have only job running in one scope, to prevent read/write conflicts
         requestedJobs.peek().ifPresent(jobIdentifier -> {
 
             JobScheduledEvent event = requestedJobs.accept().orElseThrow();
-            Optional<Job> requestedJob = this.getRegisteredJobs().stream().filter(job -> job.getName().equalsIgnoreCase(event.getJobName())).findFirst();
+
+            // check if job with this identifier is already scheduled or active
+            Optional<ScheduledJob> alreadyScheduledJob = this.submittedJobs.stream()
+                    .filter(scheduledJob -> ! scheduledJob.isCompleted())
+                    .filter(scheduledJob -> ! scheduledJob.isFailed())
+                    .filter(scheduledJob -> scheduledJob.getIdentifier().equalsIgnoreCase(event.getJobIdentifier())).findFirst();
+            if(alreadyScheduledJob.isPresent()) {
+                if(alreadyScheduledJob.get().isSubmitted()) return;
+                if(alreadyScheduledJob.get().isActive()) this.requestedJobs.delayFirst();
+            }
+
+
+
+
+            Job requestedJob = this.getRegisteredJobs().stream().filter(job -> job.getName().equalsIgnoreCase(event.getJobName())).findFirst().orElseThrow();
+
+
+
+
+
             Flux.fromIterable(this.builders)
                     .reduceWith(() -> Mono.just(event.getSessionContext()), (update, builderService) -> update.flatMap(builderService::build)).flatMap(mono -> mono)
                     // jobs always run with System authentication
                     .doOnNext(ctx -> ctx.withAuthority(Authorities.MAINTAINER))
                     .doOnNext(context -> {
-                        // check if job with this identifier is already scheduled
+
 
                         // else create a new scheduled Job
                         log.debug("Scheduling job '{}' in {}.", event.getJobIdentifier(), event.getSessionContext().getEnvironment());
-                        ScheduledJob scheduledJob = new ScheduledJob(requestedJob.get(), context, event.getJobIdentifier());
+                        ScheduledJob scheduledJob = new ScheduledJob(requestedJob, context, event.getJobIdentifier());
 
 
 

@@ -45,11 +45,11 @@ public class JobsEndpoint {
 
     private record RegisteredJobDescription(String name) implements JobDescription { }
 
-    private record SubmittedJobDescription(String name, String identifier, Instant submissionTime, long waitedInSeconds) implements JobDescription {}
+    private record SubmittedJobDescription(String name, String identifier, Instant submittedAt, long waitingFor) implements JobDescription {}
 
-    private record ActiveJobDescription(String name, String identifier, Instant submissionTime, long waitedInSeconds, Instant startingTime, long ranInSeconds) implements JobDescription {}
+    private record ActiveJobDescription(String name, String identifier, Instant submittedAt, long queueTime, Instant startedAt, long runningFor) implements JobDescription {}
 
-    private record FailedJobDescription(String name, String identifier, Instant submissionTime, long waitedInSeconds, Instant startingTime, long ranInSeconds, String errorMessage) implements JobDescription {}
-    private record CompletedJobDescription(String name, String identifier, Instant submissionTime, long waitedInSeconds, Instant startingTime, long ranInSeconds, Instant completionTime) implements JobDescription {}
+    private record FailedJobDescription(String name, String identifier, Instant submittedAt, long queueTime, Instant startedAt, long duration, String errorMessage) implements JobDescription {}
+    private record CompletedJobDescription(String name, String identifier, Instant submittedAt, long queueTime, Instant startedAt, long duration, Instant completedAt) implements JobDescription {}
 
 }
