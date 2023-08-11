@@ -21,12 +21,15 @@ public class JobsEndpoint {
 
     @ReadOperation
     public Map<Category, Stream<JobDescription>> all() {
+
+
+
         return Map.of(
                 Category.REGISTERED, jobWorker.getRegisteredJobs().stream().map(job -> new RegisteredJobDescription(job.getName())),
                 Category.RUNNING, jobWorker.getActiveJobs().stream().map(job -> new ActiveJobDescription(job.getName(), job.getIdentifier(), job.getSubmissionTime(), job.getWaitingDuration().getSeconds(), job.getStartingTime(), job.getRunningTime().getSeconds())),
                 Category.WAITING, jobWorker.getSubmittedJobs().stream().map(job -> new SubmittedJobDescription(job.getName(), job.getIdentifier(), job.getSubmissionTime(), job.getWaitingDuration().getSeconds())),
-                Category.FAILED, jobWorker.getFailedJobs().stream().map(job -> new FailedJobDescription(job.getName(), job.getIdentifier(), job.getSubmissionTime(), job.getWaitingDuration().getSeconds(), job.getStartingTime(), job.getRunningTime().getSeconds(), job.getErrorMessage())),
-                Category.COMPLETED, jobWorker.getCompletedJobs().stream().map(job -> new CompletedJobDescription(job.getName(), job.getIdentifier(), job.getSubmissionTime(), job.getWaitingDuration().getSeconds(), job.getStartingTime(), job.getRunningTime().getSeconds(), job.getCompletionTime()))
+                Category.FAILED, jobWorker.getFailedJobs().stream().limit(10).map(job -> new FailedJobDescription(job.getName(), job.getIdentifier(), job.getSubmissionTime(), job.getWaitingDuration().getSeconds(), job.getStartingTime(), job.getRunningTime().getSeconds(), job.getErrorMessage())),
+                Category.COMPLETED, jobWorker.getCompletedJobs().stream().limit(5).map(job -> new CompletedJobDescription(job.getName(), job.getIdentifier(), job.getSubmissionTime(), job.getWaitingDuration().getSeconds(), job.getStartingTime(), job.getRunningTime().getSeconds(), job.getCompletionTime()))
         );
     }
 

@@ -85,7 +85,7 @@ public class JobWorker {
                         Mono.fromFuture(this.taskScheduler.submitCompletable(scheduledJob))
                                 .doOnSubscribe(subscription -> {
                                     scheduledJob.setSubmitted();
-                                    this.submittedJobs.add(scheduledJob);
+                                    this.submittedJobs.addFirst(scheduledJob);
 
                                 })
                                 .doOnSuccess(success -> {
@@ -121,18 +121,17 @@ public class JobWorker {
     }
 
     public List<ScheduledJob> getSubmittedJobs() {
-        return this.submittedJobs.stream().filter(ScheduledJob::isSubmitted).sorted(Comparator.comparing(ScheduledJob::getSubmissionTime)).collect(Collectors.toList());
+        return this.submittedJobs.stream().filter(ScheduledJob::isSubmitted).collect(Collectors.toList());
     }
 
 
 
     public List<ScheduledJob> getFailedJobs() {
-        return this.submittedJobs.stream().filter(ScheduledJob::isFailed).sorted(Comparator.comparing(ScheduledJob::getCompletionTime)).limit(5).collect(Collectors.toList());
+        return this.submittedJobs.stream().filter(ScheduledJob::isFailed).collect(Collectors.toList());
     }
 
     public List<ScheduledJob> getCompletedJobs() {
-        List<ScheduledJob> collect = this.submittedJobs.stream().filter(ScheduledJob::isCompleted).sorted(Comparator.comparing(ScheduledJob::getCompletionTime)).limit(5).collect(Collectors.toList());
-        return collect;
+        return this.submittedJobs.stream().filter(ScheduledJob::isCompleted).collect(Collectors.toList());
     }
 
 }
