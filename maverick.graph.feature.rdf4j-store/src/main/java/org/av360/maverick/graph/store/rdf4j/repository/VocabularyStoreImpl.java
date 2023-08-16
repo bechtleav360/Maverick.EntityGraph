@@ -12,12 +12,14 @@ import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.util.Namespaces;
 import org.slf4j.Logger;
 import org.springframework.boot.json.BasicJsonParser;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 
 import java.io.IOException;
-import java.net.URISyntaxException;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -45,7 +47,11 @@ public class VocabularyStoreImpl extends AbstractStore implements SchemaStore {
 
 
         try {
-            Path folder = Paths.get(Objects.requireNonNull(this.getClass().getClassLoader().getResource("ns")).toURI());
+            URI dir = new ClassPathResource("/ns").getURI();
+            FileSystems.newFileSystem(dir, Collections.emptyMap());
+            Path folder = Paths.get(dir);
+
+
             Files.list(folder).forEach(filepath -> {
                 try {
                     String s = Files.readString(filepath, StandardCharsets.UTF_8);
@@ -59,7 +65,7 @@ public class VocabularyStoreImpl extends AbstractStore implements SchemaStore {
             });
 
             log.debug("Loaded locally configured prefixes, having {} defined namespaces", mappings.size());
-        } catch (URISyntaxException | IOException e) {
+        } catch (IOException e) {
             throw new RuntimeException(e);
         }
 
