@@ -80,6 +80,7 @@ public class CreateValuesTest extends ApiTestsBase {
                 .expectBody()
                 .consumeWith(rdfConsumer);
 
+        super.printResult("Final model", rdfConsumer.dump(RDFFormat.TURTLE));
         Assertions.assertTrue(rdfConsumer.hasStatement(video.getSubject(), DCTERMS.DESCRIPTION, vf.createLiteral(description, "en")));
     }
 
