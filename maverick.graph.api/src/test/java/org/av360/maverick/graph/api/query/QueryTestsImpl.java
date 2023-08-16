@@ -58,7 +58,7 @@ public class QueryTestsImpl extends TestsBase implements QueriesTest {
                 .accept(MediaType.parseMediaType("text/csv"))
                 .body(BodyInserters.fromValue("SELECT DISTINCT * WHERE { ?s ?p ?o }"))
                 .exchange()
-                .expectStatus().isAccepted()
+                .expectStatus().isOk()
                 .expectBody()
                 .consumeWith(csvConsumer);
 
