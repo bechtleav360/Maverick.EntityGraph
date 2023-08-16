@@ -1,6 +1,5 @@
 package org.av360.maverick.graph.feature.applications.store;
 
-import io.micrometer.core.instrument.MeterRegistry;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.Validate;
 import org.av360.maverick.graph.model.context.Environment;
@@ -26,9 +25,6 @@ import java.nio.file.Paths;
 public class ApplicationRepositoryBuilder extends DefaultRepositoryBuilder {
 
 
-    public ApplicationRepositoryBuilder(MeterRegistry meterRegistry) {
-        super(meterRegistry);
-    }
 
 
     /**

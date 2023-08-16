@@ -38,10 +38,7 @@ public class SchemaServicesImpl implements SchemaServices {
 
     @Override
     public Mono<Namespace> getNamespaceFor(String prefix) {
-        return this.schemaStore.listNamespaces()
-                .filter(namespace -> namespace.getPrefix().equalsIgnoreCase(prefix))
-                .switchIfEmpty(Mono.error(new UnknownPrefix(prefix)))
-                .single();
+        return this.schemaStore.getNamespaceForPrefix(prefix).map(Mono::just).orElse(Mono.error(new UnknownPrefix(prefix)));
     }
 
     @Override

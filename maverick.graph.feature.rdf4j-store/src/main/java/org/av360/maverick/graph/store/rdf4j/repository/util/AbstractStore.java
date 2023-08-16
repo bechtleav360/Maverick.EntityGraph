@@ -86,12 +86,15 @@ public abstract class AbstractStore implements TripleStore, StatementsAware, Mod
     }
 
     @Autowired
-    private void setMeterRegistry(MeterRegistry meterRegistry) {
-        this.meterRegistry = meterRegistry;
-        this.transactionsMonoCounter = meterRegistry.counter("graph.store.transactions", "cardinality", "single");
-        this.transactionsMonoTimer = meterRegistry.timer("graph.store.timer", "cardinality", "single");
-        this.transactionsFluxCounter = meterRegistry.counter("graph.store.transactions", "cardinality", "multiple");
-        this.transactionsFluxTimer = meterRegistry.timer("graph.store.timer", "cardinality", "multiple");
+    private void setMeterRegistry(@Nullable MeterRegistry meterRegistry) {
+        if(Objects.nonNull(meterRegistry)) {
+            this.meterRegistry = meterRegistry;
+            this.transactionsMonoCounter = meterRegistry.counter("graph.store.transactions", "cardinality", "single");
+            this.transactionsMonoTimer = meterRegistry.timer("graph.store.timer", "cardinality", "single");
+            this.transactionsFluxCounter = meterRegistry.counter("graph.store.transactions", "cardinality", "multiple");
+            this.transactionsFluxTimer = meterRegistry.timer("graph.store.timer", "cardinality", "multiple");
+        }
+
     }
 
 

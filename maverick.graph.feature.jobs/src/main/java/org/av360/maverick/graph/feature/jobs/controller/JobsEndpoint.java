@@ -13,6 +13,7 @@ import java.util.stream.Stream;
 @Endpoint(id = "jobs")
 public class JobsEndpoint {
 
+
     private final JobWorker jobWorker;
 
     public JobsEndpoint(JobWorker jobWorker) {
