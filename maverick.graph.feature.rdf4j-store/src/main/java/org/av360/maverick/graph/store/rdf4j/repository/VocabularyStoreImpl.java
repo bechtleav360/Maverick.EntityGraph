@@ -2,6 +2,7 @@ package org.av360.maverick.graph.store.rdf4j.repository;
 
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.io.IOUtils;
 import org.av360.maverick.graph.model.enums.RepositoryType;
 import org.av360.maverick.graph.store.SchemaStore;
 import org.av360.maverick.graph.store.rdf4j.repository.util.AbstractStore;
@@ -12,17 +13,12 @@ import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.util.Namespaces;
 import org.slf4j.Logger;
 import org.springframework.boot.json.BasicJsonParser;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 
 import java.io.IOException;
-import java.net.URI;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.FileSystems;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.*;
 
 @Slf4j(topic = "graph.repo.schema")
@@ -42,35 +38,27 @@ public class VocabularyStoreImpl extends AbstractStore implements SchemaStore {
     @PostConstruct
     public void loadNamespaces() {
         Namespaces.DEFAULT_RDF4J.forEach(ns -> {
-            mappings.put(ns.getPrefix(), ns.getPrefix());
+            mappings.put(ns.getPrefix(), ns.getName());
         });
 
-
-        try {
-            URI dir = new ClassPathResource("/ns").getURI();
-            FileSystems.newFileSystem(dir, Collections.emptyMap());
-            Path folder = Paths.get(dir);
-
-
-            Files.list(folder).forEach(filepath -> {
-                try {
-                    String s = Files.readString(filepath, StandardCharsets.UTF_8);
-                    LinkedHashMap<String, String> map = (LinkedHashMap<String, String>) new BasicJsonParser().parseMap(s).get("@context");
-                    mappings.putAll(map);
-
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-
-            });
-
-            log.debug("Loaded locally configured prefixes, having {} defined namespaces", mappings.size());
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        mappings.putAll(this.loadNamespacesFromFile("ns/namespaces_default.json"));
+        mappings.putAll(this.loadNamespacesFromFile("ns/namespaces_extended.json"));
+        log.debug("Loaded locally configured prefixes, having {} defined namespaces", mappings.size());
 
     }
 
+    private Map<String, String> loadNamespacesFromFile(String path) {
+        try (InputStream resourceAsStream = getClass().getClassLoader().getResourceAsStream("ns/namespaces_default.json")) {
+            assert resourceAsStream != null;
+
+            String s = IOUtils.toString(resourceAsStream, StandardCharsets.UTF_8);
+            return (LinkedHashMap<String, String>) new BasicJsonParser().parseMap(s).get("@context");
+        } catch (IOException e) {
+            log.error("Failed to load namespaces from file {} due to error.", path, e);
+
+            return Collections.emptyMap();
+        }
+    }
 
     @Override
     public ValueFactory getValueFactory() {
@@ -85,6 +73,7 @@ public class VocabularyStoreImpl extends AbstractStore implements SchemaStore {
     @Override
     public Optional<Namespace> getNamespaceForPrefix(String key) {
         if(mappings.containsKey(key)) {
+            String name = mappings.get(key);
             return Optional.of(new SimpleNamespace(key, mappings.get(key)));
         } else return Optional.empty();
     }
