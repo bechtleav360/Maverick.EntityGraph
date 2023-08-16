@@ -76,7 +76,8 @@ public class DefaultRepositoryBuilder implements RepositoryBuilder {
 
     }
 
-    public void setMeterRegistry(@Autowired MeterRegistry meterRegistry) {
+    @Autowired
+    public void setMeterRegistry(MeterRegistry meterRegistry) {
         this.meterRegistry = meterRegistry;
     }
 

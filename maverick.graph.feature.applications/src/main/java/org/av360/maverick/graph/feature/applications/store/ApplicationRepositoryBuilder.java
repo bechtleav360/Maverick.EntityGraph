@@ -14,11 +14,11 @@ import reactor.core.publisher.Mono;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Objects;
 
 /**
  * Replaces the @see DefaultRepositoryBuilder
  */
-@SuppressWarnings("SuspiciousMethodCalls")
 @Component
 @Slf4j(topic = "graph.feat.app.repo.builder")
 @Primary
@@ -101,7 +101,10 @@ public class ApplicationRepositoryBuilder extends DefaultRepositoryBuilder {
         Validate.notNull(environment.getScope());
 
         String label = super.formatRepositoryLabel(environment);
-        meterRegistry.counter("graph.store.repository", "method", "access", "label", label).increment();
+        if(Objects.nonNull(this.meterRegistry)) {
+            meterRegistry.counter("graph.store.repository", "method", "access", "label", label).increment();
+        }
+
 
         if (environment.getConfiguration(Environment.RepositoryConfigurationKey.FLAG_PERSISTENT).map(Boolean::parseBoolean).orElse(false)) {
             Path path = Paths.get(store.getDirectory(), environment.getConfiguration(Environment.RepositoryConfigurationKey.KEY).get());
