@@ -71,6 +71,8 @@ public class MergeDuplicatesJob implements Job {
     private final ValueServices valueServices;
     private final SimpleValueFactory valueFactory;
 
+    private final int limit = 100;
+
     public MergeDuplicatesJob(EntityServices service, QueryServices queryServices, ValueServices valueServices) {
         this.entityServices = service;
         this.queryServices = queryServices;
@@ -123,7 +125,12 @@ public class MergeDuplicatesJob implements Job {
                         this.findDuplicates(candidate, ctx)
                                 .doOnNext(duplicate -> log.trace("Entity '{}' identified as duplicate. Another item exists with property {} and value {} .", duplicate.id(), candidate.sharedProperty(), candidate.sharedValue()))
                                 .collectList()
-                                .flatMap(duplicates -> this.mergeDuplicates(duplicates, ctx)))
+                                .flatMap(duplicates -> this.mergeDuplicates(duplicates, ctx))
+                                .then(Mono.just(candidate))
+                )
+                .collectList()
+                .filter(list -> list.size() == this.limit)
+                .flatMap(list -> this.checkForDuplicates(characteristicProperty, ctx))
                 .doOnSubscribe(sub ->
                         log.trace("Checking duplicates sharing the same characteristic property <{}> in environment {}", characteristicProperty, ctx.getEnvironment())
                 )
@@ -257,7 +264,8 @@ public class MergeDuplicatesJob implements Job {
                 .where(
                         thing.isA(type),
                         thing.has(sharedProperty, sharedValue)
-                ).groupBy(sharedValue, type).having(Expressions.gt(Expressions.count(thing), 1)).limit(10);
+                ).groupBy(sharedValue, type).having(Expressions.gt(Expressions.count(thing), 1)).limit(this.limit);
+
 
 
         return queryServices.queryValues(findDuplicates, RepositoryType.ENTITIES, ctx)
