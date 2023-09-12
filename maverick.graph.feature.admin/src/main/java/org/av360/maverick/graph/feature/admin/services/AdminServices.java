@@ -1,6 +1,7 @@
 package org.av360.maverick.graph.feature.admin.services;
 
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.Validate;
 import org.av360.maverick.graph.model.context.SessionContext;
 import org.av360.maverick.graph.model.enums.RepositoryType;
 import org.av360.maverick.graph.model.security.Authorities;
@@ -13,26 +14,28 @@ import org.eclipse.rdf4j.query.TupleQuery;
 import org.eclipse.rdf4j.query.TupleQueryResult;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.sparql.SPARQLRepository;
+import org.eclipse.rdf4j.rio.RDFFormat;
+import org.eclipse.rdf4j.rio.Rio;
 import org.reactivestreams.Publisher;
 import org.springframework.core.io.buffer.DataBuffer;
+import org.springframework.core.io.buffer.DataBufferFactory;
 import org.springframework.core.io.buffer.DataBufferUtils;
+import org.springframework.core.io.buffer.DefaultDataBufferFactory;
 import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.scheduling.SchedulingException;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
+import java.util.*;
+import java.util.zip.GZIPInputStream;
 
 
 @Service
@@ -147,22 +150,57 @@ public class AdminServices {
     }
 
     @RequiresPrivilege(Authorities.MAINTAINER_VALUE)
-    public Mono<Void> importPackage(FilePart file, SessionContext t1) {
+    public Mono<Void> importPackage(FilePart file, SessionContext ctx) {
+        final int bufferSize = 1024;
+        DataBufferFactory bufferFactory = new DefaultDataBufferFactory();
+        final String filename = file.filename();
+
+        Validate.matchesPattern(filename, "\\w+\\.\\w+\\.gz", "GZIP file has to match pattern 'filename.format.gz', e.g. 'data.ttl.gt'");
+        String originalFilename = filename.substring(0, filename.lastIndexOf('.'));
+        Optional<RDFFormat> parserFormatForFileName = Rio.getParserFormatForFileName(originalFilename);
+        Validate.isTrue(parserFormatForFileName.isPresent(), "Failed to find RDF parser for filename %s".formatted(originalFilename));
+
 
         try {
 
-            File out = File.createTempFile("import", file.filename());
-            log.debug("Storing incoming zip file in temp as {} ", out.toString());
-            DataBufferUtils.write(file.content(), out.toPath());
+            File gzipFilePath = File.createTempFile("import", filename);
+            log.debug("Storing incoming zip file in temp as {} ", gzipFilePath.toString());
+            DataBufferUtils.write(file.content(), gzipFilePath.toPath());
 
-            log.debug("Reading zip file ", out.toString());
-            try (ZipInputStream zis = new ZipInputStream(new FileInputStream(out))) {
-                for (ZipEntry entry; (entry = zis.getNextEntry()) != null; ) {
+            log.debug("Reading zip file {}", gzipFilePath.toString());
 
-                }
+            try {
+                GZIPInputStream gzipInputStream = new GZIPInputStream(new FileInputStream(gzipFilePath));
 
+                Flux<DataBuffer> buffers = Flux.generate(
+                        () -> gzipInputStream,
+                        (stream, sink) -> {
+                            try {
+                                byte[] buffer = new byte[bufferSize];
+                                int read = stream.read(buffer);
+                                if (read > 0) {
+                                    DataBuffer dataBuffer = bufferFactory.wrap(ByteBuffer.wrap(buffer, 0, read));
+                                    sink.next(dataBuffer);
+                                } else {
+                                    sink.complete();
+                                    stream.close();
+                                }
+                            } catch (IOException e) {
+                                sink.error(e);
+                            }
+                            return stream;
+                        }
+                );
+
+                String mimeType = parserFormatForFileName.orElseThrow().getDefaultMIMEType();
+
+
+                return this.importEntities(buffers, mimeType, ctx);
+
+            } catch (IOException e) {
+                return Mono.error(e);
             }
-            return Mono.empty();
+
 
 
         } catch (IOException e) {

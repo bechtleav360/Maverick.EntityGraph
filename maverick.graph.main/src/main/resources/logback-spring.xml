@@ -34,7 +34,6 @@
     </springProfile>
     <springProfile name="persistent | dev | tdf">
         <root level="INFO">
-            <appender-ref ref="FILE"/>
             <appender-ref ref="CONSOLE"/>
         </root>
     </springProfile>

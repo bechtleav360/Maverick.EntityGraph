@@ -12,7 +12,6 @@ import org.av360.maverick.graph.services.EntityServices;
 import org.av360.maverick.graph.services.QueryServices;
 import org.av360.maverick.graph.services.ValueServices;
 import org.eclipse.rdf4j.model.IRI;
-import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.vocabulary.*;
@@ -25,6 +24,8 @@ import org.eclipse.rdf4j.sparqlbuilder.rdf.Rdf;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Scheduler;
+import reactor.core.scheduler.Schedulers;
 
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
@@ -73,7 +74,7 @@ public class MergeDuplicatesJob implements Job {
     private final ValueServices valueServices;
     private final SimpleValueFactory valueFactory;
 
-    private final int limit = 100;
+    private final int limit = 10;
 
     public MergeDuplicatesJob(EntityServices service, QueryServices queryServices, ValueServices valueServices) {
         this.entityServices = service;
@@ -117,8 +118,10 @@ public class MergeDuplicatesJob implements Job {
     }
 
     private Mono<Void> checkForDuplicates(IRI characteristicProperty, SessionContext ctx) {
+        Scheduler scheduler = Schedulers.newSingle("duplicates_" + characteristicProperty.getLocalName());
 
         return this.findCandidates(characteristicProperty, ctx)
+                .subscribeOn(scheduler)
                 .map(candidate -> {
                     log.trace("There are multiple entities with shared type '{}' and label '{}'", candidate.type(), candidate.sharedValue());
                     return candidate;
@@ -131,11 +134,20 @@ public class MergeDuplicatesJob implements Job {
                                 .then(Mono.just(candidate))
                 )
                 .collectList()
-                .filter(list -> list.size() == this.limit)
-                .flatMap(list -> this.checkForDuplicates(characteristicProperty, ctx))
+                .doOnNext(list -> {
+                    if(list.size() > 0) {
+                        log.debug("Found {} candidates for duplicates for property {}", list.size(), characteristicProperty);
+                    }
+                })
+                .doOnNext(list -> {
+                    if(list.size() == this.limit) {
+                        this.checkForDuplicates(characteristicProperty, ctx).subscribeOn(scheduler).subscribe();
+                    }
+                })
                 .doOnSubscribe(sub ->
-                        log.trace("Checking duplicates sharing the same characteristic property <{}> in environment {}", characteristicProperty, ctx.getEnvironment())
+                        log.debug("Checking duplicates sharing the same characteristic property <{}> in environment {}", characteristicProperty, ctx.getEnvironment())
                 )
+
                 .thenEmpty(Mono.empty());
 
     }
@@ -162,7 +174,6 @@ SELECT ?id WHERE { ?id a <urn:pwid:meg:e:Individual> . ?id <http://schema.org/na
 
         Variable idVariable = SparqlBuilder.var("id");
         Variable valVariable = SparqlBuilder.var("val");
-        Literal sharedValue = this.valueFactory.createLiteral(duplicate.sharedValue());
 
         SelectQuery findDuplicates = Queries.SELECT(idVariable).where(
                 idVariable.isA(this.valueFactory.createIRI(duplicate.type()))
@@ -281,13 +292,13 @@ SELECT ?id WHERE { ?id a <urn:pwid:meg:e:Individual> . ?id <http://schema.org/na
                 ).groupBy(sharedValue, type).having(Expressions.gt(Expressions.count(thing), 1)).limit(this.limit);
 
 
-
         return queryServices.queryValues(findDuplicates, RepositoryType.ENTITIES, ctx)
                 .map(binding -> {
                     Value sharedValueVal = binding.getValue(sharedValue.getVarName());
                     Value typeVal = binding.getValue(type.getVarName());
                     return new DuplicateCandidate(sharedProperty, typeVal.stringValue(), sharedValueVal.stringValue());
                 }).timeout(Duration.of(60, ChronoUnit.SECONDS));
+
 
     }
 

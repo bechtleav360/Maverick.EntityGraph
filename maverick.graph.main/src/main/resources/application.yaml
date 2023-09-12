@@ -61,6 +61,11 @@ application:
       persistent: false
       path: ~
 
+server:
+  compression:
+    enabled: true
+    mime-types: "text/html, text/plain, application/json, text/turtle, application/rdf+xml, application/ld+json, application/n-quads, text/n3, application/n-triples"
+
 management:
   info:
     env:
