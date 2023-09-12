@@ -12,6 +12,7 @@ import org.av360.maverick.graph.services.EntityServices;
 import org.av360.maverick.graph.services.QueryServices;
 import org.av360.maverick.graph.services.ValueServices;
 import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.vocabulary.*;
@@ -20,6 +21,7 @@ import org.eclipse.rdf4j.sparqlbuilder.core.SparqlBuilder;
 import org.eclipse.rdf4j.sparqlbuilder.core.Variable;
 import org.eclipse.rdf4j.sparqlbuilder.core.query.Queries;
 import org.eclipse.rdf4j.sparqlbuilder.core.query.SelectQuery;
+import org.eclipse.rdf4j.sparqlbuilder.rdf.Rdf;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -147,13 +149,25 @@ public class MergeDuplicatesJob implements Job {
     ?thing 	<http://schema.org/dateCreated> ?date .
 }
          */
+        /*
 
+        SELECT ?id WHERE {
+   ?id a <http://schema.org/Organization> .
+   ?id <http://schema.org/name> ?val .
+   FILTER regex(?val, "Stupa-Präsidium Universität Hamburg")
+}
+
+SELECT ?id WHERE { ?id a <urn:pwid:meg:e:Individual> . ?id <http://schema.org/name> "Noam Greenberg"^^<http://www.w3.org/2001/XMLSchema#string> . }
+         */
 
         Variable idVariable = SparqlBuilder.var("id");
+        Variable valVariable = SparqlBuilder.var("val");
+        Literal sharedValue = this.valueFactory.createLiteral(duplicate.sharedValue());
 
         SelectQuery findDuplicates = Queries.SELECT(idVariable).where(
-                idVariable.isA(this.valueFactory.createIRI(duplicate.type())),
-                idVariable.has(duplicate.sharedProperty(), this.valueFactory.createLiteral(duplicate.sharedValue()))
+                idVariable.isA(this.valueFactory.createIRI(duplicate.type()))
+                        .and(idVariable.has(duplicate.sharedProperty(),valVariable ))
+                        .filter(Expressions.equals(Expressions.str(valVariable), Rdf.literalOf(duplicate.sharedValue)))
         );
 
         return this.queryServices.queryValues(findDuplicates, RepositoryType.ENTITIES, ctx)

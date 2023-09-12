@@ -39,7 +39,7 @@ public class AdminRestController extends AbstractController {
     }
 
     //@ApiOperation(value = "Empty repository", tags = {})
-    @GetMapping(value = "/reset", produces = MediaType.TEXT_PLAIN_VALUE)
+    @GetMapping(value = "/reset")
     @Operation(summary = "Removes all statements within the repository")
     @ResponseStatus(HttpStatus.ACCEPTED)
     Mono<Void> resetRepository(

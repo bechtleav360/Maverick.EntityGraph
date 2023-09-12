@@ -45,6 +45,7 @@ public class SchemaServicesImpl implements SchemaServices {
     public boolean isIndividualType(IRI iri) {
         boolean res =
                 SDO.getIndividualTypes().contains(iri)
+                        || SCHEMA.getIndividualTypes().contains(iri)
                         || RDFS.getIndividualTypes().contains(iri)
                         || DC.getIndividualTypes().contains(iri)
                         || DCTERMS.getIndividualTypes().contains(iri)
@@ -61,6 +62,7 @@ public class SchemaServicesImpl implements SchemaServices {
     public boolean isClassifierType(IRI iri) {
         return
                 SDO.getClassifierTypes().contains(iri)
+                        || SCHEMA.getClassifierTypes().contains(iri)
                         || RDFS.getClassifierTypes().contains(iri)
                         || DC.getClassifierTypes().contains(iri)
                         || DCTERMS.getClassifierTypes().contains(iri)
@@ -76,6 +78,7 @@ public class SchemaServicesImpl implements SchemaServices {
     public boolean isCharacteristicProperty(IRI iri) {
         return
                 SDO.getCharacteristicProperties().contains(iri)
+                        || SCHEMA.getCharacteristicProperties().contains(iri)
                         || RDFS.getCharacteristicProperties().contains(iri)
                         || DC.getCharacteristicProperties().contains(iri)
                         || DCTERMS.getCharacteristicProperties().contains(iri)
