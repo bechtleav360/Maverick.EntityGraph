@@ -93,8 +93,8 @@ public class EntitiesController extends AbstractController implements EntitiesAP
 
     @Override
     @PostMapping(value = "/entities",
-            consumes = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.N3_VALUE},
-            produces = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.N3_VALUE})
+            consumes = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.N3_VALUE, RdfMimeTypes.NTRIPLES_VALUE},
+            produces = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.N3_VALUE, RdfMimeTypes.NTRIPLES_VALUE})
     @ResponseStatus(HttpStatus.ACCEPTED)
     public Flux<AnnotatedStatement> create(@RequestBody Triples request) {
         Assert.isTrue(request.getModel().size() > 0, "No statements in request detected.");

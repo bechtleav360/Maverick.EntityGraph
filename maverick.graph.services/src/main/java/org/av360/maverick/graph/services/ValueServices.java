@@ -47,6 +47,18 @@ public interface ValueServices {
 
 
     /**
+     * Inserts an annotation to an existing property
+     *
+     * @param id
+     * @param prefixedValueKey
+     * @param prefixedDetailKey
+     * @param value
+     * @param ctx
+     * @return
+     */
+    Mono<Transaction> insertDetail(String id, String prefixedValueKey, String prefixedDetailKey, String value, SessionContext ctx);
+
+    /**
      * Inserts a set of statement as embedded entity
      *
      * @param entityIdentifier The unique local identifier of the entity
@@ -97,4 +109,6 @@ public interface ValueServices {
     Mono<Transaction> replace(IRI entityIdentifier, IRI predicate, Value oldValue, Value newValue, SessionContext ctx);
 
     Mono<RdfEntity> listLinks(String id, String prefixedKey, SessionContext ctx);
+
+
 }

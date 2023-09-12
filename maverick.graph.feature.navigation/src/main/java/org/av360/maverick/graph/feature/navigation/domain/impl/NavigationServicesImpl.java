@@ -19,6 +19,7 @@ import org.eclipse.rdf4j.model.vocabulary.HYDRA;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.model.vocabulary.RDFS;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -35,6 +36,10 @@ public class NavigationServicesImpl implements NavigationServices {
     private EntityServices entityServices;
 
     ValueFactory vf = SimpleValueFactory.getInstance();
+
+
+    @Value("${application.features.modules.navigation.configuration.limit:100}")
+    int defaultLimit = 100;
 
 
     @Override
@@ -92,7 +97,7 @@ public class NavigationServicesImpl implements NavigationServices {
     public Flux<AnnotatedStatement> browse(Map<String, String> params, SessionContext ctx) {
         if (params.containsKey("entities")) {
             if (params.get("entities").equalsIgnoreCase("list"))
-                return this.list(params, ctx);
+                return this.list(params, ctx, null);
             else if (StringUtils.hasLength(params.get("entities"))) {
                 return this.entityServices.find(params.get("entities"), null, ctx).flatMapIterable(TripleModel::asStatements);
             }
@@ -104,15 +109,15 @@ public class NavigationServicesImpl implements NavigationServices {
 
 
     @RequiresPrivilege(Authorities.READER_VALUE)
-    public Flux<AnnotatedStatement> list(Map<String, String> params, SessionContext ctx) {
-        Integer limit = Optional.ofNullable(params.get("limit")).map(Integer::parseInt).orElse(20);
+    public Flux<AnnotatedStatement> list(Map<String, String> params, SessionContext ctx, String query) {
+        Integer limit = Optional.ofNullable(params.get("limit")).map(Integer::parseInt).orElse(defaultLimit);
         Integer offset = Optional.ofNullable(params.get("offset")).map(Integer::parseInt).orElse(0);
         params.put("limit", limit.toString());
         params.put("offset", offset.toString());
 
 
 
-        return this.entityServices.list(limit, offset, ctx)
+        return this.entityServices.list(limit, offset, ctx, query)
                 .collectList()
                 .map(list -> {
                     ModelBuilder builder = new ModelBuilder();

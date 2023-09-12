@@ -2,6 +2,7 @@ package org.av360.maverick.graph.feature.applications.schedulers;
 
 
 import lombok.extern.slf4j.Slf4j;
+import org.av360.maverick.graph.model.enums.ConfigurationKeysRegistry;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
@@ -43,10 +44,14 @@ import org.springframework.stereotype.Component;
 
 public class ScopedScheduledDetectDuplicates extends ScopedJobScheduler {
 
-    @Value("${application.features.modules.jobs.scheduled.detectDuplicates.defaultFrequency:0 */5 * * * ?}")
+    @Value("${application.features.modules.jobs.scheduled.detectDuplicates.defaultFrequency:@midnight}")
     String defaultFrequency;
 
     public static final String CONFIG_KEY_DETECT_DUPLICATES_FREQUENCY = "detect_duplicates_frequency";
+
+    public ScopedScheduledDetectDuplicates() {
+        ConfigurationKeysRegistry.add(CONFIG_KEY_DETECT_DUPLICATES_FREQUENCY, "Frequency as Cron Job Pattern for detecting duplicates within an application");
+    }
 
     @Override
     String getFrequencyConfigurationKey() {

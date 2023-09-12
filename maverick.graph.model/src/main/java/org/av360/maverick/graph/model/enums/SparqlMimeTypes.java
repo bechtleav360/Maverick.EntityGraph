@@ -14,6 +14,8 @@ public class SparqlMimeTypes extends MediaType {
     public static final MediaType TSV;
     public static final MediaType TSV_STAR;
 
+
+    public static final String SPARQL_QUERY_VALUE = "application/sparql-query";
     public static final String SPARQL_VALUE = "application/sparql-results+xml";
     public static final String SPARQL_STAR_VALUE = "application/x-sparqlstar-results+xml";
     public static final String BINARY_VALUE = "application/x-binary-rdf-results-table";

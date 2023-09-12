@@ -14,8 +14,8 @@ public class Transactions {
     public static final Literal FAILURE = SimpleValueFactory.getInstance().createLiteral("failure");
 
 
-    public static final String NAMESPACE = "http://bechtleav360.github.io/vocab/transactions#";
-    public static final String PREFIX = "trx";
+    public static final String NAMESPACE = "https://w3id.org/av360/megt#";
+    public static final String PREFIX = "megt";
     // FIXME: make configurable
     public static final Namespace NS = EntityNamespace.of(PREFIX, NAMESPACE);
 
@@ -32,9 +32,10 @@ public class Transactions {
     public static final IRI VERSION = PROV.QUALIFIED_REVISION;
 
 
-    public static final IRI GRAPH_DELETED = LocalIRI.from(Local.Transactions.NAMESPACE, "DeletedStatements");
-    public static final IRI GRAPH_CREATED = LocalIRI.from(Local.Transactions.NAMESPACE, "CreatedStatements");
-    public static final IRI GRAPH_AFFECTED = LocalIRI.from(Local.Transactions.NAMESPACE, "AffectedStatements");
+    public static final IRI GRAPH_DELETED = LocalIRI.from(Local.Transactions.NAMESPACE, "RemovedStatements");
+    public static final IRI GRAPH_CREATED = LocalIRI.from(Local.Transactions.NAMESPACE, "InsertedStatements");
+    public static final IRI GRAPH_UPDATED = LocalIRI.from(Local.Transactions.NAMESPACE, "UpdatedStatements");
+    public static final IRI GRAPH_AFFECTED = LocalIRI.from(Local.Transactions.NAMESPACE, "AffectedResource");
     public static final IRI GRAPH_PROVENANCE = LocalIRI.from(Local.Transactions.NAMESPACE, "ProvenanceStatements");
 
     public static final IRI FAILURE_REASON = LocalIRI.from(NAMESPACE, "reason");

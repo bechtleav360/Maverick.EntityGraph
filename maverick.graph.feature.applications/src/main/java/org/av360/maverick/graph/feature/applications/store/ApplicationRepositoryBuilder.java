@@ -1,6 +1,5 @@
 package org.av360.maverick.graph.feature.applications.store;
 
-import io.micrometer.core.instrument.MeterRegistry;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.Validate;
 import org.av360.maverick.graph.model.context.Environment;
@@ -15,20 +14,17 @@ import reactor.core.publisher.Mono;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Objects;
 
 /**
  * Replaces the @see DefaultRepositoryBuilder
  */
-@SuppressWarnings("SuspiciousMethodCalls")
 @Component
 @Slf4j(topic = "graph.feat.app.repo.builder")
 @Primary
 public class ApplicationRepositoryBuilder extends DefaultRepositoryBuilder {
 
 
-    public ApplicationRepositoryBuilder(MeterRegistry meterRegistry) {
-        super(meterRegistry);
-    }
 
 
     /**
@@ -105,7 +101,10 @@ public class ApplicationRepositoryBuilder extends DefaultRepositoryBuilder {
         Validate.notNull(environment.getScope());
 
         String label = super.formatRepositoryLabel(environment);
-        meterRegistry.counter("graph.store.repository", "method", "access", "label", label).increment();
+        if(Objects.nonNull(this.meterRegistry)) {
+            meterRegistry.counter("graph.store.repository", "method", "access", "label", label).increment();
+        }
+
 
         if (environment.getConfiguration(Environment.RepositoryConfigurationKey.FLAG_PERSISTENT).map(Boolean::parseBoolean).orElse(false)) {
             Path path = Paths.get(store.getDirectory(), environment.getConfiguration(Environment.RepositoryConfigurationKey.KEY).get());

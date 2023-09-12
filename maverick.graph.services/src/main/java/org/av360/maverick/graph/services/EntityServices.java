@@ -41,7 +41,7 @@ public interface EntityServices {
     }
 
     /**
-     * Lists all entities
+     * Lists all entities using the default query
      *
      * @param authentication
      * @param limit
@@ -49,6 +49,17 @@ public interface EntityServices {
      * @return
      */
      Flux<RdfEntity> list(int limit, int offset, SessionContext ctx);
+
+
+    /**
+     * Lists all entities using the given query
+     *
+     * @param authentication
+     * @param limit
+     * @param offset
+     * @return
+     */
+    Flux<RdfEntity> list(int limit, int offset, SessionContext ctx, String query);
 
     /**
      * Deletes an entity with all its values from the store.
@@ -80,6 +91,7 @@ public interface EntityServices {
 
 
     Mono<Transaction> linkEntityTo(String entityKey, IRI predicate, Triples linkedEntities, SessionContext ctx);
+
 
     /**
      * Retrieves a complete entity representation (identifier, values and relations) from store.

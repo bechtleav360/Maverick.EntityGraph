@@ -6,22 +6,22 @@ import org.av360.maverick.graph.model.context.SessionContext;
 import org.av360.maverick.graph.model.entities.Job;
 import org.av360.maverick.graph.model.entities.Transaction;
 import org.av360.maverick.graph.model.enums.RepositoryType;
+import org.av360.maverick.graph.model.vocabulary.SCHEMA;
 import org.av360.maverick.graph.model.vocabulary.SDO;
 import org.av360.maverick.graph.services.EntityServices;
 import org.av360.maverick.graph.services.QueryServices;
 import org.av360.maverick.graph.services.ValueServices;
 import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
-import org.eclipse.rdf4j.model.vocabulary.DC;
-import org.eclipse.rdf4j.model.vocabulary.DCTERMS;
-import org.eclipse.rdf4j.model.vocabulary.RDFS;
-import org.eclipse.rdf4j.model.vocabulary.SKOS;
+import org.eclipse.rdf4j.model.vocabulary.*;
 import org.eclipse.rdf4j.sparqlbuilder.constraint.Expressions;
 import org.eclipse.rdf4j.sparqlbuilder.core.SparqlBuilder;
 import org.eclipse.rdf4j.sparqlbuilder.core.Variable;
 import org.eclipse.rdf4j.sparqlbuilder.core.query.Queries;
 import org.eclipse.rdf4j.sparqlbuilder.core.query.SelectQuery;
+import org.eclipse.rdf4j.sparqlbuilder.rdf.Rdf;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -73,6 +73,8 @@ public class MergeDuplicatesJob implements Job {
     private final ValueServices valueServices;
     private final SimpleValueFactory valueFactory;
 
+    private final int limit = 100;
+
     public MergeDuplicatesJob(EntityServices service, QueryServices queryServices, ValueServices valueServices) {
         this.entityServices = service;
         this.queryServices = queryServices;
@@ -87,11 +89,20 @@ public class MergeDuplicatesJob implements Job {
 
     public Mono<Void> run(SessionContext ctx) {
 
+
+
         return this.checkForDuplicates(RDFS.LABEL, ctx)
+                .then(this.checkForDuplicates(OWL.SAMEAS, ctx))
                 .then(this.checkForDuplicates(SDO.IDENTIFIER, ctx))
+                .then(this.checkForDuplicates(SDO.TERM_CODE, ctx))
+                .then(this.checkForDuplicates(SDO.NAME, ctx))
+                .then(this.checkForDuplicates(SDO.URL, ctx))
+                .then(this.checkForDuplicates(SCHEMA.IDENTIFIER, ctx))
+                .then(this.checkForDuplicates(SCHEMA.TERM_CODE, ctx))
+                .then(this.checkForDuplicates(SCHEMA.NAME, ctx))
+                .then(this.checkForDuplicates(SCHEMA.URL, ctx))
                 .then(this.checkForDuplicates(SKOS.PREF_LABEL, ctx))
                 .then(this.checkForDuplicates(DCTERMS.IDENTIFIER, ctx))
-                .then(this.checkForDuplicates(SDO.TERM_CODE, ctx))
                 .then(this.checkForDuplicates(DC.IDENTIFIER, ctx))
                 .doOnError(throwable -> log.error("Exception while checking for duplicates: {}", throwable.getMessage()))
                 .doOnSubscribe(sub -> {
@@ -116,7 +127,12 @@ public class MergeDuplicatesJob implements Job {
                         this.findDuplicates(candidate, ctx)
                                 .doOnNext(duplicate -> log.trace("Entity '{}' identified as duplicate. Another item exists with property {} and value {} .", duplicate.id(), candidate.sharedProperty(), candidate.sharedValue()))
                                 .collectList()
-                                .flatMap(duplicates -> this.mergeDuplicates(duplicates, ctx)))
+                                .flatMap(duplicates -> this.mergeDuplicates(duplicates, ctx))
+                                .then(Mono.just(candidate))
+                )
+                .collectList()
+                .filter(list -> list.size() == this.limit)
+                .flatMap(list -> this.checkForDuplicates(characteristicProperty, ctx))
                 .doOnSubscribe(sub ->
                         log.trace("Checking duplicates sharing the same characteristic property <{}> in environment {}", characteristicProperty, ctx.getEnvironment())
                 )
@@ -133,13 +149,25 @@ public class MergeDuplicatesJob implements Job {
     ?thing 	<http://schema.org/dateCreated> ?date .
 }
          */
+        /*
 
+        SELECT ?id WHERE {
+   ?id a <http://schema.org/Organization> .
+   ?id <http://schema.org/name> ?val .
+   FILTER regex(?val, "Stupa-Präsidium Universität Hamburg")
+}
+
+SELECT ?id WHERE { ?id a <urn:pwid:meg:e:Individual> . ?id <http://schema.org/name> "Noam Greenberg"^^<http://www.w3.org/2001/XMLSchema#string> . }
+         */
 
         Variable idVariable = SparqlBuilder.var("id");
+        Variable valVariable = SparqlBuilder.var("val");
+        Literal sharedValue = this.valueFactory.createLiteral(duplicate.sharedValue());
 
         SelectQuery findDuplicates = Queries.SELECT(idVariable).where(
-                idVariable.isA(this.valueFactory.createIRI(duplicate.type())),
-                idVariable.has(duplicate.sharedProperty(), this.valueFactory.createLiteral(duplicate.sharedValue()))
+                idVariable.isA(this.valueFactory.createIRI(duplicate.type()))
+                        .and(idVariable.has(duplicate.sharedProperty(),valVariable ))
+                        .filter(Expressions.equals(Expressions.str(valVariable), Rdf.literalOf(duplicate.sharedValue)))
         );
 
         return this.queryServices.queryValues(findDuplicates, RepositoryType.ENTITIES, ctx)
@@ -250,7 +278,8 @@ public class MergeDuplicatesJob implements Job {
                 .where(
                         thing.isA(type),
                         thing.has(sharedProperty, sharedValue)
-                ).groupBy(sharedValue, type).having(Expressions.gt(Expressions.count(thing), 1)).limit(10);
+                ).groupBy(sharedValue, type).having(Expressions.gt(Expressions.count(thing), 1)).limit(this.limit);
+
 
 
         return queryServices.queryValues(findDuplicates, RepositoryType.ENTITIES, ctx)
@@ -258,7 +287,7 @@ public class MergeDuplicatesJob implements Job {
                     Value sharedValueVal = binding.getValue(sharedValue.getVarName());
                     Value typeVal = binding.getValue(type.getVarName());
                     return new DuplicateCandidate(sharedProperty, typeVal.stringValue(), sharedValueVal.stringValue());
-                }).timeout(Duration.of(10, ChronoUnit.SECONDS));
+                }).timeout(Duration.of(60, ChronoUnit.SECONDS));
 
     }
 

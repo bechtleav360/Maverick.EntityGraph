@@ -34,7 +34,7 @@ import java.nio.file.StandardOpenOption;
 @Slf4j(topic = "graph.feat.obj.svc")
 public class FileServices {
 
-    public record FileAccessResult(URI file, Flux<DataBuffer> content) {
+    public record FileAccessResult(URI file, Flux<DataBuffer> content,  String filename, String language) {
     }
 
     private final ContentLocationResolverService filePathResolver;
@@ -130,7 +130,7 @@ public class FileServices {
                     }
 
                     Flux<DataBuffer> content = DataBufferUtils.read(Path.of(contentLocation.storageURI()), dataBufferFactory, 4096, StandardOpenOption.READ).switchIfEmpty(Mono.error(new FileNotFoundException()));
-                    return Mono.just(new FileAccessResult(contentLocation.storageURI(), content));
+                    return Mono.just(new FileAccessResult(contentLocation.storageURI(), content, contentLocation.filename(), contentLocation.language()));
                 })
                 .doOnError(error -> log.warn("Failed to open file with id '{}' due to error: {}", contentKey, error.getMessage()))
                 .doOnSuccess(fileAccessResult -> log.debug("Loading file with id '{}' was completed", contentKey));

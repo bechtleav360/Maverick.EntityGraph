@@ -26,13 +26,19 @@ public interface StatementsAware extends TripleStore {
 
     Mono<Transaction> removeStatements(Collection<Statement> statements, Transaction transaction);
 
-    Mono<Transaction> addStatement(Resource subject, IRI predicate, Value literal, Transaction transaction);
+
 
     Mono<Transaction> addStatement(Resource subject, IRI predicate, Value literal, Resource context, Transaction transaction);
 
-
     default Mono<Transaction> addStatement(Resource subject, IRI predicate, Value literal) {
         return this.addStatement(subject, predicate, literal);
+    }
+    default  Mono<Transaction> addStatement(Resource subject, IRI predicate, Value literal, Transaction transaction) {
+        return this.addStatement(subject, predicate, literal, null, transaction);
+    }
+
+    default Mono<Transaction> addStatement(Statement statement, Transaction transaction) {
+        return this.addStatement(statement.getSubject(), statement.getPredicate(), statement.getObject(), statement.getContext(), transaction);
     }
 
 

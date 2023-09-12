@@ -22,6 +22,8 @@ import org.av360.maverick.graph.store.rdf.fragments.RdfTransaction;
 import org.eclipse.rdf4j.model.*;
 import org.eclipse.rdf4j.model.impl.LinkedHashModel;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
+import org.eclipse.rdf4j.model.util.Statements;
+import org.eclipse.rdf4j.model.util.Values;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.rio.LanguageHandler;
 import org.eclipse.rdf4j.rio.LanguageHandlerRegistry;
@@ -33,6 +35,7 @@ import javax.annotation.Nullable;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 @Slf4j(topic = "graph.srvc.values")
@@ -109,6 +112,35 @@ public class ValueServicesImpl implements ValueServices {
     }
 
     @Override
+    public Mono<Transaction> insertDetail(String entityKey, String prefixedValueKey, String prefixedDetailKey, String value, SessionContext ctx) {
+        // find triple statement with id - prefixed value key -
+        return Mono.zip(
+                        this.schemaServices.resolveLocalName(entityKey).flatMap(entityIdentifier -> this.entityServices.get(entityIdentifier, 0, ctx)),
+                        this.schemaServices.resolvePrefixedName(prefixedValueKey),
+                        this.schemaServices.resolvePrefixedName(prefixedDetailKey)
+                ).flatMap(tuple -> {
+                    RdfEntity t1 = tuple.getT1();
+                    IRI predicate = tuple.getT2();
+                    IRI annotationProperty = tuple.getT3();
+
+                    Optional<Value> distinctValue = t1.findDistinctValue(t1.getIdentifier(), predicate);
+
+                    if (distinctValue.isEmpty()) {
+                        return Mono.error(new InvalidEntityUpdate(t1.getIdentifier(), "No value exists for predicate %s".formatted(predicate)));
+                    }
+
+                    Triple triple = Values.triple(t1.getIdentifier(), predicate, distinctValue.get());
+                    Statement annotationStatement = Statements.statement(triple, annotationProperty, Values.literal(value), null);
+                    return Mono.just(annotationStatement);
+
+                })
+                .flatMap(statement -> this.entityServices.getStore(ctx).addStatement(statement, new RdfTransaction()))
+                .flatMap(trx -> this.entityServices.getStore(ctx).commit(trx, ctx.getEnvironment()))
+                .switchIfEmpty(Mono.just(new RdfTransaction()));
+
+    }
+
+    @Override
     @RequiresPrivilege(Authorities.CONTRIBUTOR_VALUE)
     public Mono<Transaction> insertEmbedded(IRI entityIdentifier, IRI predicate, Resource embeddedNode, Set<Statement> embedded, SessionContext ctx) {
         return this.insertStatements(entityIdentifier, predicate, embeddedNode, embedded, new RdfTransaction(), ctx)
@@ -116,7 +148,6 @@ public class ValueServicesImpl implements ValueServices {
                     eventPublisher.publishEvent(new ValueInsertedEvent(trx));
                 });
     }
-
 
 
     @Override
@@ -143,10 +174,6 @@ public class ValueServicesImpl implements ValueServices {
             eventPublisher.publishEvent(new LinkRemovedEvent(trx));
         }).doOnError(error -> log.error("Failed to remove link due to reason: {}", error.getMessage()));
     }
-
-
-
-
 
 
     /**
@@ -226,9 +253,6 @@ public class ValueServicesImpl implements ValueServices {
 
                         return this.entityServices.getStore(ctx).removeStatements(statementsToRemove, transaction);
                     } else {
-                        if (statements.size() == 1 && statements.stream().findFirst().get().getObject().isIRI()) {
-                            return Mono.error(new InvalidEntityUpdate(entityIdentifier, "Invalid to remove links via the values api."));
-                        }
                         return this.entityServices.getStore(ctx).removeStatements(statements, transaction);
                     }
 
@@ -240,7 +264,7 @@ public class ValueServicesImpl implements ValueServices {
         return this.entityServices.get(entityIdentifier, ctx)
                 .switchIfEmpty(Mono.error(new EntityNotFound(entityIdentifier.stringValue())))
                 .map(entity -> Pair.of(entity, transaction.affects(entity.getModel())))
-                .filter(pair -> ! embeddedNode.isBNode())
+                .filter(pair -> !embeddedNode.isBNode())
                 .switchIfEmpty(Mono.error(new InvalidEntityUpdate(entityIdentifier, "Trying to link to shared node as anonymous node.")))
                 .doOnNext(pair -> {
                     Statement statement = SimpleValueFactory.getInstance().createStatement(entityIdentifier, predicate, embeddedNode);
@@ -352,15 +376,13 @@ public class ValueServicesImpl implements ValueServices {
     }
 
     private Mono<Value> normalizeValue(String value, String languageTag) {
-        if(value.matches("^<\\w+:(/?/?)[^\\s>]+>$")) {
-            value = value.substring(1, value.length()-1);
+        if (value.matches("^<\\w+:(/?/?)[^\\s>]+>$")) {
+            value = value.substring(1, value.length() - 1);
             return Mono.just(SimpleValueFactory.getInstance().createIRI(value));
-        } else
-
-        if(value.matches("^\\w+:(/?/?)[^\\s>]+$")) {
+        } else if (value.matches("^\\w+:(/?/?)[^\\s>]+$")) {
             return Mono.just(SimpleValueFactory.getInstance().createLiteral(value));
         } else
 
-        return this.extractLanguageTag(value, languageTag);
+            return this.extractLanguageTag(value, languageTag);
     }
 }

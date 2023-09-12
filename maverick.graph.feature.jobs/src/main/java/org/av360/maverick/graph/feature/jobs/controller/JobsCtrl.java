@@ -50,7 +50,7 @@ public class JobsCtrl extends AbstractController {
     @ResponseStatus(HttpStatus.ACCEPTED)
     Mono<Void> execReplaceObjectIdentifiersJob() {
         return super.acquireContext()
-                .flatMap(ctx -> this.jobsService.scheduleJob(ReplaceObjectIdentifiersJob.NAME, ctx))
+                .flatMap(ctx -> this.jobsService.scheduleJob(ReplaceLinkedIdentifiersJob.NAME, ctx))
                 .doOnSubscribe(subscription -> log.info("Request to execute job: Replace object identifiers"));
 
     }

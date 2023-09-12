@@ -27,7 +27,6 @@ import org.springframework.core.io.Resource;
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.core.io.buffer.DataBufferUtils;
 import org.springframework.core.io.buffer.DefaultDataBufferFactory;
-import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -36,7 +35,7 @@ import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
 
-@Service
+//@Service
 @Slf4j
 public class EntityServicesClient {
 

@@ -19,6 +19,7 @@ import org.eclipse.rdf4j.repository.sail.SailRepository;
 import org.eclipse.rdf4j.sail.lmdb.LmdbStore;
 import org.eclipse.rdf4j.sail.lmdb.config.LmdbStoreConfig;
 import org.eclipse.rdf4j.sail.memory.MemoryStore;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
@@ -40,7 +41,7 @@ public class DefaultRepositoryBuilder implements RepositoryBuilder {
 
     private final Cache<String, LabeledRepository> cache;
 
-    protected final MeterRegistry meterRegistry;
+    protected MeterRegistry meterRegistry;
 
 
     @PreDestroy
@@ -54,26 +55,33 @@ public class DefaultRepositoryBuilder implements RepositoryBuilder {
     @PostConstruct
     public void init() {
 
-        Gauge.builder("graph.store.repository.cache", cache, Cache::estimatedSize)
-                .tag("metric", "estimatedSize")
-                .register(this.meterRegistry);
+        if(Objects.nonNull(this.meterRegistry)) {
+            Gauge.builder("graph.store.repository.cache", cache, Cache::estimatedSize)
+                    .tag("metric", "estimatedSize")
+                    .register(this.meterRegistry);
 
-        Gauge.builder("graph.store.repository.cache", cache, cache -> cache.stats().evictionCount())
-                .tag("metric", "evictionCount")
-                .register(this.meterRegistry);
+            Gauge.builder("graph.store.repository.cache", cache, cache -> cache.stats().evictionCount())
+                    .tag("metric", "evictionCount")
+                    .register(this.meterRegistry);
 
-        Gauge.builder("graph.store.repository.cache", cache, cache -> cache.stats().loadCount())
-                .tag("metric", "loadCount")
-                .register(this.meterRegistry);
+            Gauge.builder("graph.store.repository.cache", cache, cache -> cache.stats().loadCount())
+                    .tag("metric", "loadCount")
+                    .register(this.meterRegistry);
 
-        Gauge.builder("graph.store.repository.cache", cache, cache -> cache.stats().hitCount())
-                .tag("metric", "hitCount")
-                .register(this.meterRegistry);
+            Gauge.builder("graph.store.repository.cache", cache, cache -> cache.stats().hitCount())
+                    .tag("metric", "hitCount")
+                    .register(this.meterRegistry);
+        }
+
+
     }
 
-    public DefaultRepositoryBuilder(MeterRegistry meterRegistry) {
+    @Autowired
+    public void setMeterRegistry(MeterRegistry meterRegistry) {
         this.meterRegistry = meterRegistry;
+    }
 
+    public DefaultRepositoryBuilder() {
 
         cache = Caffeine.newBuilder()
                 .recordStats()
@@ -161,7 +169,11 @@ public class DefaultRepositoryBuilder implements RepositoryBuilder {
         String path = store.getDirectory();
 
         log.trace("Resolving default repository for environment: {}", target);
-        meterRegistry.counter("graph.store.repository", "method", "access", "label", key).increment();
+
+        if(Objects.nonNull(this.meterRegistry)) {
+            meterRegistry.counter("graph.store.repository", "method", "access", "label", key).increment();
+        }
+
 
         if (!StringUtils.hasLength(path)) {
             return getCache().get(key, s -> this.initializeVolatileRepository(key));
@@ -190,7 +202,12 @@ public class DefaultRepositoryBuilder implements RepositoryBuilder {
     protected LabeledRepository initializePersistentRepository(Path path, String label) {
         try {
             log.debug("Initializing persistent repository in path '{}' for label '{}'", path, label);
-            meterRegistry.counter("graph.store.repository", "method", "init", "mode", "persistent", "label", label).increment();
+
+            if(Objects.nonNull(this.meterRegistry)) {
+                meterRegistry.counter("graph.store.repository", "method", "init", "mode", "persistent", "label", label).increment();
+            }
+
+
             Resource file = new FileSystemResource(path);
             LmdbStoreConfig config = new LmdbStoreConfig();
 
@@ -217,7 +234,13 @@ public class DefaultRepositoryBuilder implements RepositoryBuilder {
 
     protected LabeledRepository initializeVolatileRepository(String label) {
         log.debug("Initializing in-memory repository for label '{}'", label);
-        meterRegistry.counter("graph.store.repository", "method", "init", "mode", "volatile", "label", label).increment();
+
+
+        if(Objects.nonNull(this.meterRegistry)) {
+            meterRegistry.counter("graph.store.repository", "method", "init", "mode", "volatile", "label", label).increment();
+        }
+
+
         LabeledRepository labeledRepository = new LabeledRepository(label, new SailRepository(new MemoryStore()));
         labeledRepository.init();
         return labeledRepository;

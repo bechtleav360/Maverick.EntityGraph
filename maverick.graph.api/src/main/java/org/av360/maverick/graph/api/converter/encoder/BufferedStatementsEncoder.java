@@ -17,6 +17,7 @@ import org.reactivestreams.Publisher;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.ResolvableType;
 import org.springframework.core.codec.Encoder;
+import org.springframework.core.env.Environment;
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.core.io.buffer.DataBufferFactory;
 import org.springframework.http.HttpStatus;
@@ -63,11 +64,13 @@ public class BufferedStatementsEncoder implements Encoder<Statement> {
     }
 
     private final SchemaServices schemaServices;
+    private final Environment environment;
 
 
-    public BufferedStatementsEncoder(@Autowired SchemaServices schemaServices) {
+    public BufferedStatementsEncoder(@Autowired SchemaServices schemaServices, @Autowired Environment environment) {
         this.schemaServices = schemaServices;
 
+        this.environment = environment;
     }
 
     @Override
@@ -86,10 +89,7 @@ public class BufferedStatementsEncoder implements Encoder<Statement> {
                 })
                 .map(statement -> (Statement) statement)
                 // we filter out any internal statements
-                .filter(statement -> ! statement.getObject().equals(Local.Entities.TYPE_INDIVIDUAL))
-                .filter(statement -> ! statement.getObject().equals(Local.Entities.TYPE_EMBEDDED))
-                .filter(statement -> ! statement.getObject().equals(Local.Entities.TYPE_CLASSIFIER))
-                .filter(statement -> ! statement.getPredicate().equals(Local.ORIGINAL_IDENTIFIER))
+                .filter(this::acceptStatement)
                 .collectList()
                 .flatMap(list ->  Mono.zip(Mono.just(list), ReactiveRequestUriContextHolder.getURI()))
                 .flatMapMany(tuple -> {
@@ -126,6 +126,17 @@ public class BufferedStatementsEncoder implements Encoder<Statement> {
                 });
     }
 
+    private boolean acceptStatement(Statement statement) {
+        if(this.environment.matchesProfiles("dev | persistent")) return true;
+
+        if(statement.getObject().equals(Local.Entities.TYPE_INDIVIDUAL)) return false;
+        if(statement.getObject().equals(Local.Entities.TYPE_CLASSIFIER)) return false;
+        if(statement.getObject().equals(Local.Entities.TYPE_EMBEDDED)) return false;
+        if(statement.getPredicate().equals(Local.ORIGINAL_IDENTIFIER)) return false;
+
+        return true;
+    }
+
     private void handleStatement(Statement st, RDFWriter writer, URI requestURI) {
         SimpleValueFactory vf = SimpleValueFactory.getInstance();
 
@@ -139,7 +150,15 @@ public class BufferedStatementsEncoder implements Encoder<Statement> {
 
     private <T extends Value> T convertLocalIRI(T value, URI requestURI, SimpleValueFactory vf) {
         if(value instanceof IRI iri) {
+            // we ignore type definitions
+            if(iri.equals(Local.Entities.TYPE_CLASSIFIER) || iri.equals(Local.Entities.TYPE_INDIVIDUAL) || iri.equals(Local.Entities.TYPE_EMBEDDED)) {
+                return value;
+            }
+
             if(iri.getNamespace().startsWith(Local.URN_PREFIX)) {
+
+
+
 
                 /* ok, here the application module is leaking into the default implementation. If the IRI namespace includes a qualifier,
                    we inject it as scope. To make it reproducible, we assume: if namespace is not default namespace, we take the (URL decoded) string
@@ -149,8 +168,6 @@ public class BufferedStatementsEncoder implements Encoder<Statement> {
                     urn:pwid:meg:e:,213 -> /api/entities/213
                     urn:pwid:meg:e:, f33.213 -> /api/entities/s/f33/213
                     urn:pwid:meg:, 123 -> /
-
-
                  */
                 String[] parts = iri.getLocalName().split("\\.");
                 String ns = iri.getNamespace();

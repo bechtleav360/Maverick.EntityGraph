@@ -24,11 +24,11 @@ application:
         enabled: true
         scheduled:
           detectDuplicates:
-            enabled: true
+            enabled: false
           replaceIdentifiers:
-            enabled: true
+            enabled: false
           typeCoercion:
-            enabled: true
+            enabled: false
           exportApplication:
             enabled: false
             defaultLocalPath: "D:/Graphen/entities/exports"
@@ -58,8 +58,8 @@ application:
 spring:
   security:
     user:
-      name: "xxx"
-      password: "xx"
+      name: "user"
+      password: "123"
 
 logging:
   file:

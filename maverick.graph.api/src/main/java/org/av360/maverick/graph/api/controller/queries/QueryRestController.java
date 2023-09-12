@@ -7,10 +7,12 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.api.controller.AbstractController;
 import org.av360.maverick.graph.model.enums.RepositoryType;
+import org.av360.maverick.graph.model.enums.SparqlMimeTypes;
 import org.av360.maverick.graph.model.rdf.AnnotatedStatement;
 import org.av360.maverick.graph.services.QueryServices;
 import org.eclipse.rdf4j.query.BindingSet;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 
@@ -25,7 +27,7 @@ public class QueryRestController extends AbstractController {
         this.queryServices = queryServices;
     }
 
-    @PostMapping(value = "/select", consumes = "text/plain", produces = {"text/csv", "application/sparql-results+json"})
+    @PostMapping(value = "/select", consumes = {MediaType.TEXT_PLAIN_VALUE, SparqlMimeTypes.SPARQL_QUERY_VALUE}, produces = {SparqlMimeTypes.CSV_VALUE, SparqlMimeTypes.JSON_VALUE})
     @io.swagger.v3.oas.annotations.parameters.RequestBody(
             description = "Sparql Select Query",
             content = @Content(examples = {
@@ -33,9 +35,21 @@ public class QueryRestController extends AbstractController {
                     @ExampleObject(name = "Query everything", value = "SELECT ?a ?b ?c  ?type WHERE { ?a ?b ?c } LIMIT 100")
             })
     )
+    @ResponseStatus(HttpStatus.OK)
+    public Flux<BindingSet> queryBindingsPost(@RequestBody String query,
+                                          @RequestParam(required = false, defaultValue = "entities", value = "entities") @Parameter(name = "repository", description = "The repository type in which the query should search.")
+                                          RepositoryType repositoryType) {
 
-    @ResponseStatus(HttpStatus.ACCEPTED)
-    public Flux<BindingSet> queryBindings(@RequestBody String query,
+        return super.acquireContext()
+                .flatMapMany(ctx -> queryServices.queryValues(query, repositoryType, ctx))
+                .doOnSubscribe(s -> {
+                    if (log.isDebugEnabled()) log.debug("Request to search graph with tuples query: {}", query);
+                });
+    }
+
+    @GetMapping(value = "/select", produces = {SparqlMimeTypes.CSV_VALUE, SparqlMimeTypes.JSON_VALUE})
+    @ResponseStatus(HttpStatus.OK)
+    public Flux<BindingSet> queryBindingsGet(@RequestParam(required = true) String query,
                                           @RequestParam(required = false, defaultValue = "entities", value = "entities") @Parameter(name = "repository", description = "The repository type in which the query should search.")
                                           RepositoryType repositoryType) {
 
@@ -48,7 +62,7 @@ public class QueryRestController extends AbstractController {
 
 
     @PostMapping(value = "/construct", consumes = "text/plain", produces = {"text/turtle", "application/ld+json"})
-    @ResponseStatus(HttpStatus.ACCEPTED)
+    @ResponseStatus(HttpStatus.OK)
     @io.swagger.v3.oas.annotations.parameters.RequestBody(
             description = "Sparql Construct Query",
             content = @Content(examples = {

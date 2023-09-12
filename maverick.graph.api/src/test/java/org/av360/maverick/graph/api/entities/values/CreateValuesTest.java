@@ -1,6 +1,7 @@
 package org.av360.maverick.graph.api.entities.values;
 
 import org.av360.maverick.graph.model.enums.RdfMimeTypes;
+import org.av360.maverick.graph.model.vocabulary.DCTERMS;
 import org.av360.maverick.graph.model.vocabulary.SDO;
 import org.av360.maverick.graph.tests.config.TestSecurityConfig;
 import org.av360.maverick.graph.tests.util.ApiTestsBase;
@@ -8,7 +9,6 @@ import org.av360.maverick.graph.tests.util.RdfConsumer;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Statement;
-import org.eclipse.rdf4j.model.vocabulary.DCTERMS;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.rio.RDFFormat;
 import org.junit.jupiter.api.AfterEach;
@@ -80,6 +80,7 @@ public class CreateValuesTest extends ApiTestsBase {
                 .expectBody()
                 .consumeWith(rdfConsumer);
 
+        super.printResult("Final model", rdfConsumer.dump(RDFFormat.TURTLE));
         Assertions.assertTrue(rdfConsumer.hasStatement(video.getSubject(), DCTERMS.DESCRIPTION, vf.createLiteral(description, "en")));
     }
 

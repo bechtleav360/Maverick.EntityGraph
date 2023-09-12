@@ -38,16 +38,14 @@ public class SchemaServicesImpl implements SchemaServices {
 
     @Override
     public Mono<Namespace> getNamespaceFor(String prefix) {
-        return this.schemaStore.listNamespaces()
-                .filter(namespace -> namespace.getPrefix().equalsIgnoreCase(prefix))
-                .switchIfEmpty(Mono.error(new UnknownPrefix(prefix)))
-                .single();
+        return this.schemaStore.getNamespaceForPrefix(prefix).map(Mono::just).orElse(Mono.error(new UnknownPrefix(prefix)));
     }
 
     @Override
     public boolean isIndividualType(IRI iri) {
         boolean res =
                 SDO.getIndividualTypes().contains(iri)
+                        || SCHEMA.getIndividualTypes().contains(iri)
                         || RDFS.getIndividualTypes().contains(iri)
                         || DC.getIndividualTypes().contains(iri)
                         || DCTERMS.getIndividualTypes().contains(iri)
@@ -64,6 +62,7 @@ public class SchemaServicesImpl implements SchemaServices {
     public boolean isClassifierType(IRI iri) {
         return
                 SDO.getClassifierTypes().contains(iri)
+                        || SCHEMA.getClassifierTypes().contains(iri)
                         || RDFS.getClassifierTypes().contains(iri)
                         || DC.getClassifierTypes().contains(iri)
                         || DCTERMS.getClassifierTypes().contains(iri)
@@ -79,6 +78,7 @@ public class SchemaServicesImpl implements SchemaServices {
     public boolean isCharacteristicProperty(IRI iri) {
         return
                 SDO.getCharacteristicProperties().contains(iri)
+                        || SCHEMA.getCharacteristicProperties().contains(iri)
                         || RDFS.getCharacteristicProperties().contains(iri)
                         || DC.getCharacteristicProperties().contains(iri)
                         || DCTERMS.getCharacteristicProperties().contains(iri)

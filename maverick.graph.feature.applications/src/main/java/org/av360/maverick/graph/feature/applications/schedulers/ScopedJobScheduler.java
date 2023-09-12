@@ -1,6 +1,7 @@
 package org.av360.maverick.graph.feature.applications.schedulers;
 
 import jakarta.annotation.PostConstruct;
+import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.feature.applications.services.ApplicationsService;
 import org.av360.maverick.graph.feature.applications.services.events.ApplicationCreatedEvent;
 import org.av360.maverick.graph.feature.applications.services.events.ApplicationDeletedEvent;
@@ -14,11 +15,13 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.scheduling.support.CronTrigger;
+import org.springframework.util.StringUtils;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
 
+@Slf4j(topic = "graph.feat.apps.schedulers")
 public abstract class ScopedJobScheduler {
 
     private ApplicationEventPublisher eventPublisher;
@@ -49,12 +52,23 @@ public abstract class ScopedJobScheduler {
         String cronTrigger = application.configuration().containsKey(getFrequencyConfigurationKey()) ?
                 application.configuration().get(getFrequencyConfigurationKey()).toString() : getDefaultFrequency();
 
+        if(! StringUtils.hasLength(cronTrigger)) {
+            return;
+        }
+
         Runnable task = () -> {
             JobScheduledEvent event = new JobScheduledEvent(getJobLabel(), new SessionContext().setSystemAuthentication().updateEnvironment(env -> env.withScope(application.label()).withRepositoryType(RepositoryType.ENTITIES)));
             eventPublisher.publishEvent(event);
         };
 
-        ScheduledFuture<?> scheduledFuture = taskScheduler.schedule(task, new CronTrigger(cronTrigger));
+        ScheduledFuture<?> scheduledFuture;
+        try {
+            scheduledFuture = taskScheduler.schedule(task, new CronTrigger(cronTrigger));
+        } catch (IllegalArgumentException e) {
+            log.warn("Failed to parse expression {}, falling back to default. ", cronTrigger);
+            scheduledFuture = taskScheduler.schedule(task, new CronTrigger(getDefaultFrequency()));
+        }
+
         scheduledTasks.put("%s.%s".formatted(application.label(), getJobLabel()), scheduledFuture);
     }
 

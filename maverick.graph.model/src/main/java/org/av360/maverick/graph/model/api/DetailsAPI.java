@@ -56,6 +56,7 @@ public interface DetailsAPI {
             @RequestParam(required = false) String hash
     );
 
+
     @Operation(summary = "Creates a statement about a statement use the post body as value.")
     @PostMapping(value = "/entities/{id:[\\w|\\d|\\-|\\_]+}/{type}/{prefixedValueKey:[\\w|\\d]+\\.[\\w|\\d]+}/details/{prefixedDetailKey:[\\w|\\d]+\\.[\\w|\\d]+}",
             consumes = MediaType.TEXT_PLAIN_VALUE,
@@ -63,9 +64,10 @@ public interface DetailsAPI {
     @ResponseStatus(HttpStatus.OK)
     Flux<AnnotatedStatement> createDetail(
             @PathVariable @Parameter(name = "entity identifier") String id,
-            @PathVariable(required = true, value = "values") @Parameter(name = "property type") DetailsAPI.PropertyType type,
+            @PathVariable(required = true, value = "values") @Parameter(name = "property type") PropertyType type,
             @PathVariable String prefixedValueKey,
-            @PathVariable String prefixedDetailKey
+            @PathVariable String prefixedDetailKey,
+            @RequestBody String value
     );
 
     @Operation(summary = "Creates a statement about a statement use the post body as value.")

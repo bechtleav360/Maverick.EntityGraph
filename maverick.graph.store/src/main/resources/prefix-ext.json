@@ -1,0 +1,7 @@
+{
+  "@context": {
+    "megt": "https://w3id.org/avs/meg/transactions/",
+    "mege": "https://w3id.org/avs/meg/entities/",
+    "sdoxc": "https://w3id.org/avs/sdoxc/"
+  }
+}

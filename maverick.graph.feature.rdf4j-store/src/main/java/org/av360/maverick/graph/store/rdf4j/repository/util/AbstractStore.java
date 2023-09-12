@@ -86,12 +86,15 @@ public abstract class AbstractStore implements TripleStore, StatementsAware, Mod
     }
 
     @Autowired
-    private void setMeterRegistry(MeterRegistry meterRegistry) {
-        this.meterRegistry = meterRegistry;
-        this.transactionsMonoCounter = meterRegistry.counter("graph.store.transactions", "cardinality", "single");
-        this.transactionsMonoTimer = meterRegistry.timer("graph.store.timer", "cardinality", "single");
-        this.transactionsFluxCounter = meterRegistry.counter("graph.store.transactions", "cardinality", "multiple");
-        this.transactionsFluxTimer = meterRegistry.timer("graph.store.timer", "cardinality", "multiple");
+    private void setMeterRegistry(@Nullable MeterRegistry meterRegistry) {
+        if(Objects.nonNull(meterRegistry)) {
+            this.meterRegistry = meterRegistry;
+            this.transactionsMonoCounter = meterRegistry.counter("graph.store.transactions", "cardinality", "single");
+            this.transactionsMonoTimer = meterRegistry.timer("graph.store.timer", "cardinality", "single");
+            this.transactionsFluxCounter = meterRegistry.counter("graph.store.transactions", "cardinality", "multiple");
+            this.transactionsFluxTimer = meterRegistry.timer("graph.store.timer", "cardinality", "multiple");
+        }
+
     }
 
 
@@ -241,6 +244,8 @@ public abstract class AbstractStore implements TripleStore, StatementsAware, Mod
 
     }
 
+
+
     public Flux<IRI> types(Resource subj, Environment environment) {
         return this.applyManyWithConnection(environment, connection ->
                 connection.getStatements(subj, RDF.TYPE, null, false).stream()
@@ -273,15 +278,18 @@ public abstract class AbstractStore implements TripleStore, StatementsAware, Mod
                     // with this approach, we cannot insert a statement to a context (since it is already in GRAPH_CREATED), every st can only be in one context
                     ValueFactory vf = connection.getValueFactory();
                     Model insertStatements = trx.get(Transactions.GRAPH_CREATED);
+                    Model updateStatements = trx.get(Transactions.GRAPH_UPDATED);
                     Model removeStatements = trx.get(Transactions.GRAPH_DELETED);
 
                     try {
                         if (insertStatements.size() > 0) {
                             connection.add(insertStatements);
                         }
+                        if (updateStatements.size() > 0) {
+                            connection.add(updateStatements);
+                        }
                         if (removeStatements.size() > 0) {
                             connection.remove(removeStatements);
-
                         }
                         if (insertStatements.size() > 0 || removeStatements.size() > 0) {
                             connection.prepare();
@@ -331,12 +339,10 @@ public abstract class AbstractStore implements TripleStore, StatementsAware, Mod
                             .filter(Value::isIRI)
                             .map(value -> connection.getStatements((IRI) value, null, null))
                             .flatMap(result -> result.stream())
-                            .filter(sts -> sts.getObject().isLiteral())
-                            .filter(sts -> sts.getObject().isLiteral() && sts.getObject().stringValue().length() < 50)
+                            .filter(sts -> this.isLiteralStatement(sts) || this.isTypeStatement(sts))
                             .collect(new ModelCollector());
                     // ModelCollector
                     entity.getModel().addAll(neighbours);
-
                 }
                 // embedded level 1
 
@@ -348,6 +354,14 @@ public abstract class AbstractStore implements TripleStore, StatementsAware, Mod
                 throw e;
             }
         });
+    }
+
+    private boolean isLiteralStatement(Statement statement) {
+        return statement.getObject().isLiteral() && statement.getObject().stringValue().length() < 128;
+    }
+
+    private boolean isTypeStatement(Statement statement) {
+        return statement.getPredicate().equals(RDF.TYPE);
     }
 
     @Override
@@ -366,6 +380,11 @@ public abstract class AbstractStore implements TripleStore, StatementsAware, Mod
             }
         });
 
+    }
+
+    @Override
+    public Mono<Void> importModel(Model model, Environment environment) {
+        return this.insertModel(model, environment);
     }
 
     @Override
@@ -411,16 +430,13 @@ public abstract class AbstractStore implements TripleStore, StatementsAware, Mod
     @Override
     public Mono<Transaction> removeStatements(Collection<Statement> statements, Transaction transaction) {
         Assert.notNull(transaction, "Transaction cannot be null");
-        if (getLogger().isTraceEnabled())
-            getLogger().trace("Removal planned for {} statements in transaction '{}'.", statements.size(), transaction.getIdentifier().getLocalName());
+        if (getLogger().isDebugEnabled())
+            getLogger().debug("Removal planned for {} statements in transaction '{}'.", statements.size(), transaction.getIdentifier().getLocalName());
 
         return Mono.just(transaction.removes(statements));
     }
 
-    @Override
-    public Mono<Transaction> addStatement(Resource subject, IRI predicate, Value literal, Transaction transaction) {
-        return this.addStatement(subject, predicate, literal, null, transaction);
-    }
+
 
     @Override
     public Mono<Transaction> addStatement(Resource subject, IRI predicate, Value literal, @Nullable Resource context, Transaction transaction) {

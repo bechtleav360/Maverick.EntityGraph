@@ -126,7 +126,7 @@ public class AssignInternalTypesJob implements Job {
                     FILTER NOT EXISTS { ?entity a <%s> . }
                     FILTER NOT EXISTS { ?entity a <%s> . }
                     FILTER NOT EXISTS { ?entity a <%s> . }
-                } LIMIT 10000
+                } LIMIT 1000
                 """;
         String query = String.format(tpl, Local.Entities.TYPE_INDIVIDUAL, Local.Entities.TYPE_CLASSIFIER, Local.Entities.TYPE_EMBEDDED);
         return this.queryServices.queryValues(query, RepositoryType.ENTITIES, ctx)

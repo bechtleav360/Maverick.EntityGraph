@@ -15,6 +15,7 @@ import org.av360.maverick.graph.services.EntityServices;
 import org.av360.maverick.graph.services.ValueServices;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.util.Assert;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 
@@ -91,9 +92,20 @@ public class DetailsController extends AbstractController implements DetailsAPI 
             @PathVariable @Parameter(name = "entity identifier") String id,
             @PathVariable(required = true, value = "values") @Parameter(name = "property type") PropertyType type,
             @PathVariable String prefixedValueKey,
-            @PathVariable String prefixedDetailKey
+            @PathVariable String prefixedDetailKey,
+            @RequestBody String value
     ) {
-        return Flux.error(new NotImplementedException("Method has not been implemented yet."));
+        Assert.isTrue(!value.matches("(?s).*[\\n\\r].*"), "Newlines in request body are not supported");
+
+
+        return super.acquireContext()
+                .flatMap(ctx -> values.insertDetail(id, prefixedValueKey, prefixedDetailKey, value, ctx))
+                .flatMapIterable(Triples::asStatements)
+                .doOnSubscribe(s -> {
+                    if (log.isDebugEnabled())
+                        log.debug("Request to add annotation '{}' on property '{}' for entity '{}' with value: {}", prefixedDetailKey, prefixedValueKey, id, value.length() > 64 ? value.substring(0, 64) : value);
+                });
+
     }
 
 

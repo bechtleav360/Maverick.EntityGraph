@@ -92,7 +92,10 @@ public class ValuesController extends AbstractController implements ValuesAPI {
             consumes = {MediaType.TEXT_PLAIN_VALUE},
             produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE})
     @ResponseStatus(HttpStatus.OK)
-    public Flux<AnnotatedStatement> create(@PathVariable String id, @PathVariable String prefixedKey, @RequestBody String value, @Nullable @RequestParam(required = false) String lang) {
+    public Flux<AnnotatedStatement> create(@PathVariable String id,
+                                           @PathVariable String prefixedKey,
+                                           @RequestBody String value,
+                                           @Nullable @RequestParam(required = false) String lang) {
         Assert.isTrue(!value.matches("(?s).*[\\n\\r].*"), "Newlines in request body are not supported");
 
 

@@ -4,6 +4,7 @@ import org.av360.maverick.graph.feature.applications.services.ApplicationsServic
 import org.av360.maverick.graph.feature.applications.services.model.Application;
 import org.av360.maverick.graph.feature.applications.services.vocab.ApplicationTerms;
 import org.av360.maverick.graph.model.context.SessionContext;
+import org.av360.maverick.graph.model.enums.ConfigurationKeysRegistry;
 import org.av360.maverick.graph.model.rdf.AnnotatedStatement;
 import org.av360.maverick.graph.model.vocabulary.Local;
 import org.av360.maverick.graph.services.NavigationServices;
@@ -18,6 +19,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import javax.annotation.Nullable;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -27,10 +29,13 @@ public class DelegatingNavigationServices implements NavigationServices {
     private ApplicationsService applicationsService;
     private final SimpleValueFactory vf;
 
+    public static final String CONFIG_KEY_CUSTOM_LIST_QUERY = "custom_list_query";
+
     public DelegatingNavigationServices(NavigationServices delegate, ApplicationsService applicationsService) {
         this.applicationsService = applicationsService;
         this.delegate = delegate;
         this.vf = SimpleValueFactory.getInstance();
+        ConfigurationKeysRegistry.add(CONFIG_KEY_CUSTOM_LIST_QUERY, "Custom query for listing entities within this application for navigation.");
     }
 
     @Override
@@ -74,8 +79,15 @@ public class DelegatingNavigationServices implements NavigationServices {
     }
 
     @Override
-    public Flux<AnnotatedStatement> list(Map<String, String> requestParams, SessionContext ctx) {
-        return delegate.list(requestParams, ctx);
+    public Flux<AnnotatedStatement> list(Map<String, String> requestParams, SessionContext ctx, @Nullable String query) {
+        if(ctx.getEnvironment().hasScope()) {
+            return this.applicationsService.getApplication(ctx.getEnvironment().getScope().label(), ctx)
+                    .filter(application -> application.configuration().containsKey(CONFIG_KEY_CUSTOM_LIST_QUERY))
+                    .map(application -> application.configuration().get(CONFIG_KEY_CUSTOM_LIST_QUERY))
+                    .flatMapMany(appQuery ->  delegate.list(requestParams, ctx, appQuery.toString()))
+                    .switchIfEmpty(delegate.list(requestParams, ctx, null));
+        }
+        else return delegate.list(requestParams, ctx, null);
     }
 
     @Override
