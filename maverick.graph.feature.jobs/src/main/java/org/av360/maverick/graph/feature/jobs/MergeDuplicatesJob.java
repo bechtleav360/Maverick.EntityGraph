@@ -227,6 +227,7 @@ SELECT ?id WHERE { ?id a <urn:pwid:meg:e:Individual> . ?id <http://schema.org/na
                                 .flatMap(mislinkedStatement -> this.relinkEntity(mislinkedStatement.subject(), mislinkedStatement.predicate(), mislinkedStatement.object(), original.id(), ctx))
                                 .doOnNext(trx -> log.info("Relinking completed in Transaction {}", trx.getIdentifier()))
                                 .map(transaction -> duplicate)
+                                .switchIfEmpty(Mono.just(duplicate))
                 )
                 .flatMap(duplicate ->
                         this.removeDuplicate(duplicate.id(), ctx)

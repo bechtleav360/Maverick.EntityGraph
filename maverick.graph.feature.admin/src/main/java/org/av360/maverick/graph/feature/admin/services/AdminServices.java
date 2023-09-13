@@ -74,7 +74,7 @@ public class AdminServices {
 
     @RequiresPrivilege(Authorities.MAINTAINER_VALUE)
     public Mono<Void> importEntities(Publisher<DataBuffer> bytes, String mimetype, SessionContext ctx) {
-        if(maintenanceActive) return Mono.error(new SchedulingException("Maintenance job still running."));
+        if (maintenanceActive) return Mono.error(new SchedulingException("Maintenance job still running."));
 
         this.stores.get(ctx.getEnvironment().getRepositoryType())
                 .importStatements(bytes, mimetype, ctx.getEnvironment())
@@ -122,7 +122,7 @@ public class AdminServices {
                         .importModel(resultingModel, ctx.getEnvironment())
                         .doOnSuccess(suc -> {
                             if (previousResultCount == limit) {
-                                Mono.just(offset+limit)
+                                Mono.just(offset + limit)
                                         .delayElement(Duration.of(2, ChronoUnit.SECONDS))
                                         .flatMap(nlimit -> this.importFromEndpoint(endpoint, headers, limit, nlimit, ctx))
                                         .doOnSubscribe(subscription -> {
@@ -160,52 +160,48 @@ public class AdminServices {
         Optional<RDFFormat> parserFormatForFileName = Rio.getParserFormatForFileName(originalFilename);
         Validate.isTrue(parserFormatForFileName.isPresent(), "Failed to find RDF parser for filename %s".formatted(originalFilename));
 
+        return Mono.just(file)
+                .flatMap(filePart -> {
+                    try {
+                        File gzipFilePath = File.createTempFile("import", filename);
+                        log.debug("Storing incoming zip file in temp as {} ", gzipFilePath.toString());
+                        return DataBufferUtils.write(file.content(), gzipFilePath.toPath()).then(Mono.just(gzipFilePath));
+                    } catch (IOException e) {
+                        return Mono.error(e);
+                    }
+                })
+                .flatMap(zipFile -> {
+                    log.debug("Reading zip file {}", zipFile.toString());
+                    try {
+                        GZIPInputStream gzipInputStream = new GZIPInputStream(new FileInputStream(zipFile));
 
-        try {
-
-            File gzipFilePath = File.createTempFile("import", filename);
-            log.debug("Storing incoming zip file in temp as {} ", gzipFilePath.toString());
-            DataBufferUtils.write(file.content(), gzipFilePath.toPath());
-
-            log.debug("Reading zip file {}", gzipFilePath.toString());
-
-            try {
-                GZIPInputStream gzipInputStream = new GZIPInputStream(new FileInputStream(gzipFilePath));
-
-                Flux<DataBuffer> buffers = Flux.generate(
-                        () -> gzipInputStream,
-                        (stream, sink) -> {
-                            try {
-                                byte[] buffer = new byte[bufferSize];
-                                int read = stream.read(buffer);
-                                if (read > 0) {
-                                    DataBuffer dataBuffer = bufferFactory.wrap(ByteBuffer.wrap(buffer, 0, read));
-                                    sink.next(dataBuffer);
-                                } else {
-                                    sink.complete();
-                                    stream.close();
+                        Flux<DataBuffer> flux = Flux.generate(
+                                () -> gzipInputStream,
+                                (stream, sink) -> {
+                                    try {
+                                        byte[] buffer = new byte[bufferSize];
+                                        int read = stream.read(buffer);
+                                        if (read > 0) {
+                                            DataBuffer dataBuffer = bufferFactory.wrap(ByteBuffer.wrap(buffer, 0, read));
+                                            sink.next(dataBuffer);
+                                        } else {
+                                            sink.complete();
+                                            stream.close();
+                                        }
+                                    } catch (IOException e) {
+                                        sink.error(e);
+                                    }
+                                    return stream;
                                 }
-                            } catch (IOException e) {
-                                sink.error(e);
-                            }
-                            return stream;
-                        }
-                );
-
-                String mimeType = parserFormatForFileName.orElseThrow().getDefaultMIMEType();
-
-
-                return this.importEntities(buffers, mimeType, ctx);
-
-            } catch (IOException e) {
-                return Mono.error(e);
-            }
-
-
-
-        } catch (IOException e) {
-            return Mono.error(e);
-        }
+                        );
+                        return Mono.just(flux);
+                    } catch (IOException e) {
+                        return Mono.error(e);
+                    }
+                }).flatMap(buffers -> {
+                    String mimeType = parserFormatForFileName.orElseThrow().getDefaultMIMEType();
+                    return this.importEntities(buffers, mimeType, ctx);
+                });
     }
 
 }
