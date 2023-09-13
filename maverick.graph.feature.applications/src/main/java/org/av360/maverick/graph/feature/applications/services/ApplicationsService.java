@@ -148,7 +148,7 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
         return deleteMono.then(insertMono).then(this.getApplication(application.key(), ctx, true))
                 .doOnSuccess(app -> {
                     this.eventPublisher.publishEvent(new ApplicationUpdatedEvent(app));
-                    log.debug("Updated configuration key '{}' of node with label '{}'", app.key(), app.label());
+                    log.debug("Updated configuration key '{}' of application with label '{}'", configKey, app.label());
                 })
                 .doOnSubscribe(StreamsLogger.debug(log, "Updating configuration key '{}' for application with label '{}'", configKey, application.label()));
     }

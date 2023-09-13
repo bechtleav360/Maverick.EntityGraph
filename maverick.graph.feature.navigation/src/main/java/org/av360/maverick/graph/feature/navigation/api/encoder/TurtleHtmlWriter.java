@@ -3,7 +3,12 @@ package org.av360.maverick.graph.feature.navigation.api.encoder;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.commons.io.IOUtils;
+import org.av360.maverick.graph.model.vocabulary.DC;
+import org.av360.maverick.graph.model.vocabulary.DCTERMS;
 import org.eclipse.rdf4j.model.Statement;
+import org.eclipse.rdf4j.model.vocabulary.FOAF;
+import org.eclipse.rdf4j.model.vocabulary.SKOS;
+import org.eclipse.rdf4j.model.vocabulary.SKOSXL;
 import org.eclipse.rdf4j.rio.*;
 import org.eclipse.rdf4j.rio.turtle.TurtleWriter;
 
@@ -150,6 +155,12 @@ public class TurtleHtmlWriter implements RDFWriter {
             case "rdf": yield "https://www.w3.org/TR/rdf-syntax-grammar/";
             case "rdfs": yield "https://www.w3.org/TR/rdf-schema/";
             case "sdo": yield "https://schema.org/";
+            case "esco": yield "http://data.europa.eu/esco/model#";
+            case SKOSXL.PREFIX: yield SKOSXL.NAMESPACE;
+            case SKOS.PREFIX: yield SKOS.NAMESPACE;
+            case FOAF.PREFIX: yield FOAF.NAMESPACE;
+            case DC.PREFIX: yield DC.NAMESPACE;
+            case DCTERMS.PREFIX: yield DCTERMS.NAMESPACE;
             default: yield url;
         };
     }

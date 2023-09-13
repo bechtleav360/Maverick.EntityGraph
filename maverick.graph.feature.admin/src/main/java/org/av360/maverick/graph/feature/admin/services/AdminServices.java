@@ -1,9 +1,9 @@
 package org.av360.maverick.graph.feature.admin.services;
 
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.Validate;
 import org.av360.maverick.graph.model.context.SessionContext;
 import org.av360.maverick.graph.model.enums.RepositoryType;
-import org.av360.maverick.graph.model.errors.requests.SchedulingException;
 import org.av360.maverick.graph.model.security.Authorities;
 import org.av360.maverick.graph.services.config.RequiresPrivilege;
 import org.av360.maverick.graph.store.behaviours.Maintainable;
@@ -14,18 +14,28 @@ import org.eclipse.rdf4j.query.TupleQuery;
 import org.eclipse.rdf4j.query.TupleQueryResult;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.sparql.SPARQLRepository;
+import org.eclipse.rdf4j.rio.RDFFormat;
+import org.eclipse.rdf4j.rio.Rio;
 import org.reactivestreams.Publisher;
 import org.springframework.core.io.buffer.DataBuffer;
+import org.springframework.core.io.buffer.DataBufferFactory;
+import org.springframework.core.io.buffer.DataBufferUtils;
+import org.springframework.core.io.buffer.DefaultDataBufferFactory;
+import org.springframework.http.codec.multipart.FilePart;
+import org.springframework.scheduling.SchedulingException;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
+import java.util.zip.GZIPInputStream;
 
 
 @Service
@@ -42,7 +52,7 @@ public class AdminServices {
         maintainables.forEach(store -> stores.put(store.getRepositoryType(), store));
     }
 
-    @RequiresPrivilege(Authorities.SYSTEM_VALUE)
+    @RequiresPrivilege(Authorities.MAINTAINER_VALUE)
     public Mono<Void> reset(SessionContext ctx) {
         // if(maintenanceActive) return Mono.error(new SchedulingException("Maintenance job still running."));
         // doesn't work for testing, ignore for now
@@ -62,9 +72,9 @@ public class AdminServices {
         return Mono.empty();
     }
 
-    @RequiresPrivilege(Authorities.SYSTEM_VALUE)
+    @RequiresPrivilege(Authorities.MAINTAINER_VALUE)
     public Mono<Void> importEntities(Publisher<DataBuffer> bytes, String mimetype, SessionContext ctx) {
-        if(maintenanceActive) return Mono.error(new SchedulingException("Maintenance job still running."));
+        if (maintenanceActive) return Mono.error(new SchedulingException("Maintenance job still running."));
 
         this.stores.get(ctx.getEnvironment().getRepositoryType())
                 .importStatements(bytes, mimetype, ctx.getEnvironment())
@@ -89,7 +99,6 @@ public class AdminServices {
                 SELECT ?s ?p ?o  ?type WHERE { ?s ?p ?o } LIMIT %d OFFSET %d
                 """
                 .formatted(limit, offset);
-
         SPARQLRepository sparqlRepository = new SPARQLRepository(endpoint);
         sparqlRepository.setAdditionalHttpHeaders(headers);
         try (RepositoryConnection connection = sparqlRepository.getConnection()) {
@@ -113,7 +122,7 @@ public class AdminServices {
                         .importModel(resultingModel, ctx.getEnvironment())
                         .doOnSuccess(suc -> {
                             if (previousResultCount == limit) {
-                                Mono.just(offset+limit)
+                                Mono.just(offset + limit)
                                         .delayElement(Duration.of(2, ChronoUnit.SECONDS))
                                         .flatMap(nlimit -> this.importFromEndpoint(endpoint, headers, limit, nlimit, ctx))
                                         .doOnSubscribe(subscription -> {
@@ -139,4 +148,60 @@ public class AdminServices {
         }
 
     }
+
+    @RequiresPrivilege(Authorities.MAINTAINER_VALUE)
+    public Mono<Void> importPackage(FilePart file, SessionContext ctx) {
+        final int bufferSize = 1024;
+        DataBufferFactory bufferFactory = new DefaultDataBufferFactory();
+        final String filename = file.filename();
+
+        Validate.matchesPattern(filename, "\\w+\\.\\w+\\.gz", "GZIP file has to match pattern 'filename.format.gz', e.g. 'data.ttl.gt'");
+        String originalFilename = filename.substring(0, filename.lastIndexOf('.'));
+        Optional<RDFFormat> parserFormatForFileName = Rio.getParserFormatForFileName(originalFilename);
+        Validate.isTrue(parserFormatForFileName.isPresent(), "Failed to find RDF parser for filename %s".formatted(originalFilename));
+
+        return Mono.just(file)
+                .flatMap(filePart -> {
+                    try {
+                        File gzipFilePath = File.createTempFile("import", filename);
+                        log.debug("Storing incoming zip file in temp as {} ", gzipFilePath.toString());
+                        return DataBufferUtils.write(file.content(), gzipFilePath.toPath()).then(Mono.just(gzipFilePath));
+                    } catch (IOException e) {
+                        return Mono.error(e);
+                    }
+                })
+                .flatMap(zipFile -> {
+                    log.debug("Reading zip file {}", zipFile.toString());
+                    try {
+                        GZIPInputStream gzipInputStream = new GZIPInputStream(new FileInputStream(zipFile));
+
+                        Flux<DataBuffer> flux = Flux.generate(
+                                () -> gzipInputStream,
+                                (stream, sink) -> {
+                                    try {
+                                        byte[] buffer = new byte[bufferSize];
+                                        int read = stream.read(buffer);
+                                        if (read > 0) {
+                                            DataBuffer dataBuffer = bufferFactory.wrap(ByteBuffer.wrap(buffer, 0, read));
+                                            sink.next(dataBuffer);
+                                        } else {
+                                            sink.complete();
+                                            stream.close();
+                                        }
+                                    } catch (IOException e) {
+                                        sink.error(e);
+                                    }
+                                    return stream;
+                                }
+                        );
+                        return Mono.just(flux);
+                    } catch (IOException e) {
+                        return Mono.error(e);
+                    }
+                }).flatMap(buffers -> {
+                    String mimeType = parserFormatForFileName.orElseThrow().getDefaultMIMEType();
+                    return this.importEntities(buffers, mimeType, ctx);
+                });
+    }
+
 }

@@ -119,4 +119,22 @@ public class AdminRestController extends AbstractController {
                 .doOnSubscribe(s -> log.info("Request to import a file of mimetype {}", mimetype));
     }
 
+    @PostMapping(value = "/import/package", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Operation(summary = "Importing a zipped file. NOT IMPLEMENTED YET")
+    @ResponseStatus(HttpStatus.ACCEPTED)
+    Mono<Void> importPackage(
+            @RequestPart
+            @Parameter(name = "file", description = "The zip file.") Mono<FilePart> fileMono,
+            @RequestParam(required = false, defaultValue = "entities", value = "entities")
+            @Parameter(name = "repository", description = "The repository type in which the query should search.")
+            RepositoryType repositoryType) {
+
+        return super.acquireContext()
+                .map(context -> context.getEnvironment().withRepositoryType(repositoryType))
+                .flatMap(context -> Mono.zip(Mono.just(context), fileMono))
+                .flatMap(pair -> adminServices.importPackage(pair.getT2(), pair.getT1()))
+                .doOnError(throwable -> log.error("Error while importing package to repository.", throwable))
+                .doOnSubscribe(s -> log.info("Request to import a packaged file"));
+    }
+
 }

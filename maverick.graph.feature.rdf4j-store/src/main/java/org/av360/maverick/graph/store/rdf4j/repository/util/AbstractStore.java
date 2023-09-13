@@ -346,8 +346,8 @@ public abstract class AbstractStore implements TripleStore, StatementsAware, Mod
                 }
                 // embedded level 1
 
-                if (getLogger().isDebugEnabled())
-                    getLogger().debug("Loaded {} statements for entity with IRI: <{}>.", entity.getModel().size(), id);
+                if (getLogger().isTraceEnabled())
+                    getLogger().trace("Loaded {} statements for entity with IRI: <{}>.", entity.getModel().size(), id);
                 return entity;
             } catch (Exception e) {
                 getLogger().error("Unknown error while collection statements for entity '{}' ", id, e);
