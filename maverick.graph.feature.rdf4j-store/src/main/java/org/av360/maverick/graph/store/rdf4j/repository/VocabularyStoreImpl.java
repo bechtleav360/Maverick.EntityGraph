@@ -3,9 +3,10 @@ package org.av360.maverick.graph.store.rdf4j.repository;
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
+import org.av360.maverick.graph.model.context.Environment;
 import org.av360.maverick.graph.model.enums.RepositoryType;
-import org.av360.maverick.graph.store.SchemaStore;
-import org.av360.maverick.graph.store.rdf4j.repository.util.AbstractStore;
+import org.av360.maverick.graph.store.PersistedSchemaGraph;
+import org.av360.maverick.graph.store.rdf4j.repository.util.SailStore;
 import org.eclipse.rdf4j.model.Namespace;
 import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.model.impl.SimpleNamespace;
@@ -23,12 +24,9 @@ import java.util.*;
 
 @Slf4j(topic = "graph.repo.schema")
 @Component
-public class VocabularyStoreImpl extends AbstractStore implements SchemaStore {
+public class VocabularyStoreImpl extends SailStore implements PersistedSchemaGraph {
 
     private final Map<String, String> mappings = new HashMap<>();
-    @org.springframework.beans.factory.annotation.Value("${application.storage.vocabularies.path:#{null}}")
-    private String path;
-
 
     public VocabularyStoreImpl() {
         super(RepositoryType.SCHEMA);
@@ -83,10 +81,9 @@ public class VocabularyStoreImpl extends AbstractStore implements SchemaStore {
         return log;
     }
 
+
     @Override
-    public String getDirectory() {
-        return this.path;
+    protected void addDefaultStorageConfiguration(Environment environment) {
+
     }
-
-
 }

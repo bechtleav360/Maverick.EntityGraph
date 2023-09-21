@@ -7,7 +7,7 @@ import reactor.core.publisher.Flux;
 
 import java.util.Optional;
 
-public interface SchemaStore extends Maintainable {
+public interface PersistedSchemaGraph extends Maintainable {
 
     ValueFactory getValueFactory();
 

@@ -12,7 +12,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 
-public interface StatementsAware extends TripleStore {
+public interface StatementsAware extends Storable {
 
     default Mono<Transaction> removeStatement(Resource subject, IRI predicate, Value value, Transaction transaction) {
         return this.removeStatement(getValueFactory().createStatement(subject, predicate, value), transaction);
@@ -26,7 +26,7 @@ public interface StatementsAware extends TripleStore {
 
     Mono<Transaction> removeStatements(Collection<Statement> statements, Transaction transaction);
 
-
+    Mono<Boolean> hasStatement(Resource subject, IRI predicate, Value object, Environment environment);
 
     Mono<Transaction> addStatement(Resource subject, IRI predicate, Value literal, Resource context, Transaction transaction);
 

@@ -10,9 +10,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.Validate;
 import org.av360.maverick.graph.model.context.Environment;
 import org.av360.maverick.graph.model.enums.RepositoryType;
-import org.av360.maverick.graph.store.RepositoryBuilder;
-import org.av360.maverick.graph.store.behaviours.TripleStore;
-import org.av360.maverick.graph.store.rdf.LabeledRepository;
+import org.av360.maverick.graph.store.behaviours.Storable;
+import org.av360.maverick.graph.store.rdf4j.extensions.LabeledRepository;
+import org.av360.maverick.graph.store.repository.GraphStore;
+import org.av360.maverick.graph.store.repository.StoreBuilder;
 import org.eclipse.rdf4j.repository.RepositoryException;
 import org.eclipse.rdf4j.repository.base.RepositoryWrapper;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
@@ -36,7 +37,7 @@ import java.util.Objects;
 @Component
 @Slf4j(topic = "graph.repo.cfg.builder")
 @ConfigurationProperties(prefix = "application")
-public class DefaultRepositoryBuilder implements RepositoryBuilder {
+public class DefaultRepositoryBuilder implements StoreBuilder {
 
 
     private final Cache<String, LabeledRepository> cache;
@@ -49,7 +50,6 @@ public class DefaultRepositoryBuilder implements RepositoryBuilder {
         if(cache != null) {
             cache.asMap().values().forEach(RepositoryWrapper::shutDown);
         }
-
     }
 
     @PostConstruct
@@ -72,8 +72,6 @@ public class DefaultRepositoryBuilder implements RepositoryBuilder {
                     .tag("metric", "hitCount")
                     .register(this.meterRegistry);
         }
-
-
     }
 
     @Autowired
@@ -90,6 +88,15 @@ public class DefaultRepositoryBuilder implements RepositoryBuilder {
     }
 
 
+    // can build local and in-memory repositories for all types
+    @Override
+    public boolean canBuild(Environment environment) {
+        boolean result = ! environment.hasScope();
+
+        return false;
+    }
+
+
     /**
      * Initializes the connection to a repository. The repositories are cached
      *
@@ -99,7 +106,7 @@ public class DefaultRepositoryBuilder implements RepositoryBuilder {
      * @throws IOException If repository cannot be found
      */
     @Override
-    public Mono<LabeledRepository> buildRepository(TripleStore store, Environment target) {
+    public Mono<GraphStore> buildStore(Storable store, Environment target) {
 
         Validate.isTrue(target.isAuthorized(), "Unauthorized status in repository builder");
         Validate.notNull(target.getRepositoryType(), "Missing repository type in repository builder");
@@ -107,7 +114,7 @@ public class DefaultRepositoryBuilder implements RepositoryBuilder {
 
         try {
             LabeledRepository labeledRepository = this.buildDefaultRepository(store, target);
-            return this.validateRepository(labeledRepository, store, target);
+            return this.validateRepository(labeledRepository, store, target).map(lr -> (GraphStore) lr);
         } catch (IOException e) {
             return Mono.error(e);
         }
@@ -135,7 +142,7 @@ public class DefaultRepositoryBuilder implements RepositoryBuilder {
     }
 
     @Override
-    public Mono<Void> shutdownRepository(TripleStore store, Environment environment) {
+    public Mono<Void> shutdownStore(Storable store, Environment environment) {
         if(cache != null) {
             String key = formatRepositoryLabel(environment);
             LabeledRepository repository = cache.getIfPresent(key);
@@ -148,7 +155,7 @@ public class DefaultRepositoryBuilder implements RepositoryBuilder {
         return Mono.empty();
     }
 
-    protected Mono<LabeledRepository> validateRepository(@Nullable LabeledRepository repository, TripleStore store, Environment environment) throws IOException {
+    protected Mono<LabeledRepository> validateRepository(@Nullable LabeledRepository repository, Storable store, Environment environment) throws IOException {
         return Mono.create(sink -> {
             if(!Objects.isNull(repository)) {
                 if(! repository.isInitialized() && repository.getConnectionsCount() == 0) {
@@ -163,10 +170,10 @@ public class DefaultRepositoryBuilder implements RepositoryBuilder {
         });
     }
 
-    protected LabeledRepository buildDefaultRepository(TripleStore store, Environment target) {
+    protected LabeledRepository buildDefaultRepository(Storable store, Environment target) {
 
         String key = formatRepositoryLabel(target);
-        String path = store.getDirectory();
+        String path = store.getDefaultStorageDirectory();
 
         log.trace("Resolving default repository for environment: {}", target);
 

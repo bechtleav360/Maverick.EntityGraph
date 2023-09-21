@@ -3,8 +3,8 @@ package org.av360.maverick.graph.tests.util;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.av360.maverick.graph.model.context.SessionContext;
-import org.av360.maverick.graph.store.EntityStore;
-import org.av360.maverick.graph.store.TransactionsStore;
+import org.av360.maverick.graph.store.PersistedEntityGraph;
+import org.av360.maverick.graph.store.PersistedTransactionsGraph;
 import org.av360.maverick.graph.tests.config.TestSecurityConfig;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
@@ -27,9 +27,9 @@ public abstract class TestsBase {
     protected static ValueFactory vf = SimpleValueFactory.getInstance();
 
 
-    private EntityStore entityStore;
+    private PersistedEntityGraph entityStore;
 
-    private TransactionsStore transactionsStore;
+    private PersistedTransactionsGraph transactionsStore;
 
     static {
         Hooks.onOperatorDebug();
@@ -49,7 +49,7 @@ public abstract class TestsBase {
     }
 
     @Autowired
-    public void setStores(EntityStore entityStore, TransactionsStore transactionsStore) {
+    public void setStores(PersistedEntityGraph entityStore, PersistedTransactionsGraph transactionsStore) {
         this.entityStore = entityStore;
         this.transactionsStore = transactionsStore;
     }

@@ -13,12 +13,13 @@ import java.util.HashMap;
 public class QueryVariables {
 
     public static final Variable varNodeApplication = SparqlBuilder.var("appNode");
-    public static final Variable varAppKey = SparqlBuilder.var("appId");
-    public static final Variable varAppLabel = SparqlBuilder.var("appLabel");
-    public static final Variable varAppFlagPersistent = SparqlBuilder.var("appPersistent");
-    public static final Variable varAppFlagPublic = SparqlBuilder.var("appPublic");
+    public static final Variable varAppKey = SparqlBuilder.var("k");
+    public static final Variable varAppLabel = SparqlBuilder.var("l");
+    public static final Variable varAppFlagPersistent = SparqlBuilder.var("fs");
+    public static final Variable varAppFlagPublic = SparqlBuilder.var("fp");
+    public static final Variable varAppFlagRemote = SparqlBuilder.var("fr");
 
-    public static final Variable varNodeConfigurationItem = SparqlBuilder.var("configItem");
+    public static final Variable varNodeConfigurationItem = SparqlBuilder.var("vnc");
     public static final Variable varAppFlagS3Host = SparqlBuilder.var("appS3Host");
     public static final Variable varAppFlagS3BucketId = SparqlBuilder.var("appS3BucketId");
     public static final Variable varAppFlagExportFrequency = SparqlBuilder.var("appExportFrequency");
@@ -69,7 +70,8 @@ public class QueryVariables {
                     ba.asString(varAppKey),
                     new ApplicationFlags(
                             ba.asBoolean(varAppFlagPersistent),
-                            ba.asBoolean(varAppFlagPublic)
+                            ba.asBoolean(varAppFlagPublic),
+                            ba.asBoolean(varAppFlagRemote)
                     ),
                     new HashMap<>()
             );

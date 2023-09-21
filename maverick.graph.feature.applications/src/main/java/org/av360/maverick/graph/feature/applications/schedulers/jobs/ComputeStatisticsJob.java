@@ -9,7 +9,7 @@ import org.av360.maverick.graph.model.enums.RepositoryType;
 import org.av360.maverick.graph.services.QueryServices;
 import org.av360.maverick.graph.services.TransactionsService;
 import org.av360.maverick.graph.services.transformers.types.AssignLocalTypes;
-import org.av360.maverick.graph.store.TransactionsStore;
+import org.av360.maverick.graph.store.PersistedTransactionsGraph;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Value;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,9 +45,9 @@ public class ComputeStatisticsJob implements Job {
     private  final TransactionsService transactionsService;
 
     private final AssignLocalTypes localTypesTransformer;
-    private final TransactionsStore transactionsStore;
+    private final PersistedTransactionsGraph transactionsStore;
 
-    public ComputeStatisticsJob(ApplicationsService applicationsService, QueryServices queryServices, TransactionsService transactionsService, @Autowired(required = false) @Nullable AssignLocalTypes localTypesTransformer, TransactionsStore transactionsStore) {
+    public ComputeStatisticsJob(ApplicationsService applicationsService, QueryServices queryServices, TransactionsService transactionsService, @Autowired(required = false) @Nullable AssignLocalTypes localTypesTransformer, PersistedTransactionsGraph transactionsStore) {
         this.applicationsService = applicationsService;
         this.queryServices = queryServices;
         this.transactionsService = transactionsService;

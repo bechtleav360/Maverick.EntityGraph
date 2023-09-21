@@ -18,19 +18,22 @@ application:
           path: "D:/Graphen/entities/objects"
       applications:
         enabled: true
+        configuration:
+          mode: remote
+
       admin:
         enabled: true
       jobs:
         enabled: true
         scheduled:
           detectDuplicates:
-            enabled: false
+            enabled: true
           replaceIdentifiers:
-            enabled: false
+            enabled: true
           typeCoercion:
-            enabled: false
+            enabled: true
           exportApplication:
-            enabled: false
+            enabled: true
             defaultLocalPath: "D:/Graphen/entities/exports"
       navigation:
         enabled: true

@@ -37,7 +37,7 @@ public class CreateScopedEntities  extends ApplicationsTestsBase {
     @Test
     public void createEntity() {
         super.printStart("creating scoped entity");
-        applicationsTestClient.createApplication("test_app", new ApplicationFlags(false, true))
+        applicationsTestClient.createApplication("test_app", new ApplicationFlags(false, true, false))
                 .expectStatus().isCreated();
 
 

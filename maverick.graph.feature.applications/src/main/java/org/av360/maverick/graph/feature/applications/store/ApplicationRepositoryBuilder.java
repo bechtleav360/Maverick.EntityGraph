@@ -4,9 +4,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.Validate;
 import org.av360.maverick.graph.model.context.Environment;
 import org.av360.maverick.graph.model.enums.RepositoryType;
-import org.av360.maverick.graph.store.behaviours.TripleStore;
-import org.av360.maverick.graph.store.rdf.LabeledRepository;
+import org.av360.maverick.graph.store.behaviours.Storable;
 import org.av360.maverick.graph.store.rdf4j.config.DefaultRepositoryBuilder;
+import org.av360.maverick.graph.store.rdf4j.extensions.LabeledRepository;
+import org.av360.maverick.graph.store.repository.GraphStore;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
@@ -25,8 +26,6 @@ import java.util.Objects;
 public class ApplicationRepositoryBuilder extends DefaultRepositoryBuilder {
 
 
-
-
     /**
      * Initializes the connection to a repository. The connections are cached.
      * <p>
@@ -36,14 +35,14 @@ public class ApplicationRepositoryBuilder extends DefaultRepositoryBuilder {
      * @throws IOException if repository cannot be resolved
      */
     @Override
-    public Mono<LabeledRepository> buildRepository(TripleStore store, Environment target) {
+    public Mono<GraphStore> buildStore(Storable store, Environment target) {
         try {
 
             Validate.isTrue(target.isAuthorized(), "Unauthorized operation in environment %s".formatted(target));
             Validate.notNull(target.getRepositoryType(), "Repository type is not set in environment %s".formatted(target));
             Validate.notBlank(target.getRepositoryType().toString(), "Repository type is empty string in environment %s".formatted(target));
 
-            boolean is_default_repository_type = target.getRepositoryType().equals(RepositoryType.APPLICATION) || target.getRepositoryType().equals(RepositoryType.SCHEMA);
+            boolean is_default_repository_type = target.getRepositoryType().equals(RepositoryType.SYSTEM) || target.getRepositoryType().equals(RepositoryType.SCHEMA);
             boolean has_no_scope_defined = !target.hasScope();
 
             LabeledRepository repository = null;
@@ -53,7 +52,7 @@ public class ApplicationRepositoryBuilder extends DefaultRepositoryBuilder {
                 repository = this.buildApplicationRepository(store, target);
             }
 
-            return super.validateRepository(repository, store, target);
+            return super.validateRepository(repository, store, target).map(lr -> (GraphStore) lr);
 
         } catch (Exception e) {
             return Mono.error(e);
@@ -88,15 +87,14 @@ public class ApplicationRepositoryBuilder extends DefaultRepositoryBuilder {
             */
     }
 
-    private LabeledRepository buildApplicationRepository(TripleStore store, Environment environment) throws IOException {
-        Validate.isTrue(environment.getConfiguration(Environment.RepositoryConfigurationKey.FLAG_PERSISTENT).isPresent(), "Missing configuration in environment: Persistence flag");
-        Validate.isTrue(environment.getConfiguration(Environment.RepositoryConfigurationKey.FLAG_PUBLIC).isPresent(), "Missing configuration in environment: Public flag");
-        Validate.isTrue(environment.getConfiguration(Environment.RepositoryConfigurationKey.KEY).isPresent(), "Missing configuration in environment: Unique key for scope");
-        if (Boolean.parseBoolean(environment.getConfiguration(Environment.RepositoryConfigurationKey.FLAG_PERSISTENT).get())) {
-            // TODO: either default path is set, or application has a configuration set for the path. For now we expect the default path
-            Validate.notBlank(store.getDirectory(), "No default storage directory defined for persistent application");
+    private LabeledRepository buildApplicationRepository(Storable store, Environment environment) throws IOException {
+        Validate.isTrue(environment.getConfiguration(Environment.RepositoryConfig.KEY).isPresent(), "Missing configuration in environment: Unique key for scope");
 
+        if(environment.isFlagged(Environment.RepositoryFlag.PERSISTENT)) {
+            // TODO: either default path is set, or application has a configuration set for the path. For now we expect the default path
+            Validate.notBlank(store.getDefaultStorageDirectory(), "No default storage directory defined for persistent application");
         }
+
 
         Validate.notNull(environment.getScope());
 
@@ -106,10 +104,9 @@ public class ApplicationRepositoryBuilder extends DefaultRepositoryBuilder {
         }
 
 
-        if (environment.getConfiguration(Environment.RepositoryConfigurationKey.FLAG_PERSISTENT).map(Boolean::parseBoolean).orElse(false)) {
-            Path path = Paths.get(store.getDirectory(), environment.getConfiguration(Environment.RepositoryConfigurationKey.KEY).get());
+        if(environment.isFlagged(Environment.RepositoryFlag.PERSISTENT)) {
+            Path path = Paths.get(store.getDefaultStorageDirectory(), environment.getConfiguration(Environment.RepositoryConfig.KEY).get());
             return super.getCache().get(label, s -> super.initializePersistentRepository(path, label));
-
         } else {
             return super.getCache().get(label, s -> super.initializeVolatileRepository(label));
         }

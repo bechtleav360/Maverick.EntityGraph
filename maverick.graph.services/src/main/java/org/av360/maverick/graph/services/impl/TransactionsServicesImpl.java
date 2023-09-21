@@ -7,7 +7,7 @@ import org.av360.maverick.graph.model.entities.Transaction;
 import org.av360.maverick.graph.model.security.Authorities;
 import org.av360.maverick.graph.services.TransactionsService;
 import org.av360.maverick.graph.services.config.RequiresPrivilege;
-import org.av360.maverick.graph.store.TransactionsStore;
+import org.av360.maverick.graph.store.PersistedTransactionsGraph;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -18,9 +18,9 @@ import java.util.List;
 @Slf4j(topic = "graph.srvc.trx")
 public class TransactionsServicesImpl implements TransactionsService {
 
-    private final TransactionsStore transactionsStore;
+    private final PersistedTransactionsGraph transactionsStore;
 
-    public TransactionsServicesImpl(TransactionsStore transactionsStore) {
+    public TransactionsServicesImpl(PersistedTransactionsGraph transactionsStore) {
         this.transactionsStore = transactionsStore;
     }
 
@@ -38,7 +38,7 @@ public class TransactionsServicesImpl implements TransactionsService {
 
     @Override
     @RequiresPrivilege(Authorities.MAINTAINER_VALUE)
-    public TransactionsStore getStore(SessionContext ctx) {
+    public PersistedTransactionsGraph getStore(SessionContext ctx) {
         return transactionsStore;
     }
 

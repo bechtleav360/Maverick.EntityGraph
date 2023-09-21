@@ -6,7 +6,7 @@ import org.reactivestreams.Publisher;
 import org.springframework.core.io.buffer.DataBuffer;
 import reactor.core.publisher.Mono;
 
-public interface Maintainable extends TripleStore {
+public interface Maintainable extends Storable {
 
     Mono<Void> reset(Environment environment);
 

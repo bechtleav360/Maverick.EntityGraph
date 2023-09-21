@@ -10,7 +10,7 @@ import reactor.core.publisher.Mono;
 import java.util.Collection;
 import java.util.List;
 
-public interface TransactionsStore extends Maintainable, ModelAware {
+public interface PersistedTransactionsGraph extends Maintainable, ModelAware {
 
 
     @Deprecated

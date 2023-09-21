@@ -10,7 +10,7 @@ import reactor.core.publisher.Mono;
 import java.util.Set;
 
 
-public interface ModelAware extends TripleStore {
+public interface ModelAware extends Storable {
 
     /**
      * Deletes the triples directly in the model (without transaction context)

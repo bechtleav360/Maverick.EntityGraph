@@ -16,7 +16,7 @@ import org.av360.maverick.graph.services.EntityServices;
 import org.av360.maverick.graph.services.SchemaServices;
 import org.av360.maverick.graph.services.ValueServices;
 import org.av360.maverick.graph.services.config.RequiresPrivilege;
-import org.av360.maverick.graph.store.SchemaStore;
+import org.av360.maverick.graph.store.PersistedSchemaGraph;
 import org.av360.maverick.graph.store.rdf.fragments.RdfEntity;
 import org.av360.maverick.graph.store.rdf.fragments.RdfTransaction;
 import org.eclipse.rdf4j.model.*;
@@ -50,7 +50,7 @@ public class ValueServicesImpl implements ValueServices {
     private final EntityServices entityServices;
 
 
-    public ValueServicesImpl(SchemaStore schemaStore,
+    public ValueServicesImpl(PersistedSchemaGraph schemaStore,
                              ApplicationEventPublisher eventPublisher, SchemaServices schemaServices, EntityServices entityServices) {
         this.eventPublisher = eventPublisher;
         this.schemaServices = schemaServices;

@@ -4,7 +4,7 @@ import jakarta.annotation.Nullable;
 import org.av360.maverick.graph.model.context.SessionContext;
 import org.av360.maverick.graph.model.entities.Transaction;
 import org.av360.maverick.graph.model.rdf.Triples;
-import org.av360.maverick.graph.store.EntityStore;
+import org.av360.maverick.graph.store.PersistedEntityGraph;
 import org.av360.maverick.graph.store.rdf.fragments.RdfEntity;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Model;
@@ -113,7 +113,7 @@ public interface EntityServices {
 
     Mono<IRI> resolveAndVerify(String entityKey, SessionContext ctx);
 
-    EntityStore getStore(SessionContext ctx);
+    PersistedEntityGraph getStore(SessionContext ctx);
 
     Mono<Transaction> importFile(Resource resource, RDFFormat format, SessionContext ctx);
 

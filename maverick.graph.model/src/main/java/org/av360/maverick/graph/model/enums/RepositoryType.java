@@ -4,7 +4,7 @@ public enum RepositoryType {
     ENTITIES,
     SCHEMA,
     TRANSACTIONS,
-    APPLICATION;
+    SYSTEM;
 
 
     @Override

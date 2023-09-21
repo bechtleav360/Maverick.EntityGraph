@@ -5,6 +5,14 @@ spring:
     exclude:
       - org.springframework.boot.autoconfigure.security.SecurityAutoConfiguration
       -
+app:
+  menus:
+    - title: Home
+      name: Home
+      path: /
+    - title: Login
+      name: Login
+      path: /login
 application:
   security:
     enabled: false
@@ -34,16 +42,44 @@ application:
       typeCoercion: true
     validators:
       checkRequiredType: true
+  test:
+    - "1"
+    - "2"
+    - "3"
+
   storage:
-    default:
-      persistent: false
-      path: ~
-    entities:
-      persistent: false
-      path: ~
-    transactions:
-      persistent: false
-      path: ~
+    remotes:
+      - label: "oxigraph"
+        endpoints:
+        - query: 'http://localhost:7878/query'
+        - update: 'http://localhost:7878/update'
+        - graph: 'http://localhost:7878/store'
+
+    defaults:
+      - label: system
+        persistent: false
+        remote: false
+        published: false
+        config:
+          path: ~
+      - label: vocabularies
+        persistent: false
+        remote: false
+        published: true
+        config:
+          path: ~
+      - label: entities
+        persistent: false
+        remote: false
+        published: true
+        config:
+          path: ~
+      - label: transactions
+        persistent: false
+        remote: false
+        published: true
+        config:
+          path: ~
 
 
 

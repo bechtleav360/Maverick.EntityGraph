@@ -1,26 +1,21 @@
 package org.av360.maverick.graph.store.rdf4j.repository;
 
 import lombok.extern.slf4j.Slf4j;
+import org.av360.maverick.graph.model.context.Environment;
 import org.av360.maverick.graph.model.enums.RepositoryType;
-import org.av360.maverick.graph.store.EntityStore;
-import org.av360.maverick.graph.store.rdf4j.repository.util.AbstractStore;
+import org.av360.maverick.graph.store.PersistedEntityGraph;
+import org.av360.maverick.graph.store.rdf4j.repository.util.SailStore;
 import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 
 @Slf4j(topic = "graph.repo.entities")
 @Component
-public class EntityStoreImpl extends AbstractStore implements EntityStore {
+public class EntityStoreImpl extends SailStore implements PersistedEntityGraph {
 
-    @org.springframework.beans.factory.annotation.Value("${application.storage.entities.path:#{null}}")
-    private String path;
 
     public EntityStoreImpl() {
         super(RepositoryType.ENTITIES);
     }
-
-
-
-
 
 
     @Override
@@ -28,12 +23,11 @@ public class EntityStoreImpl extends AbstractStore implements EntityStore {
         return log;
     }
 
+
     @Override
-    public String getDirectory() {
-        return this.path;
+    protected void addDefaultStorageConfiguration(Environment environment) {
+        super.getStorageConfigurationService().getConfiguration(environment.getRepositoryType());
     }
-
-
 }
 
 

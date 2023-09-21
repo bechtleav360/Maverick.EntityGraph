@@ -1,4 +1,4 @@
-package org.av360.maverick.graph.store.rdf;
+package org.av360.maverick.graph.store.rdf4j.extensions;
 
 import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryConnection;

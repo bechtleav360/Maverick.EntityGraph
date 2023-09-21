@@ -7,7 +7,7 @@ import org.av360.maverick.graph.model.rdf.AnnotatedStatement;
 import org.av360.maverick.graph.model.rdf.Triples;
 import org.av360.maverick.graph.services.EntityServices;
 import org.av360.maverick.graph.services.QueryServices;
-import org.av360.maverick.graph.store.EntityStore;
+import org.av360.maverick.graph.store.PersistedEntityGraph;
 import org.av360.maverick.graph.store.rdf.fragments.RdfEntity;
 import org.av360.maverick.graph.store.rdf.helpers.RdfUtils;
 import org.av360.maverick.graph.store.rdf.helpers.TriplesCollector;
@@ -43,11 +43,11 @@ public class EntityServicesClient {
 
     private final QueryServices queryServices;
 
-    private final EntityStore entityStore;
+    private final PersistedEntityGraph entityStore;
 
 
 
-    public EntityServicesClient(EntityServices entityServices, QueryServices queryServices, EntityStore entityStore) {
+    public EntityServicesClient(EntityServices entityServices, QueryServices queryServices, PersistedEntityGraph entityStore) {
         this.entityServices = entityServices;
         this.queryServices = queryServices;
         this.entityStore = entityStore;

@@ -34,9 +34,10 @@ public class ApplicationContextBuilder implements SessionContextBuilderService {
         return this.applicationsService.getApplicationByLabel(context.getEnvironment().getScope().label(), SessionContext.SYSTEM)
                 .map(application ->
                         context.updateEnvironment(env -> {
-                            env.setConfiguration(Environment.RepositoryConfigurationKey.FLAG_PERSISTENT, application.flags().isPersistent());
-                            env.setConfiguration(Environment.RepositoryConfigurationKey.FLAG_PUBLIC, application.flags().isPublic());
-                            env.setConfiguration(Environment.RepositoryConfigurationKey.KEY, application.key());
+                            env.setFlag(Environment.RepositoryFlag.PERSISTENT, application.flags().isPersistent());
+                            env.setFlag(Environment.RepositoryFlag.PUBLIC, application.flags().isPublic());
+                            env.setFlag(Environment.RepositoryFlag.REMOTE, application.flags().isRemote());
+                            env.setConfiguration(Environment.RepositoryConfig.KEY, application.key());
                         })
                 );
 

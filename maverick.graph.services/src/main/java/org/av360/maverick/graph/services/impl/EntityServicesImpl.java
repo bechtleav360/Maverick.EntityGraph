@@ -21,7 +21,7 @@ import org.av360.maverick.graph.services.SchemaServices;
 import org.av360.maverick.graph.services.config.RequiresPrivilege;
 import org.av360.maverick.graph.services.transformers.DelegatingTransformer;
 import org.av360.maverick.graph.services.validators.DelegatingValidator;
-import org.av360.maverick.graph.store.EntityStore;
+import org.av360.maverick.graph.store.PersistedEntityGraph;
 import org.av360.maverick.graph.store.rdf.fragments.RdfEntity;
 import org.av360.maverick.graph.store.rdf.fragments.RdfTransaction;
 import org.av360.maverick.graph.store.rdf.helpers.BindingsAccessor;
@@ -62,7 +62,7 @@ import java.util.Map;
 @Service
 public class EntityServicesImpl implements EntityServices {
 
-    private final EntityStore entityStore;
+    private final PersistedEntityGraph entityStore;
     private final SchemaServices schemaServices;
     private final QueryServices queryServices;
     private final IdentifierServices identifierServices;
@@ -70,7 +70,7 @@ public class EntityServicesImpl implements EntityServices {
     private DelegatingValidator validators;
     private DelegatingTransformer transformers;
 
-    public EntityServicesImpl(EntityStore graph,
+    public EntityServicesImpl(PersistedEntityGraph graph,
                               SchemaServices schemaServices, QueryServices queryServices, IdentifierServices identifierServices, ApplicationEventPublisher eventPublisher) {
         this.entityStore = graph;
         this.schemaServices = schemaServices;
@@ -224,7 +224,7 @@ public class EntityServicesImpl implements EntityServices {
 
     @Override
     @RequiresPrivilege(Authorities.MAINTAINER_VALUE)
-    public EntityStore getStore(SessionContext ctx) {
+    public PersistedEntityGraph getStore(SessionContext ctx) {
         return this.entityStore;
     }
 

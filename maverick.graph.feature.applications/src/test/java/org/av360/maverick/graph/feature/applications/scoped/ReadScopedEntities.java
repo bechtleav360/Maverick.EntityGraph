@@ -33,7 +33,7 @@ public class ReadScopedEntities extends ApplicationsTestsBase {
     @Test
     public void createEntity() {
         super.printStart("reading scoped entity");
-        applicationsTestClient.createApplication("test_app", new ApplicationFlags(false, true)).expectStatus().isCreated();
+        applicationsTestClient.createApplication("test_app", new ApplicationFlags(false, true, false)).expectStatus().isCreated();
 
 
         Resource file = new ClassPathResource("requests/create-valid.ttl");

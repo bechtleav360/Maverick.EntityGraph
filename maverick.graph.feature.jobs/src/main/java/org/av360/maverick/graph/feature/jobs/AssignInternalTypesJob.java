@@ -12,7 +12,7 @@ import org.av360.maverick.graph.services.EntityServices;
 import org.av360.maverick.graph.services.QueryServices;
 import org.av360.maverick.graph.services.TransactionsService;
 import org.av360.maverick.graph.services.transformers.types.AssignLocalTypes;
-import org.av360.maverick.graph.store.TransactionsStore;
+import org.av360.maverick.graph.store.PersistedTransactionsGraph;
 import org.av360.maverick.graph.store.rdf.fragments.RdfTransaction;
 import org.av360.maverick.graph.store.rdf.helpers.MergingModelCollector;
 import org.eclipse.rdf4j.model.Model;
@@ -54,9 +54,9 @@ public class AssignInternalTypesJob implements Job {
     private  final TransactionsService transactionsService;
 
     private final AssignLocalTypes localTypesTransformer;
-    private final TransactionsStore transactionsStore;
+    private final PersistedTransactionsGraph transactionsStore;
 
-    public AssignInternalTypesJob(EntityServices entityServices, QueryServices queryServices, TransactionsService transactionsService, @Autowired(required = false) @Nullable AssignLocalTypes localTypesTransformer, TransactionsStore transactionsStore) {
+    public AssignInternalTypesJob(EntityServices entityServices, QueryServices queryServices, TransactionsService transactionsService, @Autowired(required = false) @Nullable AssignLocalTypes localTypesTransformer, PersistedTransactionsGraph transactionsStore) {
         this.entityServices = entityServices;
         this.queryServices = queryServices;
         this.transactionsService = transactionsService;

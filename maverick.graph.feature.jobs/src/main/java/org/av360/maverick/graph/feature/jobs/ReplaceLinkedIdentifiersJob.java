@@ -12,8 +12,8 @@ import org.av360.maverick.graph.services.EntityServices;
 import org.av360.maverick.graph.services.QueryServices;
 import org.av360.maverick.graph.services.TransactionsService;
 import org.av360.maverick.graph.services.transformers.replaceIdentifiers.ReplaceExternalIdentifiers;
-import org.av360.maverick.graph.store.EntityStore;
-import org.av360.maverick.graph.store.TransactionsStore;
+import org.av360.maverick.graph.store.PersistedEntityGraph;
+import org.av360.maverick.graph.store.PersistedTransactionsGraph;
 import org.av360.maverick.graph.store.rdf.fragments.RdfTransaction;
 import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.Resource;
@@ -75,7 +75,7 @@ public class ReplaceLinkedIdentifiersJob implements Job {
     ) {
     }
 
-    public ReplaceLinkedIdentifiersJob(EntityStore store, TransactionsStore trxStore, EntityServices entityServices, TransactionsService transactionsService, ReplaceExternalIdentifiers transformer, QueryServices queryServices) {
+    public ReplaceLinkedIdentifiersJob(PersistedEntityGraph store, PersistedTransactionsGraph trxStore, EntityServices entityServices, TransactionsService transactionsService, ReplaceExternalIdentifiers transformer, QueryServices queryServices) {
         this.entityServices = entityServices;
         this.transactionsService = transactionsService;
         this.replaceExternalIdentifiers = transformer;

@@ -118,7 +118,7 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
             this.buildConfigurationItem(key, value, application.iri(), modelBuilder);
         });
 
-        ctx.updateEnvironment(env-> env.setRepositoryType(RepositoryType.APPLICATION));
+        ctx.updateEnvironment(env -> env.setRepositoryType(RepositoryType.SYSTEM));
 
         Mono<Application> applicationMono = this.applicationsStore.insertModel(modelBuilder.build(), ctx.getEnvironment())
                 .then(Mono.just(application))
@@ -143,7 +143,7 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
 
 
         Mono<Void> deleteMono = this.deleteConfigurationItem(application, configKey, ctx);
-        Mono<Void> insertMono = this.applicationsStore.insertModel(m.build(), ctx.updateEnvironment(env -> env.setRepositoryType(RepositoryType.APPLICATION)).getEnvironment());
+        Mono<Void> insertMono = this.applicationsStore.insertModel(m.build(), ctx.updateEnvironment(env -> env.setRepositoryType(RepositoryType.SYSTEM)).getEnvironment());
 
         return deleteMono.then(insertMono).then(this.getApplication(application.key(), ctx, true))
                 .doOnSuccess(app -> {
@@ -157,7 +157,7 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
     public Mono<Void> setMetric(Application application, String key, Serializable value, SessionContext ctx) {
         ModelBuilder m = this.buildMetricsItem(key, value, application.iri(), null);
 
-        return this.applicationsStore.insertModel(m.build(), ctx.updateEnvironment(env -> env.setRepositoryType(RepositoryType.APPLICATION)).getEnvironment())
+        return this.applicationsStore.insertModel(m.build(), ctx.updateEnvironment(env -> env.setRepositoryType(RepositoryType.SYSTEM)).getEnvironment())
                 .then()
                 .doOnSuccess(app -> {
                     log.trace("Updated metrics '{}' of application with label '{}'", application.key(), application.label());
@@ -261,7 +261,7 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
         } catch (Exception e) { return Flux.error(e); }
 
 
-        ctx.updateEnvironment(env -> env.setRepositoryType(RepositoryType.APPLICATION));
+        ctx.updateEnvironment(env -> env.setRepositoryType(RepositoryType.SYSTEM));
 
         if (!this.caching_enabled || this.cache.asMap().isEmpty()) {
 

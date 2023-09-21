@@ -16,7 +16,8 @@ public record Application(IRI iri, String label, String key, ApplicationFlags fl
         LABEL,
         KEY,
         FLAG_PUBLIC,
-        FLAG_PERSISTENT
+        FLAG_PERSISTENT,
+        FLAG_REMOTE
     }
 
 
@@ -24,7 +25,7 @@ public record Application(IRI iri, String label, String key, ApplicationFlags fl
             SimpleValueFactory.getInstance().createIRI(Local.Applications.NAMESPACE, "default"),
             Globals.DEFAULT_APPLICATION_LABEL,
             "default",
-            new ApplicationFlags(false, false),
+            new ApplicationFlags(true, false, false),
             Map.of());
 
 

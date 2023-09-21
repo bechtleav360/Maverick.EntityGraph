@@ -5,7 +5,7 @@ import org.av360.maverick.graph.model.errors.requests.UnknownPrefix;
 import org.av360.maverick.graph.model.rdf.LocalIRI;
 import org.av360.maverick.graph.model.vocabulary.*;
 import org.av360.maverick.graph.services.SchemaServices;
-import org.av360.maverick.graph.store.SchemaStore;
+import org.av360.maverick.graph.store.PersistedSchemaGraph;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Namespace;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
@@ -16,9 +16,9 @@ import reactor.core.publisher.Mono;
 @Service
 @Slf4j(topic = "graph.srvc.schema")
 public class SchemaServicesImpl implements SchemaServices {
-    private final SchemaStore schemaStore;
+    private final PersistedSchemaGraph schemaStore;
 
-    public SchemaServicesImpl(SchemaStore schemaStore) {
+    public SchemaServicesImpl(PersistedSchemaGraph schemaStore) {
         this.schemaStore = schemaStore;
     }
 

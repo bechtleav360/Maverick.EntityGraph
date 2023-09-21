@@ -28,7 +28,7 @@ public class ScheduleScopedJobs extends ApplicationsTestsBase {
     public void createEmbeddedEntitiesWithSharedItemsInSeparateRequests() throws InterruptedException, IOException {
 
         super.printStart("Running a job within an application context");
-        applicationsTestClient.createApplication("test_app", new ApplicationFlags(false, true)).expectStatus().isCreated();
+        applicationsTestClient.createApplication("test_app", new ApplicationFlags(false, true, false)).expectStatus().isCreated();
 
         super.printStep("Importing file");
         adminTestClient.importTurtleFile(new ClassPathResource("requests/create-valid_multipleWithEmbedded.ttl"), Map.of("X-Application", "test_app"));

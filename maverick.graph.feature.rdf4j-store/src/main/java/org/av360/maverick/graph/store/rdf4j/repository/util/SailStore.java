@@ -11,11 +11,13 @@ import org.av360.maverick.graph.model.errors.InsufficientPrivilegeException;
 import org.av360.maverick.graph.model.rdf.AnnotatedStatement;
 import org.av360.maverick.graph.model.security.Authorities;
 import org.av360.maverick.graph.model.vocabulary.Transactions;
-import org.av360.maverick.graph.store.RepositoryBuilder;
 import org.av360.maverick.graph.store.behaviours.*;
 import org.av360.maverick.graph.store.rdf.fragments.RdfEntity;
 import org.av360.maverick.graph.store.rdf.fragments.RdfTransaction;
 import org.av360.maverick.graph.store.rdf.helpers.RdfUtils;
+import org.av360.maverick.graph.store.rdf4j.extensions.LabeledRepository;
+import org.av360.maverick.graph.store.repository.StoreBuilder;
+import org.av360.maverick.graph.store.services.StorageConfigurationService;
 import org.eclipse.rdf4j.model.*;
 import org.eclipse.rdf4j.model.impl.LinkedHashModel;
 import org.eclipse.rdf4j.model.impl.SimpleNamespace;
@@ -56,17 +58,23 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @SuppressWarnings("FieldCanBeLocal")
-public abstract class AbstractStore implements TripleStore, StatementsAware, ModelAware, Maintainable, FragmentsAware {
+public abstract class SailStore implements Storable, StatementsAware, ModelAware, Maintainable, FragmentsAware, Selectable {
 
     private final RepositoryType repositoryType;
-    private RepositoryBuilder repositoryConfiguration;
+
+
+
+    private StorageConfigurationService storageConfigurationService;
+    private List<StoreBuilder> builders;
     private MeterRegistry meterRegistry;
     private Counter transactionsMonoCounter;
     private Counter transactionsFluxCounter;
     private Timer transactionsMonoTimer;
     private Timer transactionsFluxTimer;
 
-    public AbstractStore(RepositoryType repositoryType) {
+
+
+    public SailStore(RepositoryType repositoryType) {
         this.repositoryType = repositoryType;
     }
 
@@ -75,14 +83,25 @@ public abstract class AbstractStore implements TripleStore, StatementsAware, Mod
         return this.repositoryType;
     }
 
+
+
     @Override
-    public RepositoryBuilder getBuilder() {
-        return this.repositoryConfiguration;
+    public StoreBuilder getBuilder(Environment environment) {
+        return this.builders.stream().filter(builder -> builder.canBuild(environment)).findFirst().orElseThrow();
+    }
+
+    protected abstract void addDefaultStorageConfiguration(Environment environment);
+
+
+    @Override
+    @Deprecated
+    public String getDefaultStorageDirectory() {
+        return null;
     }
 
     @Autowired
-    private void setConfiguration(RepositoryBuilder repositoryConfiguration) {
-        this.repositoryConfiguration = repositoryConfiguration;
+    private void registerBuilder(List<StoreBuilder> builders) {
+        this.builders = builders;
     }
 
     @Autowired
@@ -171,7 +190,7 @@ public abstract class AbstractStore implements TripleStore, StatementsAware, Mod
                 getLogger().error("Failed to clear repository: {}", connection.getRepository());
                 throw e;
             }
-        }).then(getBuilder().shutdownRepository(this, environment)).then();
+        }).then(getBuilder(environment).shutdownStore(this, environment)).then();
     }
 
 
@@ -455,18 +474,22 @@ public abstract class AbstractStore implements TripleStore, StatementsAware, Mod
         return transactionsMonoTimer.record(() ->
                 this.verifyValidAndAuthorized(environment)
                         //.then(this.assertPrivilege(environment))
-                        .then(this.getBuilder().buildRepository(this, environment))
+                        .then(this.getBuilder(environment).buildStore(this, environment))
                         .flatMap(repository -> {
-                            try (RepositoryConnection connection = repository.getConnection()) {
+                            if (repository instanceof LabeledRepository labeledRepository) {
+                                try (RepositoryConnection connection = labeledRepository.getConnection()) {
 
-                                T result = fun.applyWithException(new RepositoryConnectionWrapper(repository, connection));
-                                if (Objects.isNull(result)) return Mono.empty();
-                                else return Mono.just(result);
-                            } catch (Exception e) {
-                                return Mono.error(e);
-                            } finally {
-                                transactionsMonoCounter.increment();
-                            }
+                                    T result = fun.applyWithException(new RepositoryConnectionWrapper(labeledRepository, connection));
+                                    if (Objects.isNull(result)) return Mono.empty();
+                                    else return Mono.just(result);
+                                } catch (Exception e) {
+                                    return Mono.error(e);
+                                } finally {
+                                    transactionsMonoCounter.increment();
+                                }
+                            } else return Mono.error(new IOException("Invalid repository type: %s ".formatted(repository.getClass())));
+
+
                         }));
     }
 
@@ -475,19 +498,60 @@ public abstract class AbstractStore implements TripleStore, StatementsAware, Mod
         return transactionsMonoTimer.record(() ->
                 this.verifyValidAndAuthorized(environment)
                         // .then(this.assertPrivilege(ctx, requiredAuthority))
-                        .flatMap(env -> this.getBuilder().buildRepository(this, env))
+                        .flatMap(env -> this.getBuilder(environment).buildStore(this, env))
                         .switchIfEmpty(Mono.error(new IOException("Failed to build repository for repository of type: " + this.getRepositoryType())))
                         .flatMap(repository -> {
-                            try (RepositoryConnection connection = repository.getConnection()) {
+                            if (repository instanceof LabeledRepository labeledRepository) {
+                                try (RepositoryConnection connection = labeledRepository.getConnection()) {
 
-                                fun.acceptWithException(new RepositoryConnectionWrapper(repository, connection));
-                                return Mono.empty();
-                            } catch (Exception e) {
-                                return Mono.error(e);
-                            } finally {
-                                transactionsMonoCounter.increment();
-                            }
+                                    fun.acceptWithException(new RepositoryConnectionWrapper(labeledRepository, connection));
+                                    return Mono.empty();
+                                } catch (Exception e) {
+                                    return Mono.error(e);
+                                } finally {
+                                    transactionsMonoCounter.increment();
+                                }
+                            } else return Mono.error(new IOException("Invalid repository type: %s ".formatted(repository.getClass())));
+
                         }));
+    }
+
+    protected <E, T extends Iterable<E>> Flux<E> applyManyWithConnection(Environment environment, ThrowingFunction<RepositoryConnection, T> fun) {
+
+        Flux<E> result =
+                this.verifyValidAndAuthorized(environment)
+                        // .then(this.assertPrivilege(environment, requiredAuthority))
+                        .then(this.getBuilder(environment).buildStore(this, environment))
+                        .flatMapMany(repository -> {
+                            if (repository instanceof LabeledRepository labeledRepository) {
+                                try (RepositoryConnection connection = labeledRepository.getConnection()) {
+                                    return Flux.fromIterable(fun.apply(connection));
+                                } catch (Exception e) {
+                                    this.meterRegistry.counter("graph.store.operations", "cardinality", "multiple", "state", "failure").increment();
+                                    getLogger().warn("Error while applying function to repository '{}' with message '{}'. Active connections for repository: {}", labeledRepository, e.getMessage(), labeledRepository.getConnectionsCount());
+                                    return Mono.error(e);
+                                } finally {
+                                    this.meterRegistry.counter("graph.store.operations", "cardinality", "multiple", "state", "complete").increment();
+                                }
+                            } else return Mono.error(new IOException("Invalid repository type: %s ".formatted(repository.getClass())));
+
+                        });
+        // .doOnSubscribe(subscription -> getLogger().trace("Applying function with many results."));
+
+        // FIXME: should check whether we are called from a scheduler
+        if (environment.getSessionContext().isScheduled()) {
+            result.timeout(Duration.ofMillis(10000))
+                    .onErrorResume(throwable -> {
+                        if (throwable instanceof TimeoutException te) {
+                            getLogger().warn("Long-running operation on repository of type '{}' has been canceled.", repositoryType);
+                            return Flux.error(new TimeoutException("Timeout while applying operation to repository:" + repositoryType.toString()));
+                        } else {
+                            return Flux.error(throwable);
+                        }
+                    });
+        }
+        return result;
+
     }
 
     private Mono<Environment> verifyValidAndAuthorized(Environment environment) {
@@ -513,41 +577,15 @@ public abstract class AbstractStore implements TripleStore, StatementsAware, Mod
     public Mono<Model> getModel(Environment environment) {
         return this.listStatements(null, null, null, environment).map(LinkedHashModel::new);
     }
-
-    protected <E, T extends Iterable<E>> Flux<E> applyManyWithConnection(Environment environment, ThrowingFunction<RepositoryConnection, T> fun) {
-
-        Flux<E> result =
-                this.verifyValidAndAuthorized(environment)
-                        // .then(this.assertPrivilege(environment, requiredAuthority))
-                        .then(this.getBuilder().buildRepository(this, environment))
-                        .flatMapMany(repository -> {
-                            try (RepositoryConnection connection = repository.getConnection()) {
-                                return Flux.fromIterable(fun.apply(connection));
-                            } catch (Exception e) {
-                                this.meterRegistry.counter("graph.store.operations", "cardinality", "multiple", "state", "failure").increment();
-                                getLogger().warn("Error while applying function to repository '{}' with message '{}'. Active connections for repository: {}", repository, e.getMessage(), repository.getConnectionsCount());
-                                return Mono.error(e);
-                            } finally {
-                                this.meterRegistry.counter("graph.store.operations", "cardinality", "multiple", "state", "complete").increment();
-                            }
-                        });
-                        // .doOnSubscribe(subscription -> getLogger().trace("Applying function with many results."));
-
-        // FIXME: should check whether we are called from a scheduler
-        if (environment.getSessionContext().isScheduled()) {
-            result.timeout(Duration.ofMillis(10000))
-                    .onErrorResume(throwable -> {
-                        if (throwable instanceof TimeoutException te) {
-                            getLogger().warn("Long-running operation on repository of type '{}' has been canceled.", repositoryType);
-                            return Flux.error(new TimeoutException("Timeout while applying operation to repository:" + repositoryType.toString()));
-                        } else {
-                            return Flux.error(throwable);
-                        }
-                    });
-        }
-        return result;
-
+    @Autowired
+    public void setStorageConfigurationService(StorageConfigurationService storageConfigurationService) {
+        this.storageConfigurationService = storageConfigurationService;
     }
+
+    protected StorageConfigurationService getStorageConfigurationService() {
+        return this.storageConfigurationService;
+    }
+
 
     private Mono<Void> assertPrivilege(SessionContext ctx, GrantedAuthority requiredAuthority) {
         if (Objects.isNull(requiredAuthority)) {
