@@ -44,19 +44,36 @@ application:
       typeCoercion: true
     validators:
       checkRequiredType: true
+
   storage:
-    vocabularies:
-      persistent: true
-      path: "D:/Graphen/vocabularies"
-    system:
-      persistent: true
-      path: "D:/Graphen/system"
-    entities:
-      persistent: true
-      path: "D:/Graphen/entities"
-    transactions:
-      persistent: true
-      path: "D:/Graphen/transactions"
+    remotes: ~
+
+    defaults:
+      - label: system
+        persistent: true
+        remote: false
+        published: false
+        config:
+          path: "D:/Graphen/system"
+      - label: vocabularies
+        persistent: true
+        remote: false
+        published: true
+        config:
+          path: "D:/Graphen/vocabularies"
+      - label: entities
+        persistent: true
+        remote: false
+        published: true
+        config:
+          path: "D:/Graphen/entities"
+      - label: transactions
+        persistent: true
+        remote: false
+        published: true
+        config:
+          path: "D:/Graphen/transactions"
+
 
 spring:
   security:

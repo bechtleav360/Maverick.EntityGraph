@@ -17,7 +17,7 @@ public class PropertyBeans {
 
 
     @Bean
-    @ConfigurationProperties(prefix = "application.storage") // prefix app, find app.* values
+    @ConfigurationProperties(prefix = "application.storage", ignoreUnknownFields = true, ignoreInvalidFields = true) // prefix app, find app.* values
     public StorageConfiguration defaultStorageProperties() {
         return new StorageConfiguration();
     }

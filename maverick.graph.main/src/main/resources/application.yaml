@@ -48,18 +48,30 @@ application:
       checkRequiredType: true
 
   storage:
-    vocabularies:
-      persistent: false
-      path: ~
-    system:
-      persistent: false
-      path: ~
-    entities:
-      persistent: false
-      path: ~
-    transactions:
-      persistent: false
-      path: ~
+    remotes: ~
+
+    defaults:
+      - label: system
+        persistent: false
+        remote: false
+        published: false
+        config:
+      - label: vocabularies
+        persistent: false
+        remote: false
+        published: false
+        config:
+      - label: entities
+        persistent: false
+        remote: false
+        published: false
+        config:
+      - label: transactions
+        persistent: false
+        remote: false
+        published: false
+        config:
+
 
 management:
   info:

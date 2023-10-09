@@ -32,8 +32,10 @@ public class FilesystemStoreBuilder extends MonitoredStoreBuilder implements Sto
 
     @Override
     public Mono<Environment> validateInternal(Storable store, Environment environment) {
-        Validate.notNull(store.getDefaultStorageDirectory(), "Missing path in store");
-        Validate.notBlank(store.getDefaultStorageDirectory(), "Empty path in store");
+
+
+        Validate.isTrue(environment.hasConfiguration(Environment.RepositoryConfig.PATH), "Missing path in store");
+        Validate.notBlank(environment.getConfiguration(Environment.RepositoryConfig.PATH).orElse(""), "Empty path in store");
 
         // TODO: check application path, or set default path for environment
         return Mono.just(environment);
@@ -43,8 +45,8 @@ public class FilesystemStoreBuilder extends MonitoredStoreBuilder implements Sto
     @Override
     public Mono<LabeledRepository> buildStoreInternal(String label, Storable store, Environment environment) {
         LabeledRepository repository = getCache().get(label, s -> {
-
-            String path = store.getDefaultStorageDirectory();
+            Environment environment1 = environment;
+            String path = environment.getConfiguration(Environment.RepositoryConfig.PATH).orElseThrow();
             try {
                 log.debug("Initializing persistent repository in path '{}' for label '{}'", path, label);
 
