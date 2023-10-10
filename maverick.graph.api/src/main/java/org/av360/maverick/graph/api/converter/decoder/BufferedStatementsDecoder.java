@@ -15,24 +15,28 @@ import org.springframework.util.MimeType;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.io.IOException;
 import java.io.InputStream;
-import java.io.StringReader;
-import java.nio.charset.StandardCharsets;
+import java.nio.channels.AsynchronousFileChannel;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Used for fileformats such as turtle or json-ld with headers (prefix information etc)
+ *
+ */
 @Slf4j(topic = "graph.ctrl.io.decoder")
-public class StatementsDecoder implements Decoder<Triples> {
+public class BufferedStatementsDecoder implements Decoder<Triples> {
     private static final List<MimeType> mimeTypes;
 
     static {
         mimeTypes = List.of(
                 MimeType.valueOf(RDFFormat.JSONLD.getDefaultMIMEType()),
                 MimeType.valueOf(RDFFormat.RDFJSON.getDefaultMIMEType()),
-                MimeType.valueOf(RDFFormat.NTRIPLES.getDefaultMIMEType()),
-                MimeType.valueOf(RDFFormat.N3.getDefaultMIMEType()),
-                MimeType.valueOf(RDFFormat.TURTLE.getDefaultMIMEType()),
-                MimeType.valueOf(RDFFormat.NQUADS.getDefaultMIMEType())
+                MimeType.valueOf(RDFFormat.TURTLE.getDefaultMIMEType())
         );
     }
 
@@ -58,15 +62,36 @@ public class StatementsDecoder implements Decoder<Triples> {
 
 
     private Mono<Triples> parse(Publisher<DataBuffer> publisher, MimeType mimeType) {
+        RDFParser parser = RdfUtils.getParserFactory(mimeType).orElseThrow().getParser();
+        return this.streamToTemporaryFile(publisher, parser.getRDFFormat().getDefaultFileExtension())
+                .flatMap(path -> {
+                    TriplesCollector handler = RdfUtils.getTriplesCollector();
+                    parser.setRDFHandler(handler);
 
+                    try(InputStream io = Files.newInputStream(path)) {
+                        parser.parse(io);
+                        log.debug("Parsed payload of mimetype '{}' with {} statements", mimeType.toString(), handler.getTriples().getModel().size());
+
+                    } catch (IOException e) {
+                        log.warn("Failed to parse request of mimetype '{}'", mimeType);
+                        return Mono.error(e);
+                    }
+                    return Mono.just(handler.getTriples());
+                });
+
+                /*
         return DataBufferUtils.join(publisher)
                 .flatMap(dataBuffer -> {
                     RDFParser parser = RdfUtils.getParserFactory(mimeType).orElseThrow().getParser();
                     TriplesCollector handler = RdfUtils.getTriplesCollector();
 
-                    try (InputStream is = dataBuffer.asInputStream(true)) {
+                    String string = dataBuffer.toString();
+
+                    try (InputStream is = dataBuffer.asInputStream(false)) {
                         var result = new String(is.readAllBytes(), StandardCharsets.UTF_8);
+                        log.info("Länge: {}", result.length());
                         log.info(result);
+
 
                         parser.setRDFHandler(handler);
                         parser.parse(new StringReader(result));
@@ -76,8 +101,35 @@ public class StatementsDecoder implements Decoder<Triples> {
                         log.warn("Failed to parse request of mimetype '{}'", mimeType);
                         return Mono.error(e);
                     }
-                });
+                });*/
     }
 
+
+    private Mono<Path> streamToTemporaryFile(Publisher<DataBuffer> buffers, String extension) {
+        try {
+            Path tempFile = Files.createTempFile("upload", "."+extension);
+
+            AsynchronousFileChannel channel = AsynchronousFileChannel.open(tempFile, StandardOpenOption.WRITE);
+
+            return DataBufferUtils.write(buffers, channel)
+                    .doOnTerminate(() -> {
+                        try {
+                            channel.close();
+                        } catch (IOException e) {
+                            throw new RuntimeException("Error closing the file channel", e);
+                        }
+                    })
+                    .doOnComplete(() ->  {
+                        log.info("Temporary file writing completed to file: {}", tempFile );
+                        tempFile.toFile().deleteOnExit();
+                    })
+                    .then(Mono.just(tempFile));
+
+        } catch (IOException e) {
+            log.warn("Failed to write temporary file while uploading");
+            return Mono.error(e);
+        }
+
+    }
 
 }

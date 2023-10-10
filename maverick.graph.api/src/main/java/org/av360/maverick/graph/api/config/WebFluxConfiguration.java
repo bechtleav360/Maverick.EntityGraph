@@ -1,7 +1,8 @@
 package org.av360.maverick.graph.api.config;
 
 
-import org.av360.maverick.graph.api.converter.decoder.StatementsDecoder;
+import org.av360.maverick.graph.api.converter.decoder.BufferedStatementsDecoder;
+import org.av360.maverick.graph.api.converter.decoder.StreamingStatementsDecoder;
 import org.av360.maverick.graph.api.converter.encoder.BindingSetEncoder;
 import org.av360.maverick.graph.api.converter.encoder.BufferedStatementsEncoder;
 import org.av360.maverick.graph.api.converter.encoder.StatementsEncoder;
@@ -48,7 +49,8 @@ public class WebFluxConfiguration implements WebFluxConfigurer {
         configurer.customCodecs().register(new StatementsEncoder());
         configurer.customCodecs().register(new TupleQueryResultsEncoder());
         configurer.customCodecs().register(new BindingSetEncoder());
-        configurer.customCodecs().register(new StatementsDecoder());
+        configurer.customCodecs().register(new BufferedStatementsDecoder());
+        configurer.customCodecs().register(new StreamingStatementsDecoder());
     }
 
 
