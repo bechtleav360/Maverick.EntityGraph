@@ -3,6 +3,7 @@ package org.av360.maverick.graph.services;
 import org.av360.maverick.graph.model.context.SessionContext;
 import org.av360.maverick.graph.model.entities.Transaction;
 import org.av360.maverick.graph.store.rdf.fragments.RdfEntity;
+import org.av360.maverick.graph.store.rdf.fragments.TripleModel;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Statement;
@@ -23,7 +24,12 @@ public interface ValueServices {
      * @param authentication The current authentication
      * @return The transaction information.
      */
-    Mono<Transaction> insertValue(String entityKey, String property, String value, @Nullable String languageTag, SessionContext ctx);
+    Mono<Transaction> insertValue(String entityKey,
+                                  String property,
+                                  String value,
+                                  @Nullable String languageTag,
+                                  @Nullable Boolean replace,
+                                  SessionContext ctx);
 
     /**
      * Sets the value. Replaces an existing value with the same predicate, except a different @-tag has been set
@@ -34,7 +40,7 @@ public interface ValueServices {
      * @param authentication The current authentication
      * @return The transaction information.
      */
-    Mono<Transaction> insertLink(String entityKey, String property, String targetKey, SessionContext ctx);
+    Mono<Transaction> insertLink(String entityKey, String property, String targetKey, @Nullable Boolean replace, SessionContext ctx);
 
     /**
      * @param entityIdentifier The unique local identifier of the entity
@@ -43,7 +49,7 @@ public interface ValueServices {
      * @param authentication   The current authentication
      * @return The transaction information.
      */
-    Mono<Transaction> insertValue(IRI entityIdentifier, IRI predicate, Value value, SessionContext ctx);
+    Mono<Transaction> insertValue(IRI entityIdentifier, IRI predicate, Value value, @Nullable Boolean replace, SessionContext ctx);
 
 
     /**
@@ -111,4 +117,5 @@ public interface ValueServices {
     Mono<RdfEntity> listLinks(String id, String prefixedKey, SessionContext ctx);
 
 
+    Mono<TripleModel> listValues(String id, String prefixedKey, SessionContext ctx);
 }

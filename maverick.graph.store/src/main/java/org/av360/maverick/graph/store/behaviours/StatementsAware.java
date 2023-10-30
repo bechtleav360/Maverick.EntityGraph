@@ -2,10 +2,7 @@ package org.av360.maverick.graph.store.behaviours;
 
 import org.av360.maverick.graph.model.context.Environment;
 import org.av360.maverick.graph.model.entities.Transaction;
-import org.eclipse.rdf4j.model.IRI;
-import org.eclipse.rdf4j.model.Resource;
-import org.eclipse.rdf4j.model.Statement;
-import org.eclipse.rdf4j.model.Value;
+import org.eclipse.rdf4j.model.*;
 import reactor.core.publisher.Mono;
 
 import java.util.Collection;
@@ -39,6 +36,10 @@ public interface StatementsAware extends TripleStore {
 
     default Mono<Transaction> addStatement(Statement statement, Transaction transaction) {
         return this.addStatement(statement.getSubject(), statement.getPredicate(), statement.getObject(), statement.getContext(), transaction);
+    }
+
+    default Mono<Transaction> addStatement(Triple triple, Transaction transaction) {
+        return this.addStatement(triple.getSubject(), triple.getPredicate(), triple.getObject(), transaction);
     }
 
 

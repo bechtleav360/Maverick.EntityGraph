@@ -8,6 +8,8 @@ import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 
+import javax.annotation.Nullable;
+
 public interface LinksAPI {
     @Operation(summary = "Returns all links of an entity.")
     @GetMapping(value = "/entities/{id:[\\w|\\d|\\-|\\_]+}/links",
@@ -36,7 +38,7 @@ public interface LinksAPI {
     @PutMapping(value = "/entities/{source_id:[\\w|\\d|\\-|\\_]+}/links/{prefixedKey:[\\w|\\d]+\\.[\\w|\\d]+}/{target_id:[\\w|\\d|\\-|\\_]+}",
             produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE, MediaType.APPLICATION_JSON_VALUE})
     @ResponseStatus(HttpStatus.CREATED)
-    Flux<AnnotatedStatement> createLink(@PathVariable String source_id, @PathVariable String prefixedKey, @PathVariable String target_id);
+    Flux<AnnotatedStatement> createLink(@PathVariable String source_id, @PathVariable String prefixedKey, @PathVariable String target_id, @Nullable @RequestParam(required = false) Boolean replace);
 
     @Operation(summary = "Deletes edge to existing entity identified by target id.")
     @DeleteMapping(value = "/entities/{source_id:[\\w|\\d|\\-|\\_]+}/links/{prefixedKey:[\\w|\\d]+\\.[\\w|\\d]+}/{target_id:[\\w|\\d|-|_]+}",

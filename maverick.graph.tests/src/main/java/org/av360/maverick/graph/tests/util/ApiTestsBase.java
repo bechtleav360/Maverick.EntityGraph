@@ -116,4 +116,8 @@ public abstract class ApiTestsBase extends TestsBase {
         return rdfConsumer;
 
     }
+
+    protected EntitiesTestClient getTestClient() {
+        return this.entitiesTestClient;
+    }
 }

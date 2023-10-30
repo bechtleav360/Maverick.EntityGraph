@@ -6,7 +6,6 @@ import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.NotImplementedException;
 import org.av360.maverick.graph.api.controller.AbstractController;
 import org.av360.maverick.graph.model.api.ValuesAPI;
 import org.av360.maverick.graph.model.enums.RdfMimeTypes;
@@ -47,13 +46,20 @@ public class ValuesController extends AbstractController implements ValuesAPI {
             description = """
                     Returns a list of values formatted as dictionary for a specific entity. 
                                         
-                    Note: this is not implemented yet. 
+                    This operation will include the details (as well as the hashes), required to select individual values for processing
                     """)
     @GetMapping(value = "/entities/{id:[\\w|\\d|\\-|\\_]+}/values",
             produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE, MediaType.APPLICATION_JSON_VALUE})
     @ResponseStatus(HttpStatus.OK)
-    public Flux<AnnotatedStatement> listEntityValues(@PathVariable String id) {
-      return Flux.error(new NotImplementedException("Listing the values has not been implemented yet."));
+    public Flux<AnnotatedStatement> list(@PathVariable String id, @Nullable @RequestParam(required = false) String property) {
+
+        return super.acquireContext()
+                .flatMap(ctx -> values.listValues(id, property, ctx))
+                .flatMapIterable(Triples::asStatements)
+                .doOnSubscribe(s -> {
+                    if (log.isDebugEnabled())
+                        log.debug("Request to list values of entity '{}'", id);
+                });
     }
 
 
@@ -95,12 +101,12 @@ public class ValuesController extends AbstractController implements ValuesAPI {
     public Flux<AnnotatedStatement> create(@PathVariable String id,
                                            @PathVariable String prefixedKey,
                                            @RequestBody String value,
-                                           @Nullable @RequestParam(required = false) String lang) {
+                                           @Nullable @RequestParam(required = false) String lang,
+                                           @Nullable @RequestParam(required = false) Boolean replace) {
         Assert.isTrue(!value.matches("(?s).*[\\n\\r].*"), "Newlines in request body are not supported");
 
-
         return super.acquireContext()
-                .flatMap(ctx -> values.insertValue(id, prefixedKey, value, lang, ctx))
+                .flatMap(ctx -> values.insertValue(id, prefixedKey, value, lang, replace, ctx))
                 .flatMapIterable(Triples::asStatements)
                 .doOnSubscribe(s -> {
                     if (log.isDebugEnabled())
@@ -109,14 +115,7 @@ public class ValuesController extends AbstractController implements ValuesAPI {
     }
 
 
-    @Override
-    @Operation(summary = "Create or update multiple value properties for the selected entity.")
-    @PostMapping(value = "/entities/{id:[\\w|\\d|\\-|\\_]+}/values",
-            produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE, MediaType.APPLICATION_JSON_VALUE})
-    @ResponseStatus(HttpStatus.OK)
-    public Flux<AnnotatedStatement> listEntityValues(@PathVariable String id, @RequestBody String value) {
-        return Flux.error(new NotImplementedException("Updating multiple values has not been implemented yet."));
-    }
+
 
     @Override
     @Operation(summary = "Removes a property value.")

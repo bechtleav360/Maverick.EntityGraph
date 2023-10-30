@@ -15,20 +15,20 @@ public interface ValuesAPI {
     @GetMapping(value = "/entities/{id:[\\w|\\d|\\-|\\_]+}/values",
             produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE, MediaType.APPLICATION_JSON_VALUE})
     @ResponseStatus(HttpStatus.OK)
-    Flux<AnnotatedStatement> listEntityValues(@PathVariable String id);
+    Flux<AnnotatedStatement> list(@PathVariable String id, @Nullable @RequestParam(required = false) String prefixedKey);
 
     //  @ApiOperation(value = "Sets a value for an entity. Replaces an existing value. ")
     @PostMapping(value = "/entities/{id:[\\w|\\d|\\-|\\_]+}/values/{prefixedKey:[\\w|\\d]+\\.[\\w|\\d|\\-|\\_]+}",
             consumes = {MediaType.TEXT_PLAIN_VALUE},
             produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE})
     @ResponseStatus(HttpStatus.OK)
-    Flux<AnnotatedStatement> create(@PathVariable String id, @PathVariable String prefixedKey, @RequestBody String value, @Nullable @RequestParam(required = false) String lang);
+    Flux<AnnotatedStatement> create(@PathVariable String id,
+                                    @PathVariable String prefixedKey,
+                                    @RequestBody String value,
+                                    @Nullable @RequestParam(required = false) String lang,
+                                    @Nullable @RequestParam(required = false) Boolean replace);
 
-    @Operation(summary = "Create or update multiple value properties for the selected entity.")
-    @PostMapping(value = "/entities/{id:[\\w|\\d|\\-|\\_]+}/values",
-            produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE, MediaType.APPLICATION_JSON_VALUE})
-    @ResponseStatus(HttpStatus.OK)
-    Flux<AnnotatedStatement> listEntityValues(@PathVariable String id, @RequestBody String value);
+
 
     @Operation(summary = "Removes a property value.")
     @DeleteMapping(value = "/entities/{id:[\\w|\\d|\\-|\\_]+}/values/{prefixedKey:[\\w|\\d]+\\.[\\w|\\d]+}",

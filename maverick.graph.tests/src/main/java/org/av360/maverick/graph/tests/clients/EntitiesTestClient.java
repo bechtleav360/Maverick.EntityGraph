@@ -4,6 +4,7 @@ import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.av360.maverick.graph.store.rdf.helpers.RdfUtils;
 import org.av360.maverick.graph.tests.util.RdfConsumer;
+import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.rio.RDFFormat;
 import org.eclipse.rdf4j.rio.Rio;
@@ -54,6 +55,36 @@ public class EntitiesTestClient {
                 .expectBody()
                 .consumeWith(consumer);
         return consumer;
+    }
+
+    public RdfConsumer createValue(String entityKey, String prefixedKey, String value) {
+        return this.createValue(entityKey, prefixedKey, value, true);
+    }
+
+    public RdfConsumer createValue(String entityKey, String prefixedKey, String value, boolean replace) {
+
+        RdfConsumer consumer = new RdfConsumer(RDFFormat.JSONLD);
+        webClient.post()
+                .uri(uriBuilder -> uriBuilder.path("/api/entities/{entityKey}/values/{prefixedKey}").queryParam("replace", replace)
+                        .build(entityKey, prefixedKey)
+
+                )
+                .contentType(MediaType.parseMediaType("text/plain"))
+                .accept(MediaType.parseMediaType(RDFFormat.JSONLD.getDefaultMIMEType()))
+                .body(BodyInserters.fromValue(value))
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .consumeWith(consumer);
+        return consumer;
+    }
+
+    public RdfConsumer createValue(IRI entityIdentifier, String prefixedKey, String value, boolean replace) {
+        return this.createValue(entityIdentifier.getLocalName(), prefixedKey, value, replace);
+    }
+
+    public RdfConsumer createValue(IRI entityIdentifier, String prefixedKey, String value) {
+        return this.createValue(entityIdentifier.getLocalName(), prefixedKey, value, true);
     }
 
 
@@ -126,15 +157,38 @@ public class EntitiesTestClient {
 
     }
 
-    public RdfConsumer readEntity(String sourceIdentifier) {
+
+    public RdfConsumer listValues(IRI sourceIdentifier, String property) {
+        RDFFormat format = RDFFormat.TURTLE;
+
+        RdfConsumer rdfConsumer = new RdfConsumer(format, false);
+        webClient.get()
+                .uri(uriBuilder -> uriBuilder
+                        .path("/api/entities/{id}/")
+                        .queryParam("property", property)
+                        .build(sourceIdentifier.getLocalName())
+                )
+                .accept(RdfUtils.getMediaType(format))
+                .header("X-API-KEY", "test")
+                .exchange()
+                .expectBody()
+                .consumeWith(rdfConsumer);
+        return rdfConsumer;
+    }
+
+    public RdfConsumer readEntity(String entityKey) {
         RDFFormat format = RDFFormat.TURTLE;
 
         RdfConsumer rdfConsumer = new RdfConsumer(format, true);
 
-        this.checkEntity(sourceIdentifier, format)
+        this.checkEntity(entityKey, format)
                 .expectBody()
                 .consumeWith(rdfConsumer);
         return rdfConsumer;
+    }
+
+    public RdfConsumer readEntity(IRI entityIdentifier) {
+        return this.readEntity(entityIdentifier.getLocalName());
     }
 
     public WebTestClient.ResponseSpec deleteLink(String sourceId, String prefixedKey, String targetId) {
@@ -177,7 +231,6 @@ public class EntitiesTestClient {
                 .exchange()
                 .expectStatus().isOk();
     }
-
 
 
 }
