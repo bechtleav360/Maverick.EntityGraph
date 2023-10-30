@@ -76,22 +76,24 @@ public interface ValueServices {
     Mono<Transaction> insertEmbedded(IRI entityIdentifier, IRI predicate, Resource value, Set<Statement> embedded, SessionContext ctx);
 
     /**
+     * @param authentication   The current authentication
      * @param entityKey        The unique local identifier of the entity
      * @param prefixedProperty Prefixed name of the predicate
      * @param lang             Optional language tag
-     * @param authentication   The current authentication
+     * @param identifier
      * @return The transaction information.
      */
-    Mono<Transaction> removeLiteral(String entityKey, String prefixedProperty, String lang, SessionContext ctx);
+    Mono<Transaction> removeLiteral(String entityKey, String prefixedProperty, @Nullable String lang, @Nullable String identifier, SessionContext ctx);
 
     /**
+     * @param authentication   The current authentication
      * @param entityIdentifier The unique and qualified local identifier of the entity
      * @param predicate        Qualified predicate from existing schema
      * @param lang             Optional language tag
-     * @param authentication   The current authentication
+     * @param identifier
      * @return The transaction information.
      */
-    Mono<Transaction> removeValue(IRI entityIdentifier, IRI predicate, @Nullable String lang, SessionContext ctx);
+    Mono<Transaction> removeValue(IRI entityIdentifier, IRI predicate, @Nullable String lang, String identifier, SessionContext ctx);
 
 
     /**

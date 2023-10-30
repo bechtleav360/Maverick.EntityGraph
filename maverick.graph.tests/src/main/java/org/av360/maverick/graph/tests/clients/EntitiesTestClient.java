@@ -233,4 +233,32 @@ public class EntitiesTestClient {
     }
 
 
+    public WebTestClient.ResponseSpec deleteValue(IRI entityIri, String prefixedProperty) {
+        return webClient.delete()
+                .uri(uriBuilder -> uriBuilder.path("/api/entities/{id}/values/{prefixedProperty}")
+                        .build(entityIri.getLocalName(), prefixedProperty)
+
+                )
+                .exchange();
+    }
+
+    public WebTestClient.ResponseSpec deleteValueByHash(IRI entityIri, String prefixedProperty, String hash) {
+        return webClient.delete()
+                .uri(uriBuilder -> uriBuilder.path("/api/entities/{id}/values/{prefixedProperty}")
+                        .queryParam("identifier", hash)
+                        .build(entityIri.getLocalName(), prefixedProperty)
+
+                )
+                .exchange();
+    }
+
+    public WebTestClient.ResponseSpec deleteValueByTag(IRI entityIri, String prefixedProperty, String tag) {
+        return webClient.delete()
+                .uri(uriBuilder -> uriBuilder.path("/api/entities/{id}/values/{prefixedProperty}")
+                        .queryParam("lang", tag)
+                        .build(entityIri.getLocalName(), prefixedProperty)
+
+                )
+                .exchange();
+    }
 }

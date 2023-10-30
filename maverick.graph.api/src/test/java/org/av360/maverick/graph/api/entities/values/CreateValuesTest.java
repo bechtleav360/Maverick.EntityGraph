@@ -4,6 +4,7 @@ import org.av360.maverick.graph.model.enums.RdfMimeTypes;
 import org.av360.maverick.graph.model.vocabulary.DCTERMS;
 import org.av360.maverick.graph.model.vocabulary.SDO;
 import org.av360.maverick.graph.tests.config.TestSecurityConfig;
+import org.av360.maverick.graph.tests.generator.EntitiesGenerator;
 import org.av360.maverick.graph.tests.util.ApiTestsBase;
 import org.av360.maverick.graph.tests.util.RdfConsumer;
 import org.eclipse.rdf4j.model.IRI;
@@ -319,5 +320,73 @@ public class CreateValuesTest extends ApiTestsBase {
                 .consumeWith(rdfConsumer);
 
         Assertions.assertTrue(rdfConsumer.hasStatement(video.getSubject(), SDO.HAS_DEFINED_TERM, vf.createIRI("http://example.com#concept")));
+    }
+
+
+    @Test
+    public void addValue() {
+
+        super.printStart("Add a value as list");
+
+        RdfConsumer rc1 = super.getTestClient().createEntity(EntitiesGenerator.generateCreativeWork());
+        IRI sourceIdentifier = rc1.getEntityIdentifier(SDO.CREATIVE_WORK);
+
+        super.printStep("Setting author");
+        super.getTestClient().createValue(sourceIdentifier, "sdo.author", "author one");
+
+        RdfConsumer rdfConsumer1 = super.getTestClient().readEntity(sourceIdentifier);
+        rdfConsumer1.print();
+
+        super.printStep("Setting another author");
+        super.getTestClient().createValue(sourceIdentifier, "sdo.author", "author two", false);
+
+        RdfConsumer rdfConsumer2 = super.getTestClient().readEntity(sourceIdentifier);
+        rdfConsumer2.print();
+
+        Assertions.assertEquals(2, rdfConsumer2.asModel().filter(sourceIdentifier, SDO.AUTHOR, null).size());
+
+    }
+
+
+    @Test
+    public void replaceValue() {
+
+        super.printStart("Replace a value");
+
+        RdfConsumer rc1 = super.getTestClient().createEntity(EntitiesGenerator.generateCreativeWork());
+        IRI sourceIdentifier = rc1.getEntityIdentifier(SDO.CREATIVE_WORK);
+
+        super.printStep("Setting author");
+        super.getTestClient().createValue(sourceIdentifier, "sdo.author", "author one");
+
+        RdfConsumer rdfConsumer1 = super.getTestClient().readEntity(sourceIdentifier);
+        rdfConsumer1.print();
+
+        super.printStep("Setting another author");
+        super.getTestClient().createValue(sourceIdentifier, "sdo.author", "author two", true);
+
+        RdfConsumer rdfConsumer2 = super.getTestClient().readEntity(sourceIdentifier);
+        rdfConsumer2.print();
+
+        Assertions.assertEquals(1, rdfConsumer2.asModel().filter(sourceIdentifier, SDO.AUTHOR, null).size());
+
+    }
+
+    @Test
+    public void listValues() {
+
+        super.printStart("Remove a value from a list");
+
+        RdfConsumer rc1 = super.getTestClient().createEntity(EntitiesGenerator.generateCreativeWork());
+        IRI sourceIdentifier = rc1.getEntityIdentifier(SDO.CREATIVE_WORK);
+        super.getTestClient().createValue(sourceIdentifier, "sdo.author", "author one");
+        super.getTestClient().createValue(sourceIdentifier, "sdo.author", "author two", false);
+        super.getTestClient().createValue(sourceIdentifier, "sdo.author", "author three", false);
+
+
+        RdfConsumer rdfConsumer2 = super.getTestClient().listValues(sourceIdentifier, "sdo.author");
+        rdfConsumer2.print(RDFFormat.TURTLESTAR);
+
+        Assertions.assertEquals(3, rdfConsumer2.asModel().filter(sourceIdentifier, SDO.AUTHOR, null).size());
     }
 }

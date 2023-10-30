@@ -26,9 +26,11 @@ public class InvalidEntityUpdate extends InvalidRequest {
 
     @Override
     public String getMessage() {
-        StringBuilder sb = new StringBuilder("Invalid update for entity with id '").append(key).append("'.");
+        StringBuilder sb = new StringBuilder("Invalid update for entity with id '").append(key).append("'. ");
         if (StringUtils.hasLength(this.reason)) {
-            sb.append(this.reason).append(".");
+
+            sb.append(this.reason);
+            if(! this.reason.endsWith(".")) sb.append(".");
         }
         return sb.toString();
     }

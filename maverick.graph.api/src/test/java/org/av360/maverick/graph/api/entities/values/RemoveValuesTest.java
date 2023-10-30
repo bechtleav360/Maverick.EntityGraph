@@ -3,10 +3,12 @@ package org.av360.maverick.graph.api.entities.values;
 import org.av360.maverick.graph.model.enums.RdfMimeTypes;
 import org.av360.maverick.graph.model.vocabulary.SDO;
 import org.av360.maverick.graph.tests.config.TestSecurityConfig;
+import org.av360.maverick.graph.tests.generator.EntitiesGenerator;
 import org.av360.maverick.graph.tests.util.ApiTestsBase;
 import org.av360.maverick.graph.tests.util.RdfConsumer;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Statement;
+import org.eclipse.rdf4j.model.vocabulary.DC;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.rio.RDFFormat;
 import org.junit.jupiter.api.AfterEach;
@@ -178,7 +180,64 @@ public class RemoveValuesTest extends ApiTestsBase {
                 .expectStatus().isBadRequest();
     }
 
+    @Test
+    public void removeValue() {
+
+        super.printStart("Remove a value from a list");
+
+        RdfConsumer rc1 = super.getTestClient().createEntity(EntitiesGenerator.generateCreativeWork());
+        IRI sourceIdentifier = rc1.getEntityIdentifier(SDO.CREATIVE_WORK);
+        super.getTestClient().createValue(sourceIdentifier, "sdo.author", "author one");
+        super.getTestClient().createValue(sourceIdentifier, "sdo.author", "author two", false);
+
+        super.printStep("Remove the value");
+
+        super.getTestClient().deleteValue(sourceIdentifier, "sdo.author").expectStatus().isBadRequest();
+    }
+
+    @Test
+    public void removeValueByHash() {
+
+        super.printStart("Remove a value from a list");
+
+        RdfConsumer rc1 = super.getTestClient().createEntity(EntitiesGenerator.generateCreativeWork());
+        IRI sourceIdentifier = rc1.getEntityIdentifier(SDO.CREATIVE_WORK);
+        super.getTestClient().createValue(sourceIdentifier, "sdo.author", "author one");
+        super.getTestClient().createValue(sourceIdentifier, "sdo.author", "author two", false);
+
+        super.printStep("Remove the value");
+
+        RdfConsumer rc2 = super.getTestClient().listValues(sourceIdentifier, "sdo.author");
+        rc2.print(RDFFormat.TURTLESTAR);
+        Statement statement = rc2.findStatement(null, DC.IDENTIFIER, null);
+
+        Assertions.assertTrue(statement.getSubject().isTriple());
+
+        super.getTestClient().deleteValueByTag(sourceIdentifier, "sdo.author", statement.getObject().stringValue());
 
 
+        RdfConsumer rc3 = super.getTestClient().listValues(sourceIdentifier, "sdo.author");
+        rc3.print(RDFFormat.TURTLESTAR);
+        Assertions.assertEquals(1, rc3.asModel().filter(sourceIdentifier, SDO.AUTHOR, null).size());
+    }
+
+
+    @Test
+    public void removeValueWithDuplicateLanguageTag() {
+
+        super.printStart("Remove a value from a list");
+
+        RdfConsumer rc1 = super.getTestClient().createEntity(EntitiesGenerator.generateCreativeWork());
+        IRI sourceIdentifier = rc1.getEntityIdentifier(SDO.CREATIVE_WORK);
+        super.getTestClient().createValue(sourceIdentifier, "sdo.author", "author one");
+        super.getTestClient().createValue(sourceIdentifier, "sdo.author", "author two", false);
+
+        super.printStep("Remove the value");
+
+        RdfConsumer rc2 = super.getTestClient().listValues(sourceIdentifier, "sdo.author");
+        rc2.print(RDFFormat.TURTLESTAR);
+
+        super.getTestClient().deleteValueByTag(sourceIdentifier, "sdo.author", "en").expectStatus().isBadRequest();
+    }
 
 }
