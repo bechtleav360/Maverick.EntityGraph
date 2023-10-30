@@ -11,19 +11,23 @@ import org.av360.maverick.graph.model.events.LinkRemovedEvent;
 import org.av360.maverick.graph.model.events.ValueInsertedEvent;
 import org.av360.maverick.graph.model.events.ValueRemovedEvent;
 import org.av360.maverick.graph.model.events.ValueReplacedEvent;
+import org.av360.maverick.graph.model.identifier.ChecksumGenerator;
 import org.av360.maverick.graph.model.security.Authorities;
 import org.av360.maverick.graph.services.EntityServices;
+import org.av360.maverick.graph.services.IdentifierServices;
 import org.av360.maverick.graph.services.SchemaServices;
 import org.av360.maverick.graph.services.ValueServices;
 import org.av360.maverick.graph.services.config.RequiresPrivilege;
 import org.av360.maverick.graph.store.SchemaStore;
 import org.av360.maverick.graph.store.rdf.fragments.RdfEntity;
 import org.av360.maverick.graph.store.rdf.fragments.RdfTransaction;
+import org.av360.maverick.graph.store.rdf.fragments.TripleModel;
 import org.eclipse.rdf4j.model.*;
 import org.eclipse.rdf4j.model.impl.LinkedHashModel;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.util.Statements;
 import org.eclipse.rdf4j.model.util.Values;
+import org.eclipse.rdf4j.model.vocabulary.DC;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.rio.LanguageHandler;
 import org.eclipse.rdf4j.rio.LanguageHandlerRegistry;
@@ -33,10 +37,7 @@ import reactor.core.publisher.Mono;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 @Slf4j(topic = "graph.srvc.values")
 @Service
@@ -49,18 +50,19 @@ public class ValueServicesImpl implements ValueServices {
 
     private final EntityServices entityServices;
 
-
+    private final IdentifierServices identifierServices;
     public ValueServicesImpl(SchemaStore schemaStore,
-                             ApplicationEventPublisher eventPublisher, SchemaServices schemaServices, EntityServices entityServices) {
+                             ApplicationEventPublisher eventPublisher, SchemaServices schemaServices, EntityServices entityServices, IdentifierServices identifierServices) {
         this.eventPublisher = eventPublisher;
         this.schemaServices = schemaServices;
         this.entityServices = entityServices;
+        this.identifierServices = identifierServices;
     }
 
 
     @Override
     @RequiresPrivilege(Authorities.CONTRIBUTOR_VALUE)
-    public Mono<Transaction> insertValue(String entityKey, String prefixedPoperty, String value, String languageTag, SessionContext ctx) {
+    public Mono<Transaction> insertValue(String entityKey, String prefixedPoperty, String value, String languageTag, @Nullable Boolean replace, SessionContext ctx) {
 
         return Mono.zip(
                         this.entityServices.resolveAndVerify(entityKey, ctx),
@@ -68,7 +70,7 @@ public class ValueServicesImpl implements ValueServices {
                         this.normalizeValue(value, languageTag)
                 )
                 .switchIfEmpty(Mono.error(new InvalidEntityUpdate(entityKey, "Failed to insert value")))
-                .flatMap(triple -> this.insertValue(triple.getT1(), triple.getT2(), triple.getT3(), ctx));
+                .flatMap(triple -> this.insertValue(triple.getT1(), triple.getT2(), triple.getT3(), Objects.isNull(replace) ? Boolean.FALSE : replace, ctx));
     }
 
 
@@ -77,18 +79,18 @@ public class ValueServicesImpl implements ValueServices {
      */
     @Override
     @RequiresPrivilege(Authorities.CONTRIBUTOR_VALUE)
-    public Mono<Transaction> removeLiteral(String entityKey, String predicate, String lang, SessionContext ctx) {
+    public Mono<Transaction> removeLiteral(String entityKey, String predicate, @Nullable String lang, @Nullable String identifier, SessionContext ctx) {
         return Mono.zip(
                         this.entityServices.resolveAndVerify(entityKey, ctx),
                         this.schemaServices.resolvePrefixedName(predicate)
                 )
                 .switchIfEmpty(Mono.error(new InvalidEntityUpdate(entityKey, "Failed to remove literal")))
-                .flatMap(tuple -> this.removeValue(tuple.getT1(), tuple.getT2(), lang, ctx));
+                .flatMap(tuple -> this.removeValue(tuple.getT1(), tuple.getT2(), lang, identifier, ctx));
     }
 
     @Override
     @RequiresPrivilege(Authorities.CONTRIBUTOR_VALUE)
-    public Mono<Transaction> insertLink(String entityKey, String prefixedKey, String targetKey, SessionContext ctx) {
+    public Mono<Transaction> insertLink(String entityKey, String prefixedKey, String targetKey,  @Nullable Boolean replace,  SessionContext ctx) {
         return Mono.zip(
                         entityServices.resolveAndVerify(entityKey, ctx),
                         entityServices.resolveAndVerify(targetKey, ctx),
@@ -97,15 +99,15 @@ public class ValueServicesImpl implements ValueServices {
                 )
                 .switchIfEmpty(Mono.error(new InvalidEntityUpdate(entityKey, "Failed to insert link")))
                 .flatMap(triple ->
-                        this.insertValue(triple.getT1(), triple.getT3(), triple.getT2(), ctx)
+                        this.insertValue(triple.getT1(), triple.getT3(), triple.getT2(), !Objects.isNull(replace) && replace, ctx)
                 );
     }
 
 
     @Override
     @RequiresPrivilege(Authorities.CONTRIBUTOR_VALUE)
-    public Mono<Transaction> insertValue(IRI entityIdentifier, IRI predicate, Value value, SessionContext ctx) {
-        return this.insertStatement(entityIdentifier, predicate, value, new RdfTransaction(), ctx)
+    public Mono<Transaction> insertValue(IRI entityIdentifier, IRI predicate, Value value, @Nullable Boolean replace, SessionContext ctx) {
+        return this.insertStatement(entityIdentifier, predicate, value, new RdfTransaction(), !Objects.isNull(replace) && replace, ctx)
                 .doOnSuccess(trx -> {
                     eventPublisher.publishEvent(new ValueInsertedEvent(trx));
                 });
@@ -152,8 +154,8 @@ public class ValueServicesImpl implements ValueServices {
 
     @Override
     @RequiresPrivilege(Authorities.CONTRIBUTOR_VALUE)
-    public Mono<Transaction> removeValue(IRI entityIdentifier, IRI predicate, String lang, SessionContext ctx) {
-        return this.removeValueStatement(entityIdentifier, predicate, lang, new RdfTransaction(), ctx)
+    public Mono<Transaction> removeValue(IRI entityIdentifier, IRI predicate, @Nullable String lang, @Nullable String identifier, SessionContext ctx) {
+        return this.removeValueStatement(entityIdentifier, predicate, lang, identifier, new RdfTransaction(), ctx)
                 .doOnSuccess(trx -> {
                     eventPublisher.publishEvent(new ValueRemovedEvent(trx));
                 });
@@ -203,7 +205,7 @@ public class ValueServicesImpl implements ValueServices {
             RdfEntity entity = pair.getT1();
             IRI property = pair.getT2();
 
-            entity.filter((st) -> {
+            entity.reduce((st) -> {
                 boolean isTypeDefinition = st.getSubject().equals(entity.getIdentifier()) && st.getPredicate().equals(RDF.TYPE);
                 boolean isProperty = st.getPredicate().equals(property);
                 return isTypeDefinition || isProperty;
@@ -213,6 +215,34 @@ public class ValueServicesImpl implements ValueServices {
         });
     }
 
+    @Override
+    @RequiresPrivilege(Authorities.READER_VALUE)
+    public Mono<TripleModel> listValues(String entityKey, String prefixedPoperty, SessionContext ctx) {
+        return Mono.zip(
+                this.identifierServices.asIRI(entityKey, ctx.getEnvironment())
+                        .flatMap(entityIdentifier -> this.entityServices.get(entityIdentifier, 0, ctx)),
+                this.schemaServices.resolvePrefixedName(prefixedPoperty)
+        ).map(pair -> {
+            RdfEntity entity = pair.getT1();
+            IRI property = pair.getT2();
+            entity.reduce(st -> st.getPredicate().equals(property));
+            return entity;
+        }).map(entity -> {
+            new HashSet<>(entity.getModel()).forEach(statement -> {
+                Triple triple = Values.triple(statement);
+                String hash = this.generateHashForValue(statement.getObject().stringValue());
+                entity.getModel().add(triple, DC.IDENTIFIER, Values.literal(hash));
+
+            });
+
+
+            return entity;
+        });
+    }
+
+    private String generateHashForValue(String value) {
+        return ChecksumGenerator.generateChecksum(value, 8, 'o');
+    }
 
     private Mono<Transaction> removeLinkStatement(IRI entityIdentifier, IRI predicate, IRI targetIdentifier, Transaction transaction, SessionContext ctx) {
         return this.entityServices.getStore(ctx).listStatements(entityIdentifier, predicate, targetIdentifier, ctx.getEnvironment())
@@ -225,29 +255,47 @@ public class ValueServicesImpl implements ValueServices {
     /**
      * Deletes a value with a new transaction. Fails if no entity exists with the given subject
      */
-    private Mono<Transaction> removeValueStatement(IRI entityIdentifier, IRI predicate, @Nullable String languageTag, Transaction transaction, SessionContext ctx) {
+    private Mono<Transaction> removeValueStatement(IRI entityIdentifier, IRI predicate, @Nullable String languageTag, @Nullable String identifier, Transaction transaction, SessionContext ctx) {
         return this.entityServices.getStore(ctx).listStatements(entityIdentifier, predicate, null, ctx.getEnvironment())
                 .flatMap(statements -> {
                     if (statements.size() > 1) {
                         List<Statement> statementsToRemove = new ArrayList<>();
-                        if (StringUtils.isEmpty(languageTag)) {
+
+                        if (StringUtils.isEmpty(languageTag) && StringUtils.isEmpty(identifier)) {
                             log.error("Failed to identify unique statement for predicate {} to remove for entity {}.", predicate.getLocalName(), entityIdentifier.getLocalName());
                             statements.forEach(st -> log.trace("Candidate: {} - {} ", st.getPredicate(), st.getObject()));
-                            return Mono.error(new InvalidEntityUpdate(entityIdentifier, "Multiple values for given predicate detected, but no language tag in request."));
+                            return Mono.error(new InvalidEntityUpdate(entityIdentifier, "Multiple values for given predicate detected, but no language tag or hash identifier in request."));
                         }
+
                         for (Statement st : statements) {
                             Value object = st.getObject();
-                            if (object.isBNode()) {
-                                log.warn("Found a link to an anonymous node. Purge it from repository.");
-                                statementsToRemove.add(st);
-                            } else if (object.isIRI()) {
+
+                            if (object.isIRI()) {
                                 return Mono.error(new InvalidEntityUpdate(entityIdentifier, "Invalid to remove links via the values api."));
                             } else if (object.isLiteral()) {
-                                Literal currentLiteral = (Literal) object;
-                                if (StringUtils.equals(currentLiteral.getLanguage().orElse("invalid"), languageTag)) {
-                                    statementsToRemove.add(st);
+                                if(StringUtils.isNotBlank(identifier)) {
+                                    String hash = this.generateHashForValue(object.stringValue());
+                                    if(hash.equalsIgnoreCase(identifier)) {
+                                        statementsToRemove.add(st);
+                                    }
+                                } else
+                                if(StringUtils.isNotBlank(languageTag)) {
+                                    Literal currentLiteral = (Literal) object;
+                                    if (StringUtils.equals(currentLiteral.getLanguage().orElse("invalid"), languageTag)) {
+                                        statementsToRemove.add(st);
+                                    }
                                 }
                             }
+                        }
+
+                        if(statementsToRemove.isEmpty() && StringUtils.isNotBlank(identifier)) {
+                            return Mono.error(new InvalidEntityUpdate(entityIdentifier, "No value found with requested hash '%s'".formatted(identifier)));
+                        }
+                        if(statementsToRemove.isEmpty() && StringUtils.isNotBlank(languageTag)) {
+                            return Mono.error(new InvalidEntityUpdate(entityIdentifier, "No value found with requested language tag '%s'".formatted(languageTag)));
+                        }
+                        if(statementsToRemove.size() > 1 && StringUtils.isNotBlank(languageTag)) {
+                            return Mono.error(new InvalidEntityUpdate(entityIdentifier, "Multiple values found for language tag '%s'. Please delete by hash.".formatted(languageTag)));
                         }
 
 
@@ -276,63 +324,76 @@ public class ValueServicesImpl implements ValueServices {
 
     }
 
-    private Mono<Transaction> insertStatement(IRI entityIdentifier, IRI predicate, Value value, Transaction transaction, SessionContext ctx) {
+    private Mono<Transaction> insertStatement(IRI entityIdentifier, IRI predicate, Value value, Transaction transaction, boolean replace,  SessionContext ctx) {
+
+        Triple triple = SimpleValueFactory.getInstance().createTriple(entityIdentifier, predicate, value);
 
         return this.entityServices.get(entityIdentifier, ctx)
                 .switchIfEmpty(Mono.error(new EntityNotFound(entityIdentifier.stringValue())))
-                .map(entity -> Pair.of(entity, transaction.affects(entity.getModel())))
-                .flatMap(pair -> {
+                .doOnNext(entity -> transaction.affects(entity.getModel()))
+                .flatMap(entity -> {
+
                     // linking to bnodes is forbidden
-                    if (value.isBNode()) {
+                    if (triple.getObject().isBNode()) {
                         log.trace("Insert link for {} to anonymous node is forbidden.", entityIdentifier);
                         return Mono.error(new InvalidEntityUpdate(entityIdentifier, "Trying to link to anonymous node."));
-                    } else return Mono.just(pair);
-                })
-                .flatMap(pair -> {
-                    // check if entity already has this statement. If yes, we do nothing
-                    if (value.isIRI() && pair.getLeft().hasStatement(entityIdentifier, predicate, value)) {
-                        log.trace("Entity {} already has a link '{}' for predicate '{}', ignoring update.", entityIdentifier, value, predicate);
-                        return Mono.empty();
-                    } else return Mono.just(pair);
-                })
-                .flatMap(pair -> {
-                    // check if entity already has this literal with a different value. If yes, we remove it first (but only if it also has the same language tag)
-                    if (value.isLiteral() && pair.getLeft().hasStatement(entityIdentifier, predicate, null)) {
-                        log.trace("Entity {} already has a value for predicate '{}'.", entityIdentifier, predicate);
-                        Literal updateValue = (Literal) value;
-
-                        try {
-                            for (Statement statement : pair.getLeft().listStatements(entityIdentifier, predicate, null)) {
-                                if (!statement.getObject().isLiteral())
-                                    throw new InvalidEntityUpdate(entityIdentifier, "Replacing an existing link to another entity with a value is not allowed. ");
-
-                                Literal currentValue = (Literal) statement.getObject();
-                                if (updateValue.getLanguage().isPresent() && currentValue.getLanguage().isPresent()) {
-                                    // entity already has a value for this predicate. It has a language tag. If another value with the same language tag exists, we remove it.
-                                    if (StringUtils.equals(currentValue.getLanguage().get(), updateValue.getLanguage().get())) {
-                                        this.entityServices.getStore(ctx).removeStatement(statement, pair.getRight());
-                                    }
-                                } else {
-                                    // entity already has a value for this predicate. It has no language tag. If an existing value has a language tag, we throw an error. If not, we remove it.
-                                    if (currentValue.getLanguage().isPresent())
-                                        throw new InvalidEntityUpdate(entityIdentifier, "This value already exists with a language tag within this entity. Please add the tag.");
-
-                                    this.entityServices.getStore(ctx).removeStatement(statement, pair.getRight());
-                                }
-
-                            }
-                            return Mono.just(pair);
-
-                        } catch (InvalidEntityUpdate e) {
-                            return Mono.error(e);
-                        }
-
-                    } else return Mono.just(pair);
+                    } else if(triple.getObject().isIRI()) {
+                        return this.buildTransactionForIRIStatement(triple, entity, transaction, replace, ctx);
+                    } else if(triple.getObject().isLiteral()) {
+                        return this.buildTransactionForLiteralStatement(triple, entity, transaction, replace, ctx);
+                    } else return Mono.empty();
 
                 })
+
                 .flatMap(pair -> this.entityServices.getStore(ctx).addStatement(entityIdentifier, predicate, value, transaction))
                 .flatMap(trx -> this.entityServices.getStore(ctx).commit(trx, ctx.getEnvironment()))
                 .switchIfEmpty(Mono.just(transaction));
+
+    }
+
+    private Mono<Transaction> buildTransactionForIRIStatement(Triple statement, RdfEntity entity, Transaction transaction, boolean replace, SessionContext ctx) {
+        // check if entity already has this statement. If yes, we do nothing
+        if (statement.getObject().isIRI() && entity.hasStatement(statement) && ! replace) {
+            log.trace("Entity {} already has a link '{}' for predicate '{}', ignoring update.", entity.getIdentifier(), statement.getObject(), statement.getPredicate());
+            return Mono.empty();
+        } else {
+            return this.entityServices.getStore(ctx).addStatement(statement, transaction);
+        }
+    }
+
+
+    private Mono<Transaction> buildTransactionForLiteralStatement(Triple triple, RdfEntity entity, Transaction transaction, boolean replace, SessionContext ctx) {
+        if (triple.getObject().isLiteral() && entity.hasStatement(triple.getSubject(), triple.getPredicate(), null) && replace) {
+            log.trace("Entity {} already has a value for predicate '{}'.", entity.getIdentifier(), triple.getPredicate());
+            Literal updateValue = (Literal) triple.getObject();
+
+            try {
+                for (Statement statement : entity.listStatements(entity.getIdentifier(), triple.getPredicate(), null)) {
+                    if (!statement.getObject().isLiteral())
+                        throw new InvalidEntityUpdate(entity.getIdentifier(), "Replacing an existing link to another entity with a value is not allowed. ");
+
+                    Literal currentValue = (Literal) statement.getObject();
+                    if (updateValue.getLanguage().isPresent() && currentValue.getLanguage().isPresent()) {
+                        // entity already has a value for this predicate. It has a language tag. If another value with the same language tag exists, we remove it.
+                        if (StringUtils.equals(currentValue.getLanguage().get(), updateValue.getLanguage().get())) {
+                            this.entityServices.getStore(ctx).removeStatement(statement, transaction);
+                        }
+                    } else {
+                        // entity already has a value for this predicate. It has no language tag. If an existing value has a language tag, we throw an error. If not, we remove it.
+                        if (currentValue.getLanguage().isPresent())
+                            throw new InvalidEntityUpdate(entity.getIdentifier(), "This value already exists with a language tag within this entity. Please add the tag.");
+
+                        this.entityServices.getStore(ctx).removeStatement(statement, transaction);
+                    }
+
+                }
+                return Mono.just(transaction);
+
+            } catch (InvalidEntityUpdate e) {
+                return Mono.error(e);
+            }
+
+        } else return Mono.just(transaction);
 
     }
 

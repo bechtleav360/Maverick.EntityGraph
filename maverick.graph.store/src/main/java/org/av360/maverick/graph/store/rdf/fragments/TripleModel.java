@@ -111,5 +111,8 @@ public class TripleModel implements Triples {
     }
 
 
+    public boolean hasStatement(Triple triple) {
+        return this.hasStatement(triple.getSubject(), triple.getPredicate(), triple.getObject());
 
+    }
 }

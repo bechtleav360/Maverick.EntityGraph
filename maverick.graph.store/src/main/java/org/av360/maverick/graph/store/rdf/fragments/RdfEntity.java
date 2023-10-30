@@ -51,9 +51,11 @@ public class RdfEntity extends TripleModel implements Entity {
         return identifier;
     }
 
-    public void filter(Predicate<Statement> filterFunction) {
+    public void reduce(Predicate<Statement> filterFunction) {
         Set<Statement> collect = this.streamStatements().filter(filterFunction).collect(Collectors.toSet());
         this.getModel().clear();;
         this.getModel().addAll(collect);
     }
+
+
 }

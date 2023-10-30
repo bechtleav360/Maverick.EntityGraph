@@ -12,7 +12,7 @@ import org.eclipse.rdf4j.model.Namespace;
  */
 public class Local {
 
-    public static final String NAMESPACE = "http://w3id.org/av360/emav#";
+    public static final String NAMESPACE = "http://w3id.org/avs/emav#";
     public static final String PREFIX = "meg";
     public static String URN_PREFIX = "urn:pwid:meg:";
     public static final IRI ORIGINAL_IDENTIFIER = LocalIRI.from("urn:int:", "srcid");
@@ -29,6 +29,8 @@ public class Local {
         public static final IRI TYPE_INDIVIDUAL = LocalIRI.from(NAMESPACE, "Individual");
         public static final IRI TYPE_CLASSIFIER = LocalIRI.from(NAMESPACE, "Classifier");
         public static final IRI TYPE_EMBEDDED = LocalIRI.from(NAMESPACE, "Embedded");
+
+        public static final IRI HASH = LocalIRI.from(NAMESPACE, "hash");
     }
 
     public static class Objects {

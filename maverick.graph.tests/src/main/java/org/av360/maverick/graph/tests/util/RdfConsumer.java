@@ -109,7 +109,11 @@ public class RdfConsumer implements Consumer<EntityExchangeResult<byte[]>> {
     }
 
     public void print() {
-        System.out.println(this.dump(RDFFormat.TURTLE));
+        this.print(RDFFormat.TURTLE);
+    }
+
+    public void print(RDFFormat format) {
+        System.out.println(this.dump(format));
     }
 
 

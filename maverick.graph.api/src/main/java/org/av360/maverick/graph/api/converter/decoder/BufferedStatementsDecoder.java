@@ -36,7 +36,8 @@ public class BufferedStatementsDecoder implements Decoder<Triples> {
         mimeTypes = List.of(
                 MimeType.valueOf(RDFFormat.JSONLD.getDefaultMIMEType()),
                 MimeType.valueOf(RDFFormat.RDFJSON.getDefaultMIMEType()),
-                MimeType.valueOf(RDFFormat.TURTLE.getDefaultMIMEType())
+                MimeType.valueOf(RDFFormat.TURTLE.getDefaultMIMEType()),
+                MimeType.valueOf(RDFFormat.TURTLESTAR.getDefaultMIMEType())
         );
     }
 
