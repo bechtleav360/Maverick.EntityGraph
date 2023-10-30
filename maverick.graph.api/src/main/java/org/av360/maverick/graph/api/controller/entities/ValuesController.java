@@ -44,9 +44,9 @@ public class ValuesController extends AbstractController implements ValuesAPI {
     @Override
     @Operation(summary = "Returns a list of value properties of the selected entity.  ",
             description = """
-                    Returns a list of values formatted as dictionary for a specific entity. 
-                                        
-                    This operation will include the details (as well as the hashes), required to select individual values for processing
+                    Returns a list of values formatted as RDF Star. This operation will include the details (as well as the hashes), required to select individual values for processing. 
+                    Please verify that you can actually parse this syntax. 
+                    
                     """)
     @GetMapping(value = "/entities/{id:[\\w|\\d|\\-|\\_]+}/values",
             produces = {RdfMimeTypes.TURTLESTAR_VALUE})
@@ -120,7 +120,9 @@ public class ValuesController extends AbstractController implements ValuesAPI {
     @Override
     @Operation(summary = "Removes a property value.",
             description = """
-                If you have multiple values for a given property, you need to select a specific value either by language tag (if it is unique
+                If you have multiple values for a given property, you need to select a specific value either by language tag (if it is unique) or by hash. 
+                Retrieve the hashes by calling the operation
+                
                     """)
     @DeleteMapping(value = "/entities/{id:[\\w|\\d|\\-|\\_]+}/values/{prefixedKey:[\\w|\\d]+\\.[\\w|\\d]+}",
             produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE})
