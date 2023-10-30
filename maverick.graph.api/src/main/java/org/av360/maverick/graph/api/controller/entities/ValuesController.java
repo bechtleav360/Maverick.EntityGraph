@@ -49,7 +49,7 @@ public class ValuesController extends AbstractController implements ValuesAPI {
                     This operation will include the details (as well as the hashes), required to select individual values for processing
                     """)
     @GetMapping(value = "/entities/{id:[\\w|\\d|\\-|\\_]+}/values",
-            produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE, MediaType.APPLICATION_JSON_VALUE})
+            produces = {RdfMimeTypes.TURTLESTAR_VALUE})
     @ResponseStatus(HttpStatus.OK)
     public Flux<AnnotatedStatement> list(@PathVariable String id, @Nullable @RequestParam(required = false) String property) {
 

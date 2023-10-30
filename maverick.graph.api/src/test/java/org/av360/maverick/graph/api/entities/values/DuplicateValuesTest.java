@@ -6,6 +6,7 @@ import org.av360.maverick.graph.tests.generator.EntitiesGenerator;
 import org.av360.maverick.graph.tests.util.ApiTestsBase;
 import org.av360.maverick.graph.tests.util.RdfConsumer;
 import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.rio.RDFFormat;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -93,9 +94,9 @@ public class DuplicateValuesTest extends ApiTestsBase {
 
 
         RdfConsumer rdfConsumer2 = super.getTestClient().listValues(sourceIdentifier, "sdo.author");
-        rdfConsumer2.print();
+        rdfConsumer2.print(RDFFormat.TURTLESTAR);
 
-        Assertions.assertEquals(1, rdfConsumer2.asModel().filter(sourceIdentifier, SDO.AUTHOR, null).size());
+        Assertions.assertEquals(3, rdfConsumer2.asModel().filter(sourceIdentifier, SDO.AUTHOR, null).size());
 
     }
 

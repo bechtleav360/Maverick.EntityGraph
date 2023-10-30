@@ -159,12 +159,12 @@ public class EntitiesTestClient {
 
 
     public RdfConsumer listValues(IRI sourceIdentifier, String property) {
-        RDFFormat format = RDFFormat.TURTLE;
+        RDFFormat format = RDFFormat.TURTLESTAR;
 
         RdfConsumer rdfConsumer = new RdfConsumer(format, false);
         webClient.get()
                 .uri(uriBuilder -> uriBuilder
-                        .path("/api/entities/{id}/")
+                        .path("/api/entities/{id}/values")
                         .queryParam("property", property)
                         .build(sourceIdentifier.getLocalName())
                 )

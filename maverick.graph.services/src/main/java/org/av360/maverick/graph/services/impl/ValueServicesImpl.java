@@ -11,8 +11,10 @@ import org.av360.maverick.graph.model.events.LinkRemovedEvent;
 import org.av360.maverick.graph.model.events.ValueInsertedEvent;
 import org.av360.maverick.graph.model.events.ValueRemovedEvent;
 import org.av360.maverick.graph.model.events.ValueReplacedEvent;
+import org.av360.maverick.graph.model.identifier.ChecksumGenerator;
 import org.av360.maverick.graph.model.security.Authorities;
 import org.av360.maverick.graph.services.EntityServices;
+import org.av360.maverick.graph.services.IdentifierServices;
 import org.av360.maverick.graph.services.SchemaServices;
 import org.av360.maverick.graph.services.ValueServices;
 import org.av360.maverick.graph.services.config.RequiresPrivilege;
@@ -25,6 +27,7 @@ import org.eclipse.rdf4j.model.impl.LinkedHashModel;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.util.Statements;
 import org.eclipse.rdf4j.model.util.Values;
+import org.eclipse.rdf4j.model.vocabulary.DCTERMS;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.rio.LanguageHandler;
 import org.eclipse.rdf4j.rio.LanguageHandlerRegistry;
@@ -47,12 +50,13 @@ public class ValueServicesImpl implements ValueServices {
 
     private final EntityServices entityServices;
 
-
+    private final IdentifierServices identifierServices;
     public ValueServicesImpl(SchemaStore schemaStore,
-                             ApplicationEventPublisher eventPublisher, SchemaServices schemaServices, EntityServices entityServices) {
+                             ApplicationEventPublisher eventPublisher, SchemaServices schemaServices, EntityServices entityServices, IdentifierServices identifierServices) {
         this.eventPublisher = eventPublisher;
         this.schemaServices = schemaServices;
         this.entityServices = entityServices;
+        this.identifierServices = identifierServices;
     }
 
 
@@ -215,14 +219,22 @@ public class ValueServicesImpl implements ValueServices {
     @RequiresPrivilege(Authorities.READER_VALUE)
     public Mono<TripleModel> listValues(String entityKey, String prefixedPoperty, SessionContext ctx) {
         return Mono.zip(
-                this.schemaServices.resolveLocalName(entityKey)
+                this.identifierServices.asIRI(entityKey, ctx.getEnvironment())
                         .flatMap(entityIdentifier -> this.entityServices.get(entityIdentifier, 0, ctx)),
                 this.schemaServices.resolvePrefixedName(prefixedPoperty)
         ).map(pair -> {
             RdfEntity entity = pair.getT1();
             IRI property = pair.getT2();
-
             entity.reduce(st -> st.getPredicate().equals(property));
+            return entity;
+        }).map(entity -> {
+            new HashSet<>(entity.getModel()).forEach(statement -> {
+                Triple triple = Values.triple(statement);
+                String hash = ChecksumGenerator.generateChecksum(statement.getObject().stringValue(), 8, 'o');
+                entity.getModel().add(triple, DCTERMS.LCSH, Values.literal(hash));
+
+            });
+
 
             return entity;
         });

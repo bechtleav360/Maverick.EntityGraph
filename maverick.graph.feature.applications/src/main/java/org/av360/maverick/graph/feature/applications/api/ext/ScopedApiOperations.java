@@ -98,8 +98,8 @@ public class ScopedApiOperations extends AbstractController {
     @GetMapping(value = "/api/s/{label}/entities/{id:[\\w|\\d|\\-|\\_]+}/values",
             produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE, MediaType.APPLICATION_JSON_VALUE})
     @ResponseStatus(HttpStatus.OK)
-    Flux<AnnotatedStatement> listEntityValues(@PathVariable String label, @PathVariable String id) {
-        return this.valuesCtrl.listEntityValues(id);
+    Flux<AnnotatedStatement> listEntityValues(@PathVariable String label, @PathVariable String id, @RequestParam(required = false) String prefixedKey) {
+        return this.valuesCtrl.list(id, prefixedKey);
     }
 
     @Operation(summary = "Returns all links of an entity.")

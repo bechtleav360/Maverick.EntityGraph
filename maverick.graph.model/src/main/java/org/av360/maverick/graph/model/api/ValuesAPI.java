@@ -13,7 +13,7 @@ import javax.annotation.Nullable;
 public interface ValuesAPI {
     @Operation(summary = "Returns a list of value property of the selected entity.  ")
     @GetMapping(value = "/entities/{id:[\\w|\\d|\\-|\\_]+}/values",
-            produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE, MediaType.APPLICATION_JSON_VALUE})
+            produces = {RdfMimeTypes.TURTLESTAR_VALUE})
     @ResponseStatus(HttpStatus.OK)
     Flux<AnnotatedStatement> list(@PathVariable String id, @Nullable @RequestParam(required = false) String prefixedKey);
 
