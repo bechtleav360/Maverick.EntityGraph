@@ -245,7 +245,7 @@ public class EntitiesTestClient {
     public WebTestClient.ResponseSpec deleteValueByHash(IRI entityIri, String prefixedProperty, String hash) {
         return webClient.delete()
                 .uri(uriBuilder -> uriBuilder.path("/api/entities/{id}/values/{prefixedProperty}")
-                        .queryParam("identifier", hash)
+                        .queryParam("hash", hash)
                         .build(entityIri.getLocalName(), prefixedProperty)
 
                 )
@@ -260,5 +260,13 @@ public class EntitiesTestClient {
 
                 )
                 .exchange();
+    }
+
+    public void addDetail(IRI entityIdentifier, String valueProperty, String detailProperty, String detailValue, String valueIdentifier) {
+        return; 
+    }
+
+    public void addDetail(IRI entityIdentifier, String valueProperty, String detailProperty, String detailValue) {
+        this.addDetail(entityIdentifier, valueProperty, detailProperty, detailValue, null);
     }
 }

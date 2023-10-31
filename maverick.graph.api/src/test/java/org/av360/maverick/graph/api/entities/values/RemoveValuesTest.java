@@ -62,7 +62,7 @@ public class RemoveValuesTest extends ApiTestsBase {
     }
 
     @Test
-    public void testRemoveResourceLinkValue() {
+    public void removeValueIsLink() {
         super.printStart("remove link to resource");
 
         RdfConsumer rdfConsumer = super.upload("requests/create-valid.ttl");
@@ -162,7 +162,7 @@ public class RemoveValuesTest extends ApiTestsBase {
     }
 
     @Test
-    public void failToRemoveTitleWithLanguage() {
+    public void removeTitleWithLanguageTagFail() {
         super.printStart("failToRemoveTitleWithLanguage");
 
         RdfConsumer rdfConsumer = super.upload("requests/create-valid_with_tags.ttl");
@@ -213,7 +213,7 @@ public class RemoveValuesTest extends ApiTestsBase {
 
         Assertions.assertTrue(statement.getSubject().isTriple());
 
-        super.getTestClient().deleteValueByTag(sourceIdentifier, "sdo.author", statement.getObject().stringValue());
+        super.getTestClient().deleteValueByHash(sourceIdentifier, "sdo.author", statement.getObject().stringValue());
 
 
         RdfConsumer rc3 = super.getTestClient().listValues(sourceIdentifier, "sdo.author");

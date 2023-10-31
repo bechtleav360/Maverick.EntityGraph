@@ -79,13 +79,13 @@ public class ValueServicesImpl implements ValueServices {
      */
     @Override
     @RequiresPrivilege(Authorities.CONTRIBUTOR_VALUE)
-    public Mono<Transaction> removeLiteral(String entityKey, String predicate, @Nullable String lang, @Nullable String identifier, SessionContext ctx) {
+    public Mono<Transaction> removeLiteral(String entityKey, String predicate, @Nullable String languageTag, @Nullable String valueIdentifier, SessionContext ctx) {
         return Mono.zip(
                         this.entityServices.resolveAndVerify(entityKey, ctx),
                         this.schemaServices.resolvePrefixedName(predicate)
                 )
                 .switchIfEmpty(Mono.error(new InvalidEntityUpdate(entityKey, "Failed to remove literal")))
-                .flatMap(tuple -> this.removeValue(tuple.getT1(), tuple.getT2(), lang, identifier, ctx));
+                .flatMap(tuple -> this.removeValue(tuple.getT1(), tuple.getT2(), languageTag, valueIdentifier, ctx));
     }
 
     @Override
@@ -154,8 +154,8 @@ public class ValueServicesImpl implements ValueServices {
 
     @Override
     @RequiresPrivilege(Authorities.CONTRIBUTOR_VALUE)
-    public Mono<Transaction> removeValue(IRI entityIdentifier, IRI predicate, @Nullable String lang, @Nullable String identifier, SessionContext ctx) {
-        return this.removeValueStatement(entityIdentifier, predicate, lang, identifier, new RdfTransaction(), ctx)
+    public Mono<Transaction> removeValue(IRI entityIdentifier, IRI predicate, @Nullable String languageTag, @Nullable String valueIdentifier, SessionContext ctx) {
+        return this.removeValueStatement(entityIdentifier, predicate, languageTag, valueIdentifier, new RdfTransaction(), ctx)
                 .doOnSuccess(trx -> {
                     eventPublisher.publishEvent(new ValueRemovedEvent(trx));
                 });
@@ -255,13 +255,13 @@ public class ValueServicesImpl implements ValueServices {
     /**
      * Deletes a value with a new transaction. Fails if no entity exists with the given subject
      */
-    private Mono<Transaction> removeValueStatement(IRI entityIdentifier, IRI predicate, @Nullable String languageTag, @Nullable String identifier, Transaction transaction, SessionContext ctx) {
+    private Mono<Transaction> removeValueStatement(IRI entityIdentifier, IRI predicate, @Nullable String languageTag, @Nullable String valueIdentifier, Transaction transaction, SessionContext ctx) {
         return this.entityServices.getStore(ctx).listStatements(entityIdentifier, predicate, null, ctx.getEnvironment())
                 .flatMap(statements -> {
                     if (statements.size() > 1) {
                         List<Statement> statementsToRemove = new ArrayList<>();
 
-                        if (StringUtils.isEmpty(languageTag) && StringUtils.isEmpty(identifier)) {
+                        if (StringUtils.isEmpty(languageTag) && StringUtils.isEmpty(valueIdentifier)) {
                             log.error("Failed to identify unique statement for predicate {} to remove for entity {}.", predicate.getLocalName(), entityIdentifier.getLocalName());
                             statements.forEach(st -> log.trace("Candidate: {} - {} ", st.getPredicate(), st.getObject()));
                             return Mono.error(new InvalidEntityUpdate(entityIdentifier, "Multiple values for given predicate detected, but no language tag or hash identifier in request."));
@@ -273,9 +273,9 @@ public class ValueServicesImpl implements ValueServices {
                             if (object.isIRI()) {
                                 return Mono.error(new InvalidEntityUpdate(entityIdentifier, "Invalid to remove links via the values api."));
                             } else if (object.isLiteral()) {
-                                if(StringUtils.isNotBlank(identifier)) {
+                                if(StringUtils.isNotBlank(valueIdentifier)) {
                                     String hash = this.generateHashForValue(object.stringValue());
-                                    if(hash.equalsIgnoreCase(identifier)) {
+                                    if(hash.equalsIgnoreCase(valueIdentifier)) {
                                         statementsToRemove.add(st);
                                     }
                                 } else
@@ -288,8 +288,8 @@ public class ValueServicesImpl implements ValueServices {
                             }
                         }
 
-                        if(statementsToRemove.isEmpty() && StringUtils.isNotBlank(identifier)) {
-                            return Mono.error(new InvalidEntityUpdate(entityIdentifier, "No value found with requested hash '%s'".formatted(identifier)));
+                        if(statementsToRemove.isEmpty() && StringUtils.isNotBlank(valueIdentifier)) {
+                            return Mono.error(new InvalidEntityUpdate(entityIdentifier, "No value found with requested hash '%s'".formatted(valueIdentifier)));
                         }
                         if(statementsToRemove.isEmpty() && StringUtils.isNotBlank(languageTag)) {
                             return Mono.error(new InvalidEntityUpdate(entityIdentifier, "No value found with requested language tag '%s'".formatted(languageTag)));
