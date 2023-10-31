@@ -1,5 +1,6 @@
 package org.av360.maverick.graph.store.rdf.fragments;
 
+import org.av360.maverick.graph.model.errors.InconsistentModelException;
 import org.av360.maverick.graph.model.rdf.AnnotatedStatement;
 import org.av360.maverick.graph.model.rdf.Triples;
 import org.av360.maverick.graph.store.rdf.helpers.NamespacedModelBuilder;
@@ -104,12 +105,15 @@ public class TripleModel implements Triples {
         return this.streamStatements(subject, predicate, null).map(Statement::getObject);
     }
 
-    public Value getDistinctValue(Resource subject, IRI predicate) throws NoSuchElementException {
+    public Value getDistinctValue(Resource subject, IRI predicate) throws NoSuchElementException, InconsistentModelException {
         return this.findDistinctValue(subject, predicate).orElseThrow();
     }
 
-    public Optional<Value> findDistinctValue(Resource subject, IRI predicate) {
-        return this.streamValues(subject, predicate).findFirst();
+    public Optional<Value> findDistinctValue(Resource subject, IRI predicate) throws  InconsistentModelException {
+        Set<Value> collect = this.streamValues(subject, predicate).collect(Collectors.toUnmodifiableSet());
+        if(collect.isEmpty()) return Optional.empty();
+        else if(collect.size() == 1) return collect.stream().findFirst();
+        else throw new InconsistentModelException("Multiple values found for predicte '%s'".formatted(predicate));
     }
 
 

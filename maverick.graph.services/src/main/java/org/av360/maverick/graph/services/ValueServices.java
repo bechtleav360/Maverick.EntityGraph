@@ -89,7 +89,7 @@ public interface ValueServices {
      * @param identifier
      * @return The transaction information.
      */
-    Mono<Transaction> removeLiteral(String entityKey, String prefixedProperty, @Nullable String lang, @Nullable String identifier, SessionContext ctx);
+    Mono<Transaction> removeValue(String entityKey, String prefixedProperty, @Nullable String lang, @Nullable String identifier, SessionContext ctx);
 
     /**
      * @param authentication   The current authentication

@@ -129,9 +129,8 @@ public class ValuesController extends AbstractController implements ValuesAPI {
     @ResponseStatus(HttpStatus.OK)
     public Flux<AnnotatedStatement> delete(@PathVariable String id, @PathVariable String prefixedKey, @RequestParam(required = false) String lang, @RequestParam(required = false) String hash) {
 
-
         return super.acquireContext()
-                .flatMap(ctx -> values.removeLiteral(id, prefixedKey, lang, hash, ctx))
+                .flatMap(ctx -> values.removeValue(id, prefixedKey, lang, hash, ctx))
                 .flatMapIterable(Triples::asStatements)
                 .doOnSubscribe(s -> {
                     if (log.isDebugEnabled()) log.debug("Deleted property '{}' of entity '{}'", prefixedKey, id);

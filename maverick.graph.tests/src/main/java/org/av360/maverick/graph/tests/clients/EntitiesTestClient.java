@@ -279,28 +279,10 @@ public class EntitiesTestClient {
                 .exchange();
     }
 
-    public RdfConsumer addDetail(IRI entityIdentifier, String valueProperty, String detailProperty, String detailValue, String valueIdentifier) {
-        RdfConsumer consumer = new RdfConsumer(RDFFormat.TURTLE);
-        webClient.post()
-                .uri(uriBuilder -> uriBuilder
-                        .path("/api/entities/{id}/values/{valueProperty}/details/{detailProperty}")
-                        .queryParam("hash", valueIdentifier)
-                        .build(entityIdentifier.getLocalName(), valueProperty, detailProperty)
 
-                )
-                .contentType(MediaType.parseMediaType("text/plain"))
-                .accept(MediaType.parseMediaType(RDFFormat.TURTLE.getDefaultMIMEType()))
-                .body(BodyInserters.fromValue(detailValue))
-                .exchange()
-                .expectStatus().isOk()
-                .expectBody()
-                .consumeWith(consumer);
-        return consumer;
-    }
 
-    public RdfConsumer addDetail(IRI entityIdentifier, String valueProperty, String detailProperty, String detailValue) {
-        RdfConsumer consumer = new RdfConsumer(RDFFormat.TURTLE);
-        webClient.post()
+    public WebTestClient.ResponseSpec addDetail(IRI entityIdentifier, String valueProperty, String detailProperty, String detailValue, @Nullable RdfConsumer consumer) {
+        WebTestClient.ResponseSpec exchange = webClient.post()
                 .uri(uriBuilder -> uriBuilder
                         .path("/api/entities/{id}/values/{valueProperty}/details/{detailProperty}")
                         .build(entityIdentifier.getLocalName(), valueProperty, detailProperty)
@@ -309,14 +291,33 @@ public class EntitiesTestClient {
                 .contentType(MediaType.parseMediaType("text/plain"))
                 .accept(MediaType.parseMediaType(RDFFormat.TURTLE.getDefaultMIMEType()))
                 .body(BodyInserters.fromValue(detailValue))
-                .exchange()
-                .expectStatus().isOk()
-                .expectBody()
-                .consumeWith(consumer);
-        return consumer;
+                .exchange();
 
+        if(Objects.nonNull(consumer)) {
+            exchange.expectBody().consumeWith(consumer);
+        }
+
+        return exchange;
     }
 
 
+    public WebTestClient.ResponseSpec addDetail(IRI entityIdentifier, String valueProperty, String detailProperty, String detailValue, String hash,  @Nullable RdfConsumer consumer) {
+        WebTestClient.ResponseSpec exchange = webClient.post()
+                .uri(uriBuilder -> uriBuilder
+                        .path("/api/entities/{id}/values/{valueProperty}/details/{detailProperty}")
+                        .queryParam("hash", hash)
+                        .build(entityIdentifier.getLocalName(), valueProperty, detailProperty)
 
+                )
+                .contentType(MediaType.parseMediaType("text/plain"))
+                .accept(MediaType.parseMediaType(RDFFormat.TURTLE.getDefaultMIMEType()))
+                .body(BodyInserters.fromValue(detailValue))
+                .exchange();
+
+        if(Objects.nonNull(consumer)) {
+            exchange.expectBody().consumeWith(consumer);
+        }
+
+        return exchange;
+    }
 }

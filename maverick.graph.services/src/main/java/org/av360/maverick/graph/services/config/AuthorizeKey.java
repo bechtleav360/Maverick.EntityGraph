@@ -24,7 +24,7 @@ import java.util.stream.Collectors;
 public class AuthorizeKey {
 
 
-    @Around("@annotation(RequiresPrivilege)")
+    @Around("@annotation(org.av360.maverick.graph.model.aspects.RequiresPrivilege)")
     public Object authorize(ProceedingJoinPoint joinPoint) throws Throwable {
 
         Optional<SessionContext> sessionContextOptional = Arrays.stream(joinPoint.getArgs()).filter(o -> o instanceof SessionContext).findFirst().map(obk -> (SessionContext) obk);
