@@ -1,7 +1,7 @@
 package org.av360.maverick.graph.api.controller;
 
 import org.av360.maverick.graph.model.context.SessionContext;
-import org.av360.maverick.graph.services.SessionContextBuilderService;
+import org.av360.maverick.graph.services.SessionContextBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -12,7 +12,7 @@ public class AbstractController {
 
 
 
-    Set<SessionContextBuilderService> builders;
+    Set<SessionContextBuilder> builders;
 
 
     protected Mono<SessionContext>
@@ -26,7 +26,7 @@ public class AbstractController {
 
 
     @Autowired
-    public void setBuilders(Set<SessionContextBuilderService> builders) {
+    public void setBuilders(Set<SessionContextBuilder> builders) {
         this.builders = builders;
     }
 

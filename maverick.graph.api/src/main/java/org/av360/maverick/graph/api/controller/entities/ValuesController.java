@@ -124,7 +124,7 @@ public class ValuesController extends AbstractController implements ValuesAPI {
                 Retrieve the hashes by calling the operation
                 
                     """)
-    @DeleteMapping(value = "/entities/{id:[\\w|\\d|\\-|\\_]+}/VALUES/{prefixedKey:[\\w|\\d]+\\.[\\w|\\d]+}",
+    @DeleteMapping(value = "/entities/{id:[\\w|\\d|\\-|\\_]+}/values/{prefixedKey:[\\w|\\d]+\\.[\\w|\\d]+}",
             produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE})
     @ResponseStatus(HttpStatus.OK)
     public Flux<AnnotatedStatement> delete(@PathVariable String id, @PathVariable String prefixedKey, @RequestParam(required = false) String lang, @RequestParam(required = false) String hash) {

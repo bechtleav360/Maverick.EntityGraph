@@ -2,7 +2,7 @@ package org.av360.maverick.graph.feature.jobs;
 
 import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.model.context.SessionContext;
-import org.av360.maverick.graph.model.entities.Job;
+import org.av360.maverick.graph.model.entities.ScheduledJob;
 import org.av360.maverick.graph.model.entities.Transaction;
 import org.av360.maverick.graph.model.enums.RepositoryType;
 import org.av360.maverick.graph.model.errors.InvalidConfiguration;
@@ -54,7 +54,7 @@ import java.util.*;
 
 @Slf4j(topic = "graph.jobs.identifiers")
 @Component
-public class ReplaceSubjectIdentifiersJob implements Job {
+public class ReplaceSubjectIdentifiersJob implements ScheduledJob {
 
     public static String NAME = "replaceSubjectIdentifiers";
 

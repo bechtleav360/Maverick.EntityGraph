@@ -1,7 +1,7 @@
 package org.av360.maverick.graph.feature.applications.config;
 
-import org.av360.maverick.graph.feature.applications.decorators.*;
 import org.av360.maverick.graph.feature.applications.services.ApplicationsService;
+import org.av360.maverick.graph.feature.applications.services.delegates.*;
 import org.av360.maverick.graph.services.*;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Autowired;

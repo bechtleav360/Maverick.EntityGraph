@@ -37,7 +37,7 @@ public class RemoveValuesTest extends ApiTestsBase {
     }
 
     @Test
-    public void removeTitle() {
+    public void removeValueDefault() {
         super.printStart("removeTitle");
 
         RdfConsumer rdfConsumer = super.upload("requests/create-valid.ttl");
@@ -59,6 +59,21 @@ public class RemoveValuesTest extends ApiTestsBase {
         super.printStep();
         RdfConsumer resultConsumer = super.loadEntity((IRI) video.getSubject());
         Assert.equals(0, resultConsumer.countValues(video.getSubject(), SDO.TITLE));
+    }
+
+    @Test
+    public void removeAllValues() {
+
+        super.printStart("Remove a value from a list");
+
+        RdfConsumer rc1 = super.getTestClient().createEntity(EntitiesGenerator.generateCreativeWork());
+        IRI sourceIdentifier = rc1.getEntityIdentifier(SDO.CREATIVE_WORK);
+        super.getTestClient().createValue(sourceIdentifier, "sdo.author", "author one");
+        super.getTestClient().createValue(sourceIdentifier, "sdo.author", "author two", false);
+
+        super.printStep("Remove the value");
+
+        super.getTestClient().deleteValue(sourceIdentifier, "sdo.author").expectStatus().isBadRequest();
     }
 
     @Test
@@ -180,20 +195,7 @@ public class RemoveValuesTest extends ApiTestsBase {
                 .expectStatus().isBadRequest();
     }
 
-    @Test
-    public void removeValue() {
 
-        super.printStart("Remove a value from a list");
-
-        RdfConsumer rc1 = super.getTestClient().createEntity(EntitiesGenerator.generateCreativeWork());
-        IRI sourceIdentifier = rc1.getEntityIdentifier(SDO.CREATIVE_WORK);
-        super.getTestClient().createValue(sourceIdentifier, "sdo.author", "author one");
-        super.getTestClient().createValue(sourceIdentifier, "sdo.author", "author two", false);
-
-        super.printStep("Remove the value");
-
-        super.getTestClient().deleteValue(sourceIdentifier, "sdo.author").expectStatus().isBadRequest();
-    }
 
     @Test
     public void removeValueByHash() {

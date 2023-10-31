@@ -2,9 +2,9 @@ package org.av360.maverick.graph.feature.jobs.worker;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import lombok.extern.slf4j.Slf4j;
+import org.av360.maverick.graph.model.aspects.Job;
 import org.av360.maverick.graph.model.events.JobScheduledEvent;
 import org.springframework.context.ApplicationListener;
-import org.springframework.stereotype.Service;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
@@ -12,7 +12,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Slf4j(topic = "graph.jobs")
-@Service
+@Job
 public class JobQueue implements ApplicationListener<JobScheduledEvent> {
 
     private final MeterRegistry meterRegistry;

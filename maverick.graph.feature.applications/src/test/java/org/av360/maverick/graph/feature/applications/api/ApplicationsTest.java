@@ -1,8 +1,8 @@
 package org.av360.maverick.graph.feature.applications.api;
 
-import org.av360.maverick.graph.feature.applications.api.dto.Responses;
 import org.av360.maverick.graph.feature.applications.config.ApplicationsTestsBase;
-import org.av360.maverick.graph.feature.applications.services.model.ApplicationFlags;
+import org.av360.maverick.graph.feature.applications.controller.dto.Responses;
+import org.av360.maverick.graph.feature.applications.model.domain.ApplicationFlags;
 import org.av360.maverick.graph.model.context.SessionContext;
 import org.av360.maverick.graph.model.enums.RepositoryType;
 import org.av360.maverick.graph.services.QueryServices;

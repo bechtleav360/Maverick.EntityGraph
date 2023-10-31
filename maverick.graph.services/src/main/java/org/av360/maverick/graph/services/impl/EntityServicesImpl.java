@@ -1,6 +1,7 @@
 package org.av360.maverick.graph.services.impl;
 
 import lombok.extern.slf4j.Slf4j;
+import org.av360.maverick.graph.model.aspects.RequiresPrivilege;
 import org.av360.maverick.graph.model.context.SessionContext;
 import org.av360.maverick.graph.model.entities.Transaction;
 import org.av360.maverick.graph.model.enums.Activity;
@@ -18,7 +19,6 @@ import org.av360.maverick.graph.services.EntityServices;
 import org.av360.maverick.graph.services.IdentifierServices;
 import org.av360.maverick.graph.services.QueryServices;
 import org.av360.maverick.graph.services.SchemaServices;
-import org.av360.maverick.graph.services.config.RequiresPrivilege;
 import org.av360.maverick.graph.services.transformers.DelegatingTransformer;
 import org.av360.maverick.graph.services.validators.DelegatingValidator;
 import org.av360.maverick.graph.store.EntityStore;

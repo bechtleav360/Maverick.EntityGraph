@@ -2,10 +2,10 @@ package org.av360.maverick.graph.feature.admin.services;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.Validate;
+import org.av360.maverick.graph.model.aspects.RequiresPrivilege;
 import org.av360.maverick.graph.model.context.SessionContext;
 import org.av360.maverick.graph.model.enums.RepositoryType;
 import org.av360.maverick.graph.model.security.Authorities;
-import org.av360.maverick.graph.services.config.RequiresPrivilege;
 import org.av360.maverick.graph.store.behaviours.Maintainable;
 import org.eclipse.rdf4j.model.*;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;

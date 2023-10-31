@@ -35,7 +35,7 @@ public abstract class ApiTestsBase extends TestsBase {
 
 
 
-    protected void dump(Map<String, String> headers) {
+    protected void dumpStatementsAsTable(Map<String, String> headers) {
 
         CsvConsumer csvConsumer = new CsvConsumer();
         webClient
@@ -50,7 +50,7 @@ public abstract class ApiTestsBase extends TestsBase {
                 .headers(c -> headers.forEach((k,v) -> c.put(k, List.of(v))))
                 .body(BodyInserters.fromValue("SELECT DISTINCT ?subject ?predicate ?object WHERE { ?subject ?predicate ?object }"))
                 .exchange()
-                .expectStatus().isAccepted()
+                .expectStatus().isOk()
                 .expectBody()
                 .consumeWith(csvConsumer);
 
@@ -59,8 +59,8 @@ public abstract class ApiTestsBase extends TestsBase {
 
     }
 
-    protected void dump() {
-        this.dump(Map.of());
+    protected void dumpStatementsAsTable() {
+        this.dumpStatementsAsTable(Map.of());
     }
 
 

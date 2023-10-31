@@ -2,8 +2,9 @@ package org.av360.maverick.graph.feature.jobs;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
+import org.av360.maverick.graph.model.aspects.Job;
 import org.av360.maverick.graph.model.context.SessionContext;
-import org.av360.maverick.graph.model.entities.Job;
+import org.av360.maverick.graph.model.entities.ScheduledJob;
 import org.av360.maverick.graph.model.enums.ConfigurationKeysRegistry;
 import org.av360.maverick.graph.model.util.ValidateReactive;
 import org.av360.maverick.graph.services.ConfigurationService;
@@ -14,7 +15,6 @@ import org.eclipse.rdf4j.rio.RDFWriterRegistry;
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.core.io.buffer.DataBufferUtils;
 import org.springframework.core.io.buffer.DefaultDataBufferFactory;
-import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -36,9 +36,9 @@ import java.util.List;
 import java.util.Objects;
 import java.util.zip.GZIPOutputStream;
 
-@Service
+@Job
 @Slf4j(topic = "graph.feat.jobs.exports")
-public class ExportRepositoryJob implements Job {
+public class ExportRepositoryJob implements ScheduledJob {
 
     public static String NAME = "exportApplication";
     private final EntityServices entityServices;
