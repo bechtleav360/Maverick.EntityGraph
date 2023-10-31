@@ -19,6 +19,7 @@ public interface DetailsAPI {
         public String toString() {
             return super.name().toLowerCase();
         }
+
     }
 
     @Operation(summary = "Returns all details for a value or link")
@@ -66,7 +67,6 @@ public interface DetailsAPI {
     @ResponseStatus(HttpStatus.OK)
     Flux<AnnotatedStatement> createDetail(
             @PathVariable @Parameter(name = "entity identifier") String id,
-            @PathVariable(required = true, value = "values") @Parameter(name = "property type") PropertyType type,
             @PathVariable String prefixedValueKey,
             @PathVariable String prefixedDetailKey,
             @RequestParam(required = false) String hash,

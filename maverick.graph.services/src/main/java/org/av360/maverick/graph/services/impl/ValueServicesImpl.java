@@ -118,7 +118,7 @@ public class ValueServicesImpl implements ValueServices {
     public Mono<Transaction> insertDetail(String entityKey, String prefixedValueKey, String prefixedDetailKey, String value, @Nullable String hash, SessionContext ctx) {
         // find triple statement with id - prefixed value key -
         return Mono.zip(
-                        this.schemaServices.resolveLocalName(entityKey).flatMap(entityIdentifier -> this.entityServices.get(entityIdentifier, 0, ctx)),
+                        this.schemaServices.resolveLocalName(entityKey).flatMap(entityIdentifier -> this.entityServices.get(entityIdentifier, 0, true, ctx)),
                         this.schemaServices.resolvePrefixedName(prefixedValueKey),
                         this.schemaServices.resolvePrefixedName(prefixedDetailKey)
                 ).flatMap(tuple -> {
@@ -200,7 +200,7 @@ public class ValueServicesImpl implements ValueServices {
     public Mono<RdfEntity> listLinks(String entityKey, String prefixedPoperty, SessionContext ctx) {
         return Mono.zip(
                 this.schemaServices.resolveLocalName(entityKey)
-                        .flatMap(entityIdentifier -> this.entityServices.get(entityIdentifier, 0, ctx)),
+                        .flatMap(entityIdentifier -> this.entityServices.get(entityIdentifier, 0, true, ctx)),
                 this.schemaServices.resolvePrefixedName(prefixedPoperty)
         ).map(pair -> {
             RdfEntity entity = pair.getT1();
@@ -229,7 +229,7 @@ public class ValueServicesImpl implements ValueServices {
     private Mono<TripleModel> listValuesForProperty(String entityKey, String prefixedPoperty, SessionContext ctx) {
         return Mono.zip(
                 this.identifierServices.asIRI(entityKey, ctx.getEnvironment())
-                        .flatMap(entityIdentifier -> this.entityServices.get(entityIdentifier, 0, ctx)),
+                        .flatMap(entityIdentifier -> this.entityServices.get(entityIdentifier, 0, true, ctx)),
                 this.schemaServices.resolvePrefixedName(prefixedPoperty)
         ).map(pair -> {
             RdfEntity entity = pair.getT1();
@@ -237,7 +237,9 @@ public class ValueServicesImpl implements ValueServices {
             entity.reduce(st -> st.getPredicate().equals(property));
             return entity;
         }).map(entity -> {
-            new HashSet<>(entity.getModel()).forEach(statement -> {
+            new HashSet<>(entity.getModel())
+                    .stream().filter(statement -> statement.getSubject().isIRI()) // we don't generate hashes for RDF* statements
+                    .forEach(statement -> {
                 Triple triple = Values.triple(statement);
                 String hash = this.generateHashForValue(statement.getObject().stringValue());
                 entity.getModel().add(triple, DC.IDENTIFIER, Values.literal(hash));
@@ -249,14 +251,16 @@ public class ValueServicesImpl implements ValueServices {
 
     private Mono<TripleModel> listAllValues(String entityKey, SessionContext ctx) {
         return this.identifierServices.asIRI(entityKey, ctx.getEnvironment())
-                .flatMap(entityIdentifier -> this.entityServices.get(entityIdentifier, 0, ctx))
+                .flatMap(entityIdentifier -> this.entityServices.get(entityIdentifier, 0, true, ctx))
                 .map(entity -> {
                     // remove type relation and links
                     entity.reduce(statement -> statement.getObject().isLiteral());
                     return entity;
                 })
                 .map(entity -> {
-                    new HashSet<>(entity.getModel()).forEach(statement -> {
+                    new HashSet<>(entity.getModel())
+                            .stream().filter(statement -> statement.getSubject().isIRI())
+                            .forEach(statement -> {
                         Triple triple = Values.triple(statement);
                         String hash = this.generateHashForValue(statement.getObject().stringValue());
                         entity.getModel().add(triple, DC.IDENTIFIER, Values.literal(hash));

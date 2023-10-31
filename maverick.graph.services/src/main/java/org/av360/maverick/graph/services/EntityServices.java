@@ -21,13 +21,14 @@ public interface EntityServices {
     /**
      * Retrieves a complete entity representation (identifier, values and relations) from store.
      *
-     * @param entityIri The unique entity URI
-     * @param authentication   The current authentication
+     * @param authentication The current authentication
+     * @param entityIri      The unique entity URI
      * @param neighbourLevel how many levels of neigbours to include (0 is entity only, 1 is direct neighbours)
+     * @param includeDetails
      * @return Entity as Mono
      */
 
-    Mono<RdfEntity> get(IRI entityIri, int neighbourLevel, SessionContext ctx);
+    Mono<RdfEntity> get(IRI entityIri, int neighbourLevel, boolean includeDetails, SessionContext ctx);
 
     /**
      * Retrieves an entity representation (identifier, values and relations) with its direct neighbours from store.
@@ -37,7 +38,7 @@ public interface EntityServices {
      * @return Entity as Mono
      */
     default Mono<RdfEntity> get(IRI entityIri, SessionContext ctx) {
-        return this.get(entityIri, 1, ctx);
+        return this.get(entityIri, 1, false, ctx);
     }
 
     /**
@@ -96,14 +97,13 @@ public interface EntityServices {
     /**
      * Retrieves a complete entity representation (identifier, values and relations) from store.
      *
-     * @param entityKey The unique entity key
-     * @param authentication   The current authentication
-
-     *
+     * @param authentication The current authentication
+     * @param entityKey      The unique entity key
+     * @param includeDetails
      * @return Entity as Mono
      */
 
-    Mono<RdfEntity> findByKey(String entityKey, SessionContext ctx);
+    Mono<RdfEntity> findByKey(String entityKey, boolean includeDetails, SessionContext ctx);
 
     Mono<RdfEntity> findByProperty(String identifier, IRI predicate, SessionContext ctx);
 

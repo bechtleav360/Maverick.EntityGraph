@@ -15,11 +15,14 @@ import org.av360.maverick.graph.store.RepositoryBuilder;
 import org.av360.maverick.graph.store.behaviours.*;
 import org.av360.maverick.graph.store.rdf.fragments.RdfEntity;
 import org.av360.maverick.graph.store.rdf.fragments.RdfTransaction;
+import org.av360.maverick.graph.store.rdf.fragments.TripleModel;
 import org.av360.maverick.graph.store.rdf.helpers.RdfUtils;
+import org.eclipse.rdf4j.common.iteration.CloseableIteration;
 import org.eclipse.rdf4j.model.*;
 import org.eclipse.rdf4j.model.impl.LinkedHashModel;
 import org.eclipse.rdf4j.model.impl.SimpleNamespace;
 import org.eclipse.rdf4j.model.util.ModelCollector;
+import org.eclipse.rdf4j.model.util.Values;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.query.*;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
@@ -53,7 +56,6 @@ import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 @SuppressWarnings("FieldCanBeLocal")
 public abstract class AbstractStore implements TripleStore, StatementsAware, ModelAware, Maintainable, FragmentsAware {
@@ -317,7 +319,7 @@ public abstract class AbstractStore implements TripleStore, StatementsAware, Mod
     }
 
     @Override
-    public Mono<RdfEntity> getFragment(Resource id, int includeNeighborsLevel, Environment environment) {
+    public Mono<RdfEntity> getFragment(Resource id, int includeNeighborsLevel, boolean includeDetails, Environment environment) {
         return this.applyWithConnection(environment, connection -> {
             getLogger().trace("Loading fragment with id '{}' from repository {}", id, connection.getRepository().toString());
 
@@ -329,22 +331,17 @@ public abstract class AbstractStore implements TripleStore, StatementsAware, Mod
 
                 RdfEntity entity = new RdfEntity(id).withResult(statements);
 
-                if (includeNeighborsLevel >= 1) {
-                    HashSet<Value> objects = new HashSet<>(entity.getModel().objects());
-                    Stream<RepositoryResult<Statement>> repositoryResultStream = objects.stream()
-                            .filter(Value::isIRI)
-                            .map(value -> connection.getStatements((IRI) value, null, null));
+                if (includeDetails) {
+                    Model details = loadDetails(connection, entity);
+                    entity.getModel().addAll(details);
+                }
 
-                    Model neighbours = objects.stream()
-                            .filter(Value::isIRI)
-                            .map(value -> connection.getStatements((IRI) value, null, null))
-                            .flatMap(result -> result.stream())
-                            .filter(sts -> this.isLiteralStatement(sts) || this.isTypeStatement(sts))
-                            .collect(new ModelCollector());
-                    // ModelCollector
+                if (includeNeighborsLevel == 1) {
+                    Model neighbours = loadNeighbours(connection, entity);
                     entity.getModel().addAll(neighbours);
                 }
-                // embedded level 1
+
+
 
                 if (getLogger().isTraceEnabled())
                     getLogger().trace("Loaded {} statements for entity with IRI: <{}>.", entity.getModel().size(), id);
@@ -354,6 +351,31 @@ public abstract class AbstractStore implements TripleStore, StatementsAware, Mod
                 throw e;
             }
         });
+    }
+
+    private Model loadDetails(RepositoryConnection connection, TripleModel triples) {
+        return triples.getModel().stream()
+                .filter(statement -> (statement.getObject().isLiteral() || statement.getObject().isIRI()) && statement.getSubject().isIRI())
+                .map(Values::triple)
+                .flatMap(triple -> connection.getStatements(triple, null, null).stream())
+                .collect(new ModelCollector());
+    }
+
+    private Model loadNeighbours(RepositoryConnection connection, RdfEntity entity) {
+        HashSet<Value> objects = new HashSet<>(entity.getModel().objects());
+        /*Stream<RepositoryResult<Statement>> repositoryResultStream = objects.stream()
+                .filter(Value::isIRI)
+                .map(value -> connection.getStatements((IRI) value, null, null));*/
+
+        return objects.stream()
+                .filter(Value::isIRI)
+                .map(value -> connection.getStatements((IRI) value, null, null))
+                .flatMap(CloseableIteration::stream)
+                .filter(sts -> this.isLiteralStatement(sts) || this.isTypeStatement(sts))
+                .collect(new ModelCollector());
+
+        // ModelCollector
+
     }
 
     private boolean isLiteralStatement(Statement statement) {

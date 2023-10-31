@@ -279,11 +279,44 @@ public class EntitiesTestClient {
                 .exchange();
     }
 
-    public void addDetail(IRI entityIdentifier, String valueProperty, String detailProperty, String detailValue, String valueIdentifier) {
-        return; 
+    public RdfConsumer addDetail(IRI entityIdentifier, String valueProperty, String detailProperty, String detailValue, String valueIdentifier) {
+        RdfConsumer consumer = new RdfConsumer(RDFFormat.TURTLE);
+        webClient.post()
+                .uri(uriBuilder -> uriBuilder
+                        .path("/api/entities/{id}/values/{valueProperty}/details/{detailProperty}")
+                        .queryParam("hash", valueIdentifier)
+                        .build(entityIdentifier.getLocalName(), valueProperty, detailProperty)
+
+                )
+                .contentType(MediaType.parseMediaType("text/plain"))
+                .accept(MediaType.parseMediaType(RDFFormat.TURTLE.getDefaultMIMEType()))
+                .body(BodyInserters.fromValue(detailValue))
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .consumeWith(consumer);
+        return consumer;
     }
 
-    public void addDetail(IRI entityIdentifier, String valueProperty, String detailProperty, String detailValue) {
-        this.addDetail(entityIdentifier, valueProperty, detailProperty, detailValue, null);
+    public RdfConsumer addDetail(IRI entityIdentifier, String valueProperty, String detailProperty, String detailValue) {
+        RdfConsumer consumer = new RdfConsumer(RDFFormat.TURTLE);
+        webClient.post()
+                .uri(uriBuilder -> uriBuilder
+                        .path("/api/entities/{id}/values/{valueProperty}/details/{detailProperty}")
+                        .build(entityIdentifier.getLocalName(), valueProperty, detailProperty)
+
+                )
+                .contentType(MediaType.parseMediaType("text/plain"))
+                .accept(MediaType.parseMediaType(RDFFormat.TURTLE.getDefaultMIMEType()))
+                .body(BodyInserters.fromValue(detailValue))
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .consumeWith(consumer);
+        return consumer;
+
     }
+
+
+
 }

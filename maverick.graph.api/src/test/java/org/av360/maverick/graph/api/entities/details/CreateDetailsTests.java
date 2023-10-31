@@ -1,12 +1,17 @@
 package org.av360.maverick.graph.api.entities.details;
 
+import org.av360.maverick.graph.model.vocabulary.DCTERMS;
 import org.av360.maverick.graph.model.vocabulary.SDO;
 import org.av360.maverick.graph.tests.config.TestSecurityConfig;
 import org.av360.maverick.graph.tests.generator.EntitiesGenerator;
 import org.av360.maverick.graph.tests.util.ApiTestsBase;
 import org.av360.maverick.graph.tests.util.RdfConsumer;
 import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.ValueFactory;
+import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
+import org.eclipse.rdf4j.model.util.Values;
 import org.eclipse.rdf4j.rio.RDFFormat;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -37,6 +42,11 @@ public class CreateDetailsTests extends ApiTestsBase  {
         super.printStep("Retrieving all values");
         RdfConsumer rc2 = super.getTestClient().listValues(sourceIdentifier);
         rc2.print(RDFFormat.TURTLESTAR);
+
+        ValueFactory vf = SimpleValueFactory.getInstance();
+
+        Assertions.assertTrue(rc2.hasStatement(sourceIdentifier, SDO.TEACHES, Values.literal("a certain skill", "en")));
+        Assertions.assertTrue(rc2.hasStatement(Values.triple(vf, sourceIdentifier, SDO.TEACHES, Values.literal("a certain skill", "en")), DCTERMS.SOURCE, Values.literal("zephyr")));
     }
 
 
