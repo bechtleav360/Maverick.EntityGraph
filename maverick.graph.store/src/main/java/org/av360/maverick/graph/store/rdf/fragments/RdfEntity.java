@@ -7,10 +7,6 @@ import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.repository.RepositoryResult;
 
-import java.util.Set;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
-
 /**
  * Represents a named graph of one particular entity.
  * <p>
@@ -51,11 +47,6 @@ public class RdfEntity extends TripleModel implements Entity {
         return identifier;
     }
 
-    public void reduce(Predicate<Statement> filterFunction) {
-        Set<Statement> collect = this.streamStatements().filter(filterFunction).collect(Collectors.toSet());
-        this.getModel().clear();;
-        this.getModel().addAll(collect);
-    }
 
 
 }

@@ -83,7 +83,7 @@ public class DetailsController extends AbstractController implements DetailsAPI 
     }
 
     @Override
-    @Operation(summary = "Creates a statement about a statement use the post body as value.")
+    @Operation(summary = "Adds details for a value.")
     @PostMapping(value = "/entities/{id:[\\w|\\d|\\-|\\_]+}/{type}/{prefixedValueKey:[\\w|\\d]+\\.[\\w|\\d]+}/details/{prefixedDetailKey:[\\w|\\d]+\\.[\\w|\\d]+}",
             consumes = MediaType.TEXT_PLAIN_VALUE,
             produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE})
@@ -93,13 +93,15 @@ public class DetailsController extends AbstractController implements DetailsAPI 
             @PathVariable(required = true, value = "values") @Parameter(name = "property type") PropertyType type,
             @PathVariable String prefixedValueKey,
             @PathVariable String prefixedDetailKey,
+            @RequestParam(required = false) String hash,
             @RequestBody String value
+
     ) {
         Assert.isTrue(!value.matches("(?s).*[\\n\\r].*"), "Newlines in request body are not supported");
 
 
         return super.acquireContext()
-                .flatMap(ctx -> values.insertDetail(id, prefixedValueKey, prefixedDetailKey, value, ctx))
+                .flatMap(ctx -> values.insertDetail(id, prefixedValueKey, prefixedDetailKey, value, hash , ctx))
                 .flatMapIterable(Triples::asStatements)
                 .doOnSubscribe(s -> {
                     if (log.isDebugEnabled())

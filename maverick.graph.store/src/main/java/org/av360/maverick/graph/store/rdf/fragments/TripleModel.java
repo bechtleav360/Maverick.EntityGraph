@@ -6,6 +6,7 @@ import org.av360.maverick.graph.store.rdf.helpers.NamespacedModelBuilder;
 import org.eclipse.rdf4j.model.*;
 
 import java.util.*;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -85,6 +86,12 @@ public class TripleModel implements Triples {
 
     public Stream<Statement> streamStatements(Resource... contexts) {
         return this.streamStatements(null, null, null, contexts);
+    }
+
+    public void reduce(Predicate<Statement> filterFunction) {
+        Set<Statement> collect = this.streamStatements().filter(filterFunction).collect(Collectors.toSet());
+        this.getModel().clear();;
+        this.getModel().addAll(collect);
     }
 
 

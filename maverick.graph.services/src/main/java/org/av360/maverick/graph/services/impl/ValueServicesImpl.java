@@ -51,6 +51,7 @@ public class ValueServicesImpl implements ValueServices {
     private final EntityServices entityServices;
 
     private final IdentifierServices identifierServices;
+
     public ValueServicesImpl(SchemaStore schemaStore,
                              ApplicationEventPublisher eventPublisher, SchemaServices schemaServices, EntityServices entityServices, IdentifierServices identifierServices) {
         this.eventPublisher = eventPublisher;
@@ -90,7 +91,7 @@ public class ValueServicesImpl implements ValueServices {
 
     @Override
     @RequiresPrivilege(Authorities.CONTRIBUTOR_VALUE)
-    public Mono<Transaction> insertLink(String entityKey, String prefixedKey, String targetKey,  @Nullable Boolean replace,  SessionContext ctx) {
+    public Mono<Transaction> insertLink(String entityKey, String prefixedKey, String targetKey, @Nullable Boolean replace, SessionContext ctx) {
         return Mono.zip(
                         entityServices.resolveAndVerify(entityKey, ctx),
                         entityServices.resolveAndVerify(targetKey, ctx),
@@ -114,7 +115,7 @@ public class ValueServicesImpl implements ValueServices {
     }
 
     @Override
-    public Mono<Transaction> insertDetail(String entityKey, String prefixedValueKey, String prefixedDetailKey, String value, SessionContext ctx) {
+    public Mono<Transaction> insertDetail(String entityKey, String prefixedValueKey, String prefixedDetailKey, String value, @Nullable String hash, SessionContext ctx) {
         // find triple statement with id - prefixed value key -
         return Mono.zip(
                         this.schemaServices.resolveLocalName(entityKey).flatMap(entityIdentifier -> this.entityServices.get(entityIdentifier, 0, ctx)),
@@ -217,7 +218,15 @@ public class ValueServicesImpl implements ValueServices {
 
     @Override
     @RequiresPrivilege(Authorities.READER_VALUE)
-    public Mono<TripleModel> listValues(String entityKey, String prefixedPoperty, SessionContext ctx) {
+    public Mono<TripleModel> listValues(String entityKey, @Nullable String prefixedPoperty, SessionContext ctx) {
+        if(Objects.isNull(prefixedPoperty)) {
+            return this.listAllValues(entityKey, ctx);
+        } else {
+            return this.listValuesForProperty(entityKey, prefixedPoperty, ctx);
+        }
+    }
+
+    private Mono<TripleModel> listValuesForProperty(String entityKey, String prefixedPoperty, SessionContext ctx) {
         return Mono.zip(
                 this.identifierServices.asIRI(entityKey, ctx.getEnvironment())
                         .flatMap(entityIdentifier -> this.entityServices.get(entityIdentifier, 0, ctx)),
@@ -234,10 +243,26 @@ public class ValueServicesImpl implements ValueServices {
                 entity.getModel().add(triple, DC.IDENTIFIER, Values.literal(hash));
 
             });
-
-
             return entity;
         });
+    }
+
+    private Mono<TripleModel> listAllValues(String entityKey, SessionContext ctx) {
+        return this.identifierServices.asIRI(entityKey, ctx.getEnvironment())
+                .flatMap(entityIdentifier -> this.entityServices.get(entityIdentifier, 0, ctx))
+                .map(entity -> {
+                    // remove type relation and links
+                    entity.reduce(statement -> statement.getObject().isLiteral());
+                    return entity;
+                })
+                .map(entity -> {
+                    new HashSet<>(entity.getModel()).forEach(statement -> {
+                        Triple triple = Values.triple(statement);
+                        String hash = this.generateHashForValue(statement.getObject().stringValue());
+                        entity.getModel().add(triple, DC.IDENTIFIER, Values.literal(hash));
+                    });
+                    return entity;
+                });
     }
 
     private String generateHashForValue(String value) {
@@ -273,13 +298,12 @@ public class ValueServicesImpl implements ValueServices {
                             if (object.isIRI()) {
                                 return Mono.error(new InvalidEntityUpdate(entityIdentifier, "Invalid to remove links via the values api."));
                             } else if (object.isLiteral()) {
-                                if(StringUtils.isNotBlank(valueIdentifier)) {
+                                if (StringUtils.isNotBlank(valueIdentifier)) {
                                     String hash = this.generateHashForValue(object.stringValue());
-                                    if(hash.equalsIgnoreCase(valueIdentifier)) {
+                                    if (hash.equalsIgnoreCase(valueIdentifier)) {
                                         statementsToRemove.add(st);
                                     }
-                                } else
-                                if(StringUtils.isNotBlank(languageTag)) {
+                                } else if (StringUtils.isNotBlank(languageTag)) {
                                     Literal currentLiteral = (Literal) object;
                                     if (StringUtils.equals(currentLiteral.getLanguage().orElse("invalid"), languageTag)) {
                                         statementsToRemove.add(st);
@@ -288,13 +312,13 @@ public class ValueServicesImpl implements ValueServices {
                             }
                         }
 
-                        if(statementsToRemove.isEmpty() && StringUtils.isNotBlank(valueIdentifier)) {
+                        if (statementsToRemove.isEmpty() && StringUtils.isNotBlank(valueIdentifier)) {
                             return Mono.error(new InvalidEntityUpdate(entityIdentifier, "No value found with requested hash '%s'".formatted(valueIdentifier)));
                         }
-                        if(statementsToRemove.isEmpty() && StringUtils.isNotBlank(languageTag)) {
+                        if (statementsToRemove.isEmpty() && StringUtils.isNotBlank(languageTag)) {
                             return Mono.error(new InvalidEntityUpdate(entityIdentifier, "No value found with requested language tag '%s'".formatted(languageTag)));
                         }
-                        if(statementsToRemove.size() > 1 && StringUtils.isNotBlank(languageTag)) {
+                        if (statementsToRemove.size() > 1 && StringUtils.isNotBlank(languageTag)) {
                             return Mono.error(new InvalidEntityUpdate(entityIdentifier, "Multiple values found for language tag '%s'. Please delete by hash.".formatted(languageTag)));
                         }
 
@@ -324,7 +348,7 @@ public class ValueServicesImpl implements ValueServices {
 
     }
 
-    private Mono<Transaction> insertStatement(IRI entityIdentifier, IRI predicate, Value value, Transaction transaction, boolean replace,  SessionContext ctx) {
+    private Mono<Transaction> insertStatement(IRI entityIdentifier, IRI predicate, Value value, Transaction transaction, boolean replace, SessionContext ctx) {
 
         Triple triple = SimpleValueFactory.getInstance().createTriple(entityIdentifier, predicate, value);
 
@@ -337,9 +361,9 @@ public class ValueServicesImpl implements ValueServices {
                     if (triple.getObject().isBNode()) {
                         log.trace("Insert link for {} to anonymous node is forbidden.", entityIdentifier);
                         return Mono.error(new InvalidEntityUpdate(entityIdentifier, "Trying to link to anonymous node."));
-                    } else if(triple.getObject().isIRI()) {
+                    } else if (triple.getObject().isIRI()) {
                         return this.buildTransactionForIRIStatement(triple, entity, transaction, replace, ctx);
-                    } else if(triple.getObject().isLiteral()) {
+                    } else if (triple.getObject().isLiteral()) {
                         return this.buildTransactionForLiteralStatement(triple, entity, transaction, replace, ctx);
                     } else return Mono.empty();
 
@@ -353,7 +377,7 @@ public class ValueServicesImpl implements ValueServices {
 
     private Mono<Transaction> buildTransactionForIRIStatement(Triple statement, RdfEntity entity, Transaction transaction, boolean replace, SessionContext ctx) {
         // check if entity already has this statement. If yes, we do nothing
-        if (statement.getObject().isIRI() && entity.hasStatement(statement) && ! replace) {
+        if (statement.getObject().isIRI() && entity.hasStatement(statement) && !replace) {
             log.trace("Entity {} already has a link '{}' for predicate '{}', ignoring update.", entity.getIdentifier(), statement.getObject(), statement.getPredicate());
             return Mono.empty();
         } else {

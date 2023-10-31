@@ -6,6 +6,7 @@ import org.av360.maverick.graph.tests.generator.EntitiesGenerator;
 import org.av360.maverick.graph.tests.util.ApiTestsBase;
 import org.av360.maverick.graph.tests.util.RdfConsumer;
 import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.rio.RDFFormat;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -32,6 +33,10 @@ public class CreateDetailsTests extends ApiTestsBase  {
 
         super.printStep("Setting detail");
         super.getTestClient().addDetail(sourceIdentifier, "sdo.teaches", "dc.source", "zephyr");
+
+        super.printStep("Retrieving all values");
+        RdfConsumer rc2 = super.getTestClient().listValues(sourceIdentifier);
+        rc2.print(RDFFormat.TURTLESTAR);
     }
 
 

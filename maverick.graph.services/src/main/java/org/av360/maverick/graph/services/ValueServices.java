@@ -59,10 +59,16 @@ public interface ValueServices {
      * @param prefixedValueKey
      * @param prefixedDetailKey
      * @param value
+     * @param hash
      * @param ctx
      * @return
      */
-    Mono<Transaction> insertDetail(String id, String prefixedValueKey, String prefixedDetailKey, String value, SessionContext ctx);
+    Mono<Transaction> insertDetail(String id,
+                                   String prefixedValueKey,
+                                   String prefixedDetailKey,
+                                   String value,
+                                   @Nullable String hash,
+                                   SessionContext ctx);
 
     /**
      * Inserts a set of statement as embedded entity
@@ -119,5 +125,5 @@ public interface ValueServices {
     Mono<RdfEntity> listLinks(String id, String prefixedKey, SessionContext ctx);
 
 
-    Mono<TripleModel> listValues(String id, String prefixedKey, SessionContext ctx);
+    Mono<TripleModel> listValues(String id, @Nullable String prefixedKey, SessionContext ctx);
 }

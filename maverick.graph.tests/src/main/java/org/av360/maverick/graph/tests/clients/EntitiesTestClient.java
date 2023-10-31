@@ -157,6 +157,23 @@ public class EntitiesTestClient {
 
     }
 
+    public RdfConsumer listValues(IRI sourceIdentifier) {
+        RDFFormat format = RDFFormat.TURTLESTAR;
+
+        RdfConsumer rdfConsumer = new RdfConsumer(format, false);
+        webClient.get()
+                .uri(uriBuilder -> uriBuilder
+                        .path("/api/entities/{id}/values")
+                        .build(sourceIdentifier.getLocalName())
+                )
+                .accept(RdfUtils.getMediaType(format))
+                .header("X-API-KEY", "test")
+                .exchange()
+                .expectBody()
+                .consumeWith(rdfConsumer);
+        return rdfConsumer;
+    }
+
 
     public RdfConsumer listValues(IRI sourceIdentifier, String property) {
         RDFFormat format = RDFFormat.TURTLESTAR;
