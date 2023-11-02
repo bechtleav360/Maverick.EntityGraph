@@ -53,9 +53,7 @@ public interface DetailsAPI {
             @PathVariable @Parameter(name = "entity identifier") String id,
             @PathVariable String prefixedValueKey,
             @PathVariable String prefixedDetailKey,
-            @RequestParam(required = false) boolean multiple,
-            @RequestParam(required = false) String hash
-    );
+            @RequestParam(required = false) String languageTag, @RequestParam(required = false) String hash);
 
 
 

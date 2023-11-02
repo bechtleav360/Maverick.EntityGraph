@@ -121,7 +121,9 @@ public class ValuesController extends AbstractController implements ValuesAPI {
     @Operation(summary = "Removes a property value.",
             description = """
                 If you have multiple values for a given property, you need to select a specific value either by language tag (if it is unique) or by hash. 
-                Retrieve the hashes by calling the operation
+                Retrieve the hashes by calling the operation. 
+                
+                Will also remove all details associated with this value. 
                 
                     """)
     @DeleteMapping(value = "/entities/{id:[\\w|\\d|\\-|\\_]+}/values/{prefixedKey:[\\w|\\d]+\\.[\\w|\\d]+}",

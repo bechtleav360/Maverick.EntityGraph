@@ -266,7 +266,7 @@ public abstract class AbstractStore implements TripleStore, StatementsAware, Mod
             if (merge) {
                 RdfTransaction merged = new RdfTransaction();
                 transactions.forEach(rdfTransaction -> {
-                    merged.getModel().addAll(rdfTransaction.get());
+                    merged.getModel().addAll(rdfTransaction.getModel());
                 });
                 transactions.clear();
                 transactions.add(merged);
@@ -279,9 +279,9 @@ public abstract class AbstractStore implements TripleStore, StatementsAware, Mod
                     // FIXME: the approach based on the context works only as long as the statements in the graph are all within the global context only
                     // with this approach, we cannot insert a statement to a context (since it is already in GRAPH_CREATED), every st can only be in one context
                     ValueFactory vf = connection.getValueFactory();
-                    Model insertStatements = trx.get(Transactions.GRAPH_CREATED);
-                    Model updateStatements = trx.get(Transactions.GRAPH_UPDATED);
-                    Model removeStatements = trx.get(Transactions.GRAPH_DELETED);
+                    Model insertStatements = trx.getModel(Transactions.GRAPH_CREATED);
+                    Model updateStatements = trx.getModel(Transactions.GRAPH_UPDATED);
+                    Model removeStatements = trx.getModel(Transactions.GRAPH_DELETED);
 
                     try {
                         if (insertStatements.size() > 0) {

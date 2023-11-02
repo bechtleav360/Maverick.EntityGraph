@@ -45,6 +45,7 @@ public class ValueServicesImpl implements ValueServices {
     final DeleteValue deleteValue;
     final InsertDetails insertDetails;
     final DeleteLinks deleteLinks;
+    public DeleteDetails deleteDetails;
 
 
     public ValueServicesImpl(SchemaStore schemaStore,
@@ -64,6 +65,7 @@ public class ValueServicesImpl implements ValueServices {
         this.insertLinks = new InsertLinks(this);
         this.insertDetails = new InsertDetails(this);
         this.deleteLinks = new DeleteLinks(this);
+        this.deleteDetails = new DeleteDetails(this);
 
 
     }
@@ -125,6 +127,12 @@ public class ValueServicesImpl implements ValueServices {
     @RequiresPrivilege(Authorities.CONTRIBUTOR_VALUE)
     public Mono<Transaction> removeLink(String entityKey, String prefixedProperty, String targetKey, SessionContext ctx) {
         return this.deleteLinks.remove(entityKey, prefixedProperty, targetKey, ctx);
+    }
+
+    @Override
+    @RequiresPrivilege(Authorities.CONTRIBUTOR_VALUE)
+    public Mono<Transaction> removeDetail(String entityKey, String prefixedValuePredicate, String prefixedDetailPredicate, String languageTag, String valueHash, SessionContext ctx) {
+        return this.deleteDetails.remove(entityKey, prefixedValuePredicate, prefixedDetailPredicate, languageTag, valueHash, ctx);
     }
 
 

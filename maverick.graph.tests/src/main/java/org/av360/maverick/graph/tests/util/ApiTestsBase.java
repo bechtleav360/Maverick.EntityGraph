@@ -33,7 +33,10 @@ public abstract class ApiTestsBase extends TestsBase {
         this.entitiesTestClient = new EntitiesTestClient(webClient);
     }
 
-
+    protected void dumpStatementsAsTable(CsvConsumer csvConsumer) {
+        this.printSummary("All statements in repository");
+        System.out.println(csvConsumer.getMapAsString());
+    }
 
     protected void dumpStatementsAsTable(Map<String, String> headers) {
 
@@ -53,11 +56,10 @@ public abstract class ApiTestsBase extends TestsBase {
                 .expectStatus().isOk()
                 .expectBody()
                 .consumeWith(csvConsumer);
-
-        this.printSummary("All statements in repository");
-        System.out.println(csvConsumer.getMapAsString());
-
+        this.dumpStatementsAsTable(csvConsumer);
     }
+
+
 
     protected void dumpStatementsAsTable() {
         this.dumpStatementsAsTable(Map.of());
@@ -114,10 +116,11 @@ public abstract class ApiTestsBase extends TestsBase {
                 .expectBody()
                 .consumeWith(rdfConsumer);
         return rdfConsumer;
-
     }
 
     protected EntitiesTestClient getTestClient() {
         return this.entitiesTestClient;
     }
+
+
 }

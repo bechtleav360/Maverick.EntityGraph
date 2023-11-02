@@ -69,17 +69,20 @@ public class DetailsController extends AbstractController implements DetailsAPI 
     @Override
     @Operation(summary = "Delete a specific detail for a value")
     @DeleteMapping(value = "/entities/{id:[\\w|\\d|\\-|\\_]+}/values/{prefixedValueKey:[\\w|\\d]+\\.[\\w|\\d]+}/details/{prefixedDetailKey:[\\w|\\d]+\\.[\\w|\\d]+}",
-            consumes = MediaType.TEXT_PLAIN_VALUE,
             produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE})
     @ResponseStatus(HttpStatus.OK)
     public Flux<AnnotatedStatement> deleteDetail(
             @PathVariable @Parameter(name = "entity identifier") String id,
             @PathVariable String prefixedValueKey,
             @PathVariable String prefixedDetailKey,
-            @RequestParam(required = false) boolean multiple,
-            @RequestParam(required = false) String hash
-    ) {
-        return Flux.error(new NotImplementedException("Method has not been implemented yet."));
+            @RequestParam(required = false) String lang,
+            @RequestParam(required = false) String hash) {
+        return super.acquireContext()
+                .flatMap(ctx -> values.removeDetail(id, prefixedValueKey, prefixedDetailKey, lang, hash, ctx))
+                .flatMapIterable(Triples::asStatements)
+                .doOnSubscribe(s -> {
+                    if (log.isDebugEnabled()) log.debug("Deleted property '{}' of entity '{}'", prefixedValueKey, id);
+                });
     }
 
     @Override
@@ -97,8 +100,6 @@ public class DetailsController extends AbstractController implements DetailsAPI 
 
     ) {
         Assert.isTrue(!value.matches("(?s).*[\\n\\r].*"), "Newlines in request body are not supported");
-
-
         return super.acquireContext()
                 .flatMap(ctx -> values.insertDetail(id, prefixedValueKey, prefixedDetailKey, value, hash , ctx))
                 .flatMapIterable(Triples::asStatements)

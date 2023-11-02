@@ -38,6 +38,8 @@ public class DeleteValue {
 
     public Mono<Transaction> remove(IRI entityIdentifier, IRI predicate, String languageTag, String valueIdentifier, SessionContext ctx) {
         return this.removeValueStatement(entityIdentifier, predicate, languageTag, valueIdentifier, new RdfTransaction(), ctx)
+                .flatMap(trx -> ctrl.deleteDetails.removeWithValue(entityIdentifier, predicate, languageTag, valueIdentifier, trx, ctx))
+                .flatMap(trx -> ctrl.entityServices.getStore(ctx).commit(trx, ctx.getEnvironment()))
                 .doOnSuccess(trx -> {
                     ctrl.eventPublisher.publishEvent(new ValueRemovedEvent(trx));
                 });
@@ -96,6 +98,6 @@ public class DeleteValue {
                     }
 
                 })
-                .flatMap(trx -> ctrl.entityServices.getStore(ctx).commit(trx, ctx.getEnvironment()));
+               ;
     }
 }

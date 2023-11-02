@@ -31,7 +31,7 @@ public class TransactionsStoreImpl extends AbstractStore implements Transactions
             transactions.forEach(trx -> {
                 try {
                     connection.begin();
-                    connection.add(trx.get(Transactions.GRAPH_PROVENANCE));
+                    connection.add(trx.getModel(Transactions.GRAPH_PROVENANCE));
                     connection.commit();
                 } catch (Exception e) {
                     log.error("Error while storing transaction, performing rollback.", e);

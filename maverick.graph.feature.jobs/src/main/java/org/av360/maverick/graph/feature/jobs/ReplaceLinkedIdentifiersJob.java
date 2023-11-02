@@ -112,7 +112,7 @@ public class ReplaceLinkedIdentifiersJob implements ScheduledJob {
                 .flatMap(bag -> this.deleteStatements(bag, ctx))
                 .buffer(100)
                 .flatMap(transactions -> this.commit(transactions, ctx))
-                .doOnNext(transaction -> Assert.isTrue(transaction.get(Transactions.GRAPH_PROVENANCE).contains(null, Transactions.STATUS, Transactions.SUCCESS), "Failed transaction: \n" + transaction))
+                .doOnNext(transaction -> Assert.isTrue(transaction.getModel(Transactions.GRAPH_PROVENANCE).contains(null, Transactions.STATUS, Transactions.SUCCESS), "Failed transaction: \n" + transaction))
                 .buffer(5)
                 .flatMap(transactions -> this.storeTransactions(transactions, ctx));
     }

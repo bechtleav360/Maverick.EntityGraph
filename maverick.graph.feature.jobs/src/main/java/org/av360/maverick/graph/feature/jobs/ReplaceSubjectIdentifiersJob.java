@@ -121,7 +121,7 @@ public class ReplaceSubjectIdentifiersJob implements ScheduledJob {
                 .flatMap(bag -> this.deleteStatements(bag, ctx))
                 .buffer(50)
                 .flatMap(transactions -> this.commit(transactions, ctx))
-                .doOnNext(transaction -> Assert.isTrue(transaction.get().contains(null, Transactions.STATUS, Transactions.SUCCESS), "Failed transaction: \n" + transaction))
+                .doOnNext(transaction -> Assert.isTrue(transaction.getModel().contains(null, Transactions.STATUS, Transactions.SUCCESS), "Failed transaction: \n" + transaction))
                 .buffer(5)
                 .flatMap(transactions -> this.storeTransactions(transactions, ctx));
     }
