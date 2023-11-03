@@ -17,7 +17,7 @@ import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 
-@Slf4j(topic = "graph.svc.value.del")
+@Slf4j(topic = "graph.svc.value.remove")
 public class DeleteValue {
     private final ValueServicesImpl ctrl;
 

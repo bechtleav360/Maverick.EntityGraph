@@ -5,6 +5,7 @@ import org.av360.maverick.graph.model.context.SessionContext;
 import org.av360.maverick.graph.model.entities.Transaction;
 import org.av360.maverick.graph.model.errors.InconsistentModelException;
 import org.av360.maverick.graph.model.errors.requests.InvalidEntityUpdate;
+import org.av360.maverick.graph.model.errors.store.InvalidEntityModelException;
 import org.av360.maverick.graph.model.events.DetailInsertedEvent;
 import org.av360.maverick.graph.store.rdf.fragments.RdfEntity;
 import org.av360.maverick.graph.store.rdf.fragments.RdfTransaction;
@@ -50,7 +51,7 @@ public class InsertDetails {
     }
 
     private Mono<Transaction> insertWithHash(RdfEntity entity, IRI valuePredicate, IRI detailPredicate, String value, String hash, SessionContext ctx) {
-        return this.ctrl.readValues.buildDetailStatementForHashedValue(entity, valuePredicate, detailPredicate, hash)
+        return this.buildDetailStatementForValueWithHash(entity, valuePredicate, detailPredicate, hash)
                 .flatMap(statement -> ctrl.entityServices.getStore(ctx).addStatement(statement, new RdfTransaction()))
                 .flatMap(trx -> ctrl.entityServices.getStore(ctx).commit(trx, ctx.getEnvironment()));
     }
@@ -78,5 +79,27 @@ public class InsertDetails {
                 })
                 .flatMap(statement -> ctrl.entityServices.getStore(ctx).addStatement(statement, new RdfTransaction()))
                 .flatMap(trx -> ctrl.entityServices.getStore(ctx).commit(trx, ctx.getEnvironment()));
+    }
+
+
+    Mono<Statement> buildDetailStatementForValueWithHash(RdfEntity entity, IRI valuePredicate, IRI detailPredicate, String valueHash) {
+        Optional<Triple> requestedTriple = this.ctrl.readValues.findValueTripleByHash(entity, valuePredicate, valueHash);
+        if(requestedTriple.isEmpty()) return Mono.error(new InvalidEntityUpdate(entity.getIdentifier(), "No value exists in entity <%s> for predicate <%s> and hash '%s'".formatted(entity.getIdentifier(), valuePredicate, valueHash)));
+
+        Statement annotationStatement = Statements.statement(requestedTriple.get(), detailPredicate, null, null);
+        return Mono.just(annotationStatement);
+    }
+
+    Mono<Statement> buildDetailStatementForSingleValue(RdfEntity entity, IRI valuePredicate, IRI detailPredicate) {
+        try {
+            Optional<Triple>  requestedTriple = this.ctrl.readValues.findSingleValueTriple(entity, valuePredicate);
+            if(requestedTriple.isEmpty()) return Mono.error(new InvalidEntityUpdate(entity.getIdentifier(), "No value exists in entity <%s> for predicate <%s>".formatted(entity.getIdentifier(), valuePredicate)));
+
+            Statement annotationStatement = Statements.statement(requestedTriple.get(), detailPredicate, null, null);
+            return Mono.just(annotationStatement);
+        } catch (InvalidEntityModelException e) {
+            return  Mono.error(e);
+        }
+
     }
 }

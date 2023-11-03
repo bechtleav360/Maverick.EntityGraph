@@ -1,5 +1,6 @@
 package org.av360.maverick.graph.services.impl.values;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.NotImplementedException;
 import org.av360.maverick.graph.model.context.SessionContext;
 import org.av360.maverick.graph.model.entities.Transaction;
@@ -17,6 +18,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+@Slf4j(topic = "graph.svc.detail.del")
 public class DeleteDetails {
     private final ValueServicesImpl ctrl;
 
@@ -73,10 +75,10 @@ public class DeleteDetails {
                         return this.removeWithHash(entity, valuePredicate, detailPredicate, valueHash, ctx);
                     }
                     if (Objects.nonNull(languageTag)) {
-                        return this.removeWithLanguageTag(entityKey, prefixedValuePredicate, prefixedDetailPredicate, languageTag, ctx);
+                        return this.removeWithLanguageTag(entity, valuePredicate, detailPredicate, languageTag, ctx);
                     }
 
-                    return this.remove(entityKey, prefixedValuePredicate, prefixedDetailPredicate, ctx);
+                    return this.remove(entity, valuePredicate, detailPredicate, ctx);
 
                 })
                 .doOnSuccess(trx -> {
@@ -86,18 +88,23 @@ public class DeleteDetails {
 
     }
 
-    private Mono<Transaction> remove(String entityKey, String prefixedValuePredicate, String prefixedDetailPredicate, SessionContext ctx) {
-        throw new NotImplementedException();
-        // this.ctrl.readValues.
-    }
-
-    private Mono<Transaction> removeWithLanguageTag(String entityKey, String prefixedValuePredicate, String prefixedDetailPredicate, String languageTag, SessionContext ctx) {
-        throw new NotImplementedException();
-    }
-
-    private Mono<Transaction> removeWithHash(RdfEntity entity, IRI valuePredicate, IRI detailPredicate, String valueHash, SessionContext ctx) {
-        return this.ctrl.readValues.buildDetailStatementForHashedValue(entity, valuePredicate, detailPredicate, valueHash)
+    private Mono<Transaction> remove(RdfEntity entity, IRI valuePredicate, IRI detailPredicate, SessionContext ctx) {
+        return this.ctrl.insertDetails.buildDetailStatementForSingleValue(entity, valuePredicate, detailPredicate)
                 .flatMap(statement -> ctrl.entityServices.getStore(ctx).removeStatement(statement, new RdfTransaction()))
                 .flatMap(trx -> ctrl.entityServices.getStore(ctx).commit(trx, ctx.getEnvironment()));
     }
+
+    private Mono<Transaction> removeWithLanguageTag(RdfEntity entity, IRI valuePredicate, IRI detailPredicate, String languageTag, SessionContext ctx) {
+        // this.ctrl.readValues.findValueTripleByLanguageTag(entity, valuePredicate, languageTag);
+        throw new NotImplementedException("You have to provide the value hash, not a language tag, to delete a detail.");
+    }
+
+    private Mono<Transaction> removeWithHash(RdfEntity entity, IRI valuePredicate, IRI detailPredicate, String valueHash, SessionContext ctx) {
+        return this.ctrl.insertDetails.buildDetailStatementForValueWithHash(entity, valuePredicate, detailPredicate, valueHash)
+                .flatMap(statement -> ctrl.entityServices.getStore(ctx).removeStatement(statement, new RdfTransaction()))
+                .flatMap(trx -> ctrl.entityServices.getStore(ctx).commit(trx, ctx.getEnvironment()));
+    }
+
+
+
 }
