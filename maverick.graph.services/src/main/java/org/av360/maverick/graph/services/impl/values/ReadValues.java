@@ -1,11 +1,14 @@
 package org.av360.maverick.graph.services.impl.values;
 
 import org.av360.maverick.graph.model.context.SessionContext;
+import org.av360.maverick.graph.model.errors.requests.InvalidEntityUpdate;
 import org.av360.maverick.graph.model.identifier.ChecksumGenerator;
 import org.av360.maverick.graph.store.rdf.fragments.RdfEntity;
 import org.av360.maverick.graph.store.rdf.fragments.TripleModel;
 import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.Triple;
+import org.eclipse.rdf4j.model.util.Statements;
 import org.eclipse.rdf4j.model.util.Values;
 import org.eclipse.rdf4j.model.vocabulary.DC;
 import org.eclipse.rdf4j.model.vocabulary.DCTERMS;
@@ -78,7 +81,7 @@ public class ReadValues {
                 });
     }
 
-    Optional<Triple> findTripleByHash(RdfEntity entity, IRI valuePredicate, String hash) {
+    Optional<Triple> getTripleByHash(RdfEntity entity, IRI valuePredicate, String hash) {
 
         return entity.streamValues(entity.getIdentifier(), valuePredicate)
                 .filter(literal -> {
@@ -87,6 +90,14 @@ public class ReadValues {
                 })
                 .map(requestedLiteral -> Values.triple(entity.getIdentifier(), valuePredicate, requestedLiteral))
                 .findFirst();
+    }
+
+    Mono<Statement> buildDetailStatementForHashedValue(RdfEntity entity, IRI valuePredicate, IRI detailPredicate, String valueHash) {
+        Optional<Triple> requestedTriple = this.getTripleByHash(entity, valuePredicate, valueHash);
+        if(requestedTriple.isEmpty()) return Mono.error(new InvalidEntityUpdate(entity.getIdentifier(), "No value exists for predicate <%s> and hash '%s'".formatted(valuePredicate, valueHash)));
+
+        Statement annotationStatement = Statements.statement(requestedTriple.get(), detailPredicate, null, null);
+        return Mono.just(annotationStatement);
     }
 
     String generateHashForValue(String value) {

@@ -42,8 +42,6 @@ public class InsertDetails {
                         return this.insertWithHash(entity, valuePredicate, detailPredicate, value, hash, ctx);
                     }
                 })
-
-                .switchIfEmpty(Mono.just(new RdfTransaction()))
                 .doOnSuccess(trx -> {
                     ctrl.eventPublisher.publishEvent(new DetailInsertedEvent(trx));
                 });
@@ -52,14 +50,7 @@ public class InsertDetails {
     }
 
     private Mono<Transaction> insertWithHash(RdfEntity entity, IRI valuePredicate, IRI detailPredicate, String value, String hash, SessionContext ctx) {
-        return Mono.defer(() -> {
-                    Optional<Triple> requestedTriple = ctrl.readValues.findTripleByHash(entity, valuePredicate, hash);
-                    if(requestedTriple.isEmpty()) return Mono.error(new InvalidEntityUpdate(entity.getIdentifier(), "No value exists for predicate <%s> and hash '%s'".formatted(valuePredicate, hash)));
-
-                    Statement annotationStatement = Statements.statement(requestedTriple.get(), detailPredicate, Values.literal(value), null);
-                    return Mono.just(annotationStatement);
-
-                })
+        return this.ctrl.readValues.buildDetailStatementForHashedValue(entity, valuePredicate, detailPredicate, hash)
                 .flatMap(statement -> ctrl.entityServices.getStore(ctx).addStatement(statement, new RdfTransaction()))
                 .flatMap(trx -> ctrl.entityServices.getStore(ctx).commit(trx, ctx.getEnvironment()));
     }
