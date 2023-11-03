@@ -2,7 +2,7 @@ package org.av360.maverick.graph.feature.jobs;
 
 import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.model.context.SessionContext;
-import org.av360.maverick.graph.model.entities.Job;
+import org.av360.maverick.graph.model.entities.ScheduledJob;
 import org.av360.maverick.graph.model.entities.Transaction;
 import org.av360.maverick.graph.model.enums.RepositoryType;
 import org.av360.maverick.graph.model.errors.InvalidConfiguration;
@@ -56,7 +56,7 @@ import java.util.stream.Collectors;
 
 @Slf4j(topic = "graph.jobs.identifiers")
 @Component
-public class ReplaceLinkedIdentifiersJob implements Job {
+public class ReplaceLinkedIdentifiersJob implements ScheduledJob {
 
     public static String NAME = "replaceLinkedIdentifiers";
 
@@ -112,7 +112,7 @@ public class ReplaceLinkedIdentifiersJob implements Job {
                 .flatMap(bag -> this.deleteStatements(bag, ctx))
                 .buffer(100)
                 .flatMap(transactions -> this.commit(transactions, ctx))
-                .doOnNext(transaction -> Assert.isTrue(transaction.get(Transactions.GRAPH_PROVENANCE).contains(null, Transactions.STATUS, Transactions.SUCCESS), "Failed transaction: \n" + transaction))
+                .doOnNext(transaction -> Assert.isTrue(transaction.getModel(Transactions.GRAPH_PROVENANCE).contains(null, Transactions.STATUS, Transactions.SUCCESS), "Failed transaction: \n" + transaction))
                 .buffer(5)
                 .flatMap(transactions -> this.storeTransactions(transactions, ctx));
     }

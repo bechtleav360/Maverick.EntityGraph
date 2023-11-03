@@ -100,7 +100,7 @@ public class RdfConsumer implements Consumer<EntityExchangeResult<byte[]>> {
         return this.asModel().getStatements(subject, predicate, object).iterator().hasNext();
     }
 
-    public Statement findStatement(Resource s, IRI p, IRI o) {
+    public Statement findStatement(Resource s, IRI p, Value o) {
         return StreamSupport.stream(this.asModel().getStatements(s, p, o).spliterator(), false).findFirst().orElseThrow();
     }
 

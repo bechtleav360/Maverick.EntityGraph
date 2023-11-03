@@ -23,6 +23,7 @@ public class SDO {
     public static final IRI CONTENT_LOCATION = vf.createIRI(NAMESPACE, "contentLocation");
     public static final IRI SUBJECT_OF = vf.createIRI(NAMESPACE, "subjectOf");
 
+    public static final IRI TEACHES = vf.createIRI(NAMESPACE, "teaches");
     public static final IRI AUTHOR = vf.createIRI(NAMESPACE, "author");
     public static final IRI VALUE = vf.createIRI(NAMESPACE, "value");
     public static final IRI DATASET = vf.createIRI(NAMESPACE, "Dataset");;

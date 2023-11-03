@@ -3,12 +3,12 @@ package org.av360.maverick.graph.feature.applications.services;
 import org.av360.maverick.graph.feature.applications.config.ReactiveApplicationContextHolder;
 import org.av360.maverick.graph.model.context.Environment;
 import org.av360.maverick.graph.model.context.SessionContext;
-import org.av360.maverick.graph.services.SessionContextBuilderService;
-import org.springframework.stereotype.Service;
+import org.av360.maverick.graph.services.SessionContextBuilder;
+import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 
-@Service
-public class ApplicationContextBuilder implements SessionContextBuilderService {
+@Component
+public class ApplicationContextBuilder implements SessionContextBuilder {
 
     private final ApplicationsService applicationsService;
 

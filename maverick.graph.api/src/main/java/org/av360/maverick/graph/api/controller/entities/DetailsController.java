@@ -69,41 +69,43 @@ public class DetailsController extends AbstractController implements DetailsAPI 
     @Override
     @Operation(summary = "Delete a specific detail for a value")
     @DeleteMapping(value = "/entities/{id:[\\w|\\d|\\-|\\_]+}/values/{prefixedValueKey:[\\w|\\d]+\\.[\\w|\\d]+}/details/{prefixedDetailKey:[\\w|\\d]+\\.[\\w|\\d]+}",
-            consumes = MediaType.TEXT_PLAIN_VALUE,
             produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE})
     @ResponseStatus(HttpStatus.OK)
     public Flux<AnnotatedStatement> deleteDetail(
             @PathVariable @Parameter(name = "entity identifier") String id,
             @PathVariable String prefixedValueKey,
             @PathVariable String prefixedDetailKey,
-            @RequestParam(required = false) boolean multiple,
-            @RequestParam(required = false) String hash
-    ) {
-        return Flux.error(new NotImplementedException("Method has not been implemented yet."));
+            @RequestParam(required = false) String lang,
+            @RequestParam(required = false) String hash) {
+        return super.acquireContext()
+                .flatMap(ctx -> values.removeDetail(id, prefixedValueKey, prefixedDetailKey, lang, hash, ctx))
+                .flatMapIterable(Triples::asStatements)
+                .doOnSubscribe(s -> {
+                    if (log.isDebugEnabled()) log.debug("Deleted property '{}' of entity '{}'", prefixedValueKey, id);
+                });
     }
 
     @Override
-    @Operation(summary = "Creates a statement about a statement use the post body as value.")
-    @PostMapping(value = "/entities/{id:[\\w|\\d|\\-|\\_]+}/{type}/{prefixedValueKey:[\\w|\\d]+\\.[\\w|\\d]+}/details/{prefixedDetailKey:[\\w|\\d]+\\.[\\w|\\d]+}",
+    @Operation(summary = "Adds details for a value.")
+    @PostMapping(value = "/entities/{id:[\\w|\\d|\\-|\\_]+}/values/{prefixedValueKey:[\\w|\\d]+\\.[\\w|\\d]+}/details/{prefixedDetailKey:[\\w|\\d]+\\.[\\w|\\d]+}",
             consumes = MediaType.TEXT_PLAIN_VALUE,
             produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE})
     @ResponseStatus(HttpStatus.OK)
     public Flux<AnnotatedStatement> createDetail(
             @PathVariable @Parameter(name = "entity identifier") String id,
-            @PathVariable(required = true, value = "values") @Parameter(name = "property type") PropertyType type,
             @PathVariable String prefixedValueKey,
             @PathVariable String prefixedDetailKey,
+            @RequestParam(required = false) String hash,
             @RequestBody String value
+
     ) {
         Assert.isTrue(!value.matches("(?s).*[\\n\\r].*"), "Newlines in request body are not supported");
-
-
         return super.acquireContext()
-                .flatMap(ctx -> values.insertDetail(id, prefixedValueKey, prefixedDetailKey, value, ctx))
+                .flatMap(ctx -> values.insertDetail(id, prefixedValueKey, prefixedDetailKey, value, hash , ctx))
                 .flatMapIterable(Triples::asStatements)
                 .doOnSubscribe(s -> {
                     if (log.isDebugEnabled())
-                        log.debug("Request to add annotation '{}' on property '{}' for entity '{}' with value: {}", prefixedDetailKey, prefixedValueKey, id, value.length() > 64 ? value.substring(0, 64) : value);
+                        log.debug("Request to add detail '{}' on property '{}' for entity '{}' with value: {}", prefixedDetailKey, prefixedValueKey, id, value.length() > 64 ? value.substring(0, 64) : value);
                 });
 
     }
@@ -111,9 +113,9 @@ public class DetailsController extends AbstractController implements DetailsAPI 
 
 
     @Override
-    @Operation(summary = "Creates a statement about a statement use the post body as value.")
-    @PostMapping(value = "/entities/{id:[\\w|\\d|\\-|\\_]+}/{type}/{prefixedValueKey:[\\w|\\d]+\\.[\\w|\\d]+}/details",
-            consumes = RdfMimeTypes.TURTLESTAR_VALUE,
+    @Operation(summary = "Adds details for a relation.")
+    @PostMapping(value = "/entities/{id:[\\w|\\d|\\-|\\_]+}/links/{prefixedValueKey:[\\w|\\d]+\\.[\\w|\\d]+}/details/{prefixedDetailKey:[\\w|\\d]+\\.[\\w|\\d]+}",
+            consumes = MediaType.TEXT_PLAIN_VALUE,
             produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE})
     @ResponseStatus(HttpStatus.OK)
     public Flux<AnnotatedStatement> createLinkDetail(

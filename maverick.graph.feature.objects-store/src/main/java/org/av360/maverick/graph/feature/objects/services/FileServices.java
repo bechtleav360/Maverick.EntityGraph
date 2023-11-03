@@ -5,6 +5,7 @@ import org.av360.maverick.graph.feature.objects.model.LocalStorageDetails;
 import org.av360.maverick.graph.model.context.SessionContext;
 import org.av360.maverick.graph.model.entities.Transaction;
 import org.av360.maverick.graph.model.enums.UriSchemes;
+import org.av360.maverick.graph.model.errors.InconsistentModelException;
 import org.av360.maverick.graph.model.vocabulary.Local;
 import org.av360.maverick.graph.model.vocabulary.SDO;
 import org.av360.maverick.graph.services.*;
@@ -116,10 +117,14 @@ public class FileServices {
                     RdfEntity embedded = pair.getT1();
                     IRI contentID = pair.getT2();
 
-                    IRI entityId = embedded.findDistinctValue(contentID, SDO.SUBJECT_OF).filter(Value::isIRI).map(value -> (IRI) value).orElseThrow();
-                    String name = embedded.findDistinctValue(contentID, SDO.NAME).filter(Value::isLiteral).map(value -> (Literal) value).map(Value::stringValue).orElseThrow();
-                    String lang = embedded.findDistinctValue(contentID, SDO.IN_LANGUAGE).filter(Value::isLiteral).map(value -> (Literal) value).map(Value::stringValue).orElse("");
-                    return filePathResolver.resolveContentLocation(entityId, contentID, name, lang, ctx);
+                    try {
+                        IRI entityId = embedded.findDistinctValue(contentID, SDO.SUBJECT_OF).filter(Value::isIRI).map(value -> (IRI) value).orElseThrow();
+                        String name = embedded.findDistinctValue(contentID, SDO.NAME).filter(Value::isLiteral).map(value -> (Literal) value).map(Value::stringValue).orElseThrow();
+                        String lang = embedded.findDistinctValue(contentID, SDO.IN_LANGUAGE).filter(Value::isLiteral).map(value -> (Literal) value).map(Value::stringValue).orElse("");
+                        return filePathResolver.resolveContentLocation(entityId, contentID, name, lang, ctx);
+                    } catch (InconsistentModelException exception) {
+                        return Mono.error(exception);
+                    }
                 })
                 .doOnNext(contentLocation -> log.debug("Loading file with id '{}' stored in uri '{}'", contentKey, contentLocation.storageURI()))
                 .flatMap(contentLocation -> {

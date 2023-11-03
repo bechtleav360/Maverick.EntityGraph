@@ -1,11 +1,13 @@
 package org.av360.maverick.graph.store.rdf.fragments;
 
+import org.av360.maverick.graph.model.errors.InconsistentModelException;
 import org.av360.maverick.graph.model.rdf.AnnotatedStatement;
 import org.av360.maverick.graph.model.rdf.Triples;
 import org.av360.maverick.graph.store.rdf.helpers.NamespacedModelBuilder;
 import org.eclipse.rdf4j.model.*;
 
 import java.util.*;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -87,6 +89,12 @@ public class TripleModel implements Triples {
         return this.streamStatements(null, null, null, contexts);
     }
 
+    public void reduce(Predicate<Statement> filterFunction) {
+        Set<Statement> collect = this.streamStatements().filter(filterFunction).collect(Collectors.toSet());
+        this.getModel().clear();;
+        this.getModel().addAll(collect);
+    }
+
 
 
 
@@ -97,12 +105,15 @@ public class TripleModel implements Triples {
         return this.streamStatements(subject, predicate, null).map(Statement::getObject);
     }
 
-    public Value getDistinctValue(Resource subject, IRI predicate) throws NoSuchElementException {
+    public Value getDistinctValue(Resource subject, IRI predicate) throws NoSuchElementException, InconsistentModelException {
         return this.findDistinctValue(subject, predicate).orElseThrow();
     }
 
-    public Optional<Value> findDistinctValue(Resource subject, IRI predicate) {
-        return this.streamValues(subject, predicate).findFirst();
+    public Optional<Value> findDistinctValue(Resource subject, IRI predicate) throws  InconsistentModelException {
+        Set<Value> collect = this.streamValues(subject, predicate).collect(Collectors.toUnmodifiableSet());
+        if(collect.isEmpty()) return Optional.empty();
+        else if(collect.size() == 1) return collect.stream().findFirst();
+        else throw new InconsistentModelException("Multiple values found for predicte '%s'".formatted(predicate));
     }
 
 

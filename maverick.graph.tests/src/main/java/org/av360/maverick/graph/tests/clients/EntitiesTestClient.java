@@ -3,6 +3,7 @@ package org.av360.maverick.graph.tests.clients;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.av360.maverick.graph.store.rdf.helpers.RdfUtils;
+import org.av360.maverick.graph.tests.util.CsvConsumer;
 import org.av360.maverick.graph.tests.util.RdfConsumer;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Model;
@@ -17,6 +18,7 @@ import org.springframework.web.reactive.function.BodyInserters;
 import reactor.core.publisher.Mono;
 
 import java.io.StringWriter;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
@@ -139,6 +141,32 @@ public class EntitiesTestClient {
 
     }
 
+    public CsvConsumer listAllStatements(Map<String, String> headers) {
+
+        CsvConsumer csvConsumer = new CsvConsumer();
+        webClient
+                .post()
+                .uri(uriBuilder -> uriBuilder.path("/api/query/select")
+                        .queryParam("repository", "entities")
+                        .build()
+                )
+                .contentType(MediaType.parseMediaType("text/plain"))
+                .accept(MediaType.parseMediaType("text/csv"))
+                .header("X-API-KEY", "test")
+                .headers(c -> headers.forEach((k,v) -> c.put(k, List.of(v))))
+                .body(BodyInserters.fromValue("SELECT DISTINCT ?subject ?predicate ?object WHERE { ?subject ?predicate ?object }"))
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .consumeWith(csvConsumer);
+
+        return csvConsumer;
+    }
+
+    public CsvConsumer listAllStatements() {
+        return this.listAllStatements(Map.of());
+    }
+
     public RdfConsumer listEntities(String path) {
         RDFFormat format = RDFFormat.TURTLE;
 
@@ -155,6 +183,23 @@ public class EntitiesTestClient {
                 .consumeWith(rdfConsumer);
         return rdfConsumer;
 
+    }
+
+    public RdfConsumer listValues(IRI sourceIdentifier) {
+        RDFFormat format = RDFFormat.TURTLESTAR;
+
+        RdfConsumer rdfConsumer = new RdfConsumer(format, false);
+        webClient.get()
+                .uri(uriBuilder -> uriBuilder
+                        .path("/api/entities/{id}/values")
+                        .build(sourceIdentifier.getLocalName())
+                )
+                .accept(RdfUtils.getMediaType(format))
+                .header("X-API-KEY", "test")
+                .exchange()
+                .expectBody()
+                .consumeWith(rdfConsumer);
+        return rdfConsumer;
     }
 
 
@@ -197,7 +242,15 @@ public class EntitiesTestClient {
                         .path("/api/entities/{id}/links/{prefixedKey}/{target}")
                         .build(sourceId, prefixedKey, targetId)
                 )
-                .accept(MediaType.parseMediaType(RDFFormat.JSONLD.getDefaultMIMEType()))
+                .exchange();
+    }
+
+    public WebTestClient.ResponseSpec deleteValueDetail(IRI sourceIdentifier, String valueProperty, String detailProperty) {
+        return webClient.delete()
+                .uri(uriBuilder -> uriBuilder
+                        .path("/api/entities/{id}/values/{valueProperty}/details/{detailProperty}")
+                        .build(sourceIdentifier, valueProperty, detailProperty)
+                )
                 .exchange();
     }
 
@@ -245,7 +298,7 @@ public class EntitiesTestClient {
     public WebTestClient.ResponseSpec deleteValueByHash(IRI entityIri, String prefixedProperty, String hash) {
         return webClient.delete()
                 .uri(uriBuilder -> uriBuilder.path("/api/entities/{id}/values/{prefixedProperty}")
-                        .queryParam("identifier", hash)
+                        .queryParam("hash", hash)
                         .build(entityIri.getLocalName(), prefixedProperty)
 
                 )
@@ -261,4 +314,48 @@ public class EntitiesTestClient {
                 )
                 .exchange();
     }
+
+
+
+    public WebTestClient.ResponseSpec addDetail(IRI entityIdentifier, String valueProperty, String detailProperty, String detailValue, @Nullable RdfConsumer consumer) {
+        WebTestClient.ResponseSpec exchange = webClient.post()
+                .uri(uriBuilder -> uriBuilder
+                        .path("/api/entities/{id}/values/{valueProperty}/details/{detailProperty}")
+                        .build(entityIdentifier.getLocalName(), valueProperty, detailProperty)
+
+                )
+                .contentType(MediaType.parseMediaType("text/plain"))
+                .accept(MediaType.parseMediaType(RDFFormat.TURTLE.getDefaultMIMEType()))
+                .body(BodyInserters.fromValue(detailValue))
+                .exchange();
+
+        if(Objects.nonNull(consumer)) {
+            exchange.expectBody().consumeWith(consumer);
+        }
+
+        return exchange;
+    }
+
+
+    public WebTestClient.ResponseSpec addDetail(IRI entityIdentifier, String valueProperty, String detailProperty, String detailValue, String hash,  @Nullable RdfConsumer consumer) {
+        WebTestClient.ResponseSpec exchange = webClient.post()
+                .uri(uriBuilder -> uriBuilder
+                        .path("/api/entities/{id}/values/{valueProperty}/details/{detailProperty}")
+                        .queryParam("hash", hash)
+                        .build(entityIdentifier.getLocalName(), valueProperty, detailProperty)
+
+                )
+                .contentType(MediaType.parseMediaType("text/plain"))
+                .accept(MediaType.parseMediaType(RDFFormat.TURTLE.getDefaultMIMEType()))
+                .body(BodyInserters.fromValue(detailValue))
+                .exchange();
+
+        if(Objects.nonNull(consumer)) {
+            exchange.expectBody().consumeWith(consumer);
+        }
+
+        return exchange;
+    }
+
+
 }

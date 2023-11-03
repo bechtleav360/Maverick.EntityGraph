@@ -2,8 +2,9 @@ package org.av360.maverick.graph.feature.jobs;
 
 
 import lombok.extern.slf4j.Slf4j;
+import org.av360.maverick.graph.model.aspects.Job;
 import org.av360.maverick.graph.model.context.SessionContext;
-import org.av360.maverick.graph.model.entities.Job;
+import org.av360.maverick.graph.model.entities.ScheduledJob;
 import org.av360.maverick.graph.model.entities.Transaction;
 import org.av360.maverick.graph.model.enums.RepositoryType;
 import org.av360.maverick.graph.model.vocabulary.SCHEMA;
@@ -21,7 +22,6 @@ import org.eclipse.rdf4j.sparqlbuilder.core.Variable;
 import org.eclipse.rdf4j.sparqlbuilder.core.query.Queries;
 import org.eclipse.rdf4j.sparqlbuilder.core.query.SelectQuery;
 import org.eclipse.rdf4j.sparqlbuilder.rdf.Rdf;
-import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Scheduler;
@@ -64,9 +64,9 @@ import java.util.TreeSet;
  *  TODO:
  *      For now we keep the duplicate but reroute all links to the original.
  */
-@Service
+@Job
 @Slf4j(topic = "graph.jobs.duplicates")
-public class MergeDuplicatesJob implements Job {
+public class MergeDuplicatesJob implements ScheduledJob {
 
     public static String NAME = "detectDuplicates";
     private final EntityServices entityServices;

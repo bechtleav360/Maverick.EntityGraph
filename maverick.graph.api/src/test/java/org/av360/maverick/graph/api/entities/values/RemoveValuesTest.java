@@ -37,7 +37,7 @@ public class RemoveValuesTest extends ApiTestsBase {
     }
 
     @Test
-    public void removeTitle() {
+    public void removeValueDefault() {
         super.printStart("removeTitle");
 
         RdfConsumer rdfConsumer = super.upload("requests/create-valid.ttl");
@@ -62,7 +62,22 @@ public class RemoveValuesTest extends ApiTestsBase {
     }
 
     @Test
-    public void testRemoveResourceLinkValue() {
+    public void removeAllValues() {
+
+        super.printStart("Remove a value from a list");
+
+        RdfConsumer rc1 = super.getTestClient().createEntity(EntitiesGenerator.generateCreativeWork());
+        IRI sourceIdentifier = rc1.getEntityIdentifier(SDO.CREATIVE_WORK);
+        super.getTestClient().createValue(sourceIdentifier, "sdo.author", "author one");
+        super.getTestClient().createValue(sourceIdentifier, "sdo.author", "author two", false);
+
+        super.printStep("Remove the value");
+
+        super.getTestClient().deleteValue(sourceIdentifier, "sdo.author").expectStatus().isBadRequest();
+    }
+
+    @Test
+    public void removeValueIsLink() {
         super.printStart("remove link to resource");
 
         RdfConsumer rdfConsumer = super.upload("requests/create-valid.ttl");
@@ -162,7 +177,7 @@ public class RemoveValuesTest extends ApiTestsBase {
     }
 
     @Test
-    public void failToRemoveTitleWithLanguage() {
+    public void removeTitleWithLanguageTagFail() {
         super.printStart("failToRemoveTitleWithLanguage");
 
         RdfConsumer rdfConsumer = super.upload("requests/create-valid_with_tags.ttl");
@@ -180,20 +195,7 @@ public class RemoveValuesTest extends ApiTestsBase {
                 .expectStatus().isBadRequest();
     }
 
-    @Test
-    public void removeValue() {
 
-        super.printStart("Remove a value from a list");
-
-        RdfConsumer rc1 = super.getTestClient().createEntity(EntitiesGenerator.generateCreativeWork());
-        IRI sourceIdentifier = rc1.getEntityIdentifier(SDO.CREATIVE_WORK);
-        super.getTestClient().createValue(sourceIdentifier, "sdo.author", "author one");
-        super.getTestClient().createValue(sourceIdentifier, "sdo.author", "author two", false);
-
-        super.printStep("Remove the value");
-
-        super.getTestClient().deleteValue(sourceIdentifier, "sdo.author").expectStatus().isBadRequest();
-    }
 
     @Test
     public void removeValueByHash() {
@@ -213,7 +215,7 @@ public class RemoveValuesTest extends ApiTestsBase {
 
         Assertions.assertTrue(statement.getSubject().isTriple());
 
-        super.getTestClient().deleteValueByTag(sourceIdentifier, "sdo.author", statement.getObject().stringValue());
+        super.getTestClient().deleteValueByHash(sourceIdentifier, "sdo.author", statement.getObject().stringValue());
 
 
         RdfConsumer rc3 = super.getTestClient().listValues(sourceIdentifier, "sdo.author");

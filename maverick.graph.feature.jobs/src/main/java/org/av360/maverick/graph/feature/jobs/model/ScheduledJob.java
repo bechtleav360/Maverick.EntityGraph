@@ -1,14 +1,13 @@
 package org.av360.maverick.graph.feature.jobs.model;
 
 import org.av360.maverick.graph.model.context.SessionContext;
-import org.av360.maverick.graph.model.entities.Job;
 
 import java.time.Duration;
 import java.time.Instant;
 
 public class ScheduledJob implements Runnable {
 
-    private Job job;
+    private org.av360.maverick.graph.model.entities.ScheduledJob job;
 
 
     private SessionContext context;
@@ -30,7 +29,7 @@ public class ScheduledJob implements Runnable {
         return this.job.getName();
     }
 
-    public ScheduledJob(Job job, SessionContext context, String identifier) {
+    public ScheduledJob(org.av360.maverick.graph.model.entities.ScheduledJob job, SessionContext context, String identifier) {
         this.job = job;
         this.context = context;
         this.identifier = identifier;

@@ -11,11 +11,11 @@ import reactor.core.publisher.Mono;
  */
 public interface FragmentsAware {
 
-    Mono<RdfEntity> getFragment(Resource subject, int includeNeighborsLevel, Environment environment);
+    Mono<RdfEntity> getFragment(Resource subject, int includeNeighborsLevel, boolean includeDetails, Environment environment);
 
 
     default Mono<RdfEntity> getFragment(Resource subject, Environment environment) {
-        return this.getFragment(subject, 0, environment);
+        return this.getFragment(subject, 0, false, environment);
     }
 
 

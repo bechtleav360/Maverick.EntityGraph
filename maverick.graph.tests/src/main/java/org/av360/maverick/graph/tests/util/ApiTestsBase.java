@@ -33,9 +33,12 @@ public abstract class ApiTestsBase extends TestsBase {
         this.entitiesTestClient = new EntitiesTestClient(webClient);
     }
 
+    protected void dumpStatementsAsTable(CsvConsumer csvConsumer) {
+        this.printSummary("All statements in repository");
+        System.out.println(csvConsumer.getMapAsString());
+    }
 
-
-    protected void dump(Map<String, String> headers) {
+    protected void dumpStatementsAsTable(Map<String, String> headers) {
 
         CsvConsumer csvConsumer = new CsvConsumer();
         webClient
@@ -50,17 +53,16 @@ public abstract class ApiTestsBase extends TestsBase {
                 .headers(c -> headers.forEach((k,v) -> c.put(k, List.of(v))))
                 .body(BodyInserters.fromValue("SELECT DISTINCT ?subject ?predicate ?object WHERE { ?subject ?predicate ?object }"))
                 .exchange()
-                .expectStatus().isAccepted()
+                .expectStatus().isOk()
                 .expectBody()
                 .consumeWith(csvConsumer);
-
-        this.printSummary("All statements in repository");
-        System.out.println(csvConsumer.getMapAsString());
-
+        this.dumpStatementsAsTable(csvConsumer);
     }
 
-    protected void dump() {
-        this.dump(Map.of());
+
+
+    protected void dumpStatementsAsTable() {
+        this.dumpStatementsAsTable(Map.of());
     }
 
 
@@ -114,10 +116,11 @@ public abstract class ApiTestsBase extends TestsBase {
                 .expectBody()
                 .consumeWith(rdfConsumer);
         return rdfConsumer;
-
     }
 
     protected EntitiesTestClient getTestClient() {
         return this.entitiesTestClient;
     }
+
+
 }

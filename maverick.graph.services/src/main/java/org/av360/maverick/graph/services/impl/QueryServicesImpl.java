@@ -1,13 +1,13 @@
 package org.av360.maverick.graph.services.impl;
 
 import lombok.extern.slf4j.Slf4j;
+import org.av360.maverick.graph.model.aspects.RequiresPrivilege;
 import org.av360.maverick.graph.model.context.SessionContext;
 import org.av360.maverick.graph.model.enums.RepositoryType;
 import org.av360.maverick.graph.model.errors.requests.InvalidQuery;
 import org.av360.maverick.graph.model.rdf.AnnotatedStatement;
 import org.av360.maverick.graph.model.security.Authorities;
 import org.av360.maverick.graph.services.QueryServices;
-import org.av360.maverick.graph.services.config.RequiresPrivilege;
 import org.av360.maverick.graph.store.behaviours.Searchable;
 import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.query.QueryLanguage;

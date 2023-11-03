@@ -59,10 +59,16 @@ public interface ValueServices {
      * @param prefixedValueKey
      * @param prefixedDetailKey
      * @param value
+     * @param hash
      * @param ctx
      * @return
      */
-    Mono<Transaction> insertDetail(String id, String prefixedValueKey, String prefixedDetailKey, String value, SessionContext ctx);
+    Mono<Transaction> insertDetail(String id,
+                                   String prefixedValueKey,
+                                   String prefixedDetailKey,
+                                   String value,
+                                   @Nullable String hash,
+                                   SessionContext ctx);
 
     /**
      * Inserts a set of statement as embedded entity
@@ -83,10 +89,9 @@ public interface ValueServices {
      * @param identifier
      * @return The transaction information.
      */
-    Mono<Transaction> removeLiteral(String entityKey, String prefixedProperty, @Nullable String lang, @Nullable String identifier, SessionContext ctx);
+    Mono<Transaction> removeValue(String entityKey, String prefixedProperty, @Nullable String lang, @Nullable String identifier, SessionContext ctx);
 
     /**
-     * @param authentication   The current authentication
      * @param entityIdentifier The unique and qualified local identifier of the entity
      * @param predicate        Qualified predicate from existing schema
      * @param lang             Optional language tag
@@ -98,13 +103,29 @@ public interface ValueServices {
 
     /**
      * @param entityKey        The unique local identifier of the entity
-     * @param prefixedProperty Prefixed name of the predicate
+     * @param prefixedValueKey Prefixed name of the predicate
      * @param targetKey        The target key
      * @param authentication   The current authentication
      * @return The transaction information.
      */
-    Mono<Transaction> removeLink(String entityKey, String prefixedProperty, String targetKey, SessionContext ctx);
+    Mono<Transaction> removeLink(String entityKey, String prefixedValueKey, String targetKey, SessionContext ctx);
 
+
+    /**
+     * Removes a detail associated with a given entity key, value predicate, and detail predicate.
+     *
+     * @param entityKey              The key of the entity from which the detail is to be removed.
+     * @param prefixedValuePredicate The prefixed value predicate associated with the entity.
+     * @param prefixedDetailPredicate The prefixed detail predicate associated with the value predicate that needs to be removed.
+     * @param languageTag            The IETF BCP 47 language tag indicating the language of the detail.
+     * @param valueHash              A hash value to ensure data integrity for the given detail.
+     * @param ctx                    The session context containing session-related information.
+     *
+     * @return A Mono of the resulting {@link Transaction} after the removal operation.
+     *
+     *
+     */
+    Mono<Transaction> removeDetail(String entityKey, String prefixedValuePredicate, String prefixedDetailPredicate, String languageTag, String valueHash, SessionContext ctx);
 
     /**
      * @param entityIdentifier The unique local identifier of the entity
@@ -119,5 +140,7 @@ public interface ValueServices {
     Mono<RdfEntity> listLinks(String id, String prefixedKey, SessionContext ctx);
 
 
-    Mono<TripleModel> listValues(String id, String prefixedKey, SessionContext ctx);
+    Mono<TripleModel> listValues(String id, @Nullable String prefixedKey, SessionContext ctx);
+
+
 }

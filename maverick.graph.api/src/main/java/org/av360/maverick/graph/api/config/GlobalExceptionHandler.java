@@ -3,7 +3,7 @@ package org.av360.maverick.graph.api.config;
 import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.model.errors.InsufficientPrivilegeException;
 import org.av360.maverick.graph.model.errors.InvalidRequest;
-import org.av360.maverick.graph.model.errors.store.InvalidEntityModel;
+import org.av360.maverick.graph.model.errors.store.InvalidEntityModelException;
 import org.eclipse.rdf4j.query.MalformedQueryException;
 import org.eclipse.rdf4j.rio.RDFParseException;
 import org.springframework.boot.web.error.ErrorAttributeOptions;
@@ -49,7 +49,7 @@ public class GlobalExceptionHandler extends DefaultErrorAttributes {
             errorAttributes.replace("error", requestError.getReasonPhrase());
             errorAttributes.remove("exception");
             errorAttributes.remove("trace");
-        } else if (error instanceof InvalidEntityModel) {
+        } else if (error instanceof InvalidEntityModelException) {
             errorAttributes.replace("status", HttpStatus.CONFLICT.value());
             errorAttributes.replace("error", HttpStatus.BAD_REQUEST.getReasonPhrase());
             errorAttributes.remove("exception");

@@ -111,6 +111,8 @@ public class RdfTransaction extends TripleModel implements Transaction {
 
 
 
+
+
     public static boolean isTransaction(Model model) {
         return model.contains(null, RDF.TYPE, Transactions.TRANSACTION);
     }
@@ -118,7 +120,7 @@ public class RdfTransaction extends TripleModel implements Transaction {
 
 
     @Override
-    public Model get() {
+    public Model getModel() {
         return super.getModel();
     }
 
@@ -138,9 +140,11 @@ public class RdfTransaction extends TripleModel implements Transaction {
      * @return
      */
     @Override
-    public Iterable<AnnotatedStatement> asStatements() {
+    public Collection<AnnotatedStatement> asStatements() {
         return super.asStatements(Transactions.GRAPH_PROVENANCE, Transactions.GRAPH_AFFECTED);
     }
+
+
 
     public void setCompleted() {
         Model m = super.getBuilder().build();

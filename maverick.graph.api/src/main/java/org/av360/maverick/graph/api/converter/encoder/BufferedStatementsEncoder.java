@@ -8,6 +8,7 @@ import org.av360.maverick.graph.services.SchemaServices;
 import org.av360.maverick.graph.store.rdf.helpers.RdfUtils;
 import org.eclipse.rdf4j.model.*;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
+import org.eclipse.rdf4j.model.util.Values;
 import org.eclipse.rdf4j.rio.RDFFormat;
 import org.eclipse.rdf4j.rio.RDFWriter;
 import org.eclipse.rdf4j.rio.RDFWriterFactory;
@@ -91,7 +92,7 @@ public class BufferedStatementsEncoder implements Encoder<Statement> {
                 // we filter out any internal statements
                 .filter(this::acceptStatement)
                 .collectList()
-                .flatMap(list ->  Mono.zip(Mono.just(list), ReactiveRequestUriContextHolder.getURI()))
+                .flatMap(list -> Mono.zip(Mono.just(list), ReactiveRequestUriContextHolder.getURI()))
                 .flatMapMany(tuple -> {
 
                     List<Statement> statements = tuple.getT1();
@@ -103,7 +104,7 @@ public class BufferedStatementsEncoder implements Encoder<Statement> {
 
                         writer.startRDF();
 
-                        if(statements.size() > 0) {
+                        if (statements.size() > 0) {
                             this.handleNamespaces(writer, statements.get(0));
                         }
 
@@ -127,12 +128,12 @@ public class BufferedStatementsEncoder implements Encoder<Statement> {
     }
 
     private boolean acceptStatement(Statement statement) {
-        if(this.environment.matchesProfiles("dev | persistent")) return true;
+        if (this.environment.matchesProfiles("dev | persistent")) return true;
 
-        if(statement.getObject().equals(Local.Entities.TYPE_INDIVIDUAL)) return false;
-        if(statement.getObject().equals(Local.Entities.TYPE_CLASSIFIER)) return false;
-        if(statement.getObject().equals(Local.Entities.TYPE_EMBEDDED)) return false;
-        if(statement.getPredicate().equals(Local.ORIGINAL_IDENTIFIER)) return false;
+        if (statement.getObject().equals(Local.Entities.TYPE_INDIVIDUAL)) return false;
+        if (statement.getObject().equals(Local.Entities.TYPE_CLASSIFIER)) return false;
+        if (statement.getObject().equals(Local.Entities.TYPE_EMBEDDED)) return false;
+        if (statement.getPredicate().equals(Local.ORIGINAL_IDENTIFIER)) return false;
 
         return true;
     }
@@ -140,27 +141,84 @@ public class BufferedStatementsEncoder implements Encoder<Statement> {
     private void handleStatement(Statement st, RDFWriter writer, URI requestURI) {
         SimpleValueFactory vf = SimpleValueFactory.getInstance();
 
-        Resource subject = convertLocalIRI(st.getSubject(), requestURI, vf);
-        IRI predicate = convertLocalIRI(st.getPredicate(), requestURI, vf);
-        Value object = convertLocalIRI(st.getObject(), requestURI, vf);
+        // Value subject = normalizeIdentifiers(st.getSubject(), requestURI, vf);
+        // IRI predicate = normalizeIdentifiers(st.getPredicate(), requestURI, vf);
+        // Value object = normalizeIdentifiers(st.getObject(), requestURI, vf);
 
-        Statement convertedStatement = vf.createStatement(subject, predicate, object);
-        writer.handleStatement(convertedStatement);
+
+
+
+        // Statement convertedStatement = vf.createStatement(subject, predicate, object);
+        // writer.handleStatement(convertedStatement);
+        writer.handleStatement(st);
+    }
+
+    private Value normalizeIdentifiers(Resource value, URI requestURI, SimpleValueFactory vf) {
+        if(value instanceof IRI iri) return normalizeIdentifiers(iri, requestURI, vf);
+        else return value;
+    }
+
+    private Value normalizeIdentifiers(Triple value, URI requestURI, SimpleValueFactory vf) {
+        return null;
+    }
+
+    private Value normalizeIdentifiers(IRI value, URI requestURI, SimpleValueFactory vf) {
+        if (value.equals(Local.Entities.TYPE_CLASSIFIER) || value.equals(Local.Entities.TYPE_INDIVIDUAL) || value.equals(Local.Entities.TYPE_EMBEDDED)) {
+            return value;
+        }
+        if (value.getNamespace().startsWith(Local.URN_PREFIX)) {
+            return this.convertInternalURNtoURI(value, requestURI);
+        }
+        return value;
+    }
+
+    private Value normalizeIdentifiers(Literal value, URI requestURI, SimpleValueFactory vf) {
+        return null;
     }
 
     private <T extends Value> T convertLocalIRI(T value, URI requestURI, SimpleValueFactory vf) {
-        if(value instanceof IRI iri) {
+        if (value instanceof IRI iri) {
             // we ignore type definitions
-            if(iri.equals(Local.Entities.TYPE_CLASSIFIER) || iri.equals(Local.Entities.TYPE_INDIVIDUAL) || iri.equals(Local.Entities.TYPE_EMBEDDED)) {
-                return value;
+            if (iri.equals(Local.Entities.TYPE_CLASSIFIER) || iri.equals(Local.Entities.TYPE_INDIVIDUAL) || iri.equals(Local.Entities.TYPE_EMBEDDED)) {
+                return (T) value;
+            }
+            if (iri.getNamespace().startsWith(Local.URN_PREFIX)) {
+                return (T) this.convertInternalURNtoURI(iri, requestURI);
+            }
+        } else if (value instanceof Literal) {
+            if (value.stringValue().startsWith("?/")) {
+                String p = value.stringValue().substring(2);
+                String uri = UriComponentsBuilder.fromUri(requestURI).replacePath(p).replaceQuery("").build().toUriString();
+                return (T) vf.createIRI(uri);
+            }
+        } else if (value instanceof Triple triple) {
+            Resource convertedResource = triple.getSubject();
+            IRI convertedPredicate = triple.getPredicate();
+            Value convertedObject = triple.getObject();
+
+            if(triple.getSubject() instanceof IRI iri) {
+               /* iri.getNamespace().startsWith(Local.URN_PREFIX) {
+
+                } */
+            }
+            if (triple.getSubject().isIRI()) {
+                if (((IRI) triple.getSubject()).getNamespace().startsWith(Local.URN_PREFIX)) {
+
+                }
+
+                this.convertInternalURNtoURI((IRI) triple.getSubject(), requestURI);
             }
 
-            if(iri.getNamespace().startsWith(Local.URN_PREFIX)) {
+            return (T) Values.triple(convertedResource, convertedPredicate, convertedObject);
+
+        }
+        return value;
+
+    }
 
 
-
-
-                /* ok, here the application module is leaking into the default implementation. If the IRI namespace includes a qualifier,
+    private IRI convertInternalURNtoURI(IRI urn, URI requestURI) {
+         /* ok, here the application module is leaking into the default implementation. If the IRI namespace includes a qualifier,
                    we inject it as scope. To make it reproducible, we assume: if namespace is not default namespace, we take the (URL decoded) string
                    attached and place it under scope ("s").
 
@@ -169,60 +227,43 @@ public class BufferedStatementsEncoder implements Encoder<Statement> {
                     urn:pwid:meg:e:, f33.213 -> /api/entities/s/f33/213
                     urn:pwid:meg:, 123 -> /
                  */
-                String[] parts = iri.getLocalName().split("\\.");
-                String ns = iri.getNamespace();
-                String path = "";
+        String[] parts = urn.getLocalName().split("\\.");
+        String ns = urn.getNamespace();
+        String path = "";
 
-                if(ns.startsWith(Local.Entities.NAMESPACE)) {
-                    if(parts.length == 1) {
-                        path += "/api/entities/"+parts[0];
-                    } else {
-                        path += "/api/s/"+parts[0]+"/entities/"+parts[1];
-                    }
-
-                }
-
-                else if(iri.getNamespace().startsWith(Local.Transactions.NAMESPACE)) {
-                    path = "/api/transactions/"+parts[0];
-                }
-
-                else if(iri.getNamespace().startsWith(Local.Applications.NAMESPACE)) {
-                    path = "/api/applications/"+parts[0];
-                }
-
-                else {
-                    path = parts[0];
-                }
-
-                // Fallback (probably only for Mockrequests)
-
-                    try {
-                        if(requestURI.toString().startsWith("/")) {
-                            requestURI = new URI("http://example.com%s".formatted(requestURI));
-                        }
-                    } catch (URISyntaxException e) {
-                        throw new RuntimeException(e);
-                    }
-
-                String uri = UriComponentsBuilder.fromUri(requestURI).replacePath(path).replaceQuery("").build().toUriString();
-                return (T) vf.createIRI(uri);
+        if (ns.startsWith(Local.Entities.NAMESPACE)) {
+            if (parts.length == 1) {
+                path += "/api/entities/" + parts[0];
+            } else {
+                path += "/api/s/" + parts[0] + "/entities/" + parts[1];
             }
-        } else if(value instanceof Literal) {
-            if(value.stringValue().startsWith("?/")) {
-                String p = value.stringValue().substring(2);
-                String uri = UriComponentsBuilder.fromUri(requestURI).replacePath(p).replaceQuery("").build().toUriString();
-                return (T) vf.createIRI(uri);
-            }
+
+        } else if (urn.getNamespace().startsWith(Local.Transactions.NAMESPACE)) {
+            path = "/api/transactions/" + parts[0];
+        } else if (urn.getNamespace().startsWith(Local.Applications.NAMESPACE)) {
+            path = "/api/applications/" + parts[0];
+        } else {
+            path = parts[0];
         }
-        return value;
 
+        // Fallback (probably only for Mockrequests)
+
+        try {
+            if (requestURI.toString().startsWith("/")) {
+                requestURI = new URI("http://example.com%s".formatted(requestURI));
+            }
+        } catch (URISyntaxException e) {
+            throw new RuntimeException(e);
+        }
+
+        String uri = UriComponentsBuilder.fromUri(requestURI).replacePath(path).replaceQuery("").build().toUriString();
+        return Values.iri(uri);
     }
-
 
     private RDFWriter getWriter(MimeType mimeType, OutputStream out) {
         RDFWriter writer = factories.get(mimeType).getWriter(out);
 
-        if(mimeType.equals(RdfMimeTypes.JSONLD)) {
+        if (mimeType.equals(RdfMimeTypes.JSONLD)) {
             writer.set(JSONLDSettings.HIERARCHICAL_VIEW, true);
             writer.set(JSONLDSettings.COMPACT_ARRAYS, true);
             writer.set(JSONLDSettings.OPTIMIZE, true);
@@ -237,14 +278,13 @@ public class BufferedStatementsEncoder implements Encoder<Statement> {
     }
 
 
-
     private boolean handleNamespaces(RDFWriter writer, Statement statement) {
         if (NamespaceAware.class.isAssignableFrom(statement.getClass())) {
             Set<Namespace> namespaces = ((NamespaceAware) statement).getNamespaces();
 
             namespaces.forEach(ns -> {
                 // local URNs are ignored by default
-                if(ns.getName().startsWith("urn:pwid:eg:")) return;
+                if (ns.getName().startsWith("urn:pwid:eg:")) return;
 
                 writer.handleNamespace(ns.getPrefix(), ns.getName());
             });

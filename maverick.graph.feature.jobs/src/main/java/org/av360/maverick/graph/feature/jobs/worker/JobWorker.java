@@ -2,15 +2,14 @@ package org.av360.maverick.graph.feature.jobs.worker;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import lombok.extern.slf4j.Slf4j;
-import org.av360.maverick.graph.feature.jobs.model.ScheduledJob;
-import org.av360.maverick.graph.model.entities.Job;
+import org.av360.maverick.graph.model.aspects.Job;
+import org.av360.maverick.graph.model.entities.ScheduledJob;
 import org.av360.maverick.graph.model.events.JobScheduledEvent;
 import org.av360.maverick.graph.model.security.Authorities;
-import org.av360.maverick.graph.services.SessionContextBuilderService;
+import org.av360.maverick.graph.services.SessionContextBuilder;
 import org.springframework.boot.task.TaskSchedulerBuilder;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
-import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -19,22 +18,22 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @Slf4j(topic = "graph.jobs")
-@Service
+@Job
 public class JobWorker {
 
-    private final Set<SessionContextBuilderService> builders;
+    private final Set<SessionContextBuilder> builders;
 
 
     private final JobQueue requestedJobs;
-    private final List<Job> registeredJobs;
+    private final List<ScheduledJob> registeredJobs;
 
-    private final Deque<ScheduledJob> submittedJobs;
+    private final Deque<org.av360.maverick.graph.feature.jobs.model.ScheduledJob> submittedJobs;
 
     private final MeterRegistry meterRegistry;
     private final ThreadPoolTaskScheduler taskScheduler;
 
 
-    public JobWorker(Set<SessionContextBuilderService> builders, JobQueue eventListener, List<Job> jobs, MeterRegistry meterRegistry) {
+    public JobWorker(Set<SessionContextBuilder> builders, JobQueue eventListener, List<ScheduledJob> jobs, MeterRegistry meterRegistry) {
         this.builders = builders;
         this.requestedJobs = eventListener;
         this.registeredJobs = jobs;
@@ -56,7 +55,7 @@ public class JobWorker {
             JobScheduledEvent event = requestedJobs.accept().orElseThrow();
 
             // check if job with this identifier is already scheduled or active
-            Optional<ScheduledJob> alreadyScheduledJob = this.submittedJobs.stream()
+            Optional<org.av360.maverick.graph.feature.jobs.model.ScheduledJob> alreadyScheduledJob = this.submittedJobs.stream()
                     .filter(scheduledJob -> ! scheduledJob.isCompleted())
                     .filter(scheduledJob -> ! scheduledJob.isFailed())
                     .filter(scheduledJob -> scheduledJob.getIdentifier().equalsIgnoreCase(event.getJobIdentifier())).findFirst();
@@ -66,7 +65,7 @@ public class JobWorker {
             }
 
 
-            Job requestedJob = this.getRegisteredJobs().stream().filter(job -> job.getName().equalsIgnoreCase(event.getJobName())).findFirst().orElseThrow();
+            ScheduledJob requestedJob = this.getRegisteredJobs().stream().filter(job -> job.getName().equalsIgnoreCase(event.getJobName())).findFirst().orElseThrow();
 
 
             Flux.fromIterable(this.builders)
@@ -78,7 +77,7 @@ public class JobWorker {
 
                         // else create a new scheduled Job
                         log.debug("Scheduling job '{}' in {}.", event.getJobIdentifier(), event.getSessionContext().getEnvironment());
-                        ScheduledJob scheduledJob = new ScheduledJob(requestedJob, context, event.getJobIdentifier());
+                        org.av360.maverick.graph.feature.jobs.model.ScheduledJob scheduledJob = new org.av360.maverick.graph.feature.jobs.model.ScheduledJob(requestedJob, context, event.getJobIdentifier());
 
 
 
@@ -107,7 +106,7 @@ public class JobWorker {
 
 
 
-    public List<Job> getRegisteredJobs() {
+    public List<ScheduledJob> getRegisteredJobs() {
         return registeredJobs;
     }
 
@@ -116,22 +115,22 @@ public class JobWorker {
     }
 
 
-    public List<ScheduledJob> getActiveJobs() {
-        return this.submittedJobs.stream().filter(ScheduledJob::isActive).collect(Collectors.toList());
+    public List<org.av360.maverick.graph.feature.jobs.model.ScheduledJob> getActiveJobs() {
+        return this.submittedJobs.stream().filter(org.av360.maverick.graph.feature.jobs.model.ScheduledJob::isActive).collect(Collectors.toList());
     }
 
-    public List<ScheduledJob> getSubmittedJobs() {
-        return this.submittedJobs.stream().filter(ScheduledJob::isSubmitted).collect(Collectors.toList());
+    public List<org.av360.maverick.graph.feature.jobs.model.ScheduledJob> getSubmittedJobs() {
+        return this.submittedJobs.stream().filter(org.av360.maverick.graph.feature.jobs.model.ScheduledJob::isSubmitted).collect(Collectors.toList());
     }
 
 
 
-    public List<ScheduledJob> getFailedJobs() {
-        return this.submittedJobs.stream().filter(ScheduledJob::isFailed).collect(Collectors.toList());
+    public List<org.av360.maverick.graph.feature.jobs.model.ScheduledJob> getFailedJobs() {
+        return this.submittedJobs.stream().filter(org.av360.maverick.graph.feature.jobs.model.ScheduledJob::isFailed).collect(Collectors.toList());
     }
 
-    public List<ScheduledJob> getCompletedJobs() {
-        return this.submittedJobs.stream().filter(ScheduledJob::isCompleted).collect(Collectors.toList());
+    public List<org.av360.maverick.graph.feature.jobs.model.ScheduledJob> getCompletedJobs() {
+        return this.submittedJobs.stream().filter(org.av360.maverick.graph.feature.jobs.model.ScheduledJob::isCompleted).collect(Collectors.toList());
     }
 
 }

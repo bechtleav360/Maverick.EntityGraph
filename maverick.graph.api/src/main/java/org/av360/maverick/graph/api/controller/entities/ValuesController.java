@@ -121,17 +121,18 @@ public class ValuesController extends AbstractController implements ValuesAPI {
     @Operation(summary = "Removes a property value.",
             description = """
                 If you have multiple values for a given property, you need to select a specific value either by language tag (if it is unique) or by hash. 
-                Retrieve the hashes by calling the operation
+                Retrieve the hashes by calling the operation. 
+                
+                Will also remove all details associated with this value. 
                 
                     """)
     @DeleteMapping(value = "/entities/{id:[\\w|\\d|\\-|\\_]+}/values/{prefixedKey:[\\w|\\d]+\\.[\\w|\\d]+}",
             produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE})
     @ResponseStatus(HttpStatus.OK)
-    public Flux<AnnotatedStatement> delete(@PathVariable String id, @PathVariable String prefixedKey, @RequestParam(required = false) String lang, @RequestParam(required = false) String identifier) {
-
+    public Flux<AnnotatedStatement> delete(@PathVariable String id, @PathVariable String prefixedKey, @RequestParam(required = false) String lang, @RequestParam(required = false) String hash) {
 
         return super.acquireContext()
-                .flatMap(ctx -> values.removeLiteral(id, prefixedKey, lang, identifier, ctx))
+                .flatMap(ctx -> values.removeValue(id, prefixedKey, lang, hash, ctx))
                 .flatMapIterable(Triples::asStatements)
                 .doOnSubscribe(s -> {
                     if (log.isDebugEnabled()) log.debug("Deleted property '{}' of entity '{}'", prefixedKey, id);

@@ -1,7 +1,7 @@
 package org.av360.maverick.graph.feature.applications.store;
 
 import lombok.extern.slf4j.Slf4j;
-import org.av360.maverick.graph.feature.applications.services.model.Application;
+import org.av360.maverick.graph.feature.applications.model.domain.Application;
 import org.av360.maverick.graph.model.context.SessionContext;
 import org.av360.maverick.graph.store.EntityStore;
 import org.av360.maverick.graph.store.rdf.LabeledRepository;

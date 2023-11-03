@@ -1,7 +1,7 @@
 package org.av360.maverick.graph.feature.applications.client;
 
-import org.av360.maverick.graph.feature.applications.api.dto.Requests;
-import org.av360.maverick.graph.feature.applications.services.model.ApplicationFlags;
+import org.av360.maverick.graph.feature.applications.controller.dto.Requests;
+import org.av360.maverick.graph.feature.applications.model.domain.ApplicationFlags;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import org.springframework.web.reactive.function.BodyInserters;
 

@@ -1,10 +1,10 @@
 package org.av360.maverick.graph.model.identifier;
 
 
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
 
 import java.io.Serializable;
-@Service
+@Component
 public class DefaultIdentifierFactory implements IdentifierFactory  {
 
     private static final DefaultIdentifierFactory sharedInstance = new DefaultIdentifierFactory();

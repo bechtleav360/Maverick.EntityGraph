@@ -1,17 +1,17 @@
 package org.av360.maverick.graph.api.converter.services;
 
 import org.av360.maverick.graph.model.context.SessionContext;
-import org.av360.maverick.graph.services.SessionContextBuilderService;
+import org.av360.maverick.graph.services.SessionContextBuilder;
 import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
 import org.springframework.security.authentication.InsufficientAuthenticationException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.ReactiveSecurityContextHolder;
 import org.springframework.security.core.context.SecurityContext;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 
-@Service
-public class AuthSessionContextBuilder implements SessionContextBuilderService {
+@Component
+public class AuthSessionContextBuilder implements SessionContextBuilder {
     @Override
     public Mono<SessionContext> build(SessionContext context) {
         if(context.getAuthentication().isPresent()) {

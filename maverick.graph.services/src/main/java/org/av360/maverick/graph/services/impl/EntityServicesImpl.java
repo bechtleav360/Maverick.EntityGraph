@@ -1,6 +1,7 @@
 package org.av360.maverick.graph.services.impl;
 
 import lombok.extern.slf4j.Slf4j;
+import org.av360.maverick.graph.model.aspects.RequiresPrivilege;
 import org.av360.maverick.graph.model.context.SessionContext;
 import org.av360.maverick.graph.model.entities.Transaction;
 import org.av360.maverick.graph.model.enums.Activity;
@@ -18,7 +19,6 @@ import org.av360.maverick.graph.services.EntityServices;
 import org.av360.maverick.graph.services.IdentifierServices;
 import org.av360.maverick.graph.services.QueryServices;
 import org.av360.maverick.graph.services.SchemaServices;
-import org.av360.maverick.graph.services.config.RequiresPrivilege;
 import org.av360.maverick.graph.services.transformers.DelegatingTransformer;
 import org.av360.maverick.graph.services.validators.DelegatingValidator;
 import org.av360.maverick.graph.store.EntityStore;
@@ -83,8 +83,8 @@ public class EntityServicesImpl implements EntityServices {
 
     @Override
     @RequiresPrivilege(Authorities.READER_VALUE)
-    public Mono<RdfEntity> get(IRI entityIri, int includeNeighboursLevel, SessionContext ctx) {
-        return entityStore.getFragment(entityIri, includeNeighboursLevel, ctx.getEnvironment())
+    public Mono<RdfEntity> get(IRI entityIri, int includeNeighboursLevel, boolean includeDetails, SessionContext ctx) {
+        return entityStore.getFragment(entityIri, includeNeighboursLevel, includeDetails, ctx.getEnvironment())
                 .switchIfEmpty(Mono.error(new EntityNotFound(entityIri)));
     }
 
@@ -165,9 +165,9 @@ public class EntityServicesImpl implements EntityServices {
 
     @Override
     @RequiresPrivilege(Authorities.READER_VALUE)
-    public Mono<RdfEntity> findByKey(String entityKey, SessionContext ctx) {
+    public Mono<RdfEntity> findByKey(String entityKey, boolean includeDetails, SessionContext ctx) {
         return identifierServices.asIRI(entityKey, ctx.getEnvironment())
-                .flatMap(entityIdentifier -> this.get(entityIdentifier, 1, ctx));
+                .flatMap(entityIdentifier -> this.get(entityIdentifier, 1, includeDetails , ctx));
     }
 
     @Override
@@ -183,7 +183,7 @@ public class EntityServicesImpl implements EntityServices {
         return this.entityStore.query(query.getQueryString(), ctx.getEnvironment())
                 .next()
                 .map(bindings -> bindings.getValue(idVariable.getVarName()))
-                .flatMap(id -> this.entityStore.getFragment((Resource) id, 1, ctx.getEnvironment()))
+                .flatMap(id -> this.entityStore.getFragment((Resource) id, 1, false, ctx.getEnvironment()))
                 .switchIfEmpty(Mono.error(new EntityNotFound(identifier)));
     }
 
@@ -194,7 +194,7 @@ public class EntityServicesImpl implements EntityServices {
             return schemaServices.resolvePrefixedName(property)
                     .flatMap(propertyIri -> this.findByProperty(identifier, propertyIri, ctx));
         } else {
-            return this.findByKey(identifier, ctx);
+            return this.findByKey(identifier,  false, ctx);
         }
     }
 
@@ -320,7 +320,7 @@ public class EntityServicesImpl implements EntityServices {
          */
         return this.identifierServices.asIRI(id, ctx.getEnvironment())
                 .flatMap(iri -> {
-                    return this.entityStore.getFragment(iri, 0, ctx.getEnvironment())
+                    return this.entityStore.getFragment(iri, 0, false, ctx.getEnvironment())
                             .switchIfEmpty(Mono.error(new EntityNotFound(id)))
 
                             /* store the new entities */

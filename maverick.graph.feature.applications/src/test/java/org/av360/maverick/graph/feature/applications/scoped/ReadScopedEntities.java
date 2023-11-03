@@ -2,7 +2,7 @@ package org.av360.maverick.graph.feature.applications.scoped;
 
 import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.feature.applications.config.ApplicationsTestsBase;
-import org.av360.maverick.graph.feature.applications.services.model.ApplicationFlags;
+import org.av360.maverick.graph.feature.applications.model.domain.ApplicationFlags;
 import org.av360.maverick.graph.tests.config.TestSecurityConfig;
 import org.av360.maverick.graph.tests.util.RdfConsumer;
 import org.junit.jupiter.api.AfterEach;
@@ -31,22 +31,23 @@ public class ReadScopedEntities extends ApplicationsTestsBase {
         super.resetRepository("test_app");
     }
     @Test
-    public void createEntity() {
-        super.printStart("reading scoped entity");
+    public void readScopedEntityDefault() {
+        super.printStart("Create a scoped entity");
+        super.printStep("Create a test application");
         applicationsTestClient.createApplication("test_app", new ApplicationFlags(false, true)).expectStatus().isCreated();
 
 
         Resource file = new ClassPathResource("requests/create-valid.ttl");
 
-        super.printStep();
+        super.printStep("Create the entity in the test application");
         RdfConsumer c1 = entitiesTestClient.createEntity(file, "/api/entities", Map.of("X-Application", "test_app"));
 
-        super.printStep();
 
 
-        super.dump(Map.of("X-Application", "test_app"));
 
-        super.printStep();
+
+
+        super.printStep("Reading all entities");
         RdfConsumer c2 = entitiesTestClient.listEntities("/api/s/test_app/entities");
 
 

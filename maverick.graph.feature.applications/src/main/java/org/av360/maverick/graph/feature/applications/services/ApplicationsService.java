@@ -5,18 +5,15 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.Validate;
 import org.av360.maverick.graph.feature.applications.config.Globals;
-import org.av360.maverick.graph.feature.applications.security.SubscriptionToken;
-import org.av360.maverick.graph.feature.applications.services.errors.InvalidApplication;
-import org.av360.maverick.graph.feature.applications.services.events.ApplicationCreatedEvent;
-import org.av360.maverick.graph.feature.applications.services.events.ApplicationDeletedEvent;
-import org.av360.maverick.graph.feature.applications.services.events.ApplicationUpdatedEvent;
-import org.av360.maverick.graph.feature.applications.services.events.GraphApplicationEvent;
-import org.av360.maverick.graph.feature.applications.services.model.Application;
-import org.av360.maverick.graph.feature.applications.services.model.ApplicationFlags;
-import org.av360.maverick.graph.feature.applications.services.model.ConfigurationItem;
-import org.av360.maverick.graph.feature.applications.services.model.QueryVariables;
-import org.av360.maverick.graph.feature.applications.services.vocab.ApplicationTerms;
+import org.av360.maverick.graph.feature.applications.model.domain.*;
+import org.av360.maverick.graph.feature.applications.model.errors.InvalidApplication;
+import org.av360.maverick.graph.feature.applications.model.events.ApplicationCreatedEvent;
+import org.av360.maverick.graph.feature.applications.model.events.ApplicationDeletedEvent;
+import org.av360.maverick.graph.feature.applications.model.events.ApplicationUpdatedEvent;
+import org.av360.maverick.graph.feature.applications.model.events.GraphApplicationEvent;
+import org.av360.maverick.graph.feature.applications.model.vocab.ApplicationTerms;
 import org.av360.maverick.graph.feature.applications.store.ApplicationsStore;
+import org.av360.maverick.graph.model.aspects.RequiresPrivilege;
 import org.av360.maverick.graph.model.context.SessionContext;
 import org.av360.maverick.graph.model.enums.RepositoryType;
 import org.av360.maverick.graph.model.errors.InconsistentModelException;
@@ -27,7 +24,6 @@ import org.av360.maverick.graph.model.util.StreamsLogger;
 import org.av360.maverick.graph.model.vocabulary.Local;
 import org.av360.maverick.graph.model.vocabulary.SDO;
 import org.av360.maverick.graph.services.IdentifierServices;
-import org.av360.maverick.graph.services.config.RequiresPrivilege;
 import org.av360.maverick.graph.store.rdf.helpers.BindingsAccessor;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.impl.LinkedHashModel;
@@ -55,7 +51,6 @@ import java.util.stream.Collectors;
 @Service
 @Slf4j(topic = "graph.feat.apps.svc")
 public class ApplicationsService implements ApplicationListener<GraphApplicationEvent> {
-
 
     private final Cache<String, Application> cache;
 

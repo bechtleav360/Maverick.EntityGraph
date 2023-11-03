@@ -3,7 +3,7 @@ package org.av360.maverick.graph.feature.jobs;
 
 import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.model.context.SessionContext;
-import org.av360.maverick.graph.model.entities.Job;
+import org.av360.maverick.graph.model.entities.ScheduledJob;
 import org.av360.maverick.graph.model.enums.RepositoryType;
 import org.av360.maverick.graph.model.errors.InvalidConfiguration;
 import org.av360.maverick.graph.model.vocabulary.Local;
@@ -20,7 +20,7 @@ import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.util.ModelCollector;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -42,10 +42,10 @@ import java.util.Objects;
  * individual nor classifier. The entity api serves only individuals.
  *</p>
  */
-@Service
+@Component
 @Slf4j(topic = "graph.jobs.coercion")
 @SuppressWarnings("javadoc")
-public class AssignInternalTypesJob implements Job {
+public class AssignInternalTypesJob implements ScheduledJob {
 
     public static String NAME = "typeCoercion";
     private final EntityServices entityServices;
@@ -80,7 +80,7 @@ public class AssignInternalTypesJob implements Job {
                 .doOnNext(model -> log.trace("Collected {} statements for new types", model.size()))
                 .flatMap(model -> this.entityServices.getStore(ctx).insertModel(model, new RdfTransaction()))
                 .flatMapMany(trx -> this.entityServices.getStore(ctx).commit(trx, ctx.getEnvironment()))
-                .doOnNext(transaction -> Assert.isTrue(transaction.get().contains(null, Transactions.STATUS, Transactions.SUCCESS), "Failed transaction: \n" + transaction))
+                .doOnNext(transaction -> Assert.isTrue(transaction.getModel().contains(null, Transactions.STATUS, Transactions.SUCCESS), "Failed transaction: \n" + transaction))
                 .buffer(100)
                 .flatMap(transactions -> this.transactionsService.save(transactions, ctx))
                 .doOnError(throwable -> log.error("Exception while assigning internal types: {}", throwable.getMessage()))
