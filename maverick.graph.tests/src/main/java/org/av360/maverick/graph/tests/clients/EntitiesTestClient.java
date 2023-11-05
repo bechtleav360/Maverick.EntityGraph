@@ -239,7 +239,7 @@ public class EntitiesTestClient {
     public WebTestClient.ResponseSpec deleteLink(String sourceId, String prefixedKey, String targetId) {
         return webClient.delete()
                 .uri(uriBuilder -> uriBuilder
-                        .path("/api/entities/{id}/links/{prefixedKey}/{target}")
+                        .path("/api/entities/{id}/relations/{prefixedKey}/{target}")
                         .build(sourceId, prefixedKey, targetId)
                 )
                 .exchange();
@@ -259,7 +259,7 @@ public class EntitiesTestClient {
 
         return webClient.put()
                 .uri(uriBuilder -> uriBuilder
-                        .path("/api/entities/{id}/links/{prefixedKey}/{target}")
+                        .path("/api/entities/{id}/relations/{prefixedKey}/{target}")
                         .build(sourceId, prefixedKey, targetId)
                 )
                 .accept(MediaType.parseMediaType(RDFFormat.JSONLD.getDefaultMIMEType()))
@@ -299,7 +299,7 @@ public class EntitiesTestClient {
     public WebTestClient.ResponseSpec deleteValueByHash(IRI entityIri, String prefixedProperty, String hash) {
         return webClient.delete()
                 .uri(uriBuilder -> uriBuilder.path("/api/entities/{id}/values/{prefixedProperty}")
-                        .queryParam("hash", hash)
+                        .queryParam("valueIdentifier", hash)
                         .build(entityIri.getLocalName(), prefixedProperty)
 
                 )

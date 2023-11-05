@@ -160,7 +160,7 @@ public class RemoveValuesTest extends ApiTestsBase {
         super.printStep();
         webClient.delete()
                 .uri(uriBuilder -> uriBuilder.path("/api/entities/{id}/values/sdo.title")
-                        .queryParam("lang", "de")
+                        .queryParam("languageTag", "de")
                         .build(
                                 vf.createIRI(video.getSubject().stringValue()).getLocalName()
                         )

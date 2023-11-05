@@ -11,7 +11,6 @@ import org.av360.maverick.graph.services.ValueServices;
 import org.springframework.util.Assert;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Flux;
 
@@ -32,15 +31,15 @@ public class ValuesController extends AbstractController implements ValuesAPI {
     }
 
     @Override
-    public Flux<AnnotatedStatement> list(String id,
+    public Flux<AnnotatedStatement> list(String key,
                                          String property) {
 
         return super.acquireContext()
-                .flatMap(ctx -> values.listValues(id, property, ctx))
+                .flatMap(ctx -> values.listValues(key, property, ctx))
                 .flatMapIterable(Triples::asStatements)
                 .doOnSubscribe(s -> {
                     if (log.isDebugEnabled())
-                        log.debug("Request to list values of entity '{}'", id);
+                        log.debug("Request to list values of entity '{}'", key);
                 });
     }
 
@@ -64,28 +63,31 @@ public class ValuesController extends AbstractController implements ValuesAPI {
 
 
     @Override
-    public Flux<AnnotatedStatement> remove(@PathVariable String id, @PathVariable String prefixedKey, @RequestParam(required = false) String lang, @RequestParam(required = false) String hash) {
+    public Flux<AnnotatedStatement> remove(String key,
+                                           String prefixedProperty,
+                                           String languageTag,
+                                           String valueIdentifier) {
         return super.acquireContext()
-                .flatMap(ctx -> values.removeValue(id, prefixedKey, lang, hash, ctx))
+                .flatMap(ctx -> values.removeValue(key, prefixedProperty, languageTag, valueIdentifier, ctx))
                 .flatMapIterable(Triples::asStatements)
                 .doOnSubscribe(s -> {
-                    if (log.isDebugEnabled()) log.debug("Deleted property '{}' of entity '{}'", prefixedKey, id);
+                    if (log.isDebugEnabled()) log.debug("Deleted property '{}' of entity '{}'", prefixedProperty, key);
                 });
     }
 
 
     @Override
-    public Flux<AnnotatedStatement> embed(@PathVariable String id, @PathVariable String prefixedKey, @RequestBody Triples value) {
+    public Flux<AnnotatedStatement> embed(@PathVariable String key, @PathVariable String prefixedProperty, @RequestBody Triples value) {
 
         return super.acquireContext()
                 .flatMap(ctx ->
-                        schemaServices.resolvePrefixedName(prefixedKey)
-                                .flatMap(predicate -> entityServices.linkEntityTo(id, predicate, value, ctx))
+                        schemaServices.resolvePrefixedName(prefixedProperty)
+                                .flatMap(predicate -> entityServices.linkEntityTo(key, predicate, value, ctx))
                 )
                 .flatMapIterable(Triples::asStatements)
                 .doOnSubscribe(s -> {
                     if (log.isDebugEnabled())
-                        log.debug("Request to add embedded entities as property '{}' to entity '{}'", prefixedKey, id);
+                        log.debug("Request to add embedded entities as property '{}' to entity '{}'", prefixedProperty, key);
                 });
     }
 
