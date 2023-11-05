@@ -6,7 +6,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.NotImplementedException;
 import org.av360.maverick.graph.api.controller.AbstractController;
-import org.av360.maverick.graph.model.api.LinksAPI;
+import org.av360.maverick.graph.model.api.RelationsAPI;
 import org.av360.maverick.graph.model.enums.RdfMimeTypes;
 import org.av360.maverick.graph.model.rdf.AnnotatedStatement;
 import org.av360.maverick.graph.model.rdf.Triples;
@@ -26,10 +26,10 @@ import javax.annotation.Nullable;
 @RestController
 @RequestMapping(path = "/api")
 //@Api(tags = "Values")
-@Slf4j(topic = "graph.ctrl.api.links")
+@Slf4j(topic = "graph.ctrl.api.relations")
 @SecurityRequirement(name = "api_key")
 @Tag(name = "Annotations")
-public class LinksController extends AbstractController implements LinksAPI {
+public class RelationsController extends AbstractController implements RelationsAPI {
 
 
     protected final ValueServices values;
@@ -38,7 +38,7 @@ public class LinksController extends AbstractController implements LinksAPI {
 
     protected final SchemaServices schemaServices;
 
-    public LinksController(ValueServices values, EntityServices entities, SchemaServices schemaServices) {
+    public RelationsController(ValueServices values, EntityServices entities, SchemaServices schemaServices) {
         this.values = values;
         this.entities = entities;
         this.schemaServices = schemaServices;

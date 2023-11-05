@@ -10,7 +10,7 @@ import reactor.core.publisher.Flux;
 
 import javax.annotation.Nullable;
 
-public interface LinksAPI {
+public interface RelationsAPI {
     @Operation(summary = "Returns all links of an entity.")
     @GetMapping(value = "/entities/{id:[\\w|\\d|\\-|\\_]+}/links",
             produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE})

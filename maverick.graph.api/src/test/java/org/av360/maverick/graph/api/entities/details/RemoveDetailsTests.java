@@ -35,12 +35,18 @@ public class RemoveDetailsTests extends ApiTestsBase  {
         super.getTestClient().addDetail(sourceIdentifier, "sdo.teaches", "dc.source", "source", null);
         super.getTestClient().addDetail(sourceIdentifier, "sdo.teaches", "dc.subject", "text", null);
 
-        super.printStep("Dumping current model");
+        super.printStep("Dumping and validating current model");
         CsvConsumer cc1 = super.getTestClient().listAllStatements();
         super.dumpStatementsAsTable(cc1);
         Assertions.assertEquals(7, cc1.getRows().size());
 
+        super.printStep("Deleting detail dc.source from predicate teaches");
         super.getTestClient().deleteValueDetail(sourceIdentifier, "sdo.teaches", "dc.source");
+
+        super.printStep("Dumping and validating current model");
+        CsvConsumer cc2 = super.getTestClient().listAllStatements();
+        super.dumpStatementsAsTable(cc2);
+        Assertions.assertEquals(6, cc1.getRows().size());
     }
 
     @Test

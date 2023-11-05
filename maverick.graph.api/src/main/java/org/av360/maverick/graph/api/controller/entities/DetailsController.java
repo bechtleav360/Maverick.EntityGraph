@@ -39,16 +39,11 @@ public class DetailsController extends AbstractController implements DetailsAPI 
     }
 
     @Override
-    @Operation(summary = "Returns all details for a value or link")
-    @GetMapping(value = "/entities/{id:[\\w|\\d|\\-|\\_]+}/{type}/{prefixedValueKey:[\\w|\\d]+\\.[\\w|\\d]+}/details",
-            consumes = MediaType.TEXT_PLAIN_VALUE,
-            produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE})
-    @ResponseStatus(HttpStatus.OK)
     public Flux<AnnotatedStatement> getDetails(
-            @PathVariable @Parameter(name = "entity identifier") String id,
-            @PathVariable(required = true, value = "values") @Parameter(name = "property type") PropertyType type,
-            @PathVariable String prefixedValueKey,
-            @RequestParam(required = false) boolean hash
+            String id,
+            PropertyType type,
+            String prefixedValueKey,
+            boolean hash
     ) {
         return Flux.error(new NotImplementedException("Method has not been implemented yet."));
     }
@@ -86,26 +81,26 @@ public class DetailsController extends AbstractController implements DetailsAPI 
     }
 
     @Override
-    @Operation(summary = "Adds details for a value.")
-    @PostMapping(value = "/entities/{id:[\\w|\\d|\\-|\\_]+}/values/{prefixedValueKey:[\\w|\\d]+\\.[\\w|\\d]+}/details/{prefixedDetailKey:[\\w|\\d]+\\.[\\w|\\d]+}",
-            consumes = MediaType.TEXT_PLAIN_VALUE,
-            produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE})
-    @ResponseStatus(HttpStatus.OK)
+   // @Operation(summary = "Adds a detail to a value.")
+    //@PostMapping(value = "/entities/{key:[\\w|\\d|\\-|\\_]+}/values/{prefixedValueKey:[\\w|\\d]+\\.[\\w|\\d]+}/details/{prefixedDetailKey:[\\w|\\d]+\\.[\\w|\\d]+}",
+      //      consumes = MediaType.TEXT_PLAIN_VALUE,
+        //    produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE})
+    //@ResponseStatus(HttpStatus.OK)
     public Flux<AnnotatedStatement> createDetail(
-            @PathVariable @Parameter(name = "entity identifier") String id,
+            @PathVariable String key,
             @PathVariable String prefixedValueKey,
             @PathVariable String prefixedDetailKey,
-            @RequestParam(required = false) String hash,
+            @RequestParam(name = "Generated hash to identify a particular value", required = false) String valueHash,
             @RequestBody String value
 
     ) {
         Assert.isTrue(!value.matches("(?s).*[\\n\\r].*"), "Newlines in request body are not supported");
         return super.acquireContext()
-                .flatMap(ctx -> values.insertDetail(id, prefixedValueKey, prefixedDetailKey, value, hash , ctx))
+                .flatMap(ctx -> values.insertDetail(key, prefixedValueKey, prefixedDetailKey, value, valueHash , ctx))
                 .flatMapIterable(Triples::asStatements)
                 .doOnSubscribe(s -> {
                     if (log.isDebugEnabled())
-                        log.debug("Request to add detail '{}' on property '{}' for entity '{}' with value: {}", prefixedDetailKey, prefixedValueKey, id, value.length() > 64 ? value.substring(0, 64) : value);
+                        log.debug("Request to add detail '{}' on property '{}' for entity '{}' with value: {}", prefixedDetailKey, prefixedValueKey, key, value.length() > 64 ? value.substring(0, 64) : value);
                 });
 
     }

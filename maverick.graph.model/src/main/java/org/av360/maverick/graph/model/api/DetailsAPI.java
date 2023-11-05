@@ -31,7 +31,7 @@ public interface DetailsAPI {
             @PathVariable @Parameter(name = "entity identifier") String id,
             @PathVariable(required = true, value = "values") @Parameter(name = "property type") DetailsAPI.PropertyType type,
             @PathVariable String prefixedValueKey,
-            @RequestParam(required = false) boolean hash
+            @RequestParam(required = false) boolean valueIdentifier
     );
 
     @Operation(summary = "Purge all details for a value")

@@ -48,11 +48,11 @@ public class ScopedApiOperations extends AbstractController {
 
     private final ValuesAPI valuesCtrl;
 
-    private final LinksAPI linksCtrl;
+    private final RelationsAPI linksCtrl;
 
     private final ContentApi contentCtrl;
 
-    public ScopedApiOperations(DetailsAPI defaultCtrl, EntitiesAPI entitiesCtrl, ValuesAPI valuesCtrl, LinksAPI linksCtrl, @Nullable ContentApi contentCtrl) {
+    public ScopedApiOperations(DetailsAPI defaultCtrl, EntitiesAPI entitiesCtrl, ValuesAPI valuesCtrl, RelationsAPI linksCtrl, @Nullable ContentApi contentCtrl) {
         this.detailsCtrl = defaultCtrl;
         this.entitiesCtrl = entitiesCtrl;
         this.valuesCtrl = valuesCtrl;

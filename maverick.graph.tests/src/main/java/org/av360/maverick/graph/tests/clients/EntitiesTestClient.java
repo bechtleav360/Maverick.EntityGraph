@@ -251,6 +251,7 @@ public class EntitiesTestClient {
                         .path("/api/entities/{id}/values/{valueProperty}/details/{detailProperty}")
                         .build(sourceIdentifier, valueProperty, detailProperty)
                 )
+                .accept(MediaType.parseMediaType(RDFFormat.JSONLD.getDefaultMIMEType()))
                 .exchange();
     }
 
