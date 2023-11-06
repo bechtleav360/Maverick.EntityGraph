@@ -17,6 +17,8 @@ package org.av360.maverick.graph.model.api;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.extensions.Extension;
+import io.swagger.v3.oas.annotations.extensions.ExtensionProperty;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -34,7 +36,7 @@ import javax.annotation.Nullable;
 
 @SecurityRequirement(name = "api_key")
 @Tag(name = "Entities", description = """
-        ## Operations related to managing entities in the system.
+        ### Manage entities in the Entity Graph.
         \s
         An **entity** represents a foundational concept in this API. An entity is fundamentally a set of statements that
         share the same subject, forming a cohesive unit centered around that subject.
@@ -45,8 +47,8 @@ import javax.annotation.Nullable;
         \s
         Every entity is **strongly typed**, ensuring adherence to a designated structure or category. In addition, every 
         entity gets assigned a unique identifier, the Entity Key. 
-        
-        """)
+        """,
+        extensions = @Extension(name = "order", properties = {@ExtensionProperty(name = "position", value = "1")}))
 @RequestMapping(path = "/api")
 public interface EntitiesAPI {
     @Operation(operationId = "readEntity",
@@ -110,7 +112,6 @@ public interface EntitiesAPI {
                     @ApiResponse(responseCode = "500", description = "Server error")
             })
     Flux<AnnotatedStatement> create(@Parameter(description = "The RDF statements for the new entity.", required = true) @RequestBody Triples request);
-
 
 
     @DeleteMapping(value = "/entities/{id:[\\w|\\d|\\-|\\_]+}",

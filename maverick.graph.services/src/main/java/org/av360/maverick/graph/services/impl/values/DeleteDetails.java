@@ -1,20 +1,23 @@
 package org.av360.maverick.graph.services.impl.values;
 
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.NotImplementedException;
 import org.av360.maverick.graph.model.context.SessionContext;
 import org.av360.maverick.graph.model.entities.Transaction;
 import org.av360.maverick.graph.model.errors.requests.EntityNotFound;
+import org.av360.maverick.graph.model.errors.requests.InvalidEntityUpdate;
+import org.av360.maverick.graph.model.errors.store.InvalidEntityModelException;
 import org.av360.maverick.graph.model.events.DetailRemovedEvent;
 import org.av360.maverick.graph.store.rdf.fragments.RdfEntity;
 import org.av360.maverick.graph.store.rdf.fragments.RdfTransaction;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Statement;
+import org.eclipse.rdf4j.model.Triple;
 import org.eclipse.rdf4j.model.util.Values;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -55,13 +58,13 @@ public class DeleteDetails {
      * @param prefixedValuePredicate  The prefixed value predicate associated with the entity.
      * @param prefixedDetailPredicate The prefixed detail predicate associated with the value.
      * @param languageTag             The IETF BCP 47 language tag indicating the language of the detail.
-     * @param valueHash               A hash value to ensure data integrity for the given detail.
+     * @param valueIdentifier               A hash value to ensure data integrity for the given detail.
      * @param ctx                     The session context containing session-related information.
      * @return A Mono of the resulting {@link Transaction} after the removal operation.
      * @throws IllegalArgumentException If any of the parameters are invalid.
      * @throws EntityNotFound           If the specified entity or detail is not found.
      */
-    public Mono<Transaction> remove(String entityKey, String prefixedValuePredicate, String prefixedDetailPredicate, String languageTag, String valueHash, SessionContext ctx) {
+    public Mono<Transaction> remove(String entityKey, String prefixedValuePredicate, String prefixedDetailPredicate, String valueIdentifier, SessionContext ctx) {
         return Mono.zip(
                         ctrl.schemaServices.resolveLocalName(entityKey).flatMap(entityIdentifier -> ctrl.entityServices.get(entityIdentifier, 0, true, ctx)),
                         ctrl.schemaServices.resolvePrefixedName(prefixedValuePredicate),
@@ -71,14 +74,9 @@ public class DeleteDetails {
                     IRI valuePredicate = tuple.getT2();
                     IRI detailPredicate = tuple.getT3();
 
-                    if (Objects.nonNull(valueHash)) {
-                        return this.removeWithHash(entity, valuePredicate, detailPredicate, valueHash, ctx);
-                    }
-                    if (Objects.nonNull(languageTag)) {
-                        return this.removeWithLanguageTag(entity, valuePredicate, detailPredicate, languageTag, ctx);
-                    }
-
-                    return this.remove(entity, valuePredicate, detailPredicate, ctx);
+                    if (Objects.nonNull(valueIdentifier)) {
+                        return this.removeWithHash(entity, valuePredicate, detailPredicate, valueIdentifier, ctx);
+                    } else return this.remove(entity, valuePredicate, detailPredicate, ctx);
 
                 })
                 .doOnSuccess(trx -> {
@@ -89,20 +87,34 @@ public class DeleteDetails {
     }
 
     private Mono<Transaction> remove(RdfEntity entity, IRI valuePredicate, IRI detailPredicate, SessionContext ctx) {
-        return this.ctrl.insertDetails.buildDetailStatementForSingleValue(entity, valuePredicate, detailPredicate)
-                .flatMap(statement -> ctrl.entityServices.getStore(ctx).removeStatement(statement, new RdfTransaction()))
-                .flatMap(trx -> ctrl.entityServices.getStore(ctx).commit(trx, ctx.getEnvironment()));
+        try {
+            Optional<Triple> requestedTriple = this.ctrl.readValues.findSingleValueTriple(entity, valuePredicate);
+            if(requestedTriple.isEmpty()) return Mono.error(new InvalidEntityUpdate(entity.getIdentifier(), "No value exists in entity <%s> for predicate <%s>".formatted(entity.getIdentifier(), valuePredicate)));
+
+
+            RdfTransaction trx = new RdfTransaction();
+            entity.getModel().getStatements(requestedTriple.get(), detailPredicate, null)
+                    .forEach(statement -> ctrl.entityServices.getStore(ctx).removeStatement(statement, trx));
+
+            return ctrl.entityServices.getStore(ctx).commit(trx, ctx.getEnvironment());
+
+        } catch (InvalidEntityModelException e) {
+            return Mono.error(e);
+        }
+
     }
 
-    private Mono<Transaction> removeWithLanguageTag(RdfEntity entity, IRI valuePredicate, IRI detailPredicate, String languageTag, SessionContext ctx) {
-        // this.ctrl.readValues.findValueTripleByLanguageTag(entity, valuePredicate, languageTag);
-        throw new NotImplementedException("You have to provide the value hash, not a language tag, to delete a detail.");
-    }
 
     private Mono<Transaction> removeWithHash(RdfEntity entity, IRI valuePredicate, IRI detailPredicate, String valueHash, SessionContext ctx) {
-        return this.ctrl.insertDetails.buildDetailStatementForValueWithHash(entity, valuePredicate, detailPredicate, valueHash)
-                .flatMap(statement -> ctrl.entityServices.getStore(ctx).removeStatement(statement, new RdfTransaction()))
-                .flatMap(trx -> ctrl.entityServices.getStore(ctx).commit(trx, ctx.getEnvironment()));
+        Optional<Triple> requestedTriple = this.ctrl.readValues.findValueTripleByHash(entity, valuePredicate, valueHash);
+        if(requestedTriple.isEmpty()) return Mono.error(new InvalidEntityUpdate(entity.getIdentifier(), "No value exists in entity <%s> for predicate <%s> and hash '%s'".formatted(entity.getIdentifier(), valuePredicate, valueHash)));
+
+
+        RdfTransaction trx = new RdfTransaction();
+        entity.getModel().getStatements(requestedTriple.get(), detailPredicate, null)
+                .forEach(statement -> ctrl.entityServices.getStore(ctx).removeStatement(statement, trx));
+
+        return ctrl.entityServices.getStore(ctx).commit(trx, ctx.getEnvironment());
     }
 
 

@@ -114,18 +114,14 @@ public interface ValueServices {
     /**
      * Removes a detail associated with a given entity key, value predicate, and detail predicate.
      *
-     * @param entityKey              The key of the entity from which the detail is to be removed.
-     * @param prefixedValuePredicate The prefixed value predicate associated with the entity.
+     * @param entityKey               The key of the entity from which the detail is to be removed.
+     * @param prefixedValuePredicate  The prefixed value predicate associated with the entity.
      * @param prefixedDetailPredicate The prefixed detail predicate associated with the value predicate that needs to be removed.
-     * @param languageTag            The IETF BCP 47 language tag indicating the language of the detail.
-     * @param valueHash              A hash value to ensure data integrity for the given detail.
-     * @param ctx                    The session context containing session-related information.
-     *
+     * @param valueHash               A hash value to ensure data integrity for the given detail.
+     * @param ctx                     The session context containing session-related information.
      * @return A Mono of the resulting {@link Transaction} after the removal operation.
-     *
-     *
      */
-    Mono<Transaction> removeDetail(String entityKey, String prefixedValuePredicate, String prefixedDetailPredicate, String languageTag, String valueHash, SessionContext ctx);
+    Mono<Transaction> removeDetail(String entityKey, String prefixedValuePredicate, String prefixedDetailPredicate, String valueHash, SessionContext ctx);
 
     /**
      * @param entityIdentifier The unique local identifier of the entity

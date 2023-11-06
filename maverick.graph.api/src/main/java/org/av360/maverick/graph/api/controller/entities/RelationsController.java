@@ -23,7 +23,6 @@ import javax.annotation.Nullable;
 
 @RestController
 @Slf4j(topic = "graph.ctrl.api.relations")
-
 public class RelationsController extends AbstractController implements RelationsAPI {
 
 
@@ -39,7 +38,7 @@ public class RelationsController extends AbstractController implements Relations
     }
 
     @Override
-    public Flux<AnnotatedStatement> getLinks(@PathVariable String key) {
+    public Flux<AnnotatedStatement> list(@PathVariable String key) {
         return Flux.error(new NotImplementedException("Method has not been implemented yet."));
     }
 
@@ -56,7 +55,7 @@ public class RelationsController extends AbstractController implements Relations
     }
 
     @Override
-    public Flux<AnnotatedStatement> createLink(@PathVariable String key, @PathVariable String prefixedProperty, @PathVariable String targetKey, @Nullable @RequestParam(required = false) Boolean replace) {
+    public Flux<AnnotatedStatement> insert(@PathVariable String key, @PathVariable String prefixedProperty, @PathVariable String targetKey, @Nullable @RequestParam(required = false) Boolean replace) {
         return super.acquireContext()
                 .flatMap(ctx -> this.values.insertLink(key, prefixedProperty, targetKey, replace, ctx))
                 .flatMapIterable(Triples::asStatements)

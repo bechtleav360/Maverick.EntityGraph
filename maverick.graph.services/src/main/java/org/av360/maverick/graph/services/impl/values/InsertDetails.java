@@ -19,6 +19,8 @@ import reactor.core.publisher.Mono;
 
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 public class InsertDetails {
     private final ValueServicesImpl ctrl;
@@ -27,7 +29,7 @@ public class InsertDetails {
         this.ctrl = valueServices;
     }
 
-    public Mono<Transaction> insert(String entityKey, String prefixedValueKey, String prefixedDetailKey, String value, @Nullable String hash, SessionContext ctx) {
+    public Mono<Transaction> insert(String entityKey, String prefixedValueKey, String prefixedDetailKey, String value, @Nullable String valueIdentifier, SessionContext ctx) {
         return Mono.zip(
                         ctrl.schemaServices.resolveLocalName(entityKey).flatMap(entityIdentifier -> ctrl.entityServices.get(entityIdentifier, 0, true, ctx)),
                         ctrl.schemaServices.resolvePrefixedName(prefixedValueKey),
@@ -37,10 +39,10 @@ public class InsertDetails {
                     IRI valuePredicate = tuple.getT2();
                     IRI detailPredicate = tuple.getT3();
 
-                    if (Objects.isNull(hash)) {
+                    if (Objects.isNull(valueIdentifier)) {
                         return this.insertWithoutHash(entity, valuePredicate, detailPredicate, value, ctx);
                     } else {
-                        return this.insertWithHash(entity, valuePredicate, detailPredicate, value, hash, ctx);
+                        return this.insertWithHash(entity, valuePredicate, detailPredicate, value, valueIdentifier, ctx);
                     }
                 })
                 .doOnSuccess(trx -> {
@@ -51,7 +53,7 @@ public class InsertDetails {
     }
 
     private Mono<Transaction> insertWithHash(RdfEntity entity, IRI valuePredicate, IRI detailPredicate, String value, String hash, SessionContext ctx) {
-        return this.buildDetailStatementForValueWithHash(entity, valuePredicate, detailPredicate, hash)
+        return this.buildDetailStatementForValueWithHash(entity, valuePredicate, detailPredicate, value, hash)
                 .flatMap(statement -> ctrl.entityServices.getStore(ctx).addStatement(statement, new RdfTransaction()))
                 .flatMap(trx -> ctrl.entityServices.getStore(ctx).commit(trx, ctx.getEnvironment()));
     }
@@ -59,46 +61,48 @@ public class InsertDetails {
 
     private Mono<Transaction> insertWithoutHash(RdfEntity entity, IRI valuePredicate, IRI detailPredicate, String value, SessionContext ctx) {
 
-        // find triple statement with id - prefixed value key -
-        return Mono.defer(() -> {
+        try {
+            Optional<Value> distinctValue = entity.findDistinctValue(entity.getIdentifier(), valuePredicate);
 
-                    Optional<Value> distinctValue = null;
-                    try {
-                        distinctValue = entity.findDistinctValue(entity.getIdentifier(), valuePredicate);
+            if (distinctValue.isEmpty()) {
+                return Mono.error(new InvalidEntityUpdate(entity.getIdentifier(), "No value exists for predicate %s".formatted(valuePredicate)));
+            }
 
-                        if (distinctValue.isEmpty()) {
-                            return Mono.error(new InvalidEntityUpdate(entity.getIdentifier(), "No value exists for predicate %s".formatted(valuePredicate)));
-                        }
-                    } catch (InconsistentModelException e) {
-                        return Mono.error(new InvalidEntityUpdate(entity.getIdentifier(), "Multiple values for property %s. Use the hash identifier to select the value to update.".formatted(valuePredicate)));
-                    }
-                    Triple triple = Values.triple(entity.getIdentifier(), valuePredicate, distinctValue.get());
-                    Statement annotationStatement = Statements.statement(triple, detailPredicate, Values.literal(value), null);
-                    return Mono.just(annotationStatement);
+            Triple triple = Values.triple(entity.getIdentifier(), valuePredicate, distinctValue.get());
+            Statement insertStatement = Statements.statement(triple, detailPredicate, Values.literal(value), null);
 
-                })
-                .flatMap(statement -> ctrl.entityServices.getStore(ctx).addStatement(statement, new RdfTransaction()))
-                .flatMap(trx -> ctrl.entityServices.getStore(ctx).commit(trx, ctx.getEnvironment()));
+            return ctrl.entityServices.getStore(ctx).addStatement(insertStatement, new RdfTransaction())
+                    .flatMap(transaction -> {
+                        // check if we also have to remove an old statement
+                        Set<Statement> removeStatements = entity.streamStatements(triple, detailPredicate, null).collect(Collectors.toSet());
+                        return ctrl.entityServices.getStore(ctx).removeStatements(removeStatements, transaction);
+                    })
+                    .flatMap(trx -> ctrl.entityServices.getStore(ctx).commit(trx, ctx.getEnvironment()));
+        } catch (InconsistentModelException e) {
+            return Mono.error(new InvalidEntityUpdate(entity.getIdentifier(), "Multiple values for property %s. Use the hash identifier to select the value to update.".formatted(valuePredicate)));
+        }
     }
 
 
-    Mono<Statement> buildDetailStatementForValueWithHash(RdfEntity entity, IRI valuePredicate, IRI detailPredicate, String valueHash) {
+    Mono<Statement> buildDetailStatementForValueWithHash(RdfEntity entity, IRI valuePredicate, IRI detailPredicate, String value, String valueHash) {
         Optional<Triple> requestedTriple = this.ctrl.readValues.findValueTripleByHash(entity, valuePredicate, valueHash);
-        if(requestedTriple.isEmpty()) return Mono.error(new InvalidEntityUpdate(entity.getIdentifier(), "No value exists in entity <%s> for predicate <%s> and hash '%s'".formatted(entity.getIdentifier(), valuePredicate, valueHash)));
+        if (requestedTriple.isEmpty())
+            return Mono.error(new InvalidEntityUpdate(entity.getIdentifier(), "No value exists in entity <%s> for predicate <%s> and hash '%s'".formatted(entity.getIdentifier(), valuePredicate, valueHash)));
 
-        Statement annotationStatement = Statements.statement(requestedTriple.get(), detailPredicate, null, null);
+        Statement annotationStatement = Statements.statement(requestedTriple.get(), detailPredicate, Values.literal(value), null);
         return Mono.just(annotationStatement);
     }
 
     Mono<Statement> buildDetailStatementForSingleValue(RdfEntity entity, IRI valuePredicate, IRI detailPredicate) {
         try {
-            Optional<Triple>  requestedTriple = this.ctrl.readValues.findSingleValueTriple(entity, valuePredicate);
-            if(requestedTriple.isEmpty()) return Mono.error(new InvalidEntityUpdate(entity.getIdentifier(), "No value exists in entity <%s> for predicate <%s>".formatted(entity.getIdentifier(), valuePredicate)));
+            Optional<Triple> requestedTriple = this.ctrl.readValues.findSingleValueTriple(entity, valuePredicate);
+            if (requestedTriple.isEmpty())
+                return Mono.error(new InvalidEntityUpdate(entity.getIdentifier(), "No value exists in entity <%s> for predicate <%s>".formatted(entity.getIdentifier(), valuePredicate)));
 
             Statement annotationStatement = Statements.statement(requestedTriple.get(), detailPredicate, null, null);
             return Mono.just(annotationStatement);
         } catch (InvalidEntityModelException e) {
-            return  Mono.error(e);
+            return Mono.error(e);
         }
 
     }

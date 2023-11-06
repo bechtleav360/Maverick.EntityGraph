@@ -131,8 +131,8 @@ public class ValueServicesImpl implements ValueServices {
 
     @Override
     @RequiresPrivilege(Authorities.CONTRIBUTOR_VALUE)
-    public Mono<Transaction> removeDetail(String entityKey, String prefixedValuePredicate, String prefixedDetailPredicate, String languageTag, String valueHash, SessionContext ctx) {
-        return this.deleteDetails.remove(entityKey, prefixedValuePredicate, prefixedDetailPredicate, languageTag, valueHash, ctx);
+    public Mono<Transaction> removeDetail(String entityKey, String prefixedValuePredicate, String prefixedDetailPredicate, String valueHash, SessionContext ctx) {
+        return this.deleteDetails.remove(entityKey, prefixedValuePredicate, prefixedDetailPredicate, valueHash, ctx);
     }
 
 

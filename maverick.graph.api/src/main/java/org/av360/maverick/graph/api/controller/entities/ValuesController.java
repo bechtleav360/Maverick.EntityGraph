@@ -20,7 +20,6 @@ public class ValuesController extends AbstractController implements ValuesAPI {
 
 
     protected final ValueServices values;
-
     protected final EntityServices entityServices;
     protected final SchemaServices schemaServices;
 
@@ -32,10 +31,10 @@ public class ValuesController extends AbstractController implements ValuesAPI {
 
     @Override
     public Flux<AnnotatedStatement> list(String key,
-                                         String property) {
+                                         String prefixedProperty) {
 
         return super.acquireContext()
-                .flatMap(ctx -> values.listValues(key, property, ctx))
+                .flatMap(ctx -> values.listValues(key, prefixedProperty, ctx))
                 .flatMapIterable(Triples::asStatements)
                 .doOnSubscribe(s -> {
                     if (log.isDebugEnabled())

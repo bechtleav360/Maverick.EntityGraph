@@ -21,9 +21,8 @@ import org.springframework.test.context.event.RecordApplicationEvents;
 @ActiveProfiles({"test", "api"})
 public class RemoveDetailsTests extends ApiTestsBase  {
     @Test
-    @Disabled
     public void deleteDetail() {
-        super.printStart("Purge all details for a value.");
+        super.printStart("Remove a specific detail.");
 
         RdfConsumer rc1 = super.getTestClient().createEntity(EntitiesGenerator.generateCreativeWork());
         IRI sourceIdentifier = rc1.getEntityIdentifier(SDO.CREATIVE_WORK);
@@ -41,16 +40,15 @@ public class RemoveDetailsTests extends ApiTestsBase  {
         Assertions.assertEquals(7, cc1.getRows().size());
 
         super.printStep("Deleting detail dc.source from predicate teaches");
-        super.getTestClient().deleteValueDetail(sourceIdentifier, "sdo.teaches", "dc.source");
+        super.getTestClient().deleteValueDetail(sourceIdentifier, "sdo.teaches", "dc.source").expectStatus().isOk();
 
         super.printStep("Dumping and validating current model");
         CsvConsumer cc2 = super.getTestClient().listAllStatements();
         super.dumpStatementsAsTable(cc2);
-        Assertions.assertEquals(6, cc1.getRows().size());
+        Assertions.assertEquals(6, cc2.getRows().size());
     }
 
     @Test
-    @Disabled
     public void purgeDetailsByRemovingValue() {
         super.printStart("Remove a value and all its details.");
 

@@ -23,7 +23,7 @@ import javax.annotation.Nullable;
 //@Api(tags = "Values")
 @SecurityRequirement(name = "api_key")
 @Tag(name = "Values", description = """
-        ### Operations to manage the value properties (literals) for an Entity. 
+        ### Manage the value properties (literals) for an Entity. 
         \s
         In RDF (Resource Description Framework), a **literal** represents a primitive value, such as a string, number,
         or date. Unlike resources, which have URIs, literals are terminal values in RDF triples. They typically act
@@ -36,6 +36,9 @@ import javax.annotation.Nullable;
         pinpointing for certain operations. Furthermore, values can manifest as composite structures, captured by a
         group of interconnected RDF statements, like those representing addresses. When the parent
         Entity is deleted, all its corresponding values are simultaneously removed.
+        \s 
+        You can also store objects (binary files, large text documents, etc.) as values to an entity via file upload. 
+        They are persisted in an object store. Adresses, compound names, etc. should be stored as composites. 
         
         """)
 public interface ValuesAPI {
@@ -52,7 +55,7 @@ public interface ValuesAPI {
                                         """,
             parameters = {
                     @Parameter(name = "key", description = "Unique identifier for the entity", required = true, in = ParameterIn.PATH, schema = @Schema(type = "string")),
-                    @Parameter(name = "property", description = "Optional property filter for values", required = false, in = ParameterIn.QUERY, schema = @Schema(type = "string"))
+                    @Parameter(name = "prefixedProperty", description = "Optional prefixed property as filter for values", required = false, in = ParameterIn.QUERY, schema = @Schema(type = "string"))
             },
             responses = {
                     @ApiResponse(responseCode = "200", description = "Successfully retrieved list of values", content = @Content(mediaType = RdfMimeTypes.TURTLESTAR_VALUE, schema = @Schema(implementation = AnnotatedStatement.class)))
@@ -168,7 +171,7 @@ public interface ValuesAPI {
                     })
             }
     )
-    @PostMapping(value = "/entities/{key:[\\w|\\d|\\-|\\_]+}/{prefixedProperty:[\\w|\\d]+\\.[\\w|\\d]+}",
+    @PostMapping(value = "/entities/{key:[\\w|\\d|\\-|\\_]+}/composites/{prefixedProperty:[\\w|\\d]+\\.[\\w|\\d]+}",
             consumes = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE},
             produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE})
     @ResponseStatus(HttpStatus.CREATED)

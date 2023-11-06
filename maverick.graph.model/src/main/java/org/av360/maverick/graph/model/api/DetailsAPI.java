@@ -2,85 +2,120 @@ package org.av360.maverick.graph.model.api;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.enums.ParameterIn;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import org.av360.maverick.graph.model.enums.PropertyType;
 import org.av360.maverick.graph.model.enums.RdfMimeTypes;
 import org.av360.maverick.graph.model.rdf.AnnotatedStatement;
-import org.av360.maverick.graph.model.rdf.Triples;
+import org.springframework.boot.web.reactive.error.ErrorAttributes;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 
+@RequestMapping(path = "/api")
+@SecurityRequirement(name = "api_key")
+@Tag(name = "Details",
+        description = """
+                ### Manage details for values and relations
+                \s
+                Methods to add and remove details as annotations for values and relations. These details can be used
+                to add additional metadata such as its provenance (e.g. source, modification dates, etc.) or credibility
+                (e.g. uncertainty, applied technology to create the value, model type, etc.). 
+                \s
+                Details are stored as statements about statements ([RDF-Star](https://w3c.github.io/rdf-star/cg-spec/editors_draft.html)) in the graph and can queried in SPARQL. All
+                reading operations require a parser which understands [quoted triples](https://w3c.github.io/rdf-turtle/spec/#quoted-triples) in "Turtle-star". 
+                
+                
+                """)
 public interface DetailsAPI {
-    enum PropertyType {
-        VALUES,
-        LINKS;
 
-        @Override
-        public String toString() {
-            return super.name().toLowerCase();
-        }
 
-    }
-
-    @Operation(summary = "Returns all details for a value or link")
+    @Operation(
+            operationId = "listDetails",
+            summary = "Returns all details for a value or relation",
+            description = """
+                    Returns a list of details for a given value
+                    """)
     @GetMapping(value = "/entities/{id:[\\w|\\d|\\-|\\_]+}/{type}/{prefixedValueKey:[\\w|\\d]+\\.[\\w|\\d]+}/details",
             consumes = MediaType.TEXT_PLAIN_VALUE,
             produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE})
     @ResponseStatus(HttpStatus.OK)
     Flux<AnnotatedStatement> getDetails(
             @PathVariable @Parameter(name = "entity identifier") String id,
-            @PathVariable(required = true, value = "values") @Parameter(name = "property type") DetailsAPI.PropertyType type,
+            @PathVariable(required = true, value = "values") @Parameter(name = "property type") PropertyType type,
             @PathVariable String prefixedValueKey,
             @RequestParam(required = false) boolean valueIdentifier
     );
 
-    @Operation(summary = "Purge all details for a value")
-    @DeleteMapping(value = "/entities/{id:[\\w|\\d|\\-|\\_]+}/values/{prefixedValueKey:[\\w|\\d]+\\.[\\w|\\d]+}/details",
+
+    @Operation(
+            operationId = "removeDetail",
+            summary = "Delete a specific detail for a value",
+            description = """
+                    **Removes a detail for the given value.**
+                    \s 
+                    Use the language tag or value identifier to select a specific value (if multiple values exist for a property). 
+                    """,
+            parameters = {
+                    @Parameter(name = "key", description = "Unique identifier for the entity", required = true, in = ParameterIn.PATH, schema = @Schema(type = "string")),
+                    @Parameter(name = "type", description = "Add a detail either for a value or a relation", required = true, in = ParameterIn.PATH, schema = @Schema(type = "string", allowableValues = {"relations", "values"})),
+                    @Parameter(name = "prefixedProperty", description = "Prefixed property for the entity value", required = true, in = ParameterIn.PATH, schema = @Schema(type = "string")),
+                    @Parameter(name = "prefixedDetailProperty", description = "Prefixed property for the detail statement", required = true, in = ParameterIn.PATH, schema = @Schema(type = "string")),
+                    @Parameter(name = "valueIdentifier", description = "Identifier for the specific value", required = false, in = ParameterIn.QUERY, schema = @Schema(type = "string"))
+            },
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "Successfully deleted the detail", content = @Content(mediaType = RdfMimeTypes.TURTLESTAR_VALUE, schema = @Schema(implementation = AnnotatedStatement.class))),
+                    @ApiResponse(responseCode = "404", description = "Entity with specified ID not found", content = {@Content(mediaType = "application/json", schema = @Schema(implementation = ErrorAttributes.class))}),
+                    @ApiResponse(responseCode = "400", description = "Invalid request parameters", content = {@Content(mediaType = "application/json", schema = @Schema(implementation = ErrorAttributes.class))})
+            }
+    )
+    @DeleteMapping(value = "/entities/{key:[\\w|\\d|\\-|\\_]+}/{type}/{prefixedProperty:[\\w|\\d]+\\.[\\w|\\d]+}/details/{prefixedDetailProperty:[\\w|\\d]+\\.[\\w|\\d]+}",
+            produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE})
+    @ResponseStatus(HttpStatus.OK)
+    Flux<AnnotatedStatement> remove(
+            @PathVariable String key,
+            @PathVariable PropertyType type,
+            @PathVariable String prefixedProperty,
+            @PathVariable String prefixedDetailProperty,
+            @RequestParam(required = false) String valueIdentifier);
+
+    @Operation(summary = "Adds a detail for a value or relation.",
+            description = """
+                    **Creates a detail with the given property for a value or relation property.**
+                    \s 
+                    Existing details of the same type are always replaced. Use the language tag or value identifier to 
+                    select a specific value (if multiple values exist for a property). 
+                    """,
+            parameters = {
+                    @Parameter(name = "key", description = "Unique identifier for the entity", required = true, in = ParameterIn.PATH, schema = @Schema(type = "string")),
+                    @Parameter(name = "type", description = "Add a detail either for a value or a relation", required = true, in = ParameterIn.PATH, schema = @Schema(type = "string", allowableValues = {"relations", "values"})),
+                    @Parameter(name = "prefixedProperty", description = "Prefixed property for the entity value", required = true, in = ParameterIn.PATH, schema = @Schema(type = "string")),
+                    @Parameter(name = "prefixedDetailProperty", description = "Prefixed property for the detail statement", required = true, in = ParameterIn.PATH, schema = @Schema(type = "string")),
+                    @Parameter(name = "valueIdentifier", description = "Identifier for the specific value", required = false, in = ParameterIn.QUERY, schema = @Schema(type = "string"))
+            },
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "Successfully set the detail for the value or link property", content = @Content(mediaType = RdfMimeTypes.TURTLESTAR_VALUE, schema = @Schema(implementation = AnnotatedStatement.class))),
+                    @ApiResponse(responseCode = "404", description = "Entity with specified ID not found", content = {@Content(mediaType = "application/json", schema = @Schema(implementation = ErrorAttributes.class))}),
+                    @ApiResponse(responseCode = "400", description = "Invalid request parameters", content = {@Content(mediaType = "application/json", schema = @Schema(implementation = ErrorAttributes.class))})
+            }
+    )
+    @PostMapping(value = "/entities/{key:[\\w|\\d|\\-|\\_]+}/{type}/{prefixedProperty:[\\w|\\d]+\\.[\\w|\\d]+}/details/{prefixedDetailProperty:[\\w|\\d]+\\.[\\w|\\d]+}",
             consumes = MediaType.TEXT_PLAIN_VALUE,
             produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE})
     @ResponseStatus(HttpStatus.OK)
-    Flux<AnnotatedStatement> purgeDetails(
-            @PathVariable @Parameter(name = "entity identifier") String id,
-            @PathVariable String prefixedValueKey
-    );
-
-    @Operation(summary = "Delete a specific detail for a value")
-    @DeleteMapping(value = "/entities/{id:[\\w|\\d|\\-|\\_]+}/values/{prefixedValueKey:[\\w|\\d]+\\.[\\w|\\d]+}/details/{prefixedDetailKey:[\\w|\\d]+\\.[\\w|\\d]+}",
-            consumes = MediaType.TEXT_PLAIN_VALUE,
-            produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE})
-    @ResponseStatus(HttpStatus.OK)
-    Flux<AnnotatedStatement> deleteDetail(
-            @PathVariable @Parameter(name = "entity identifier") String id,
-            @PathVariable String prefixedValueKey,
-            @PathVariable String prefixedDetailKey,
-            @RequestParam(required = false) String languageTag, @RequestParam(required = false) String hash);
-
-
-
-
-    @Operation(summary = "Adds details for a value.")
-    @PostMapping(value = "/entities/{id:[\\w|\\d|\\-|\\_]+}/{type}/{prefixedValueKey:[\\w|\\d]+\\.[\\w|\\d]+}/details/{prefixedDetailKey:[\\w|\\d]+\\.[\\w|\\d]+}",
-            consumes = MediaType.TEXT_PLAIN_VALUE,
-            produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE})
-    @ResponseStatus(HttpStatus.OK)
-    Flux<AnnotatedStatement> createDetail(
-            @PathVariable @Parameter(name = "entity identifier") String id,
-            @PathVariable String prefixedValueKey,
-            @PathVariable String prefixedDetailKey,
-            @RequestParam(required = false) String hash,
+    Flux<AnnotatedStatement> insert(
+            @PathVariable String key,
+            @PathVariable PropertyType type,
+            @PathVariable String prefixedProperty,
+            @PathVariable String prefixedDetailProperty,
+            @RequestParam(required = false) String valueIdentifier,
             @RequestBody String value
+            );
 
-    );
 
-    @Operation(summary = "Creates a statement about a statement use the post body as value.")
-    @PostMapping(value = "/entities/{id:[\\w|\\d|\\-|\\_]+}/{type}/{prefixedValueKey:[\\w|\\d]+\\.[\\w|\\d]+}/details",
-            consumes = RdfMimeTypes.TURTLESTAR_VALUE,
-            produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE})
-    @ResponseStatus(HttpStatus.OK)
-    Flux<AnnotatedStatement> createLinkDetail(
-            @PathVariable @Parameter(name = "entity identifier") String id,
-            @PathVariable(required = true, value = "values") @Parameter(name = "property type") DetailsAPI.PropertyType type,
-            @PathVariable String prefixedValueKey,
-            @RequestBody Triples request
-    );
 }

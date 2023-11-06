@@ -249,7 +249,7 @@ public class EntitiesTestClient {
         return webClient.delete()
                 .uri(uriBuilder -> uriBuilder
                         .path("/api/entities/{id}/values/{valueProperty}/details/{detailProperty}")
-                        .build(sourceIdentifier, valueProperty, detailProperty)
+                        .build(sourceIdentifier.getLocalName(), valueProperty, detailProperty)
                 )
                 .accept(MediaType.parseMediaType(RDFFormat.JSONLD.getDefaultMIMEType()))
                 .exchange();
@@ -338,11 +338,11 @@ public class EntitiesTestClient {
     }
 
 
-    public WebTestClient.ResponseSpec addDetail(IRI entityIdentifier, String valueProperty, String detailProperty, String detailValue, String hash,  @Nullable RdfConsumer consumer) {
+    public WebTestClient.ResponseSpec addDetail(IRI entityIdentifier, String valueProperty, String detailProperty, String detailValue, String valueIdentifier,  @Nullable RdfConsumer consumer) {
         WebTestClient.ResponseSpec exchange = webClient.post()
                 .uri(uriBuilder -> uriBuilder
                         .path("/api/entities/{id}/values/{valueProperty}/details/{detailProperty}")
-                        .queryParam("hash", hash)
+                        .queryParam("valueIdentifier", valueIdentifier)
                         .build(entityIdentifier.getLocalName(), valueProperty, detailProperty)
 
                 )

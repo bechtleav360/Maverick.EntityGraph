@@ -5,15 +5,19 @@ import io.swagger.v3.oas.annotations.enums.SecuritySchemeIn;
 import io.swagger.v3.oas.annotations.enums.SecuritySchemeType;
 import io.swagger.v3.oas.annotations.security.SecurityScheme;
 import io.swagger.v3.oas.models.info.Info;
+import io.swagger.v3.oas.models.tags.Tag;
+import org.av360.maverick.graph.model.enums.PropertyType;
 import org.springdoc.core.models.GroupedOpenApi;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.convert.converter.Converter;
 import org.springframework.web.reactive.function.server.RouterFunction;
 import org.springframework.web.reactive.function.server.ServerResponse;
 
 import java.net.URI;
+import java.util.Arrays;
 
 import static org.springframework.web.reactive.function.server.RequestPredicates.GET;
 import static org.springframework.web.reactive.function.server.RouterFunctions.route;
@@ -22,13 +26,13 @@ import static org.springframework.web.reactive.function.server.RouterFunctions.r
 @OpenAPIDefinition
 @SecurityScheme(name = "api_key", type = SecuritySchemeType.APIKEY, paramName = "X-API-KEY", in = SecuritySchemeIn.HEADER)
 public class OpenApiConfiguration {
+
+
     @Bean
     RouterFunction<ServerResponse> routerFunction() {
         return route(GET("/swagger"), req -> ServerResponse.temporaryRedirect(URI.create("/swagger-ui.html")).build()
         ).and(route(GET("/actuator/"), req -> ServerResponse.temporaryRedirect(URI.create("/actuator")).build()));
     }
-
-
 
 
 
@@ -43,6 +47,16 @@ public class OpenApiConfiguration {
                 .group("Entities API")
                 .addOpenApiCustomizer(openApi -> {
                     openApi.info(new Info().title("Entity Graph API").description("API to access and update the entity graph.").version(version));
+
+                    // change order of tags
+                    Tag[] reordered = new Tag[4];
+                    openApi.getTags().forEach(tg -> {
+                        if(tg.getName().equalsIgnoreCase("Entities")) reordered[0] = tg;
+                        if(tg.getName().equalsIgnoreCase("Values")) reordered[1] = tg;
+                        if(tg.getName().equalsIgnoreCase("Relations")) reordered[2] = tg;
+                        if(tg.getName().equalsIgnoreCase("Details")) reordered[3] = tg;
+                    });
+                    openApi.tags(Arrays.asList(reordered));
                 })
                 .pathsToMatch("/api/entities/**");
     }
@@ -78,6 +92,15 @@ public class OpenApiConfiguration {
                 .pathsToMatch("/api/transactions/**");
     }
 
+    @Bean
+    public Converter<String, PropertyType> convertPropertyType() {
+        return new Converter<String, PropertyType>() {
+            @Override
+            public PropertyType convert(String source) {
+                return PropertyType.valueOf(source.toUpperCase());
+            }
+        };
+    }
 
 
 }
