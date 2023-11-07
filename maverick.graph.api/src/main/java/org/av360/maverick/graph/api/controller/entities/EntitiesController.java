@@ -3,7 +3,7 @@ package org.av360.maverick.graph.api.controller.entities;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.api.controller.AbstractController;
-import org.av360.maverick.graph.model.api.EntitiesAPI;
+import org.av360.maverick.graph.api.controller.EntitiesAPI;
 import org.av360.maverick.graph.model.rdf.AnnotatedStatement;
 import org.av360.maverick.graph.model.rdf.Triples;
 import org.av360.maverick.graph.services.EntityServices;

@@ -2,8 +2,8 @@ package org.av360.maverick.graph.feature.objects.controller;
 
 import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.api.controller.AbstractController;
+import org.av360.maverick.graph.api.controller.ContentApi;
 import org.av360.maverick.graph.feature.objects.services.FileServices;
-import org.av360.maverick.graph.model.api.ContentApi;
 import org.av360.maverick.graph.model.rdf.AnnotatedStatement;
 import org.av360.maverick.graph.model.rdf.Triples;
 import org.springframework.beans.factory.annotation.Qualifier;

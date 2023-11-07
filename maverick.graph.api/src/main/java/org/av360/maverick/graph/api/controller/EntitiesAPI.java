@@ -13,7 +13,7 @@
  *
  */
 
-package org.av360.maverick.graph.model.api;
+package org.av360.maverick.graph.api.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;

@@ -1,10 +1,9 @@
 package org.av360.maverick.graph.feature.applications.controller.ext;
 
 import lombok.extern.slf4j.Slf4j;
-import org.av360.maverick.graph.api.controller.AbstractController;
+import org.av360.maverick.graph.api.controller.*;
 import org.av360.maverick.graph.api.controller.entities.EntitiesController;
 import org.av360.maverick.graph.feature.applications.services.delegates.DelegatingIdentifierServices;
-import org.av360.maverick.graph.model.api.*;
 import org.av360.maverick.graph.model.enums.PropertyType;
 import org.av360.maverick.graph.model.enums.RdfMimeTypes;
 import org.av360.maverick.graph.model.rdf.AnnotatedStatement;
