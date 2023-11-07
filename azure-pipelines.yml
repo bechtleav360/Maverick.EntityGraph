@@ -17,7 +17,7 @@ variables:
   - name: docker.image.version
     ${{ if eq(variables['Build.SourceBranchName'], 'main') }}:
       value: "latest"
-    ${{ if eq(variables['Build.SourceBranchName'], 'develop') }}:
+    ${{ elseif eq(variables['Build.SourceBranchName'], 'develop') }}:
       value: "develop"
     ${{ else }}:
       value: variables['Build.SourceBranchName']
