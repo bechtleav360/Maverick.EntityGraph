@@ -49,6 +49,9 @@ public class RdfTransaction extends TripleModel implements Transaction {
 
 
     public Transaction removes(Collection<Statement> statements) {
+        if (log.isTraceEnabled())
+            log.trace("Removal planned for {} statements in transaction '{}'.", statements.size(), this.getIdentifier().getLocalName());
+
         return this.include(statements, Activity.REMOVED);
     }
 

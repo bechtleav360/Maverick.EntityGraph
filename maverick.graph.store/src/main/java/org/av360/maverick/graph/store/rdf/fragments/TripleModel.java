@@ -95,6 +95,11 @@ public class TripleModel implements Triples {
         this.getModel().addAll(collect);
     }
 
+    public Triples filter(Predicate<Statement> filterFunction) {
+        this.reduce(filterFunction);
+        return (Triples) this;
+    }
+
 
 
 

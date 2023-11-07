@@ -40,7 +40,7 @@ public class DeleteDetails {
      * @param ctx
      * @return
      */
-    Mono<Transaction> removeWithValue(IRI entityIdentifier, IRI predicate, String languageTag, String valueIdentifier, Transaction trx, SessionContext ctx) {
+    Mono<Transaction> removeDetailStatements(Transaction trx, SessionContext ctx) {
         Set<Flux<Statement>> collect = trx.getRemovedStatements().stream()
                 .map(Values::triple)
                 .map(triple -> this.ctrl.entityServices.getStore(ctx).listStatements(triple, null, null, ctx.getEnvironment()).flatMapMany(Flux::fromIterable))

@@ -11,7 +11,6 @@ import org.av360.maverick.graph.model.rdf.Triples;
 import org.av360.maverick.graph.services.EntityServices;
 import org.av360.maverick.graph.services.SchemaServices;
 import org.av360.maverick.graph.services.ValueServices;
-import org.av360.maverick.graph.store.rdf.fragments.TripleModel;
 import org.reactivestreams.Subscription;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -45,8 +44,8 @@ public class RelationsController extends AbstractController implements Relations
     @Override
     public Flux<AnnotatedStatement> getLinksByType(@PathVariable String key, @PathVariable String prefixedProperty) {
         return super.acquireContext()
-                .flatMap(ctx -> this.values.listLinks(key, prefixedProperty, ctx))
-                .flatMapIterable(TripleModel::asStatements)
+                .flatMap(ctx -> this.values.listRelations(key, prefixedProperty, ctx))
+                .flatMapIterable(Triples::asStatements)
                 .doOnSubscribe((Subscription s) -> {
                     if (log.isDebugEnabled())
                         log.debug("Request to get all '{}' links for entity '{}'", prefixedProperty, key);

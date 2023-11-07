@@ -100,7 +100,7 @@ public class RdfConsumer implements Consumer<EntityExchangeResult<byte[]>> {
         return this.asModel().getStatements(subject, predicate, object).iterator().hasNext();
     }
 
-    public Statement findStatement(Resource s, IRI p, Value o) {
+    public Statement findFirstStatement(Resource s, IRI p, Value o) {
         return StreamSupport.stream(this.asModel().getStatements(s, p, o).spliterator(), false).findFirst().orElseThrow();
     }
 
@@ -122,7 +122,7 @@ public class RdfConsumer implements Consumer<EntityExchangeResult<byte[]>> {
     }
 
     public IRI getEntityIdentifier(IRI type) {
-        Resource source = this.findStatement(null, RDF.TYPE, type).getSubject();
+        Resource source = this.findFirstStatement(null, RDF.TYPE, type).getSubject();
         Assertions.assertTrue(source.isIRI());
         return ((IRI) source);
     }

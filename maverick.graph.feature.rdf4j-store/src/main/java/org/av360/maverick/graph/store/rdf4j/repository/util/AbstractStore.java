@@ -452,8 +452,7 @@ public abstract class AbstractStore implements TripleStore, StatementsAware, Mod
     @Override
     public Mono<Transaction> removeStatements(Collection<Statement> statements, Transaction transaction) {
         Assert.notNull(transaction, "Transaction cannot be null");
-        if (getLogger().isDebugEnabled())
-            getLogger().debug("Removal planned for {} statements in transaction '{}'.", statements.size(), transaction.getIdentifier().getLocalName());
+
 
         return Mono.just(transaction.removes(statements));
     }

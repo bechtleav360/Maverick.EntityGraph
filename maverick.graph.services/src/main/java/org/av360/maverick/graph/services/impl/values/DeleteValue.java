@@ -37,8 +37,9 @@ public class DeleteValue {
     }
 
     public Mono<Transaction> remove(IRI entityIdentifier, IRI predicate, String languageTag, String valueIdentifier, SessionContext ctx) {
-        return this.removeValueStatement(entityIdentifier, predicate, languageTag, valueIdentifier, new RdfTransaction(), ctx)
-                .flatMap(trx -> ctrl.deleteDetails.removeWithValue(entityIdentifier, predicate, languageTag, valueIdentifier, trx, ctx))
+
+        return this.removeValueStatements(entityIdentifier, predicate, languageTag, valueIdentifier, new RdfTransaction(), ctx)
+                .flatMap(trx -> ctrl.deleteDetails.removeDetailStatements(trx, ctx))
                 .flatMap(trx -> ctrl.entityServices.getStore(ctx).commit(trx, ctx.getEnvironment()))
                 .doOnSuccess(trx -> {
                     ctrl.eventPublisher.publishEvent(new ValueRemovedEvent(trx));
@@ -49,7 +50,7 @@ public class DeleteValue {
     /**
      * Deletes a value with a new transaction. Fails if no entity exists with the given subject
      */
-    private Mono<Transaction> removeValueStatement(IRI entityIdentifier, IRI predicate, @Nullable String languageTag, @Nullable String valueIdentifier, Transaction transaction, SessionContext ctx) {
+    private Mono<Transaction> removeValueStatements(IRI entityIdentifier, IRI predicate, @Nullable String languageTag, @Nullable String valueIdentifier, Transaction transaction, SessionContext ctx) {
         return ctrl.entityServices.getStore(ctx).listStatements(entityIdentifier, predicate, null, ctx.getEnvironment())
                 .flatMap(statements -> {
                     if (statements.size() > 1) {
@@ -68,7 +69,7 @@ public class DeleteValue {
                                 return Mono.error(new InvalidEntityUpdate(entityIdentifier, "Invalid to remove links via the values api."));
                             } else if (object.isLiteral()) {
                                 if (StringUtils.isNotBlank(valueIdentifier)) {
-                                    String hash = ctrl.readValues.generateHashForValue(object.stringValue());
+                                    String hash = ctrl.readValues.generateHashForValue(predicate.getLocalName(), object.stringValue());
                                     if (hash.equalsIgnoreCase(valueIdentifier)) {
                                         statementsToRemove.add(st);
                                     }
@@ -91,10 +92,9 @@ public class DeleteValue {
                             return Mono.error(new InvalidEntityUpdate(entityIdentifier, "Multiple values found for language tag '%s'. Please delete by hash.".formatted(languageTag)));
                         }
 
-
-                        return ctrl.entityServices.getStore(ctx).removeStatements(statementsToRemove, transaction);
+                        return Mono.just(transaction.removes(statementsToRemove));
                     } else {
-                        return ctrl.entityServices.getStore(ctx).removeStatements(statements, transaction);
+                        return Mono.just(transaction.removes(statements));
                     }
 
                 })

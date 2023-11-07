@@ -4,15 +4,14 @@ import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.model.context.SessionContext;
 import org.av360.maverick.graph.model.errors.store.InvalidEntityModelException;
 import org.av360.maverick.graph.model.identifier.ChecksumGenerator;
+import org.av360.maverick.graph.model.rdf.Triples;
+import org.av360.maverick.graph.model.vocabulary.Details;
 import org.av360.maverick.graph.store.rdf.fragments.RdfEntity;
-import org.av360.maverick.graph.store.rdf.fragments.TripleModel;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Triple;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.util.Values;
-import org.eclipse.rdf4j.model.vocabulary.DC;
-import org.eclipse.rdf4j.model.vocabulary.DCTERMS;
 import reactor.core.publisher.Mono;
 
 import javax.annotation.Nullable;
@@ -33,50 +32,38 @@ public class ReadValues {
         this.valueServices = valueServices;
     }
 
-    public Mono<TripleModel> listValues(String entityKey, @Nullable String prefixedPoperty, SessionContext ctx) {
+    public Mono<Triples> listValues(String entityKey, @Nullable String prefixedValuePredicate, SessionContext ctx) {
         return valueServices.identifierServices.asIRI(entityKey, ctx.getEnvironment())
                 .flatMap(entityIdentifier -> valueServices.entityServices.get(entityIdentifier, 0, true, ctx))
-                .flatMap(entity -> this.listValues(entity, prefixedPoperty));
-    }
-
-    public Mono<TripleModel> listValues(RdfEntity entity, @Nullable String prefixedPoperty) {
-        if(Objects.isNull(prefixedPoperty)) {
-            return this.listAllValues(entity);
-        } else {
-            return this.listValuesForProperty(entity, prefixedPoperty);
-        }
-    }
-
-    Mono<TripleModel> listValuesForProperty(RdfEntity entity, String prefixedValuePredicate) {
-        return this.valueServices.schemaServices.resolvePrefixedName(prefixedValuePredicate)
-                .flatMap(valuePredicate -> this.listValuesForProperty(entity, valuePredicate));
-    }
-
-    Mono<TripleModel> listValuesForProperty(RdfEntity entity, IRI valuePredicate) {
-        entity.reduce(st -> st.getPredicate().equals(valuePredicate));
-
-        new HashSet<>(entity.getModel())
-                .stream().filter(statement -> statement.getSubject().isIRI()) // we don't generate hashes for RDF* statements
-                .forEach(statement -> {
-                    Triple triple = Values.triple(statement);
-                    String hash = this.generateHashForValue(statement.getObject().stringValue());
-                    entity.getModel().add(triple, DC.IDENTIFIER, Values.literal(hash));
+                .flatMap(entity -> {
+                    if(Objects.isNull(prefixedValuePredicate)) {
+                        entity.reduce(statement -> statement.getObject().isLiteral());
+                        return this.insertValueIdentifiers(entity);
+                    } else {
+                        return this.valueServices.schemaServices.resolvePrefixedName(prefixedValuePredicate)
+                                .map(valuePredicate -> entity.filter(st -> st.getPredicate().equals(valuePredicate)))
+                                .flatMap(triples -> this.insertValueIdentifiers(triples));
+                    }
                 });
-        return Mono.just(entity);
     }
 
-    private Mono<TripleModel> listAllValues(RdfEntity entity) {
-        entity.reduce(statement -> statement.getObject().isLiteral());
 
+
+
+
+
+    private Mono<Triples> insertValueIdentifiers(Triples entity) {
         new HashSet<>(entity.getModel())
                 .stream().filter(statement -> statement.getSubject().isIRI())
                 .forEach(statement -> {
                     Triple triple = Values.triple(statement);
-                    String hash = this.generateHashForValue(statement.getObject().stringValue());
-                    entity.getModel().add(triple, DCTERMS.IDENTIFIER, Values.literal(hash));
+                    String hash = this.generateHashForValue(statement.getPredicate().getLocalName(), statement.getObject().stringValue());
+                    entity.getModel().add(triple, Details.HASH, Values.literal(hash));
                 });
         return Mono.just(entity);
     }
+
+
 
 
     Optional<Triple> findValueTripleByLanguageTag(RdfEntity entity, IRI valuePredicate, String languageTag) {
@@ -92,7 +79,7 @@ public class ReadValues {
     Optional<Triple> findValueTripleByHash(RdfEntity entity, IRI valuePredicate, String hash) {
         return entity.streamValues(entity.getIdentifier(), valuePredicate)
                 .filter(literal -> {
-                    String generatedHash = this.generateHashForValue(literal.stringValue());
+                    String generatedHash = this.generateHashForValue(valuePredicate.getLocalName(), literal.stringValue());
                     return hash.equalsIgnoreCase(generatedHash);
                 })
                 .map(requestedLiteral -> Values.triple(entity.getIdentifier(), valuePredicate, requestedLiteral))
@@ -111,7 +98,7 @@ public class ReadValues {
 
 
 
-    String generateHashForValue(String value) {
-        return ChecksumGenerator.generateChecksum(value, 8, 'o');
+    String generateHashForValue(String predicate, String value) {
+        return ChecksumGenerator.generateChecksum(predicate+value, 8, 'o');
     }
 }

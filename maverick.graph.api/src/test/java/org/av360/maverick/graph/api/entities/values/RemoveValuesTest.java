@@ -1,6 +1,7 @@
 package org.av360.maverick.graph.api.entities.values;
 
 import org.av360.maverick.graph.model.enums.RdfMimeTypes;
+import org.av360.maverick.graph.model.vocabulary.Details;
 import org.av360.maverick.graph.model.vocabulary.SDO;
 import org.av360.maverick.graph.tests.config.TestSecurityConfig;
 import org.av360.maverick.graph.tests.generator.EntitiesGenerator;
@@ -8,7 +9,7 @@ import org.av360.maverick.graph.tests.util.ApiTestsBase;
 import org.av360.maverick.graph.tests.util.RdfConsumer;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Statement;
-import org.eclipse.rdf4j.model.vocabulary.DC;
+import org.eclipse.rdf4j.model.util.Values;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.rio.RDFFormat;
 import org.junit.jupiter.api.AfterEach;
@@ -41,7 +42,7 @@ public class RemoveValuesTest extends ApiTestsBase {
         super.printStart("removeTitle");
 
         RdfConsumer rdfConsumer = super.upload("requests/create-valid.ttl");
-        Statement video = rdfConsumer.findStatement(null, RDF.TYPE, SDO.VIDEO_OBJECT);
+        Statement video = rdfConsumer.findFirstStatement(null, RDF.TYPE, SDO.VIDEO_OBJECT);
 
         super.printStep();
         webClient.delete()
@@ -81,7 +82,7 @@ public class RemoveValuesTest extends ApiTestsBase {
         super.printStart("remove link to resource");
 
         RdfConsumer rdfConsumer = super.upload("requests/create-valid.ttl");
-        Statement video = rdfConsumer.findStatement(null, RDF.TYPE, SDO.VIDEO_OBJECT);
+        Statement video = rdfConsumer.findFirstStatement(null, RDF.TYPE, SDO.VIDEO_OBJECT);
 
         String link = "<http://example.com#concept>";
 
@@ -155,7 +156,7 @@ public class RemoveValuesTest extends ApiTestsBase {
         super.printStart("removeTitleWithLanguage");
 
         RdfConsumer rdfConsumer = super.upload("requests/create-valid_with_tags.ttl");
-        Statement video = rdfConsumer.findStatement(null, RDF.TYPE, SDO.VIDEO_OBJECT);
+        Statement video = rdfConsumer.findFirstStatement(null, RDF.TYPE, SDO.VIDEO_OBJECT);
 
         super.printStep();
         webClient.delete()
@@ -181,7 +182,7 @@ public class RemoveValuesTest extends ApiTestsBase {
         super.printStart("failToRemoveTitleWithLanguage");
 
         RdfConsumer rdfConsumer = super.upload("requests/create-valid_with_tags.ttl");
-        Statement video = rdfConsumer.findStatement(null, RDF.TYPE, SDO.VIDEO_OBJECT);
+        Statement video = rdfConsumer.findFirstStatement(null, RDF.TYPE, SDO.VIDEO_OBJECT);
 
         super.printStep();
         webClient.delete()
@@ -211,11 +212,12 @@ public class RemoveValuesTest extends ApiTestsBase {
 
         RdfConsumer rc2 = super.getTestClient().listValues(sourceIdentifier, "sdo.author");
         rc2.print(RDFFormat.TURTLESTAR);
-        Statement statement = rc2.findStatement(null, DC.IDENTIFIER, null);
+        Statement valueStatement = rc2.findFirstStatement(sourceIdentifier, SDO.AUTHOR, null);
+        Statement detailStatement = rc2.findFirstStatement(Values.triple(valueStatement), Details.HASH, null);
 
-        Assertions.assertTrue(statement.getSubject().isTriple());
+        Assertions.assertTrue(detailStatement.getSubject().isTriple());
 
-        super.getTestClient().deleteValueByHash(sourceIdentifier, "sdo.author", statement.getObject().stringValue());
+        super.getTestClient().deleteValueByHash(sourceIdentifier, "sdo.author", detailStatement.getObject().stringValue());
 
 
         RdfConsumer rc3 = super.getTestClient().listValues(sourceIdentifier, "sdo.author");

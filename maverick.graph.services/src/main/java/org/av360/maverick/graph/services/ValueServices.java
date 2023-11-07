@@ -2,8 +2,7 @@ package org.av360.maverick.graph.services;
 
 import org.av360.maverick.graph.model.context.SessionContext;
 import org.av360.maverick.graph.model.entities.Transaction;
-import org.av360.maverick.graph.store.rdf.fragments.RdfEntity;
-import org.av360.maverick.graph.store.rdf.fragments.TripleModel;
+import org.av360.maverick.graph.model.rdf.Triples;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Statement;
@@ -133,10 +132,10 @@ public interface ValueServices {
      */
     Mono<Transaction> replace(IRI entityIdentifier, IRI predicate, Value oldValue, Value newValue, SessionContext ctx);
 
-    Mono<RdfEntity> listLinks(String id, String prefixedKey, SessionContext ctx);
+    Mono<Triples> listRelations(String id, String prefixedKey, SessionContext ctx);
 
 
-    Mono<TripleModel> listValues(String id, @Nullable String prefixedKey, SessionContext ctx);
+    Mono<Triples> listValues(String id, @Nullable String prefixedKey, SessionContext ctx);
 
 
 }

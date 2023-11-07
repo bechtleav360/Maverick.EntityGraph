@@ -8,6 +8,7 @@ import org.av360.maverick.graph.tests.util.CsvConsumer;
 import org.av360.maverick.graph.tests.util.RdfConsumer;
 import org.eclipse.rdf4j.model.IRI;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -85,6 +86,11 @@ public class RemoveDetailsTests extends ApiTestsBase  {
     @Disabled
     public void deleteSpecificDetailWithoutHashFail() {
 
+    }
+
+    @BeforeEach
+    public void resetRepository() {
+        super.resetRepository();
     }
 
 }

@@ -1,6 +1,7 @@
 package org.av360.maverick.graph.services.impl.values;
 
 import org.av360.maverick.graph.model.context.SessionContext;
+import org.av360.maverick.graph.model.rdf.Triples;
 import org.av360.maverick.graph.store.rdf.fragments.RdfEntity;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
@@ -13,7 +14,7 @@ public class ReadLinks {
         this.ctrl = valueServices;
     }
 
-    public Mono<RdfEntity> list(String entityKey, String prefixedPoperty, SessionContext ctx) {
+    public Mono<Triples> list(String entityKey, String prefixedPoperty, SessionContext ctx) {
         return Mono.zip(
                 ctrl.schemaServices.resolveLocalName(entityKey)
                         .flatMap(entityIdentifier -> ctrl.entityServices.get(entityIdentifier, 0, true, ctx)),

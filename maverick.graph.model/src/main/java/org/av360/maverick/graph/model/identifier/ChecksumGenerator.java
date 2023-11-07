@@ -52,7 +52,6 @@ public class ChecksumGenerator {
         }
 
         return sb.toString();
-
     }
 
 }

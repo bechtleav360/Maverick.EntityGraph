@@ -45,7 +45,7 @@ public class CreateValuesTest extends ApiTestsBase {
         super.printStart("setDescription");
 
         RdfConsumer rdfConsumer = super.upload("requests/create-valid.ttl");
-        Statement video = rdfConsumer.findStatement(null, RDF.TYPE, SDO.VIDEO_OBJECT);
+        Statement video = rdfConsumer.findFirstStatement(null, RDF.TYPE, SDO.VIDEO_OBJECT);
 
         String description = "This is a description";
 
@@ -90,7 +90,7 @@ public class CreateValuesTest extends ApiTestsBase {
         super.printStart("setValueWithUnknownPrefix");
 
         RdfConsumer rdfConsumer = super.upload("requests/create-valid.ttl");
-        Statement video = rdfConsumer.findStatement(null, RDF.TYPE, vf.createIRI("https://schema.org/", "VideoObject"));
+        Statement video = rdfConsumer.findFirstStatement(null, RDF.TYPE, vf.createIRI("https://schema.org/", "VideoObject"));
 
         String description = "This is a description";
 
@@ -114,7 +114,7 @@ public class CreateValuesTest extends ApiTestsBase {
         super.printStart("replaceTitle");
 
         RdfConsumer rdfConsumer = super.upload("requests/create-valid.ttl");
-        Statement video = rdfConsumer.findStatement(null, RDF.TYPE, vf.createIRI("https://schema.org/", "VideoObject"));
+        Statement video = rdfConsumer.findFirstStatement(null, RDF.TYPE, vf.createIRI("https://schema.org/", "VideoObject"));
 
         String title = "A new title";
 
@@ -137,7 +137,7 @@ public class CreateValuesTest extends ApiTestsBase {
         super.printStart("addTitleWithMissingTag");
 
         RdfConsumer rdfConsumer = super.upload("requests/create-valid_with_tags.ttl");
-        Statement video = rdfConsumer.findStatement(null, RDF.TYPE, SDO.VIDEO_OBJECT);
+        Statement video = rdfConsumer.findFirstStatement(null, RDF.TYPE, SDO.VIDEO_OBJECT);
 
         String title = "A new title";
 
@@ -161,7 +161,7 @@ public class CreateValuesTest extends ApiTestsBase {
         super.printStart("addTitleWithExplicitLanguageTag");
 
         RdfConsumer rdfConsumer = super.upload("requests/create-valid_with_tags.ttl");
-        Statement video = rdfConsumer.findStatement(null, RDF.TYPE, vf.createIRI("https://schema.org/", "VideoObject"));
+        Statement video = rdfConsumer.findFirstStatement(null, RDF.TYPE, vf.createIRI("https://schema.org/", "VideoObject"));
 
         String title = "A new title@en";
 
@@ -192,7 +192,7 @@ public class CreateValuesTest extends ApiTestsBase {
         super.printStart("addTitleWithLanguageTag");
 
         RdfConsumer rdfConsumer = super.upload("requests/create-valid_with_tags.ttl");
-        Statement video = rdfConsumer.findStatement(null, RDF.TYPE, SDO.VIDEO_OBJECT);
+        Statement video = rdfConsumer.findFirstStatement(null, RDF.TYPE, SDO.VIDEO_OBJECT);
 
         String title = "A new title@en";
 
@@ -224,7 +224,7 @@ public class CreateValuesTest extends ApiTestsBase {
         RdfConsumer rdfConsumer = super.upload("requests/create-valid_with_tags.ttl");
         rdfConsumer.dump(RDFFormat.TURTLE);
 
-        Statement video = rdfConsumer.findStatement(null, RDF.TYPE, SDO.VIDEO_OBJECT);
+        Statement video = rdfConsumer.findFirstStatement(null, RDF.TYPE, SDO.VIDEO_OBJECT);
 
         String title = "A new title@this-is-.invalid";
 
@@ -283,7 +283,7 @@ public class CreateValuesTest extends ApiTestsBase {
         super.printStart("set link to resource");
 
         RdfConsumer rdfConsumer = super.upload("requests/create-valid.ttl");
-        Statement video = rdfConsumer.findStatement(null, RDF.TYPE, SDO.VIDEO_OBJECT);
+        Statement video = rdfConsumer.findFirstStatement(null, RDF.TYPE, SDO.VIDEO_OBJECT);
 
         String link = "<http://example.com#concept>";
 

@@ -1,6 +1,7 @@
 package org.av360.maverick.graph.api.entities.details;
 
 import org.av360.maverick.graph.model.vocabulary.DCTERMS;
+import org.av360.maverick.graph.model.vocabulary.Details;
 import org.av360.maverick.graph.model.vocabulary.SDO;
 import org.av360.maverick.graph.tests.config.TestSecurityConfig;
 import org.av360.maverick.graph.tests.generator.EntitiesGenerator;
@@ -13,6 +14,7 @@ import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.util.Values;
 import org.eclipse.rdf4j.rio.RDFFormat;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
@@ -83,7 +85,7 @@ public class CreateDetailsTests extends ApiTestsBase  {
         super.printStep("Retrieving all values");
         RdfConsumer rc2 = super.getTestClient().listValues(sourceIdentifier);
         rc2.print(RDFFormat.TURTLESTAR);
-        Statement statement = rc2.findStatement(Values.triple(vf, sourceIdentifier, SDO.TEACHES, Values.literal("s1", "en")), org.eclipse.rdf4j.model.vocabulary.DCTERMS.IDENTIFIER, null);
+        Statement statement = rc2.findFirstStatement(Values.triple(vf, sourceIdentifier, SDO.TEACHES, Values.literal("s1", "en")), Details.HASH, null);
         String hash = statement.getObject().stringValue();
 
 
@@ -143,6 +145,7 @@ public class CreateDetailsTests extends ApiTestsBase  {
     }
 
 
+    @BeforeEach
     public void resetRepository() {
         super.resetRepository();
     }
