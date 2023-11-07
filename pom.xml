@@ -45,6 +45,8 @@
         <jackson.version>2.15.3</jackson.version>
         <logback.version>1.4.11</logback.version>
         <rdf4j.version>4.3.7</rdf4j.version>
+        <springdoc.version>2.2.0</springdoc.version>
+        <swagger-annotations-jakarta.version>2.2.15</swagger-annotations-jakarta.version>
     </properties>
 
     <dependencies>
@@ -238,7 +240,12 @@
             <dependency>
                 <groupId>org.springdoc</groupId>
                 <artifactId>springdoc-openapi-starter-webflux-ui</artifactId>
-                <version>2.2.0</version>
+                <version>${springdoc.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.swagger.core.v3</groupId>
+                <artifactId>swagger-annotations-jakarta</artifactId>
+                <version>${swagger-annotations-jakarta.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.github.ben-manes.caffeine</groupId>

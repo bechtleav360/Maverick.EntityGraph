@@ -3,7 +3,7 @@ package org.av360.maverick.graph.api.controller.entities;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.NotImplementedException;
 import org.av360.maverick.graph.api.controller.AbstractController;
-import org.av360.maverick.graph.model.api.DetailsAPI;
+import org.av360.maverick.graph.api.controller.DetailsAPI;
 import org.av360.maverick.graph.model.enums.PropertyType;
 import org.av360.maverick.graph.model.rdf.AnnotatedStatement;
 import org.av360.maverick.graph.model.rdf.Triples;
