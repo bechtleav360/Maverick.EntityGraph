@@ -41,6 +41,7 @@ public class WebFluxConfiguration implements WebFluxConfigurer {
     public void configureContentTypeResolver(RequestedContentTypeResolverBuilder builder) {
         builder.headerResolver();
         builder.parameterResolver().parameterName("format");
+        //builder.fixedResolver(MediaType.parseMediaType(RDFFormat.JSONLD.getDefaultMIMEType()));  // setting a default content type interferes with swagger html client
     }
 
 
@@ -77,6 +78,9 @@ public class WebFluxConfiguration implements WebFluxConfigurer {
             }
         };
     }
+
+
+
 
 
 }

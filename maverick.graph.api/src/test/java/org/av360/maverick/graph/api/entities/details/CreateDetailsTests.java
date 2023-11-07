@@ -1,6 +1,7 @@
 package org.av360.maverick.graph.api.entities.details;
 
 import org.av360.maverick.graph.model.vocabulary.DCTERMS;
+import org.av360.maverick.graph.model.vocabulary.Details;
 import org.av360.maverick.graph.model.vocabulary.SDO;
 import org.av360.maverick.graph.tests.config.TestSecurityConfig;
 import org.av360.maverick.graph.tests.generator.EntitiesGenerator;
@@ -13,7 +14,7 @@ import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.util.Values;
 import org.eclipse.rdf4j.rio.RDFFormat;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
@@ -26,7 +27,6 @@ import org.springframework.test.context.event.RecordApplicationEvents;
 @ActiveProfiles({"test", "api"})
 public class CreateDetailsTests extends ApiTestsBase  {
     @Test
-    @Disabled
     public void createDetailDefault() {
 
         super.printStart("Add a detail to a single value");
@@ -52,7 +52,6 @@ public class CreateDetailsTests extends ApiTestsBase  {
 
 
     @Test
-    @Disabled
     public void createDetailMultipleFail() {
 
         super.printStart("Add a detail to a properties with multiple values. Has to fail.");
@@ -72,35 +71,33 @@ public class CreateDetailsTests extends ApiTestsBase  {
 
 
     @Test
-    @Disabled
     public void createDetailMultipleWithHash() {
 
         super.printStart("Add a detail to a properties with multiple values, identify selected value by hash.");
 
-        RdfConsumer rc1 = super.getTestClient().createEntity(EntitiesGenerator.generateCreativeWork());
+        RdfConsumer rc1 = super.getTestClient().createEntity(EntitiesGenerator.generateSimpleTypedEntity());
         IRI sourceIdentifier = rc1.getEntityIdentifier(SDO.CREATIVE_WORK);
 
-        super.printStep("Setting value");
+        super.printStep("Setting values");
         super.getTestClient().createValue(sourceIdentifier, "sdo.teaches", "s1");
         super.getTestClient().createValue(sourceIdentifier, "sdo.teaches", "s2", false);
 
         super.printStep("Retrieving all values");
         RdfConsumer rc2 = super.getTestClient().listValues(sourceIdentifier);
         rc2.print(RDFFormat.TURTLESTAR);
-        Statement statement = rc2.findStatement(Values.triple(vf, sourceIdentifier, SDO.TEACHES, Values.literal("s1", "en")), org.eclipse.rdf4j.model.vocabulary.DCTERMS.IDENTIFIER, null);
+        Statement statement = rc2.findFirstStatement(Values.triple(vf, sourceIdentifier, SDO.TEACHES, Values.literal("s1", "en")), Details.HASH, null);
         String hash = statement.getObject().stringValue();
 
 
-        super.printStep("Setting detail with hash %s".formatted(hash));
+        super.printStep("Setting detail with hash '%s'".formatted(hash));
         super.getTestClient().addDetail(sourceIdentifier, "sdo.teaches", "dc.source", "s1", hash, null).expectStatus().isOk();
     }
 
 
     @Test
-    @Disabled
     public void createMultipleDetails() {
 
-        super.printStart("Add a detail to a properties with multiple values, identify selected value by hash.");
+        super.printStart("Add a detail to a properties with multiple values, identify selected value by value identifier.");
 
         RdfConsumer rc1 = super.getTestClient().createEntity(EntitiesGenerator.generateCreativeWork());
         IRI sourceIdentifier = rc1.getEntityIdentifier(SDO.CREATIVE_WORK);
@@ -125,8 +122,7 @@ public class CreateDetailsTests extends ApiTestsBase  {
 
 
     @Test
-    @Disabled
-    public void createMultipleDetailsDuplicateFail() {
+    public void createMultipleDetailsWillReplace() {
 
         super.printStart("Add a detail to a properties with multiple values, identify selected value by hash.");
 
@@ -134,14 +130,22 @@ public class CreateDetailsTests extends ApiTestsBase  {
         IRI sourceIdentifier = rc1.getEntityIdentifier(SDO.CREATIVE_WORK);
 
         super.printStep("Setting value");
-        super.getTestClient().createValue(sourceIdentifier, "sdo.teaches", "a certain skill");
+        super.getTestClient().createValue(sourceIdentifier, "sdo.teaches", "skill");
 
         super.printStep("Setting details");
-        super.getTestClient().addDetail(sourceIdentifier, "sdo.teaches", "dc.source", "zephyr", null);
-        super.getTestClient().addDetail(sourceIdentifier, "sdo.teaches", "dc.source", "generated text", null);
+        super.getTestClient().addDetail(sourceIdentifier, "sdo.teaches", "dc.source", "s1", null).expectStatus().isOk();
+        super.getTestClient().addDetail(sourceIdentifier, "sdo.teaches", "dc.source", "s2", null).expectStatus().isOk();
+
+        super.printStep("Retrieving all values");
+        RdfConsumer rc2 = super.getTestClient().listValues(sourceIdentifier);
+        rc2.print(RDFFormat.TURTLESTAR);
+
+        Assertions.assertTrue(rc2.hasStatement(Values.triple(vf, sourceIdentifier, SDO.TEACHES, Values.literal("skill", "en")), DCTERMS.SOURCE, Values.literal("s2")));
+        Assertions.assertFalse(rc2.hasStatement(Values.triple(vf, sourceIdentifier, SDO.TEACHES, Values.literal("skill", "en")), DCTERMS.SOURCE, Values.literal("s1")));
     }
 
 
+    @BeforeEach
     public void resetRepository() {
         super.resetRepository();
     }

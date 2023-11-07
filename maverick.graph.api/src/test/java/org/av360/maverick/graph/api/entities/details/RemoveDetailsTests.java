@@ -8,6 +8,7 @@ import org.av360.maverick.graph.tests.util.CsvConsumer;
 import org.av360.maverick.graph.tests.util.RdfConsumer;
 import org.eclipse.rdf4j.model.IRI;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -21,9 +22,8 @@ import org.springframework.test.context.event.RecordApplicationEvents;
 @ActiveProfiles({"test", "api"})
 public class RemoveDetailsTests extends ApiTestsBase  {
     @Test
-    @Disabled
     public void deleteDetail() {
-        super.printStart("Purge all details for a value.");
+        super.printStart("Remove a specific detail.");
 
         RdfConsumer rc1 = super.getTestClient().createEntity(EntitiesGenerator.generateCreativeWork());
         IRI sourceIdentifier = rc1.getEntityIdentifier(SDO.CREATIVE_WORK);
@@ -35,16 +35,21 @@ public class RemoveDetailsTests extends ApiTestsBase  {
         super.getTestClient().addDetail(sourceIdentifier, "sdo.teaches", "dc.source", "source", null);
         super.getTestClient().addDetail(sourceIdentifier, "sdo.teaches", "dc.subject", "text", null);
 
-        super.printStep("Dumping current model");
+        super.printStep("Dumping and validating current model");
         CsvConsumer cc1 = super.getTestClient().listAllStatements();
         super.dumpStatementsAsTable(cc1);
         Assertions.assertEquals(7, cc1.getRows().size());
 
-        super.getTestClient().deleteValueDetail(sourceIdentifier, "sdo.teaches", "dc.source");
+        super.printStep("Deleting detail dc.source from predicate teaches");
+        super.getTestClient().deleteValueDetail(sourceIdentifier, "sdo.teaches", "dc.source").expectStatus().isOk();
+
+        super.printStep("Dumping and validating current model");
+        CsvConsumer cc2 = super.getTestClient().listAllStatements();
+        super.dumpStatementsAsTable(cc2);
+        Assertions.assertEquals(6, cc2.getRows().size());
     }
 
     @Test
-    @Disabled
     public void purgeDetailsByRemovingValue() {
         super.printStart("Remove a value and all its details.");
 
@@ -81,6 +86,11 @@ public class RemoveDetailsTests extends ApiTestsBase  {
     @Disabled
     public void deleteSpecificDetailWithoutHashFail() {
 
+    }
+
+    @BeforeEach
+    public void resetRepository() {
+        super.resetRepository();
     }
 
 }

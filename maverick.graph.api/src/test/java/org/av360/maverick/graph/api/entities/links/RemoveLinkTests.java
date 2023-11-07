@@ -63,13 +63,13 @@ public class RemoveLinkTests extends ApiTestsBase {
     void deleteUnknownLink() {
         super.printStart("deleteUnknownLink");
         RdfConsumer rc1 = client.createEntity(EntitiesGenerator.generateCreativeWork());
-        Resource source = rc1.findStatement(null, RDF.TYPE, SDO.CREATIVE_WORK).getSubject();
+        Resource source = rc1.findFirstStatement(null, RDF.TYPE, SDO.CREATIVE_WORK).getSubject();
         Assertions.assertTrue(source.isIRI());
         String sourceIdentifier = ((IRI) source).getLocalName();
 
         super.printStep();
         RdfConsumer rc2 = client.createEntity(EntitiesGenerator.generateDefinedTerm());
-        Resource target = rc2.findStatement(null, RDF.TYPE, SDO.DEFINED_TERM).getSubject();
+        Resource target = rc2.findFirstStatement(null, RDF.TYPE, SDO.DEFINED_TERM).getSubject();
         Assertions.assertTrue(target.isIRI());
         String targetIdentifier = ((IRI) target).getLocalName();
 
@@ -86,19 +86,19 @@ public class RemoveLinkTests extends ApiTestsBase {
     void deleteForUnknownEntity() {
         super.printStart("deleteForUnknownEntity");
         RdfConsumer rc1 = client.createEntity(EntitiesGenerator.generateCreativeWork());
-        Resource source = rc1.findStatement(null, RDF.TYPE, SDO.CREATIVE_WORK).getSubject();
+        Resource source = rc1.findFirstStatement(null, RDF.TYPE, SDO.CREATIVE_WORK).getSubject();
         Assertions.assertTrue(source.isIRI());
         String sourceIdentifier = ((IRI) source).getLocalName();
 
         super.printStep();
         RdfConsumer rc2 = client.createEntity(EntitiesGenerator.generateDefinedTerm());
-        Resource target = rc2.findStatement(null, RDF.TYPE, SDO.DEFINED_TERM).getSubject();
+        Resource target = rc2.findFirstStatement(null, RDF.TYPE, SDO.DEFINED_TERM).getSubject();
         Assertions.assertTrue(target.isIRI());
         String targetIdentifier = ((IRI) target).getLocalName();
 
         super.printStep();
         RdfConsumer rc3 = client.createEntity(EntitiesGenerator.generateDefinedTerm());
-        Resource another = rc2.findStatement(null, RDF.TYPE, SDO.DEFINED_TERM).getSubject();
+        Resource another = rc2.findFirstStatement(null, RDF.TYPE, SDO.DEFINED_TERM).getSubject();
         Assertions.assertTrue(target.isIRI());
         String anotherIdentifier = ((IRI) target).getLocalName();
 

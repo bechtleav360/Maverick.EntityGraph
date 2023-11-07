@@ -24,6 +24,16 @@ public class EntitiesGenerator {
         return builder.build();
     }
 
+    public static Model generateSimpleTypedEntity() {
+
+        ModelBuilder builder = new ModelBuilder();
+        builder.setNamespace(generateTestNamespace());
+        builder.subject(generateAnomyousSubject());
+        builder.add(RDF.TYPE, SDO.CREATIVE_WORK);
+
+        return builder.build();
+    }
+
     public static Model generateDefinedTerm() {
         ModelBuilder builder = new ModelBuilder();
         builder.setNamespace(generateTestNamespace());
@@ -32,7 +42,5 @@ public class EntitiesGenerator {
         builder.add(SDO.TERM_CODE, generateRandomWords(1));
 
         return builder.build();
-
-
     }
 }

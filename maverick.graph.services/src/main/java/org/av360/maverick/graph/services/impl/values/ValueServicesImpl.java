@@ -8,6 +8,7 @@ import org.av360.maverick.graph.model.context.SessionContext;
 import org.av360.maverick.graph.model.entities.Transaction;
 import org.av360.maverick.graph.model.errors.requests.EntityNotFound;
 import org.av360.maverick.graph.model.errors.requests.InvalidEntityUpdate;
+import org.av360.maverick.graph.model.rdf.Triples;
 import org.av360.maverick.graph.model.security.Authorities;
 import org.av360.maverick.graph.services.EntityServices;
 import org.av360.maverick.graph.services.IdentifierServices;
@@ -15,7 +16,6 @@ import org.av360.maverick.graph.services.SchemaServices;
 import org.av360.maverick.graph.services.ValueServices;
 import org.av360.maverick.graph.store.SchemaStore;
 import org.av360.maverick.graph.store.rdf.fragments.RdfEntity;
-import org.av360.maverick.graph.store.rdf.fragments.TripleModel;
 import org.eclipse.rdf4j.model.*;
 import org.eclipse.rdf4j.model.impl.LinkedHashModel;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
@@ -131,8 +131,8 @@ public class ValueServicesImpl implements ValueServices {
 
     @Override
     @RequiresPrivilege(Authorities.CONTRIBUTOR_VALUE)
-    public Mono<Transaction> removeDetail(String entityKey, String prefixedValuePredicate, String prefixedDetailPredicate, String languageTag, String valueHash, SessionContext ctx) {
-        return this.deleteDetails.remove(entityKey, prefixedValuePredicate, prefixedDetailPredicate, languageTag, valueHash, ctx);
+    public Mono<Transaction> removeDetail(String entityKey, String prefixedValuePredicate, String prefixedDetailPredicate, String valueHash, SessionContext ctx) {
+        return this.deleteDetails.remove(entityKey, prefixedValuePredicate, prefixedDetailPredicate, valueHash, ctx);
     }
 
 
@@ -149,13 +149,13 @@ public class ValueServicesImpl implements ValueServices {
 
     @Override
     @RequiresPrivilege(Authorities.READER_VALUE)
-    public Mono<RdfEntity> listLinks(String entityKey, String prefixedPoperty, SessionContext ctx) {
+    public Mono<Triples> listRelations(String entityKey, String prefixedPoperty, SessionContext ctx) {
         return this.readLinks.list(entityKey, prefixedPoperty, ctx);
     }
 
     @Override
     @RequiresPrivilege(Authorities.READER_VALUE)
-    public Mono<TripleModel> listValues(String entityKey, @Nullable String prefixedPoperty, SessionContext ctx) {
+    public Mono<Triples> listValues(String entityKey, @Nullable String prefixedPoperty, SessionContext ctx) {
         return this.readValues.listValues(entityKey, prefixedPoperty, ctx);
     }
 

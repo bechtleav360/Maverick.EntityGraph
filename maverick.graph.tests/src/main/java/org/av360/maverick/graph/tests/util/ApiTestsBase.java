@@ -34,7 +34,7 @@ public abstract class ApiTestsBase extends TestsBase {
     }
 
     protected void dumpStatementsAsTable(CsvConsumer csvConsumer) {
-        this.printSummary("All statements in repository");
+        this.printSummary("All %s statements in repository".formatted(csvConsumer.rows.size()));
         System.out.println(csvConsumer.getMapAsString());
     }
 
