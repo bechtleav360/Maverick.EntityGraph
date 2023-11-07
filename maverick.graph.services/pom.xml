@@ -4,8 +4,8 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
         <artifactId>graph-parent</artifactId>
-        <groupId>com.bechtle.maverick.graph</groupId>
-        <version>0.0.1-SNAPSHOT</version>
+        <groupId>org.av360.maverick.graph</groupId>
+        <version>${revision}</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -14,13 +14,52 @@
 
     <dependencies>
         <dependency>
-            <groupId>com.bechtle.maverick.graph</groupId>
+            <groupId>org.av360.maverick.graph</groupId>
             <artifactId>graph-store</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.bechtle.maverick.graph</groupId>
+            <groupId>org.av360.maverick.graph</groupId>
             <artifactId>graph-model</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-aop</artifactId>
+        </dependency>
+
+
+        <!-- Testing -->
+        <dependency>
+            <groupId>org.av360.maverick.graph</groupId>
+            <artifactId>graph-tests</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.av360.maverick.graph</groupId>
+            <artifactId>graph-store-rdf4j</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.projectreactor</groupId>
+            <artifactId>reactor-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+            <scope>test</scope>
+        </dependency>
+
 
     </dependencies>
 

@@ -1,0 +1,200 @@
+        {
+            "application": {
+                "security": {
+                    "enabled": true,
+                    "apiKey": "xxx",
+                    "basic": {
+                        "enabled": false
+                    }
+                },
+                "features": {
+                    "modules": {
+                        "applications": {
+                            "enabled": true,
+                            "configuration": {
+
+                            }
+                        },
+                        "admin": {
+                            "enabled": true,
+                            "configuration": {
+
+                            }
+
+                        },
+                        "navigation": {
+                            "enabled": true,
+                            "configuration": {
+                                "limit": 100
+                            }
+                        },
+                        "jobs": {
+                            "enabled": true,
+                            "scheduled": {
+                                "detectDuplicates": {
+                                    "enabled": true,
+                                    "defaultFrequency": "@hourly"
+                                },
+
+                                "replaceIdentifiers": {
+                                    "enabled": true,
+                                    "defaultFrequency": "@hourly"
+                                },
+                                "typeCoercion": {
+                                    "enabled": true,
+                                    "defaultFrequency": "@hourly"
+                                },
+                                "exportApplication": {
+                                    "enabled": true,
+                                    "defaultFrequency": "@midnight",
+                                    "defaultLocalPath": "/var/files/exports",
+                                    "defaultS3Host": null,
+                                    "defaultS3BucketId": null
+                                },
+                                "computeStatistics": {
+                                    "enabled": true,
+                                    "defaultFrequency": "@hourly"
+                                }
+                            }
+                        },
+                        "objects": {
+                            "enabled": true,
+                            "configuration": {
+                                "mode": "File system",
+                                "path": "/var/files/content"
+                            }
+                        }
+                    },
+                    "transformers": {
+                        "replaceGlobalIdentifiers": true,
+                        "replaceAnonymousIdentifiers": true,
+                        "mergeDuplicates": true,
+                        "typeCoercion": true
+                    },
+                    "validators": {
+                        "checkRequiredType": true
+                    }
+                },
+                "storage": {
+                    "vocabularies": {
+                        "persistent": true,
+                        "path": "/var/data/system/vocabularies"
+                    },
+                    "system": {
+                        "persistent": true,
+                        "path": "/var/data/system"
+                    },
+                    "entities": {
+                        "persistent": true,
+                        "path": "/var/data/entities"
+                    },
+                    "transactions": {
+                        "persistent": true,
+                        "path": "/var/data/system/transactions"
+                    }
+                }
+            },
+            "spring": {
+                "profiles": {
+                    "active": "persistent"
+                },
+                "security": {
+                    "user": {
+                        "name": "admin",
+                        "password": "xxx"
+                    }
+                }
+            },
+            "server": {
+                "use-forward-headers": true,
+                "forward-headers-strategy": "framework"
+            },
+            "logging": {
+                "file": {
+                    "name": "main.log",
+                    "path": "/var/data/system"
+                },
+                "level": {
+                    "root": "INFO",
+                    "graph": {
+                        "jobs": "INFO",
+                        "repo": "INFO",
+                        "srvc": "INFO",
+                        "ctrl": "INFO",
+                        "feat": "INFO"
+                    },
+                    "org": {
+                        "eclipse" : {
+                            "rdf4j": "INFO"
+                        },
+                        "springframework": {
+                            "security": "INFO"
+                        }
+                    }
+                }
+            },
+            "management": {
+                "info": {
+                    "env": {
+                        "enabled": true
+                    },
+                    "git": {
+                        "enabled": true,
+                        "mode": "full"
+                    }
+                },
+                "health": {
+                    "defaults": {
+                        "enabled": false
+                    },
+                    "probes": {
+                        "enabled": true
+                    }
+                },
+                "endpoints": {
+                    "web": {
+                        "exposure": {
+                            "include": "health, info, git, loggers, metrics, logfile, prometheus, env, configprops, scheduledTasks, jobs"
+                        }
+                    }
+                },
+                "endpoint": {
+                    "discovery": {
+                        "enabled": true
+                    },
+                    "jobs": {
+                        "enabled": true
+                    },
+                    "health": {
+                        "enabled": true,
+                        "show-details": "always"
+                    },
+                    "info": {
+                        "enabled": true
+                    },
+                    "env": {
+                        "enabled": true,
+                        "show-values": "WHEN_AUTHORIZED"
+                    },
+                    "configprops": {
+                        "enabled": true,
+                        "show-values": "WHEN_AUTHORIZED"
+                    },
+                    "loggers": {
+                        "enabled": true
+                    },
+                    "metrics": {
+                        "enabled": true
+                    },
+                    "scheduledTasks": {
+                        "enabled": true
+                    },
+                    "logfile": {
+                        "enabled": true
+                    },
+                    "prometheus": {
+                        "enabled": true
+                    }
+                }
+            }
+        }

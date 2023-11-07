@@ -1,26 +1,57 @@
-#spring:
-#  datasource:
-#    url: jdbc:h2:file:/data/demo
-
+info:
+  app:
+    version: '@project.version@'
 
 application:
   security:
     enabled: true
+    apiKey: ~
     basic:
       enabled: false
   features:
-
-    schedulers:
-      detectDuplicates: false
-      replaceGlobalIdentifiers: false
+    modules:
+      objects:
+        enabled: true
+        configuration:
+          mode: local
+          path: "/var/data/objects"
+      applications:
+        enabled: true
+      admin:
+        enabled: true
+      jobs:
+        enabled: true
+        scheduled:
+          detectDuplicates:
+            enabled: true
+            defaultFrequency: "* 0/20 * * * ?"
+          replaceIdentifiers:
+            enabled: true
+            defaultFrequency: "* 5/20 * * * ?"
+          typeCoercion:
+            enabled: true
+            defaultFrequency: "* 10/20 * * * ?"
+          exportApplication:
+            enabled: true
+            defaultFrequency: "* 10 2  * * ?"
+            defaultLocalPath: "/var/data/exports"
+            defaultS3Host: ~
+            defaultS3BucketId: ~
+      navigation:
+        enabled: true
     transformers:
-      replaceGlobalIdentifiers: false
-      replaceAnonymousIdentifiers: false
-      mergeDuplicates: false
+      replaceGlobalIdentifiers: true
+      replaceAnonymousIdentifiers: true
+      mergeDuplicates: true
+      typeCoercion: true
     validators:
-      checkRequiredType: false
+      checkRequiredType: true
+
   storage:
-    default:
+    vocabularies:
+      persistent: false
+      path: ~
+    system:
       persistent: false
       path: ~
     entities:
@@ -31,17 +62,47 @@ application:
       path: ~
 
 server:
-  port : 8070
+  compression:
+    enabled: true
+    mime-types: "text/html, text/plain, application/json, text/turtle, application/rdf+xml, application/ld+json, application/n-quads, text/n3, application/n-triples"
 
-logging:
-  level:
-    cougar:
-      graph: TRACE
-    com:
-      bechtle: INFO
-    org:
-      springframework:
-        security: INFO
-
-
-
+management:
+  info:
+    env:
+      enabled: true
+    git:
+      enabled: true
+      mode: full
+  health:
+    defaults:
+      enabled: false
+    probes:
+      enabled: true
+  endpoints:
+    web:
+      exposure:
+        include: "health, info, git, loggers, metrics, logfile, prometheus, env, scheduledTasks, mappings, jobs"
+  endpoint:
+    discovery:
+      enabled: true
+    jobs:
+      enabled: true
+    health:
+      enabled: true
+      show-details: always
+    info:
+      enabled: true
+    env:
+      enabled: true
+    loggers:
+      enabled: true
+    metrics:
+      enabled: true
+    scheduledTasks:
+      enabled: true
+    logfile:
+      enabled: true
+    prometheus:
+      enabled: true
+    mappings:
+      enabled: true

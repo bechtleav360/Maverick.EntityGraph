@@ -1,0 +1,76 @@
+spring:
+  profiles:
+    active: test
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.security.SecurityAutoConfiguration
+
+application:
+  security:
+    enabled: false
+    apiKey: "test"
+    basic:
+      enabled: false
+  features:
+    modules:
+      applications:
+        enabled: false
+      admin:
+        enabled: true
+      navigation:
+        enabled: false
+      objects:
+        enabled: false
+      jobs:
+        enabled: true
+        scheduled:
+          detectDuplicates:
+            enabled: true
+            defaultFrequency: "0 */5 * * * ?"
+          replaceIdentifiers:
+            enabled: true
+            defaultFrequency: "0 */5 * * * ?"
+          typeCoercion:
+            enabled: true
+            defaultFrequency: "0 */5 * * * ?"
+          exportApplication:
+            enabled: true
+            defaultFrequency: "0 */5 * * * ?"
+            defaultS3Host: "http://127.0.0.1:9000"
+            defaultS3BucketId: "test"
+    transformers:
+      replaceGlobalIdentifiers: true
+      replaceAnonymousIdentifiers: true
+      mergeDuplicates: true
+      typeCoercion: true
+    validators:
+      checkRequiredType: true
+  storage:
+    default:
+      persistent: false
+      path: ~
+    entities:
+      persistent: false
+      path: ~
+    transactions:
+      persistent: false
+      path: ~
+
+
+
+
+logging:
+  level:
+    root: INFO
+    graph:
+      jobs: TRACE
+      repo: TRACE
+      srvc: TRACE
+      ctrl: TRACE
+      feat: TRACE
+    org:
+      eclipse:
+        rdf4j: INFO
+      springframework:
+        security: INFO
+

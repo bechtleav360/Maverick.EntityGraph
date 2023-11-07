@@ -1,0 +1,89 @@
+replicaCount: 1
+
+image:
+  repository: ghcr.io/bechtleav360/maverick.entity-graph
+  pullPolicy: IfNotPresent
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: "latest"
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: false
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+podAnnotations: {}
+
+podSecurityContext: {}
+  # fsGroup: 2000
+
+persistence: 
+  enabled: true
+  accessMode: ReadWriteOnce
+  entities: 
+    size: 2Gi
+  transactions: 
+    size: 2Gi    
+  application: 
+    size: 500Mi
+
+securityContext: {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+
+service:
+  type: ClusterIP
+  port: 80
+
+# openshift route
+route: 
+ enabled: false
+ host: "place your route here"
+
+
+# AKS Nginx-Ingress example
+ingress:
+  enabled: true
+  className: "nginx"
+  hosts:
+    - host: user-profile-service.io
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+
+resources: 
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  limits:
+    cpu: 400m
+    memory: 2048Mi
+  requests:
+    cpu: 200m
+    memory: 1024Mi
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 100
+  targetCPUUtilizationPercentage: 80
+  # targetMemoryUtilizationPercentage: 80
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}

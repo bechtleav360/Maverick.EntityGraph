@@ -1,22 +1,37 @@
-#spring:
-#  datasource:
-#    url: jdbc:h2:file:/data/demo
-
+spring:
+  profiles:
+    active: test
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.security.SecurityAutoConfiguration
+      -
 application:
   security:
     enabled: false
-    apiKey: ~
+    apiKey: "test"
+    basic:
+      enabled: false
   features:
     modules:
-      admin: true
-      applications: true
-    schedulers:
-      detectDuplicates: true
-      replaceGlobalIdentifiers: true
+      applications:
+        enabled: true
+      admin:
+        enabled: false
+      navigation:
+        enabled: false
+      objects:
+        enabled: false
+      jobs:
+        enabled: true
+        scheduled:
+          detectDuplicates: false
+          replaceIdentifiers: false
+          typeCoercion: false
     transformers:
       replaceGlobalIdentifiers: true
       replaceAnonymousIdentifiers: true
       mergeDuplicates: true
+      typeCoercion: true
     validators:
       checkRequiredType: true
   storage:
@@ -30,25 +45,21 @@ application:
       persistent: false
       path: ~
 
-spring:
-  profiles:
-    active: test
-  autoconfigure:
-    exclude:
-      - org.springframework.boot.autoconfigure.security.SecurityAutoConfiguration
 
-storage:
-  default:
-    path: ""
 
 
 logging:
   level:
-    cougar:
-      graph: TRACE
-    com:
-      bechtle: TRACE
+    root: INFO
+    graph:
+      jobs: DEBUG
+      repo: TRACE
+      srvc: TRACE
+      ctrl: TRACE
+      feat: TRACE
     org:
-      springframework:
-        security: INFO
+      eclipse:
+        rdf4j: INFO
+      springframework: INFO
+
 

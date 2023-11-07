@@ -5,38 +5,109 @@
 application:
   security:
     enabled: true
-    apiKey: "12345"
+    apiKey: "123"
     basic:
       enabled: false
   features:
     modules:
-      applications: true
-      admin: true
-    schedulers:
-      detectDuplicates: false
-      replaceGlobalIdentifiers: true
+      objects:
+        enabled: false
+        configuration:
+          mode: local
+          path: "D:/Graphen/entities/objects"
+      applications:
+        enabled: true
+      admin:
+        enabled: true
+      jobs:
+        enabled: true
+        scheduled:
+          detectDuplicates:
+            enabled: true
+          replaceIdentifiers:
+            enabled: true
+          typeCoercion:
+            enabled: true
+          exportApplication:
+            enabled: true
+            defaultLocalPath: "C:/Exports"
+            defaultS3Host: "http://127.0.0.1:9000"
+            defaultS3BucketId: "test"
+      navigation:
+        enabled: true
     transformers:
       replaceGlobalIdentifiers: true
       replaceAnonymousIdentifiers: true
       mergeDuplicates: true
+      typeCoercion: true
     validators:
       checkRequiredType: true
-  storage:
-    default:
-      persistent: false
-      path: ~
-    entities:
-      persistent: false
-      path: ~
-    transactions:
-      persistent: false
-      path: ~
+#  storage:
+#    vocabularies:
+#      persistent: true
+#      path: "C:/Graphen/vocabularies"
+#    system:
+#      persistent: true
+#      path: "C:/Graphen/system"
+#    entities:
+#      persistent: true
+#      path: "C:/Graphen/entities"
+#    transactions:
+#      persistent: true
+#      path: "C:/Graphen/transactions"
+
+
 
 logging:
   level:
-    com:
-      bechtle: TRACE
+    root: INFO
+    graph:
+      jobs: TRACE
+      repo: TRACE
+      srvc: TRACE
+      ctrl: TRACE
+      feat: TRACE
     org:
+      eclipse:
+        rdf4j: DEBUG
       springframework:
         security: INFO
 
+management:
+  info:
+    env:
+      enabled: true
+    git:
+      enabled: true
+      mode: full
+  health:
+    defaults:
+      enabled: false
+    probes:
+      enabled: true
+  endpoints:
+    web:
+      exposure:
+        include: "health, info, env, beans, git, loggers, metrics, scheduledTasks, logfile, mappings, prometheus, jobs"
+  endpoint:
+    jobs:
+      enabled: true
+    discovery:
+      enabled: true
+    health:
+      enabled: true
+      show-details: always
+    info:
+      enabled: true
+    env:
+      enabled: true
+    loggers:
+      enabled: true
+    metrics:
+      enabled: true
+    scheduledTasks:
+      enabled: true
+    logfile:
+      enabled: true
+    prometheus:
+      enabled: true

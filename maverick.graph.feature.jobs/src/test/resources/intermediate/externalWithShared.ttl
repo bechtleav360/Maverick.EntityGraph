@@ -1,0 +1,21 @@
+<urn:pwid:meg:e:b43205ox> a <https://schema.org/DefinedTerm>;
+  <http://www.w3.org/2000/01/rdf-schema#label> "Term 2";
+  <urn:int:srcid> _:d180151d8f444844b488061386a4932d4 .
+
+<urn:pwid:meg:e:bzpgjhdx> a <https://schema.org/DefinedTerm>;
+  <http://www.w3.org/2000/01/rdf-schema#label> "Term 1";
+  <urn:int:srcid> _:d180151d8f444844b488061386a4932d2, _:d180151d8f444844b488061386a4932d3 .
+
+<urn:pwid:meg:e:buenlmbx> a <https://schema.org/VideoObject>;
+  <https://schema.org/hasDefinedTerm> _:d180151d8f444844b488061386a4932d2;
+  <https://schema.org/identifier> "a";
+  <urn:int:srcid> <http://www.example.org/vocab#a> .
+
+<urn:pwid:meg:e:bzik43vx> a <https://schema.org/VideoObject>;
+  <https://schema.org/hasDefinedTerm> _:d180151d8f444844b488061386a4932d3, <http://www.acme.org/vocab#a>;
+  <urn:int:srcid> <http://www.example.org/vocab#b>;
+  <https://schema.org/identifier> "b" .
+
+<urn:pwid:meg:e:b64_9n_x> a <https://schema.org/DefinedTerm>;
+  <http://www.w3.org/2000/01/rdf-schema#label> "Term 3";
+  <urn:int:srcid> <http://www.acme.org/vocab#a> .

@@ -12,3 +12,8 @@ buildNumber.properties
 .idea
 *.log
 *.gz
+.flattened-pom.xml
+logs.*
+.vscode
+*.tmp
+*.logs

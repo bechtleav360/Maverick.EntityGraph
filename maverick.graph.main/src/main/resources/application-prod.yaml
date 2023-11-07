@@ -1,6 +1,6 @@
 ## All XXX fields are provisioned through environment variables
 
-application: 
+application:
   security:
     api-key: "xxx"
 
@@ -14,16 +14,19 @@ application:
       mergeDuplicates: true
     validators:
       checkRequiredType: true
-    
+
   storage:
-    default:
-      persistent: true    
-      path: "/var/data/application"
+    vocabularies:
+      persistent: true
+      path: "/var/data/vocabularies"
+    system:
+      persistent: true
+      path: "/var/data/system"
     entities:
-      persistent: true        
+      persistent: true
       path: "/var/data/entities"
     transactions:
-      persistent: true        
+      persistent: true
       path: "/var/data/transactions"
 
 
@@ -47,23 +50,3 @@ logging:
       springframework:
         security: INFO
 
-management:
-  endpoints:
-    web:
-      exposure:
-        include: "health, info, env, loggers, metrics, scheduledTasks, logfile, mappings"
-  endpoint:
-    health:
-      enabled: true
-    info:
-      enabled: true
-    env:
-      enabled: true
-    loggers:
-      enabled: true
-    metrics:
-      enabled: true
-    scheduledTasks:
-      enabled: true
-    logfile:
-      enabled: true

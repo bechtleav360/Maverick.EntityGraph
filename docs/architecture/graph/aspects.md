@@ -14,16 +14,17 @@ An option for the validation of incoming entities can be the shape expression la
 
 ```
 
-Supported features are: 
+Supported features are:
+
 - cardinality
 - cougar.graph.model.enums
 - types
 - inheritance
 
-
-## Aspects 
+## Aspects
 
 Possible aspects could be
+
 - verifable (if true, a hashsum will be generated on storage)
 - versionable
 - etc.

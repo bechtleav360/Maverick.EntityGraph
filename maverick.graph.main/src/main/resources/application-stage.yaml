@@ -1,10 +1,13 @@
 ## All XXX fields are provisioned through environment variables
 
-application: 
+application:
   security:
     enabled: true
     apiKey: "xxx"
   features:
+    modules:
+      applications: true
+      admin: true
     schedulers:
       detectDuplicates: false
       replaceGlobalIdentifiers: true
@@ -15,14 +18,17 @@ application:
     validators:
       checkRequiredType: true
   storage:
-    default:
-      persistent: true    
-      path: "/var/data/application"
+    vocabularies:
+      persistent: true
+      path: "/var/data/vocabularies"
+    system:
+      persistent: true
+      path: "/var/data/system"
     entities:
-      persistent: true        
+      persistent: true
       path: "/var/data/entities"
     transactions:
-      persistent: true        
+      persistent: true
       path: "/var/data/transactions"
 
 spring:

@@ -1,0 +1,15 @@
+{{- if .Values.persistence.enabled }}
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: {{ .Release.Name }}-pvc-transactions
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "template.labels" . | nindent 4 }}
+spec:
+  accessModes:
+    - {{ .Values.persistence.accessMode | quote }}
+  resources:
+    requests:
+      storage: {{ .Values.persistence.transactions.size | quote }}
+{{- end }}

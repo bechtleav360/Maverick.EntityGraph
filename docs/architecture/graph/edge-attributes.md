@@ -1,11 +1,13 @@
 # Edge attributes
 
-Triple Store is only statements, while Property Graphs allow for attributes on nodes and edges. 
+Triple Store is only statements, while Property Graphs allow for attributes on nodes and edges.
 
-Triple Stores have native support for JSON-LD (since it can be expressed as RDF), with property graphs we need to build 
+Triple Stores have native support for JSON-LD (since it can be expressed as RDF), with property graphs we need to build
 our own solution.
- 
-A Knowledge Graph with self-learning rules needs to have the ability, to infer new connections and assign certainty values to it
+
+A Knowledge Graph with self-learning rules needs to have the ability, to infer new connections and assign certainty
+values to it
+
 ```
 
 :w1 a mav:WikipediaEntry ;
@@ -14,8 +16,9 @@ A Knowledge Graph with self-learning rules needs to have the ability, to infer n
     :w1 :inPath :p3
 ```
 
-The entry ``w1``  was in this case manually preassigned to `p1`. User feedback confirmed a recommendation for ``p2``. And 
-the model suggests to add it also to ``p3``. 
+The entry ``w1``  was in this case manually preassigned to `p1`. User feedback confirmed a recommendation for ``p2``.
+And
+the model suggests to add it also to ``p3``.
 
 In a property graph, we would model it as follows (using the Arango Logic)
 
@@ -44,10 +47,11 @@ inPath/c, from w1, to p3
 
 ## RDF-Star
 
-.. is a concise syntax for reification, aka making statements about statements. In practice it means that we can define 
-attributes on edges. 
+.. is a concise syntax for reification, aka making statements about statements. In practice, it means that we can define
+attributes on edges.
 
 Example (from https://w3c.github.io/cougar.graph.model.rdf-star/cg-spec/editors_draft.html)
+
 ```turtle
 PREFIX :    <http://www.example.org/>
 
@@ -55,9 +59,7 @@ PREFIX :    <http://www.example.org/>
 << :employee38 :jobTitle "Assistant Designer" >> :accordingTo :employee22 .
 ```
 
-
 Taking our example from above, we would define it as
-
 
 ```turtle
 PREFIX :     <http://www.example.org/>

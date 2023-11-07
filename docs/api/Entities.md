@@ -1,50 +1,176 @@
 # Entities
-Managing the entity resources 
+
+Managing the entity resources
 
 
-## Summary by format
 
-### Turtle / JSON-LD
-* ``POST /api/rs`` (Create entity) /v1
-* ``POST /api/rs/{id}/{prefix.key}`` (Create value or relation) /v1
-* ``PUT /api/rs/{id}/{prefix.key}`` (Create annotations on edge) /v1
-* ``POST /api/rs/{id}/{prefix.key}/{id}`` (Create edge to existing entity) /v1
+## Working with entities
+
+``GET /api/entities?limit=0&offset=0``
+* List entities
+* Status: implemented in v1
 
 
-* ``DELETE /api/rs/{id}/{prefix.key}`` (Delete value or relation) /v2
-* ``GET /api/rs/{id}/{prefix.key}`` (Reads value or embedded object) /v2
-* ``DELETE /api/rs/{id}`` (Delete entity) /v2
-* ``GET /api/rs/{prefix.type}`` (List entities)  /v2
-* ``GET /api/rs/{id}`` (Read entity) /v2
+``POST /api/entities`` 
+* Create entity
+* Status: implemented in v1
 
-* ``GET /api/rs/{prefix.type}/{id}`` (Read entity with type coercion) /v3
-* ``PUT /api/rs/{id}`` (Patch entity) /v3
-* ``PUT /api/rs/{id}/{prefix.key}`` (Update value) /v3
+``GET /api/entities/{id}`` \
+``GET /api/entities/{id}?property=rdfs.label`` 
+* Reads entity
+* The property param can be used to specify, that the id is not the unique entity id, but the value of the property
+* Status: implemented in v1
+
+``DELETE /api/entities/{id}``
+* Deletes the entity and all its direct relations (values and links)
+* Deletes all links where the entity is object (incoming links) <- Test required 
+
+``PUT /api/entities/{id}``
+* Not supported, Graph is idempotent
+
+
+## Entity Values
+Values are identified by `source entity - prefix.key - language`
+
+``GET /api/entities/{id}/values``
+* Returns only the entity values 
+* Supported mimetypes: RDF Formats, application/json
+
+``POST /api/entities/{id}/values/{prefix.key} ``\
+``PUT /api/entities/{id}/values/{prefix.key} ``\
+* Consumes ``text/plain``
+* Create value
+* Requires a language tag (default "en" is appended)
+* Status: implemented in v1
+* Missing: Overwrite existing value
+* Missing: add language tag as query parameter
+
+``POST /api/entities/{id}/values``
+* Consumes: ``text/turtle``
+* The payload must contain the referenced entity, all connected statements are stored
+* Create nested/embedded object
+* The embedded object is still an entity value (and will be deleted if the entity is deleted)
+* Status: TODO
+* Missing: Scheduler: if a second entity points to embedded object, it has to be converted to an entity
+
+``PUT /api/entities/{id}/values/{prefix.key} text/plain`` 
+* Update value
+* is equivalent to POST request, but should ideally throw exception if value does not exist
+
+``DELETE /api/entities/{id}/values/{prefix.key}``
+* Removes the unique property value
+
+## Entity Links
+Relations are identified by `source entity - prefix.key - target entity`
+
+``PUT /api/entities/{id}/links/{prefix.key}/{targetId}`` 
+* Create edge to existing entity identified by target id
+* Fails if target does not exist
+* Status: TODO v2
+* Multiple values are allowed to exist
+
+``DELETE /api/entities/{id}/links/{prefix.key}/{targetId}`` 
+* Deletes the relation (but nothing else)
+* Status: TODO v2
+
+``GET /api/entities/{id}/links/{prefix.key}`` 
+* Returns all links of the given type
+* Status: TODO v2
+
+``PUT /api/entities/{id}/links/{prefix.key}``
+* Creates one (or more) links 
+* Status: TODO v4
+
+``GET /api/entities/{id}/links``
+* Returns all links
+* Status: TODO v2
+
+
+## Property Details (Annotations)
+
+
+``POST /api/entities/{id}/values/{prefix.key}/details/{prefix.key}`` \
+``POST /api/entities/{id}/links/{prefix.key}/{targetId}/details/{prefix.key}``
+* Consumes: ``text/plain``,
+* Creates a statement about a statement use the post body as value
+* Creates also the value if it doesn't exist yet
+* Will create a new statement, regardless of already existing statements (use put to replace)
+
+``PUT /api/entities/{id}/values/{prefix.key}/details/{prefix.key}`` \
+``PUT /api/entities/{id}/links/{prefix.key}/{targetId}/details/{prefix.key}``
+* Consumes: ``text/plain``,
+* Will create or change a statement about a statement
+* Is idempotent, it will replace the current value
+* Creates also the value if it doesn't exist yet
+* Equivalent to patch with "replace" instruction
+
+``PATCH /api/entities/{id}/values/{prefix.key}/details/{prefix.key}`` 
+* Changes a particular statement
+* The patch body has to include the patch instructions
+* Possible actions: 
+  * increment (for counts)
+  * decrement (for counts)
+  * replace 
+* Payload example: ``{ "action": "replace", "valuqwe": "new value" } ``
+
+
+
+``POST /api/entities/{id}/values/{prefix.key}/details`` \
+``POST /api/entities/{id}/links/{prefix.key}/{targetId}/details`` 
+* Consumes: ``application/x-turtlestar``, 
+* Creates a statement about a statement using the rdf* syntax
+* Creates also the value if it doesn't exist yet
+* The payload requires the original statement, e.g. ``<<:a sdo:teaches :b>> :suggestedBy :x``
+
+
+``GET /api/entities/{id}/values/{prefix.key}/details?hash=true`` \
+``GET /api/entities/{id}/links/{prefix.key}/{targetId}/details``
+* Returns all details for a value or link
+* If the hash property is true, a hash for each detail will be computed. This can be used to delete it later
+
+``DELETE /api/entities/{id}/values/{prefix.key}/details`` \
+``DELETE /api/entities/{id}/links/{prefix.key}/{targetId}/details``
+* Purges all property details
+
+``DELETE /api/entities/{id}/values/{prefix.key}/details/{prefix.key}?multiple=true&hash=21312`` \
+``DELETE /api/entities/{id}/links/{prefix.key}/{targetId}/details/{prefix.key}?multiple=true&hash=true``
+* Removes a specific detail. 
+* If multiple exist: add the ``multiple`` parameter to delete all or use the hash parameter to identify the correct one
+
+````
+<<:a sdo:teaches :b>>
+<<:hasComment "long text">>
+:hash "1394801298329"
+<<:hasComment "even longer text">>
+:hash "ß09ß1392ß32ß0"
+````
+## Further Endpoints for the future
+
+* ``GET /api/entities/{prefix.type}/{id}`` (Read entity with type coercion) /v3
+
+* ``PUT /api/entities/{id}`` (Patch entity) /v3
 
 * ``POST /api/rs/{id}`` (Read entity by example) /v5
 
+### JSON+HATEOAS Mode
 
-### JSON+HATEOAS Mode 
 * ``GET /api/rs/{id}`` (Read entity) /v7
 * ``GET /api/rs/{prefix.type}/{id}`` (Read entity with type coercion) /v7
 * ``POST /api/rs/{prefix.type}`` (Create entities) /v7
 * ``GET /api/rs/{prefix.type}`` (List entities) /v7
 * ``DELETE /api/rs/{prefix.type}/{id}`` (Delete entity) /v7
 * ``PUT /api/rs/{prefix.type}/{id}`` (Patch entity) /v7
-* 
+*
 * ``GET /api/rs/{prefix.type}/{id}/{key}`` (Get value/s) /v7
 * ``PUT /api/rs/{prefix.type}/{id}/{prefix.key}`` (Create annotations on edge) /v7
 
-
-
 ---
-## Get entity by Id
 
+## Get entity by Id
+ 
 Returns an individual item
 
-
 ``GET /api/entities/{id}``
-
 
 *Supported query parameters:*
 
@@ -54,21 +180,22 @@ Returns an individual item
 
 * ``GET /api/rs/{prefix.type}/{id}``
 
-performs the same request with type coercion (or casting) of the main entity type. 
+performs the same request with type coercion (or casting) of the main entity type.
 
 ## Create entity
 
 ``POST /api/entities``
 
+Payload has to be either
 
-Payload has to be either 
 * a valid json-ld document with a @type and ideally @id (could be automatically generated)
-* a set of turtle statements with an entity of a type (if object identifier is anonymous, it will be transformed to a valid id)
+* a set of turtle statements with an entity of a type (if object identifier is anonymous, it will be transformed to a
+  valid id)
 
 ```json
 {
   "@context": {
-    "cougar.graph.model.rdf": "http://www.w3.org/1999/02/22-cougar.graph.model.rdf-syntax-ns#",
+    "rdf": "http://www.w3.org/1999/02/22-cougar.graph.model.rdf-syntax-ns#",
     "rdfs": "http://www.w3.org/2000/01/cougar.graph.model.rdf-schema#",
     "mav": "http://av360.org/schema/maverick#",
     "xsd": "http://www.w3.org/2001/XMLSchema#", 
@@ -91,10 +218,9 @@ Payload has to be either
 
 If it includes a proof, it will be verified (and should signed in a credential chain)
 
-
 ## Partial updates
-Partial updates are crucial in the graph, and natively supported.
 
+Partial updates are crucial in the graph, and natively supported.
 
 ### Adding an embedded object
 
@@ -102,14 +228,15 @@ Partial updates are crucial in the graph, and natively supported.
 
 Scenario: adding a new wikipedia link in a different language
 
-Conflicts can arise: 
- - if the embedded object with exactly the same values (but different ids) already exists
- - if a constraint is violated (e.g. only lang de and en are supported)
+Conflicts can arise:
 
-The following to example have the same effect: 
+- if the embedded object with exactly the same values (but different ids) already exists
+- if a constraint is violated (e.g. only lang de and en are supported)
 
-Example url ``PUT /api/entities/684416b4`` with an relation and embedded entity in a graph. It will create the 
-embedded entity and patch the container with the new edge. 
+The following to example have the same effect:
+
+Example url ``PUT /api/entities/684416b4`` with an relation and embedded entity in a graph. It will create the
+embedded entity and patch the container with the new edge.
 
 ```json
 {
@@ -136,7 +263,6 @@ embedded entity and patch the container with the new edge.
 }
 ```
 
-
 Example url ``POST /api/entities/684416b4/mav.hasWikipediaLink``
 
 ```json
@@ -147,17 +273,19 @@ Example url ``POST /api/entities/684416b4/mav.hasWikipediaLink``
   "language": "de-DE"
 }
 ```
-does the same. 
+
+does the same.
 
 ### Deleting an embedded object
+
 v2
 
 ``DELETE /api/entities/{id}``
 
+Conflicts can arise:
 
-Conflicts can arise: 
- - if the request does not include all edges pointing to the deleted object (means, we have dangling edges)
- - if the user is not allowed to modify entities, who have edges pointing to the deleted object
+- if the request does not include all edges pointing to the deleted object (means, we have dangling edges)
+- if the user is not allowed to modify entities, who have edges pointing to the deleted object
 
 ```json
 {
@@ -204,11 +332,11 @@ The following json is illegal
 }
 ```
 
-The complex object must have a "@type" (and thus also an @id) definition, which clarifies its attributes. 
+The complex object must have a "@type" (and thus also an @id) definition, which clarifies its attributes.
 
 With this in mind, updating a literal is as simple as putting a new value to a literal of type identified by its "@id"
 
-Changing the url of the wikipedia entry is managed through the following request: 
+Changing the url of the wikipedia entry is managed through the following request:
 
 ``PUT /api/entities/df87da74-7e9b-11ec-90d6-0242ac120003`` and the payload
 
@@ -217,20 +345,19 @@ Changing the url of the wikipedia entry is managed through the following request
   "https://schema.org/url": "http://de.wikipedia.org/new_url/"
 }
 ```
-This time, we left out the @context definition. 
 
+This time, we left out the @context definition.
 
 Since keys are unique within the scope of one object, we also support the following URL pattern
 
-``PUT /api/entities/df87da74-7e9b-11ec-90d6-0242ac120003/url`` 
+``PUT /api/entities/df87da74-7e9b-11ec-90d6-0242ac120003/url``
 
-with the value as text in the payload. 
+with the value as text in the payload.
 
+``POST /api/entities/df87da74-7e9b-11ec-90d6-0242ac120003`` we create a new attribute. Be careful, since we create a new
+statement we might create multiple values. The same request above, but with POST, would result in the following entity.
 
-``POST /api/entities/df87da74-7e9b-11ec-90d6-0242ac120003`` we create a new attribute. Be careful, since we create a new statement we might create multiple values. The same request above, but with POST, would result in the following entity. 
-
-If the schema definition has put a arity-constraint on a property, this request could result in an HTTP error. 
-
+If the schema definition has put a arity-constraint on a property, this request could result in an HTTP error.
 
 ```json
 {
@@ -252,24 +379,23 @@ If the schema definition has put a arity-constraint on a property, this request 
 
 ```
 
-
 ### Deleting and getting literals
 
 The following HTTP operations are supported for literals
 
-``DELETE /api/entities/{@id}/{prefix.key}`` removes the statement completely from the entity. 
+``DELETE /api/entities/{@id}/{prefix.key}`` removes the statement completely from the entity.
 
 Might result in constraint validation error (if the attribute must exist according to the schema)
 
-``GET /api/entities/{@id}/{prefix.key}`` returns only the value or embedded entity in the response, 
-the format depends on the requested content type. 
+``GET /api/entities/{@id}/{prefix.key}`` returns only the value or embedded entity in the response,
+the format depends on the requested content type.
 
 ### Adding annotations (statements about statements)
 
 ``PUT /api/entities/{@id}/{prefix.key}``
 
-Let's assume we want to assign a topic from a classification service to a wikipedia entry. Since the classification 
-service is based on machine learning, we want to also store the prediction quality as certainty. 
+Let's assume we want to assign a topic from a classification service to a wikipedia entry. Since the classification
+service is based on machine learning, we want to also store the prediction quality as certainty.
 
 ```json
 {
@@ -299,5 +425,6 @@ service is based on machine learning, we want to also store the prediction quali
 
   }
 ```
+
 See more examples in the [draft standard](https://json-ld.github.io/json-ld-star/#basic-concepts) (which is fairly new)
 The support in Titanium is still experimental

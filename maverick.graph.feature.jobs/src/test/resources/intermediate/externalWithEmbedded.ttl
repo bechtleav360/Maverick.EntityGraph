@@ -1,0 +1,8 @@
+<urn:pwid:meg:e:bjfbd0ox> a <https://schema.org/VideoObject>;
+  <https://schema.org/identifier> "c";
+  <https://schema.org/hasDefinedTerm> <http://www.acme.org/vocab#a>;
+  <urn:int:srcid> <http://www.example.org/vocab#x> .
+
+<urn:pwid:meg:e:b64_9n_x> a <https://schema.org/DefinedTerm>;
+  <urn:int:srcid> <http://www.acme.org/vocab#a>;
+  <http://www.w3.org/2000/01/rdf-schema#label> "Term 3" .

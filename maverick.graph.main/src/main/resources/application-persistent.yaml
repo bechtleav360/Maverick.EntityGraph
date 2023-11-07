@@ -2,65 +2,80 @@
 #  datasource:
 #    url: jdbc:h2:file:/data/demo
 
-application: 
+application:
   security:
     enabled: true
-    apiKey: "xxx"
+    apiKey: "123"
     basic:
       enabled: false
   features:
-    schedulers:
-      detectDuplicates: false
-      replaceGlobalIdentifiers: true
+
+    modules:
+      objects:
+        enabled: true
+        configuration:
+          mode: local
+          path: "D:/Graphen/entities/objects"
+      applications:
+        enabled: true
+      admin:
+        enabled: true
+      jobs:
+        enabled: true
+        scheduled:
+          detectDuplicates:
+            enabled: false
+          replaceIdentifiers:
+            enabled: false
+          typeCoercion:
+            enabled: false
+          exportApplication:
+            enabled: false
+            defaultLocalPath: "D:/Graphen/entities/exports"
+      navigation:
+        enabled: true
     transformers:
       replaceGlobalIdentifiers: true
       replaceAnonymousIdentifiers: true
       mergeDuplicates: true
+      typeCoercion: true
     validators:
       checkRequiredType: true
   storage:
-    default:
-      persistent: true    
-      path: "/var/data/application"
+    vocabularies:
+      persistent: true
+      path: "D:/Graphen/vocabularies"
+    system:
+      persistent: true
+      path: "D:/Graphen/system"
     entities:
-      persistent: true        
-      path: "/var/data/entities"
+      persistent: true
+      path: "D:/Graphen/entities"
     transactions:
-      persistent: true        
-      path: "/var/data/transactions"
+      persistent: true
+      path: "D:/Graphen/transactions"
 
 spring:
   security:
     user:
-      name: "xxx"
-      password: "xx"
+      name: "user"
+      password: "123"
 
 logging:
+  file:
+    name: "main.log"
+    path: "D:/Graphen/"
   level:
-    com:
-      bechtle: TRACE
+    root: INFO
+    graph:
+      jobs: DEBUG
+      repo: DEBUG
+      srvc: DEBUG
+      ctrl: DEBUG
+      feat: DEBUG
     org:
+      eclipse:
+        rdf4j: DEBUG
       springframework:
         security: INFO
 
-
-management:
-  endpoints:
-    web:
-      exposure:
-        include: "health, info, env, loggers, metrics, scheduledTasks, logfile, mappings"
-  endpoint:
-    health:
-      enabled: true
-    info:
-      enabled: true
-    env:
-      enabled: true
-    loggers:
-      enabled: true
-    metrics:
-      enabled: true
-    scheduledTasks:
-      enabled: true
-    logfile:
-      enabled: true
