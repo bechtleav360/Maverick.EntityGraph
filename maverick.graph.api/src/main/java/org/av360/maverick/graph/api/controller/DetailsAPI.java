@@ -23,6 +23,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.av360.maverick.graph.model.entities.Transaction;
 import org.av360.maverick.graph.model.enums.PropertyType;
 import org.av360.maverick.graph.model.enums.RdfMimeTypes;
 import org.av360.maverick.graph.model.rdf.AnnotatedStatement;
@@ -84,7 +85,7 @@ public interface DetailsAPI {
                     @Parameter(name = "valueIdentifier", description = "Identifier for the specific value", required = false, in = ParameterIn.QUERY, schema = @Schema(type = "string"))
             },
             responses = {
-                    @ApiResponse(responseCode = "200", description = "Successfully deleted the detail", content = @Content(mediaType = RdfMimeTypes.TURTLESTAR_VALUE, schema = @Schema(implementation = AnnotatedStatement.class))),
+                    @ApiResponse(responseCode = "200", description = "Successfully deleted the detail", content = @Content(schema = @Schema(implementation = Transaction.class))),
                     @ApiResponse(responseCode = "404", description = "Entity with specified ID not found", content = {@Content(mediaType = "application/json", schema = @Schema(implementation = ErrorAttributes.class))}),
                     @ApiResponse(responseCode = "400", description = "Invalid request parameters", content = {@Content(mediaType = "application/json", schema = @Schema(implementation = ErrorAttributes.class))})
             }
@@ -99,7 +100,9 @@ public interface DetailsAPI {
             @PathVariable String prefixedDetailProperty,
             @RequestParam(required = false) String valueIdentifier);
 
-    @Operation(summary = "Adds a detail for a value or relation.",
+    @Operation(
+            operationId = "insertDetail",
+            summary = "Adds a detail for a value or relation.",
             description = """
                     **Creates a detail with the given property for a value or relation property.**
                     \s 
@@ -114,7 +117,7 @@ public interface DetailsAPI {
                     @Parameter(name = "valueIdentifier", description = "Identifier for the specific value", required = false, in = ParameterIn.QUERY, schema = @Schema(type = "string"))
             },
             responses = {
-                    @ApiResponse(responseCode = "200", description = "Successfully set the detail for the value or link property", content = @Content(mediaType = RdfMimeTypes.TURTLESTAR_VALUE, schema = @Schema(implementation = AnnotatedStatement.class))),
+                    @ApiResponse(responseCode = "200", description = "Successfully set the detail for the value or link property", content = @Content(schema = @Schema(implementation = AnnotatedStatement.class))),
                     @ApiResponse(responseCode = "404", description = "Entity with specified ID not found", content = {@Content(mediaType = "application/json", schema = @Schema(implementation = ErrorAttributes.class))}),
                     @ApiResponse(responseCode = "400", description = "Invalid request parameters", content = {@Content(mediaType = "application/json", schema = @Schema(implementation = ErrorAttributes.class))})
             }

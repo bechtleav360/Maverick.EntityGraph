@@ -1,0 +1,40 @@
+{  "@context": {
+  "rdf": "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
+  "trx": "urn:pwid:meg:t:",
+  "prov": "http://www.w3.org/ns/prov#"
+},
+  "@graph": [
+    {
+      "@graph": [
+        {
+          "@id": "urn:pwid:meg:e:b2p6u4vx",
+          "@type": [
+            "https://schema.org/VideoObject",
+            "urn:pwid:meg:e:Individual"
+          ],
+          "https://schema.org/identifier": "_a1234",
+          "https://schema.org/title": "Video 1"
+        }
+      ],
+      "@id": "trx:AffectedResource"
+    },
+    {
+      "@graph": [
+        {
+          "@id": "trx:r33wfx0b",
+          "@type": "https://w3id.org/av360/megt#Transaction",
+          "prov:atTime": {
+            "@type": "http://www.w3.org/2001/XMLSchema#dateTime",
+            "@value": "2023-11-09T16:55:55.738+01:00"
+          },
+          "https://w3id.org/av360/megt#inserted": {
+            "@id": "urn:pwid:meg:e:b2p6u4vx"
+          },
+          "https://w3id.org/av360/megt#status": "success"
+        }
+      ],
+      "@id": "trx:ProvenanceStatements"
+    }
+  ]
+
+}

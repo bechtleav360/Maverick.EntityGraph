@@ -1,0 +1,12 @@
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix trx: <urn:pwid:meg:t:> .
+@prefix prov: <http://www.w3.org/ns/prov#> .
+
+<urn:pwid:meg:t:ijlvsrr8> a <https://w3id.org/av360/megt#Transaction>;
+  <https://w3id.org/av360/megt#status> "success";
+  <https://w3id.org/av360/megt#inserted> <urn:pwid:meg:e:b2p6u4vx>;
+  prov:atTime "2023-11-09T16:48:01.794+01:00"^^<http://www.w3.org/2001/XMLSchema#dateTime> .
+
+<urn:pwid:meg:e:b2p6u4vx> a <urn:pwid:meg:e:Individual>, <https://schema.org/VideoObject>;
+  <https://schema.org/title> "My video";
+  <https://schema.org/identifier> "211-2141231-412123-14212" .

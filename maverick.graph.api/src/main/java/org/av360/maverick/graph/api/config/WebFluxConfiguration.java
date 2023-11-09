@@ -46,7 +46,7 @@ public class WebFluxConfiguration implements WebFluxConfigurer {
 
 
     public void configureHttpMessageCodecs(ServerCodecConfigurer configurer) {
-        configurer.customCodecs().register(new BufferedStatementsEncoder(this.schemaServices, environment));
+            configurer.customCodecs().register(new BufferedStatementsEncoder(this.schemaServices, environment));
         configurer.customCodecs().register(new StatementsEncoder());
         configurer.customCodecs().register(new TupleQueryResultsEncoder());
         configurer.customCodecs().register(new BindingSetEncoder());
