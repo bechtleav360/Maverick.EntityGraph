@@ -21,6 +21,7 @@ public interface SchemaServices {
      *
      * @param name
      * @return
+     * @deprecated use identifierservice instead
      */
     Mono<IRI> resolveLocalName(String name);
 

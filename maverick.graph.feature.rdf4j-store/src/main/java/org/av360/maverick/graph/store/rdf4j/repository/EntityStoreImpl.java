@@ -19,10 +19,6 @@ public class EntityStoreImpl extends AbstractStore implements EntityStore {
     }
 
 
-
-
-
-
     @Override
     public Logger getLogger() {
         return log;

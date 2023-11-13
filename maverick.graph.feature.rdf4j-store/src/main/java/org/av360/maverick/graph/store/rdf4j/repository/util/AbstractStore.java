@@ -22,6 +22,7 @@ import org.eclipse.rdf4j.model.*;
 import org.eclipse.rdf4j.model.impl.LinkedHashModel;
 import org.eclipse.rdf4j.model.impl.SimpleNamespace;
 import org.eclipse.rdf4j.model.util.ModelCollector;
+import org.eclipse.rdf4j.model.util.Models;
 import org.eclipse.rdf4j.model.util.Values;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.query.*;
@@ -283,6 +284,12 @@ public abstract class AbstractStore implements TripleStore, StatementsAware, Mod
                     Model updateStatements = trx.getModel(Transactions.GRAPH_UPDATED);
                     Model removeStatements = trx.getModel(Transactions.GRAPH_DELETED);
 
+
+                    // FIXME: Reification
+                    insertStatements = Models.convertRDFStarToReification(connection.getValueFactory(), insertStatements);
+                    updateStatements = Models.convertRDFStarToReification(connection.getValueFactory(), updateStatements);
+                    removeStatements = Models.convertRDFStarToReification(connection.getValueFactory(), removeStatements);
+
                     try {
                         if (insertStatements.size() > 0) {
                             connection.add(insertStatements);
@@ -332,7 +339,7 @@ public abstract class AbstractStore implements TripleStore, StatementsAware, Mod
                 RdfEntity entity = new RdfEntity(id).withResult(statements);
 
                 if (includeDetails) {
-                    Model details = loadDetails(connection, entity);
+                    Model details = loadDetailsWithReification(connection, entity);
                     entity.getModel().addAll(details);
                 }
 
@@ -353,13 +360,45 @@ public abstract class AbstractStore implements TripleStore, StatementsAware, Mod
         });
     }
 
+    /**
+     * @param connection
+     * @param triples
+     * @return
+     */
     private Model loadDetails(RepositoryConnection connection, TripleModel triples) {
-        return triples.getModel().stream()
+        Model collect = triples.getModel().stream()
                 .filter(statement -> (statement.getObject().isLiteral() || statement.getObject().isIRI()) && statement.getSubject().isIRI())
                 .map(Values::triple)
                 .flatMap(triple -> connection.getStatements(triple, null, null).stream())
                 .collect(new ModelCollector());
+        return Models.convertReificationToRDFStar(collect);
     }
+
+    /**
+     *
+     * @param connection
+     * @param triples
+     * @return
+     * @deprecated Required as long as we don't have native RDF star in the LMDB repository. See https://github.com/eclipse-rdf4j/rdf4j/issues/3723
+     *
+     *  <<ex:bob foaf:age 23>> ex:certainty 0.9 .
+     * becomes
+     * _:node1 a rdf:Statement;
+     *         rdf:subject ex:bob ;
+     *         rdf:predicate foaf:age ;
+     *         rdf:object 23 ;
+     *         ex:certainty 0.9 .
+     */
+    private Model loadDetailsWithReification(RepositoryConnection connection, TripleModel triples) {
+        Model md = triples.getModel().stream()
+                .filter(statement -> (statement.getObject().isLiteral() || statement.getObject().isIRI()) && statement.getSubject().isIRI())
+                .flatMap(statement -> connection.getStatements(null, RDF.SUBJECT, statement.getSubject()).stream())
+                .flatMap(reification_subject_statement -> connection.getStatements(reification_subject_statement.getSubject(), null, null).stream())
+                .collect(new ModelCollector());
+        return Models.convertReificationToRDFStar(md);
+
+    }
+
 
     private Model loadNeighbours(RepositoryConnection connection, RdfEntity entity) {
         HashSet<Value> objects = new HashSet<>(entity.getModel().objects());
