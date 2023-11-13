@@ -291,15 +291,16 @@ public abstract class AbstractStore implements TripleStore, StatementsAware, Mod
                     removeStatements = Models.convertRDFStarToReification(connection.getValueFactory(), removeStatements);
 
                     try {
+                        if (removeStatements.size() > 0) {
+                            connection.remove(removeStatements);
+                        }
                         if (insertStatements.size() > 0) {
                             connection.add(insertStatements);
                         }
                         if (updateStatements.size() > 0) {
                             connection.add(updateStatements);
                         }
-                        if (removeStatements.size() > 0) {
-                            connection.remove(removeStatements);
-                        }
+
                         if (insertStatements.size() > 0 || removeStatements.size() > 0) {
                             connection.prepare();
                             connection.commit();

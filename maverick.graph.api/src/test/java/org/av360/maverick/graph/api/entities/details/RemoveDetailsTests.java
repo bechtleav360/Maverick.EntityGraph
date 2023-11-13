@@ -38,7 +38,7 @@ public class RemoveDetailsTests extends ApiTestsBase  {
         super.printStep("Dumping and validating current model");
         CsvConsumer cc1 = super.getTestClient().listAllStatements();
         super.dumpStatementsAsTable(cc1);
-        Assertions.assertEquals(7, cc1.getRows().size());
+        Assertions.assertEquals(11, cc1.getRows().size());
 
         super.printStep("Deleting detail dc.source from predicate teaches");
         super.getTestClient().deleteValueDetail(sourceIdentifier, "sdo.teaches", "dc.source").expectStatus().isOk();
@@ -66,7 +66,7 @@ public class RemoveDetailsTests extends ApiTestsBase  {
         super.printStep("Dumping current model");
         CsvConsumer cc1 = super.getTestClient().listAllStatements();
         super.dumpStatementsAsTable(cc1);
-        Assertions.assertEquals(7, cc1.getRows().size());
+        Assertions.assertEquals(11, cc1.getRows().size());
 
         super.printStep("Removing value");
         super.getTestClient().deleteValue(sourceIdentifier, "sdo.teaches");
@@ -74,7 +74,7 @@ public class RemoveDetailsTests extends ApiTestsBase  {
         super.printStep("Dumping current model");
         CsvConsumer cc2 = super.getTestClient().listAllStatements();
         super.dumpStatementsAsTable(cc2);
-        Assertions.assertEquals(4, cc2.getRows().size());
+        Assertions.assertEquals(10, cc2.getRows().size());
     }
     @Test
     @Disabled
