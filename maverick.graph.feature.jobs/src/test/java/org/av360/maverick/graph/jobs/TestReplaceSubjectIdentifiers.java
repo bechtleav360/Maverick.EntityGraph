@@ -60,7 +60,7 @@ class TestReplaceSubjectIdentifiers extends TestsBase {
         SessionContext ctx = TestSecurityConfig.createTestContext();
 
         Mono<Transaction> importMono = entityServices.importFile(new ClassPathResource("requests/create-valid.ttl"), RDFFormat.TURTLE, ctx).doOnSubscribe(sub -> super.printStep());
-        Mono<Model> readModelMono = entityServices.getModel(ctx).doOnSubscribe(sub -> super.printStep());
+        Mono<Model> readModelMono = entityServices.asModel(ctx).doOnSubscribe(sub -> super.printStep());
         Mono<Void> actionMono = scheduled.run(ctx).doOnSubscribe(sub -> super.printStep());
 
         StepVerifier.create(importMono.then(readModelMono))
@@ -90,7 +90,7 @@ class TestReplaceSubjectIdentifiers extends TestsBase {
         SessionContext ctx = TestSecurityConfig.createTestContext();
 
         Mono<Transaction> s1 = entityServices.importFile(new ClassPathResource("requests/create-valid-ext.ttl"), RDFFormat.TURTLE, ctx).doOnSubscribe(sub -> super.printStep());
-        Mono<Model> s3 = entityServices.getModel(ctx).doOnNext(model -> super.printModel(model, RDFFormat.TURTLE)).doOnSubscribe(sub -> super.printStep());
+        Mono<Model> s3 = entityServices.asModel(ctx).doOnNext(model -> super.printModel(model, RDFFormat.TURTLE)).doOnSubscribe(sub -> super.printStep());
         Mono<Void> s2 = scheduled.run(ctx).doOnSubscribe(sub -> super.printStep());
 
         StepVerifier.create(s1.then(s3))
@@ -124,7 +124,7 @@ class TestReplaceSubjectIdentifiers extends TestsBase {
 
         Mono<Transaction> s1 = entityServices.importFile(new ClassPathResource("requests/create-esco.ttl"), RDFFormat.TURTLE, ctx).doOnSubscribe(sub -> super.printStep());
         Mono<Void> s2 = scheduled.run(ctx).doOnSubscribe(sub -> super.printStep());
-        Mono<Model> s3 = entityServices.getModel(ctx).doOnNext(model -> super.printModel(model, RDFFormat.TURTLE)).doOnSubscribe(sub -> super.printStep());
+        Mono<Model> s3 = entityServices.asModel(ctx).doOnNext(model -> super.printModel(model, RDFFormat.TURTLE)).doOnSubscribe(sub -> super.printStep());
 
         StepVerifier.create(s1.then(s3))
                 .assertNext(md -> {

@@ -6,11 +6,13 @@ import org.av360.maverick.graph.model.entities.Transaction;
 import org.av360.maverick.graph.model.enums.RepositoryType;
 import org.av360.maverick.graph.model.vocabulary.Transactions;
 import org.av360.maverick.graph.store.TransactionsStore;
+import org.av360.maverick.graph.store.rdf.fragments.Fragment;
 import org.av360.maverick.graph.store.rdf4j.repository.util.AbstractStore;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import java.util.Collection;
 
@@ -55,4 +57,8 @@ public class TransactionsStoreImpl extends AbstractStore implements Transactions
     }
 
 
+    @Override
+    public Mono<Transaction> insertFragment(Fragment fragment, Environment environment) {
+        return null;
+    }
 }

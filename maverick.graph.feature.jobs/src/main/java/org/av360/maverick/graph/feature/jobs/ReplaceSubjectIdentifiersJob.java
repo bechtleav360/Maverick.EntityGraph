@@ -149,7 +149,7 @@ public class ReplaceSubjectIdentifiersJob implements ScheduledJob {
 
     private Flux<Transaction> commit(List<Transaction> transactions, SessionContext ctx) {
         // log.trace("Committing {} transactions", transactions.size());
-        return this.entityServices.getStore(ctx).commit(transactions, ctx.getEnvironment(), true)
+        return this.entityServices.getStore(ctx).asCommitable().commit(transactions, ctx.getEnvironment(), true)
                 .doOnComplete(() -> log.trace("Committed {} transactions in job {}", transactions.size(), this.getName()));
     }
 
@@ -159,13 +159,12 @@ public class ReplaceSubjectIdentifiersJob implements ScheduledJob {
     }
 
     private Mono<Transaction> deleteStatements(StatementsBag statementsBag, SessionContext ctx) {
-        ArrayList<Statement> statements = new ArrayList<>(statementsBag.removableStatements());
-
-        return entityServices.getStore(ctx).removeStatements(statements, statementsBag.transaction());
+        return Mono.just(statementsBag.transaction().forRemoval(statementsBag.removableStatements()));
     }
 
-    private Mono<StatementsBag> insertStatements(StatementsBag bag, SessionContext ctx) {
-        return this.entityServices.getStore(ctx).insertModel(bag.convertedStatements(), bag.transaction()).then(Mono.just(bag));
+    private Mono<StatementsBag> insertStatements(StatementsBag statementsBag, SessionContext ctx) {
+        statementsBag.transaction().forInsert(statementsBag.convertedStatements());
+        return Mono.just(statementsBag);
     }
 
 
@@ -213,7 +212,7 @@ public class ReplaceSubjectIdentifiersJob implements ScheduledJob {
     }
 
     public Mono<StatementsBag> loadFragment(Resource candidate, SessionContext ctx) {
-        return this.entityServices.getStore(ctx).getFragment(candidate, ctx.getEnvironment())
+        return this.entityServices.getStore(ctx).asFragmentable().getFragment(candidate, ctx.getEnvironment())
                 .map(fragment -> new StatementsBag(candidate, Collections.synchronizedSet(fragment.getModel()), new LinkedHashModel(), null, new RdfTransaction()));
 
     }

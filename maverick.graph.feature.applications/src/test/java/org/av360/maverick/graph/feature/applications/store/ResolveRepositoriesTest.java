@@ -3,7 +3,7 @@ package org.av360.maverick.graph.feature.applications.store;
 import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.feature.applications.model.domain.Application;
 import org.av360.maverick.graph.model.context.SessionContext;
-import org.av360.maverick.graph.store.EntityStore;
+import org.av360.maverick.graph.store.IndividualsStore;
 import org.av360.maverick.graph.store.rdf.LabeledRepository;
 import org.av360.maverick.graph.tests.config.TestRepositoryConfig;
 import org.av360.maverick.graph.tests.config.TestSecurityConfig;
@@ -30,7 +30,7 @@ public class ResolveRepositoriesTest {
     ApplicationRepositoryBuilder builder;
 
     @Autowired
-    EntityStore entityStore;
+    IndividualsStore entityStore;
 
     @Test
     public void buildEntityRepoWithTestAuthentication() throws IOException {

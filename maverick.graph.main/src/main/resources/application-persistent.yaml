@@ -9,7 +9,6 @@ application:
     basic:
       enabled: false
   features:
-
     modules:
       objects:
         enabled: true
@@ -42,6 +41,7 @@ application:
     validators:
       checkRequiredType: true
   storage:
+    implementation: "rdf4j"
     vocabularies:
       persistent: true
       path: "D:/Graphen/vocabularies"

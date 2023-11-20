@@ -4,7 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.Validate;
 import org.av360.maverick.graph.model.context.Environment;
 import org.av360.maverick.graph.model.enums.RepositoryType;
-import org.av360.maverick.graph.store.behaviours.TripleStore;
+import org.av360.maverick.graph.store.EntityStore;
 import org.av360.maverick.graph.store.rdf.LabeledRepository;
 import org.av360.maverick.graph.store.rdf4j.config.DefaultRepositoryBuilder;
 import org.springframework.context.annotation.Primary;
@@ -36,28 +36,30 @@ public class ApplicationRepositoryBuilder extends DefaultRepositoryBuilder {
      * @throws IOException if repository cannot be resolved
      */
     @Override
-    public Mono<LabeledRepository> buildRepository(TripleStore store, Environment target) {
-        try {
+    public Mono<LabeledRepository> buildRepository(EntityStore store, Environment target) {
+            try {
+                Validate.isTrue(target.isAuthorized(), "Unauthorized operation in environment %s".formatted(target));
+                Validate.notNull(target.getRepositoryType(), "Repository type is not set in environment %s".formatted(target));
+                Validate.notBlank(target.getRepositoryType().toString(), "Repository type is empty string in environment %s".formatted(target));
 
-            Validate.isTrue(target.isAuthorized(), "Unauthorized operation in environment %s".formatted(target));
-            Validate.notNull(target.getRepositoryType(), "Repository type is not set in environment %s".formatted(target));
-            Validate.notBlank(target.getRepositoryType().toString(), "Repository type is empty string in environment %s".formatted(target));
+                boolean is_default_repository_type = target.getRepositoryType().equals(RepositoryType.APPLICATION) || target.getRepositoryType().equals(RepositoryType.SCHEMA);
+                boolean has_no_scope_defined = !target.hasScope();
 
-            boolean is_default_repository_type = target.getRepositoryType().equals(RepositoryType.APPLICATION) || target.getRepositoryType().equals(RepositoryType.SCHEMA);
-            boolean has_no_scope_defined = !target.hasScope();
+                LabeledRepository repository = null;
+                if (is_default_repository_type || has_no_scope_defined) {
+                    repository = super.buildDefaultRepository(store, target);
+                } else {
+                    repository = this.buildApplicationRepository(store, target);
+                }
 
-            LabeledRepository repository = null;
-            if (is_default_repository_type || has_no_scope_defined) {
-                repository = super.buildDefaultRepository(store, target);
-            } else {
-                repository = this.buildApplicationRepository(store, target);
+                return super.validateRepository(repository, store, target);
+
+            } catch (Exception e) {
+                return Mono.error(e);
             }
 
-            return super.validateRepository(repository, store, target);
 
-        } catch (Exception e) {
-            return Mono.error(e);
-        }
+
 
 
 
@@ -88,7 +90,7 @@ public class ApplicationRepositoryBuilder extends DefaultRepositoryBuilder {
             */
     }
 
-    private LabeledRepository buildApplicationRepository(TripleStore store, Environment environment) throws IOException {
+    private LabeledRepository buildApplicationRepository(EntityStore store, Environment environment) throws IOException {
         Validate.isTrue(environment.getConfiguration(Environment.RepositoryConfigurationKey.FLAG_PERSISTENT).isPresent(), "Missing configuration in environment: Persistence flag");
         Validate.isTrue(environment.getConfiguration(Environment.RepositoryConfigurationKey.FLAG_PUBLIC).isPresent(), "Missing configuration in environment: Public flag");
         Validate.isTrue(environment.getConfiguration(Environment.RepositoryConfigurationKey.KEY).isPresent(), "Missing configuration in environment: Unique key for scope");

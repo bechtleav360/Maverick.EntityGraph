@@ -3,7 +3,7 @@ package org.av360.maverick.graph.tests.util;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.av360.maverick.graph.model.context.SessionContext;
-import org.av360.maverick.graph.store.EntityStore;
+import org.av360.maverick.graph.store.IndividualsStore;
 import org.av360.maverick.graph.store.TransactionsStore;
 import org.av360.maverick.graph.tests.config.TestSecurityConfig;
 import org.eclipse.rdf4j.model.IRI;
@@ -27,7 +27,7 @@ public abstract class TestsBase {
     protected static ValueFactory vf = SimpleValueFactory.getInstance();
 
 
-    private EntityStore entityStore;
+    private IndividualsStore entityStore;
 
     private TransactionsStore transactionsStore;
 
@@ -49,7 +49,7 @@ public abstract class TestsBase {
     }
 
     @Autowired
-    public void setStores(EntityStore entityStore, TransactionsStore transactionsStore) {
+    public void setStores(IndividualsStore entityStore, TransactionsStore transactionsStore) {
         this.entityStore = entityStore;
         this.transactionsStore = transactionsStore;
     }
@@ -107,8 +107,8 @@ public abstract class TestsBase {
 
 
     protected void resetRepository(SessionContext ctx) {
-        Mono<Void> r1 = this.entityStore.reset(ctx.getEnvironment())
-                .then(this.transactionsStore.reset(ctx.getEnvironment()));
+        Mono<Void> r1 = this.entityStore.asMaintainable().purge(ctx.getEnvironment())
+                .then(this.transactionsStore.purge(ctx.getEnvironment()));
 
         StepVerifier.create(r1).verifyComplete();
     }

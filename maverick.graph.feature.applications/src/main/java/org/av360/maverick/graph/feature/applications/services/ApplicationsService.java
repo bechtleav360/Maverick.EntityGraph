@@ -15,6 +15,7 @@ import org.av360.maverick.graph.feature.applications.model.vocab.ApplicationTerm
 import org.av360.maverick.graph.feature.applications.store.ApplicationsStore;
 import org.av360.maverick.graph.model.aspects.RequiresPrivilege;
 import org.av360.maverick.graph.model.context.SessionContext;
+import org.av360.maverick.graph.model.entities.Transaction;
 import org.av360.maverick.graph.model.enums.RepositoryType;
 import org.av360.maverick.graph.model.errors.InconsistentModelException;
 import org.av360.maverick.graph.model.errors.InsufficientPrivilegeException;
@@ -24,9 +25,9 @@ import org.av360.maverick.graph.model.util.StreamsLogger;
 import org.av360.maverick.graph.model.vocabulary.Local;
 import org.av360.maverick.graph.model.vocabulary.SDO;
 import org.av360.maverick.graph.services.IdentifierServices;
+import org.av360.maverick.graph.store.rdf.fragments.RdfTransaction;
 import org.av360.maverick.graph.store.rdf.helpers.BindingsAccessor;
 import org.eclipse.rdf4j.model.IRI;
-import org.eclipse.rdf4j.model.impl.LinkedHashModel;
 import org.eclipse.rdf4j.model.util.ModelBuilder;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.sparqlbuilder.core.query.Queries;
@@ -56,12 +57,12 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
 
     private boolean caching_enabled = true;
 
-    private final ApplicationsStore applicationsStore;
+    private final ApplicationsStore store;
     private final ApplicationEventPublisher eventPublisher;
 
 
     public ApplicationsService(ApplicationsStore applicationsStore, ApplicationEventPublisher eventPublisher) {
-        this.applicationsStore = applicationsStore;
+        this.store = applicationsStore;
         this.eventPublisher = eventPublisher;
         // this.cache = Caffeine.newBuilder().recordStats().expireAfterAccess(60, TimeUnit.MINUTES).build();
         this.cache = Caffeine.newBuilder().recordStats().build();
@@ -115,7 +116,7 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
 
         ctx.updateEnvironment(env-> env.setRepositoryType(RepositoryType.APPLICATION));
 
-        Mono<Application> applicationMono = this.applicationsStore.insertModel(modelBuilder.build(), ctx.getEnvironment())
+        Mono<Application> applicationMono = this.store.importStatements(modelBuilder.build(), ctx.getEnvironment())
                 .then(Mono.just(application))
                 .doOnSuccess(app -> {
                     this.eventPublisher.publishEvent(new ApplicationCreatedEvent(app));
@@ -138,7 +139,7 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
 
 
         Mono<Void> deleteMono = this.deleteConfigurationItem(application, configKey, ctx);
-        Mono<Void> insertMono = this.applicationsStore.insertModel(m.build(), ctx.updateEnvironment(env -> env.setRepositoryType(RepositoryType.APPLICATION)).getEnvironment());
+        Mono<Void> insertMono = this.store.importStatements(m.build(), ctx.updateEnvironment(env -> env.setRepositoryType(RepositoryType.APPLICATION)).getEnvironment());
 
         return deleteMono.then(insertMono).then(this.getApplication(application.key(), ctx, true))
                 .doOnSuccess(app -> {
@@ -151,8 +152,12 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
     @RequiresPrivilege(Authorities.MAINTAINER_VALUE)
     public Mono<Void> setMetric(Application application, String key, Serializable value, SessionContext ctx) {
         ModelBuilder m = this.buildMetricsItem(key, value, application.iri(), null);
+        ;
 
-        return this.applicationsStore.insertModel(m.build(), ctx.updateEnvironment(env -> env.setRepositoryType(RepositoryType.APPLICATION)).getEnvironment())
+
+        return this.store.insertStatements(m.build(), new RdfTransaction())
+                        .flatMap(transaction -> this.store.commit(transaction, ctx.updateEnvironment(env -> env.setRepositoryType(RepositoryType.APPLICATION)).getEnvironment()))
+                .filter(Transaction::isCompleted)
                 .then()
                 .doOnSuccess(app -> {
                     log.trace("Updated metrics '{}' of application with label '{}'", application.key(), application.label());
@@ -170,16 +175,15 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
                         .andHas(ApplicationTerms.CONFIG_VALUE, QueryVariables.varConfigValue)
                         .and(QueryVariables.varNodeConfigurationItem.has(ApplicationTerms.CONFIG_FOR, application.iri()))
                 );
-        Flux<IRI> nodesToDelete = this.applicationsStore.query(listConfigurationItemsQuery, ctx.getEnvironment())
+        Flux<IRI> nodesToDelete = this.store.query(listConfigurationItemsQuery, ctx.getEnvironment())
                 .map(BindingsAccessor::new)
                 .map(ba -> ba.findValue(QueryVariables.varNodeConfigurationItem))
                 .filter(Optional::isPresent)
                 .filter(opt -> opt.get().isIRI())
                 .map(opt -> (IRI) opt.get());
-        return nodesToDelete.flatMap(configNode -> this.applicationsStore.listStatements(configNode, null, null, ctx.getEnvironment()))
-                .map(LinkedHashModel::new)
-                .flatMap(model -> this.applicationsStore.deleteModel(model, ctx.getEnvironment()))
-                .collectList()
+        return nodesToDelete.flatMap(configNode -> this.store.listStatements(configNode, null, null, ctx.getEnvironment()))
+                .flatMap(statements -> this.store.removeStatements(statements, new RdfTransaction()))
+                .flatMap(transaction -> this.store.commit(transaction, ctx.getEnvironment()))
                 .then()
                 .doOnSuccess(res -> {
                     this.eventPublisher.publishEvent(new ApplicationUpdatedEvent(application));
@@ -196,7 +200,7 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
                         .andHas(ApplicationTerms.CONFIG_VALUE, QueryVariables.varConfigValue)
                         .and(QueryVariables.varNodeConfigurationItem.has(ApplicationTerms.CONFIG_FOR, application.iri()))
                 );
-        return this.applicationsStore.query(listConfigurationItemsQuery, ctx.getEnvironment())
+        return this.store.query(listConfigurationItemsQuery, ctx.getEnvironment())
                 .map(BindingsAccessor::new)
                 .flatMap(QueryVariables::buildConfigurationItemFromBindings);
 
@@ -209,8 +213,8 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
         return this.listConfigurationItems(application, context)
                 .flatMap(configurationItem -> this.deleteConfigurationItem(application, configurationItem.key(), context)).collectList()
                 .doOnSuccess(suc -> log.trace("Deleted all configuration item statements for application with label '{}'", application.label()))
-                .then( this.applicationsStore.listStatements(application.iri(), null, null, context.getEnvironment()))
-                .flatMap(statements -> this.applicationsStore.deleteModel(statements, context.getEnvironment()))
+                .then( this.store.listStatements(application.iri(), null, null, context.getEnvironment()))
+                .flatMap(statements -> this.store.removeStatements(statements, context.getEnvironment()))
                 .doOnSuccess(suc -> log.trace("Deleted all application statements for application with label '{}'", application.label()))
                 .then()
                 .doOnSuccess(res -> {
@@ -275,12 +279,12 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
                     );
 
             return Mono.zip(
-                            this.applicationsStore.query(listApplicationsQuery, ctx.getEnvironment())
+                            this.store.query(listApplicationsQuery, ctx.getEnvironment())
                                     .map(BindingsAccessor::new)
                                     .flatMap(QueryVariables::buildApplicationFromBindings)
                                     .collectList()
                             ,
-                            this.applicationsStore.query(listConfigurationItemsQuery, ctx.getEnvironment())
+                            this.store.query(listConfigurationItemsQuery, ctx.getEnvironment())
                                     .map(BindingsAccessor::new)
                                     .flatMap(QueryVariables::buildConfigurationItemFromBindings)
                                     .collectList()

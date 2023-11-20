@@ -11,15 +11,14 @@ import org.av360.maverick.graph.model.errors.InsufficientPrivilegeException;
 import org.av360.maverick.graph.model.rdf.AnnotatedStatement;
 import org.av360.maverick.graph.model.security.Authorities;
 import org.av360.maverick.graph.model.vocabulary.Transactions;
+import org.av360.maverick.graph.store.EntityStore;
 import org.av360.maverick.graph.store.RepositoryBuilder;
 import org.av360.maverick.graph.store.behaviours.*;
-import org.av360.maverick.graph.store.rdf.fragments.RdfEntity;
+import org.av360.maverick.graph.store.rdf.fragments.Fragment;
 import org.av360.maverick.graph.store.rdf.fragments.RdfTransaction;
 import org.av360.maverick.graph.store.rdf.fragments.TripleModel;
 import org.av360.maverick.graph.store.rdf.helpers.RdfUtils;
-import org.eclipse.rdf4j.common.iteration.CloseableIteration;
 import org.eclipse.rdf4j.model.*;
-import org.eclipse.rdf4j.model.impl.LinkedHashModel;
 import org.eclipse.rdf4j.model.impl.SimpleNamespace;
 import org.eclipse.rdf4j.model.util.ModelCollector;
 import org.eclipse.rdf4j.model.util.Models;
@@ -59,7 +58,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
 @SuppressWarnings("FieldCanBeLocal")
-public abstract class AbstractStore implements TripleStore, StatementsAware, ModelAware, Maintainable, FragmentsAware {
+public abstract class AbstractStore implements Searchable, Maintainable, Selectable, StatementsAware, Fragmentable, TripleStore, EntityStore {
 
     private final RepositoryType repositoryType;
     private RepositoryBuilder repositoryConfiguration;
@@ -72,6 +71,7 @@ public abstract class AbstractStore implements TripleStore, StatementsAware, Mod
     public AbstractStore(RepositoryType repositoryType) {
         this.repositoryType = repositoryType;
     }
+
 
 
     public RepositoryType getRepositoryType() {
@@ -155,7 +155,7 @@ public abstract class AbstractStore implements TripleStore, StatementsAware, Mod
     }
 
     @Override
-    public Mono<Void> reset(Environment environment) {
+    public Mono<Void> purge(Environment environment) {
 
         return this.consumeWithConnection(environment, connection -> {
             try {
@@ -178,21 +178,7 @@ public abstract class AbstractStore implements TripleStore, StatementsAware, Mod
     }
 
 
-    @Override
-    public Mono<Void> deleteModel(Model model, Environment environment) {
-        return this.consumeWithConnection(environment, connection -> {
-            try {
-                Resource[] contexts = model.contexts().toArray(new Resource[0]);
-                connection.remove(model, contexts);
-                connection.commit();
-                getLogger().trace("Deleted {} statements from repository '{}'", model.size(), connection.getRepository());
-            } catch (Exception e) {
-                getLogger().error("Error while deleting {} statements from repository '{}'", model.size(), connection.getRepository());
-                connection.rollback();
-                throw e;
-            }
-        });
-    }
+
 
 
     private InputStream getInputStreamFromFluxDataBuffer(Publisher<DataBuffer> data) throws IOException {
@@ -327,7 +313,7 @@ public abstract class AbstractStore implements TripleStore, StatementsAware, Mod
     }
 
     @Override
-    public Mono<RdfEntity> getFragment(Resource id, int includeNeighborsLevel, boolean includeDetails, Environment environment) {
+    public Mono<Fragment> getFragment(Resource id, int includeNeighborsLevel, boolean includeDetails, Environment environment) {
         return this.applyWithConnection(environment, connection -> {
             getLogger().trace("Loading fragment with id '{}' from repository {}", id, connection.getRepository().toString());
 
@@ -337,7 +323,7 @@ public abstract class AbstractStore implements TripleStore, StatementsAware, Mod
                     return null;
                 }
 
-                RdfEntity entity = new RdfEntity(id).withResult(statements);
+                Fragment entity = new Fragment(id).withResult(statements);
 
                 if (includeDetails) {
                     Model details = loadDetailsWithReification(connection, entity);
@@ -359,6 +345,13 @@ public abstract class AbstractStore implements TripleStore, StatementsAware, Mod
                 throw e;
             }
         });
+    }
+
+
+    @Override
+    public Mono<Transaction> insertFragment(Fragment fragment, Environment environment) {
+        Transaction trx = new RdfTransaction().forInsert(fragment.listStatements());
+        return this.commit(trx, environment);
     }
 
     /**
@@ -390,6 +383,7 @@ public abstract class AbstractStore implements TripleStore, StatementsAware, Mod
      *         rdf:object 23 ;
      *         ex:certainty 0.9 .
      */
+    @Deprecated
     private Model loadDetailsWithReification(RepositoryConnection connection, TripleModel triples) {
         Model md = triples.getModel().stream()
                 .filter(statement -> (statement.getObject().isLiteral() || statement.getObject().isIRI()) && statement.getSubject().isIRI())
@@ -401,7 +395,7 @@ public abstract class AbstractStore implements TripleStore, StatementsAware, Mod
     }
 
 
-    private Model loadNeighbours(RepositoryConnection connection, RdfEntity entity) {
+    private Model loadNeighbours(RepositoryConnection connection, Fragment entity) {
         HashSet<Value> objects = new HashSet<>(entity.getModel().objects());
         /*Stream<RepositoryResult<Statement>> repositoryResultStream = objects.stream()
                 .filter(Value::isIRI)
@@ -409,8 +403,7 @@ public abstract class AbstractStore implements TripleStore, StatementsAware, Mod
 
         return objects.stream()
                 .filter(Value::isIRI)
-                .map(value -> connection.getStatements((IRI) value, null, null))
-                .flatMap(CloseableIteration::stream)
+                .flatMap(value -> connection.getStatements((IRI) value, null, null).stream())
                 .filter(sts -> this.isLiteralStatement(sts) || this.isTypeStatement(sts))
                 .collect(new ModelCollector());
 
@@ -426,41 +419,8 @@ public abstract class AbstractStore implements TripleStore, StatementsAware, Mod
         return statement.getPredicate().equals(RDF.TYPE);
     }
 
-    @Override
-    public Mono<Void> insertModel(Model model, Environment environment) {
-        return this.consumeWithConnection(environment, connection -> {
-            try {
-                if (getLogger().isTraceEnabled())
-                    getLogger().trace("Inserting model without transaction to repository '{}'", connection.getRepository().toString());
 
-                Resource[] contexts = model.contexts().toArray(new Resource[0]);
-                connection.add(model, contexts);
-                connection.commit();
-            } catch (Exception e) {
-                connection.rollback();
-                throw e;
-            }
-        });
 
-    }
-
-    @Override
-    public Mono<Void> importModel(Model model, Environment environment) {
-        return this.insertModel(model, environment);
-    }
-
-    @Override
-    public Mono<Transaction> insertModel(Model model, Transaction transaction) {
-        Assert.notNull(transaction, "Transaction cannot be null");
-        if (getLogger().isTraceEnabled())
-            getLogger().trace("Insert planned for {} statements in transaction '{}'.", model.size(), transaction.getIdentifier().getLocalName());
-
-        transaction = transaction
-                .inserts(model)
-                .affects(model);
-
-        return Mono.just(transaction);
-    }
 
 
     @Override
@@ -486,29 +446,6 @@ public abstract class AbstractStore implements TripleStore, StatementsAware, Mod
     @Override
     public Mono<Boolean> exists(Resource subj, Environment environment) {
         return this.applyWithConnection(environment, connection -> connection.hasStatement(subj, RDF.TYPE, null, false));
-    }
-
-
-    @Override
-    public Mono<Transaction> removeStatements(Collection<Statement> statements, Transaction transaction) {
-        Assert.notNull(transaction, "Transaction cannot be null");
-
-
-        return Mono.just(transaction.removes(statements));
-    }
-
-
-
-    @Override
-    public Mono<Transaction> addStatement(Resource subject, IRI predicate, Value literal, @Nullable Resource context, Transaction transaction) {
-        if (getLogger().isTraceEnabled())
-            getLogger().trace("Marking statement for insert in transaction {}: {} - {} - {}", transaction.getIdentifier().getLocalName(), subject, predicate, literal);
-
-
-        Transaction trx = transaction
-                .inserts(subject, predicate, literal, context)
-                .affects(subject, predicate, literal);
-        return Mono.just(trx);
     }
 
 
@@ -568,11 +505,6 @@ public abstract class AbstractStore implements TripleStore, StatementsAware, Mod
 
     protected void validateEnvironment(Environment environment) {
         // do nothing
-    }
-
-    @Override
-    public Mono<Model> getModel(Environment environment) {
-        return this.listStatements(null, null, null, environment).map(LinkedHashModel::new);
     }
 
     protected <E, T extends Iterable<E>> Flux<E> applyManyWithConnection(Environment environment, ThrowingFunction<RepositoryConnection, T> fun) {

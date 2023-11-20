@@ -8,7 +8,7 @@ import org.av360.maverick.graph.model.errors.requests.InvalidQuery;
 import org.av360.maverick.graph.model.rdf.AnnotatedStatement;
 import org.av360.maverick.graph.model.security.Authorities;
 import org.av360.maverick.graph.services.QueryServices;
-import org.av360.maverick.graph.store.behaviours.Searchable;
+import org.av360.maverick.graph.store.EntityStore;
 import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.query.QueryLanguage;
 import org.eclipse.rdf4j.query.parser.*;
@@ -27,12 +27,17 @@ import java.util.Set;
 @Slf4j(topic = "graph.srvc.query")
 public class QueryServicesImpl implements QueryServices {
 
-    private final Map<RepositoryType, Searchable> stores;
+    private final Map<RepositoryType, EntityStore> stores;
     private final QueryParser queryParser;
 
-    public QueryServicesImpl(Set<Searchable> searchables) {
+    public QueryServicesImpl(Set<EntityStore> storesSet) {
         this.stores = new HashMap<>();
-        searchables.forEach(searchable -> stores.put(searchable.getRepositoryType(), searchable));
+
+        storesSet.forEach(store -> {
+            if(store.isSearchable()) {
+                stores.put(store.getRepositoryType(), store);
+            }
+        });
 
         queryParser = QueryParserUtil.createParser(QueryLanguage.SPARQL);
     }
@@ -82,7 +87,7 @@ public class QueryServicesImpl implements QueryServices {
             if(Objects.isNull(ctx.getEnvironment().getRepositoryType())) ctx.updateEnvironment(env -> env.setRepositoryType(target));
 
             // check if we should set back to old repository type if needed
-            return this.stores.get(target).construct(query, ctx.getEnvironment())
+            return this.stores.get(target).asSearchable().construct(query, ctx.getEnvironment())
                     .doOnSubscribe(subscription -> {
                         if (log.isTraceEnabled())
                             log.trace("Running construct query in {}: {}", ctx.getEnvironment(), query.replace('\n', ' ').trim());
@@ -97,7 +102,7 @@ public class QueryServicesImpl implements QueryServices {
         try {
             if(Objects.isNull(ctx.getEnvironment().getRepositoryType())) ctx.updateEnvironment(env -> env.setRepositoryType(repositoryType));
 
-            return this.stores.get(repositoryType).query(query, ctx.getEnvironment())
+            return this.stores.get(repositoryType).asSearchable().query(query, ctx.getEnvironment())
                     .doOnSubscribe(subscription -> {
                         if (log.isTraceEnabled())
                             log.trace("Running select query in {}: {}", ctx.getEnvironment(), query.replace('\n', ' ').trim());

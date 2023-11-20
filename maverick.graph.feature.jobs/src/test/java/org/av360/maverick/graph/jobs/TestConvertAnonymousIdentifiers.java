@@ -54,8 +54,8 @@ class TestConvertAnonymousIdentifiers extends TestsBase {
         // Mono<Transaction> tx1 = entityServicesClient.importFileMono(new ClassPathResource("requests/create-esco.ttl"));
 
         Mono<Void> importMono = entityServicesClient.importFile(new ClassPathResource("requests/create-valid.ttl"), RDFFormat.TURTLE, ctx).doOnSubscribe(sub -> super.printStep()).then();
-        Mono<Model> read1 = entityServicesClient.getModel(ctx).doOnSubscribe(sub -> super.printStep());
-        Mono<Model> read2 = entityServicesClient.getModel(ctx).doOnNext(model -> super.printModel(model, RDFFormat.TURTLE)).doOnSubscribe(sub -> super.printStep());
+        Mono<Model> read1 = entityServicesClient.asModel(ctx).doOnSubscribe(sub -> super.printStep());
+        Mono<Model> read2 = entityServicesClient.asModel(ctx).doOnNext(model -> super.printModel(model, RDFFormat.TURTLE)).doOnSubscribe(sub -> super.printStep());
 
 
         Mono<Void> jobMono = scheduled.run(TestSecurityConfig.createTestContext()).doOnSubscribe(sub -> super.printStep());
@@ -83,8 +83,8 @@ class TestConvertAnonymousIdentifiers extends TestsBase {
 
 
         Mono<Void> importMono = entityServicesClient.importFile(new ClassPathResource("requests/create-valid_multiple-ext.ttl"), RDFFormat.TURTLE, ctx).doOnSubscribe(sub -> super.printStep()).then();
-        Mono<Model> read1 = entityServicesClient.getModel(ctx).doOnSubscribe(sub -> super.printStep());
-        Mono<Model> read2 = entityServicesClient.getModel(ctx).doOnNext(model -> super.printModel(model, RDFFormat.TURTLE)).doOnSubscribe(sub -> super.printStep());
+        Mono<Model> read1 = entityServicesClient.asModel(ctx).doOnSubscribe(sub -> super.printStep());
+        Mono<Model> read2 = entityServicesClient.asModel(ctx).doOnNext(model -> super.printModel(model, RDFFormat.TURTLE)).doOnSubscribe(sub -> super.printStep());
 
 
         Mono<Void> jobMono = scheduled.run(TestSecurityConfig.createTestContext()).doOnSubscribe(sub -> super.printStep());
@@ -108,8 +108,8 @@ class TestConvertAnonymousIdentifiers extends TestsBase {
 
 
         Mono<Void> importMono = entityServicesClient.importFile(new ClassPathResource("requests/create-valid_withEmbedded-ext.ttl"), RDFFormat.TURTLE, ctx).doOnSubscribe(sub -> super.printStep()).then();
-        Mono<Model> read1 = entityServicesClient.getModel(ctx).doOnNext(model -> super.printModel(model, RDFFormat.TURTLE)).doOnSubscribe(sub -> super.printStep());
-        Mono<Model> read2 = entityServicesClient.getModel(ctx).doOnNext(model -> super.printModel(model, RDFFormat.TURTLE)).doOnSubscribe(sub -> super.printStep());
+        Mono<Model> read1 = entityServicesClient.asModel(ctx).doOnNext(model -> super.printModel(model, RDFFormat.TURTLE)).doOnSubscribe(sub -> super.printStep());
+        Mono<Model> read2 = entityServicesClient.asModel(ctx).doOnNext(model -> super.printModel(model, RDFFormat.TURTLE)).doOnSubscribe(sub -> super.printStep());
 
 
         Mono<Void> jobMono = scheduled.run(TestSecurityConfig.createTestContext()).doOnSubscribe(sub -> super.printStep());
@@ -133,8 +133,8 @@ class TestConvertAnonymousIdentifiers extends TestsBase {
 
 
         Mono<Void> importMono = entityServicesClient.importFile(new ClassPathResource("requests/create-valid_multipleWithEmbedded.ttl"), RDFFormat.TURTLE, ctx).doOnSubscribe(sub -> super.printStep()).then();
-        Mono<Model> read1 = entityServicesClient.getModel(ctx).doOnNext(model -> super.printModel(model, RDFFormat.TURTLE)).doOnSubscribe(sub -> super.printStep());
-        Mono<Model> read2 = entityServicesClient.getModel(ctx).doOnNext(model -> super.printModel(model, RDFFormat.TURTLE)).doOnSubscribe(sub -> super.printStep());
+        Mono<Model> read1 = entityServicesClient.asModel(ctx).doOnNext(model -> super.printModel(model, RDFFormat.TURTLE)).doOnSubscribe(sub -> super.printStep());
+        Mono<Model> read2 = entityServicesClient.asModel(ctx).doOnNext(model -> super.printModel(model, RDFFormat.TURTLE)).doOnSubscribe(sub -> super.printStep());
 
 
         Mono<Void> jobMono = scheduled.run(TestSecurityConfig.createTestContext()).doOnSubscribe(sub -> super.printStep());

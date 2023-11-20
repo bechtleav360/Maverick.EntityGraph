@@ -2,16 +2,15 @@ package org.av360.maverick.graph.api.entities.formats;
 
 import org.av360.maverick.graph.model.vocabulary.SDO;
 import org.av360.maverick.graph.model.vocabulary.Transactions;
+import org.av360.maverick.graph.tests.clients.EntitiesTestClient;
 import org.av360.maverick.graph.tests.config.TestSecurityConfig;
 import org.av360.maverick.graph.tests.util.ApiTestsBase;
 import org.av360.maverick.graph.tests.util.RdfConsumer;
 import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Test;
+import org.eclipse.rdf4j.rio.RDFFormat;
+import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.io.ClassPathResource;
@@ -33,17 +32,25 @@ public class CreateEntitiesInTurtleTests extends ApiTestsBase {
     @Autowired
     private WebTestClient webClient;
 
+    EntitiesTestClient entitiesTestClient;
+
     @AfterEach
     public void resetRepository() {
         super.resetRepository();
     }
 
+    @BeforeEach
+    public void prepare() {
+        this.entitiesTestClient = new EntitiesTestClient(webClient);
+    }
+
     @Test
     public void createEntity() {
-        RdfConsumer rdfConsumer = super.upload("requests/create-valid.ttl");
 
+        super.printStart("Creating entity in turtle syntax");
+        RdfConsumer rdfConsumer = this.entitiesTestClient.upload("requests/create-valid.ttl");
 
-        Collection<Statement> statements = rdfConsumer.getStatements();
+        super.printModel(rdfConsumer.asModel(), RDFFormat.TURTLE);
         Assertions.assertTrue(rdfConsumer.hasStatement(null, Transactions.STATUS, Transactions.SUCCESS));
     }
 
@@ -101,6 +108,7 @@ public class CreateEntitiesInTurtleTests extends ApiTestsBase {
 
     @Test
     public void createMultipleEntities() {
+        super.printStart("Creating multiple entities using request: create-valid_multiple.ttl ");
         RdfConsumer rdfConsumer = super.upload("requests/create-valid_multiple.ttl");
 
 

@@ -63,7 +63,7 @@ public class MergeDuplicateTests extends TestsBase  {
         ClassPathResource file = new ClassPathResource("requests/create-valid_multipleWithEmbedded.ttl");
 
         Mono<Model> m = entityServicesClient.importFile(file, RDFFormat.TURTLE, ctx)
-                .flatMap(trx -> entityServicesClient.getModel(ctx));
+                .flatMap(trx -> entityServicesClient.asModel(ctx));
 
         StepVerifier.create(m)
                 .assertNext(model -> {
@@ -94,7 +94,7 @@ public class MergeDuplicateTests extends TestsBase  {
         Mono<Transaction> tx1 = entityServicesClient.importFile(new ClassPathResource("requests/create-valid_multipleWithEmbedded.ttl"), RDFFormat.TURTLE, ctx).doOnSubscribe(sub -> log.trace("-------- 1"));
         Mono<Transaction> tx2 = entityServicesClient.importFile(new ClassPathResource("requests/create-valid_withEmbedded.ttl"), RDFFormat.TURTLE, ctx).doOnSubscribe(sub -> log.trace("-------- 2"));
         Mono<Void> scheduler = this.scheduledDetectDuplicates.run(ctx).doOnSubscribe(sub -> log.trace("-------- 3"));
-        Mono<Model> getAll = entityServicesClient.getModel(ctx);
+        Mono<Model> getAll = entityServicesClient.asModel(ctx);
 
         StepVerifier.create(
                 tx1.then(tx2).then(scheduler).then(getAll)

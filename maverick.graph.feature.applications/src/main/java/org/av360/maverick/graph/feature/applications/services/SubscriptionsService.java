@@ -10,10 +10,12 @@ import org.av360.maverick.graph.feature.applications.model.vocab.ApplicationTerm
 import org.av360.maverick.graph.feature.applications.model.vocab.SubscriptionTerms;
 import org.av360.maverick.graph.feature.applications.store.ApplicationsStore;
 import org.av360.maverick.graph.model.context.SessionContext;
+import org.av360.maverick.graph.model.entities.Transaction;
 import org.av360.maverick.graph.model.identifier.RandomIdentifier;
 import org.av360.maverick.graph.model.util.StreamsLogger;
 import org.av360.maverick.graph.model.vocabulary.Local;
 import org.av360.maverick.graph.services.IdentifierServices;
+import org.av360.maverick.graph.store.rdf.fragments.RdfTransaction;
 import org.av360.maverick.graph.store.rdf.helpers.BindingsAccessor;
 import org.eclipse.rdf4j.model.util.ModelBuilder;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
@@ -128,7 +130,10 @@ public class SubscriptionsService {
                     modelBuilder.add(SubscriptionTerms.FOR_APPLICATION, apiKey.application().key());
                     modelBuilder.add(apiKey.application().iri(), ApplicationTerms.HAS_API_KEY, apiKey.iri());
 
-                    return this.applicationsStore.insertModel(modelBuilder.build(), ctx.getEnvironment()).then(Mono.just(apiKey));
+                    return this.applicationsStore.insertStatements(modelBuilder.build(), new RdfTransaction())
+                            .flatMap(transaction -> this.applicationsStore.commit(transaction, ctx.getEnvironment()))
+                            .flatMap(Transaction::verifyCompleted)
+                            .then(Mono.just(apiKey));
                 })
                 .doOnSuccess(token -> {
                     this.eventPublisher.publishEvent(new TokenCreatedEvent(token));

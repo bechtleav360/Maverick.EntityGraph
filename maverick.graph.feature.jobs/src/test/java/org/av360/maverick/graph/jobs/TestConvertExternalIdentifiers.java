@@ -58,8 +58,8 @@ class TestConvertExternalIdentifiers extends TestsBase {
         // Mono<Transaction> tx1 = entityServicesClient.importFileMono(new ClassPathResource("requests/create-esco.ttl"));
 
         Mono<Void> importMono = entityServices.importFile(new ClassPathResource("requests/create-valid-ext.ttl"), RDFFormat.TURTLE, ctx).doOnSubscribe(sub -> super.printStep()).then();
-        Mono<Model> read1 = entityServices.getModel(ctx).doOnSubscribe(sub -> super.printStep());
-        Mono<Model> read2 = entityServices.getModel(ctx).doOnNext(model -> super.printModel(model, RDFFormat.TURTLE)).doOnSubscribe(sub -> super.printStep());
+        Mono<Model> read1 = entityServices.asModel(ctx).doOnSubscribe(sub -> super.printStep());
+        Mono<Model> read2 = entityServices.asModel(ctx).doOnNext(model -> super.printModel(model, RDFFormat.TURTLE)).doOnSubscribe(sub -> super.printStep());
 
         Mono<Void> jobMono = scheduled.run(TestSecurityConfig.createTestContext()).doOnSubscribe(sub -> super.printStep());
 
@@ -93,8 +93,8 @@ class TestConvertExternalIdentifiers extends TestsBase {
 
 
         Mono<Void> importMono = entityServices.importFile(new ClassPathResource("requests/create-valid_multiple-ext.ttl"), RDFFormat.TURTLE, ctx).doOnSubscribe(sub -> super.printStep()).then();
-        Mono<Model> read1 = entityServices.getModel(ctx).doOnSubscribe(sub -> super.printStep());
-        Mono<Model> read2 = entityServices.getModel(ctx).doOnNext(model -> super.printModel(model, RDFFormat.TURTLE)).doOnSubscribe(sub -> super.printStep());
+        Mono<Model> read1 = entityServices.asModel(ctx).doOnSubscribe(sub -> super.printStep());
+        Mono<Model> read2 = entityServices.asModel(ctx).doOnNext(model -> super.printModel(model, RDFFormat.TURTLE)).doOnSubscribe(sub -> super.printStep());
 
 
         Mono<Void> jobMono = scheduled.run(TestSecurityConfig.createTestContext()).doOnSubscribe(sub -> super.printStep());
@@ -120,8 +120,8 @@ class TestConvertExternalIdentifiers extends TestsBase {
 
 
         Mono<Void> importMono = entityServices.importFile(new ClassPathResource("requests/create-valid_withEmbedded-ext.ttl"), RDFFormat.TURTLE, ctx).doOnSubscribe(sub -> super.printStep()).then();
-        Mono<Model> read1 = entityServices.getModel(ctx).doOnNext(model -> super.printModel(model, RDFFormat.TURTLE)).doOnSubscribe(sub -> super.printStep());
-        Mono<Model> read2 = entityServices.getModel(ctx).doOnNext(model -> super.printModel(model, RDFFormat.TURTLE)).doOnSubscribe(sub -> super.printStep());
+        Mono<Model> read1 = entityServices.asModel(ctx).doOnNext(model -> super.printModel(model, RDFFormat.TURTLE)).doOnSubscribe(sub -> super.printStep());
+        Mono<Model> read2 = entityServices.asModel(ctx).doOnNext(model -> super.printModel(model, RDFFormat.TURTLE)).doOnSubscribe(sub -> super.printStep());
 
 
         Mono<Void> jobMono = scheduled.run(TestSecurityConfig.createTestContext()).doOnSubscribe(sub -> super.printStep());
@@ -148,8 +148,8 @@ class TestConvertExternalIdentifiers extends TestsBase {
 
 
         Mono<Void> importMono = entityServices.importFile(new ClassPathResource("requests/create-valid_multipleWithEmbedded.ttl"), RDFFormat.TURTLE, ctx).doOnSubscribe(sub -> super.printStep()).then();
-        Mono<Model> read1 = entityServices.getModel(ctx).doOnNext(model -> super.printModel(model, RDFFormat.TURTLE)).doOnSubscribe(sub -> super.printStep());
-        Mono<Model> read2 = entityServices.getModel(ctx).doOnNext(model -> super.printModel(model, RDFFormat.TURTLE)).doOnSubscribe(sub -> super.printStep());
+        Mono<Model> read1 = entityServices.asModel(ctx).doOnNext(model -> super.printModel(model, RDFFormat.TURTLE)).doOnSubscribe(sub -> super.printStep());
+        Mono<Model> read2 = entityServices.asModel(ctx).doOnNext(model -> super.printModel(model, RDFFormat.TURTLE)).doOnSubscribe(sub -> super.printStep());
 
 
         Mono<Void> jobMono = scheduled.run(TestSecurityConfig.createTestContext()).doOnSubscribe(sub -> super.printStep());
@@ -176,8 +176,8 @@ class TestConvertExternalIdentifiers extends TestsBase {
         super.printStart("Test: Convert anonymous identifiers (Multiple with shared object)");
         Mono<Void> importMono = entityServices.importFile(new ClassPathResource("requests/create-valid_multipleMixed-ext.ttl"), RDFFormat.TURTLE, ctx).doOnSubscribe(sub -> super.printStep()).then();
 
-        Mono<Model> read1 = entityServices.getModel(ctx).doOnNext(model -> super.printModel(model, RDFFormat.TURTLE)).doOnSubscribe(sub -> super.printStep());
-        Mono<Model> read2 = entityServices.getModel(ctx).doOnNext(model -> super.printModel(model, RDFFormat.TURTLE)).doOnSubscribe(sub -> super.printStep());
+        Mono<Model> read1 = entityServices.asModel(ctx).doOnNext(model -> super.printModel(model, RDFFormat.TURTLE)).doOnSubscribe(sub -> super.printStep());
+        Mono<Model> read2 = entityServices.asModel(ctx).doOnNext(model -> super.printModel(model, RDFFormat.TURTLE)).doOnSubscribe(sub -> super.printStep());
 
 
         Mono<Void> jobMono = scheduled.run(TestSecurityConfig.createTestContext()).doOnSubscribe(sub -> super.printStep());

@@ -12,24 +12,24 @@ import org.eclipse.rdf4j.repository.RepositoryResult;
  * <p>
  * Stores all items for one particular entity.
  */
-public class RdfEntity extends TripleModel implements Entity {
+public class Fragment extends TripleModel implements Entity {
 
 
     private final Resource identifier;
 
-    public RdfEntity(Resource id) {
+    public Fragment(Resource id) {
         super();
         identifier = id;
     }
 
 
-    public RdfEntity(Resource resource, Model model) {
+    public Fragment(Resource resource, Model model) {
         super(model);
         this.identifier = resource;
     }
 
 
-    public RdfEntity withResult(RepositoryResult<Statement> result) {
+    public Fragment withResult(RepositoryResult<Statement> result) {
         try (result) {
             result.stream().forEach(statement -> this.getBuilder().add(statement.getSubject(), statement.getPredicate(), statement.getObject()));
         }

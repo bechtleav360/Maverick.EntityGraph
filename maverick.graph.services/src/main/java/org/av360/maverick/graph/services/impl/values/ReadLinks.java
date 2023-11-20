@@ -2,7 +2,7 @@ package org.av360.maverick.graph.services.impl.values;
 
 import org.av360.maverick.graph.model.context.SessionContext;
 import org.av360.maverick.graph.model.rdf.Triples;
-import org.av360.maverick.graph.store.rdf.fragments.RdfEntity;
+import org.av360.maverick.graph.store.rdf.fragments.Fragment;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import reactor.core.publisher.Mono;
@@ -16,11 +16,11 @@ public class ReadLinks {
 
     public Mono<Triples> list(String entityKey, String prefixedPoperty, SessionContext ctx) {
         return Mono.zip(
-                ctrl.schemaServices.resolveLocalName(entityKey)
+                ctrl.identifierServices.asIRI(entityKey, ctx.getEnvironment())
                         .flatMap(entityIdentifier -> ctrl.entityServices.get(entityIdentifier, 0, true, ctx)),
                 ctrl.schemaServices.resolvePrefixedName(prefixedPoperty)
         ).map(pair -> {
-            RdfEntity entity = pair.getT1();
+            Fragment entity = pair.getT1();
             IRI property = pair.getT2();
 
             entity.reduce((st) -> {

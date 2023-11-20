@@ -62,8 +62,8 @@ class TestReplaceObjectIdentifiers extends TestsBase {
         // Mono<Transaction> tx1 = entityServicesClient.importFileMono(new ClassPathResource("requests/create-esco.ttl"));
 
         Mono<Void> importMono = entityServices.importFile(new ClassPathResource("intermediate/externalSimple.ttl"), RDFFormat.TURTLE, ctx).doOnSubscribe(sub -> super.printStep()).then();
-        Mono<Model> read1 = entityServices.getModel(ctx).doOnSubscribe(sub -> super.printStep());
-        Mono<Model> read2 = entityServices.getModel(ctx).doOnNext(model -> super.printModel(model, RDFFormat.TURTLE)).doOnSubscribe(sub -> super.printStep());
+        Mono<Model> read1 = entityServices.asModel(ctx).doOnSubscribe(sub -> super.printStep());
+        Mono<Model> read2 = entityServices.asModel(ctx).doOnNext(model -> super.printModel(model, RDFFormat.TURTLE)).doOnSubscribe(sub -> super.printStep());
 
 
         Mono<Void> jobMono = scheduled.run(ctx).doOnSubscribe(sub -> super.printStep());
@@ -96,8 +96,8 @@ class TestReplaceObjectIdentifiers extends TestsBase {
 
 
         Mono<Void> importMono = entityServices.importFile(new ClassPathResource("intermediate/externalMultiple.ttl"), RDFFormat.TURTLE, ctx).doOnSubscribe(sub -> super.printStep()).then();
-        Mono<Model> read1 = entityServices.getModel(ctx).doOnSubscribe(sub -> super.printStep());
-        Mono<Model> read2 = entityServices.getModel(ctx).doOnNext(model -> super.printModel(model, RDFFormat.TURTLE)).doOnSubscribe(sub -> super.printStep());
+        Mono<Model> read1 = entityServices.asModel(ctx).doOnSubscribe(sub -> super.printStep());
+        Mono<Model> read2 = entityServices.asModel(ctx).doOnNext(model -> super.printModel(model, RDFFormat.TURTLE)).doOnSubscribe(sub -> super.printStep());
 
 
         Mono<Void> jobMono = scheduled.run(ctx).doOnSubscribe(sub -> super.printStep());
@@ -128,8 +128,8 @@ class TestReplaceObjectIdentifiers extends TestsBase {
 
 
         Mono<Void> importMono = entityServices.importFile(new ClassPathResource("intermediate/externalWithEmbedded.ttl"), RDFFormat.TURTLE, ctx).doOnSubscribe(sub -> super.printStep()).then();
-        Mono<Model> read1 = entityServices.getModel(ctx).doOnNext(model -> super.printModel(model, RDFFormat.TURTLE)).doOnSubscribe(sub -> super.printStep());
-        Mono<Model> read2 = entityServices.getModel(ctx).doOnNext(model -> super.printModel(model, RDFFormat.TURTLE)).doOnSubscribe(sub -> super.printStep());
+        Mono<Model> read1 = entityServices.asModel(ctx).doOnNext(model -> super.printModel(model, RDFFormat.TURTLE)).doOnSubscribe(sub -> super.printStep());
+        Mono<Model> read2 = entityServices.asModel(ctx).doOnNext(model -> super.printModel(model, RDFFormat.TURTLE)).doOnSubscribe(sub -> super.printStep());
 
 
         Mono<Void> jobMono = scheduled.run(ctx).doOnSubscribe(sub -> super.printStep());
@@ -165,8 +165,8 @@ class TestReplaceObjectIdentifiers extends TestsBase {
 
 
         Mono<Void> importMono = entityServices.importFile(new ClassPathResource("intermediate/externalMultipleWithEmbedded.ttl"), RDFFormat.TURTLE, ctx).doOnSubscribe(sub -> super.printStep()).then();
-        Mono<Model> read1 = entityServices.getModel(ctx).doOnNext(model -> super.printModel(model, RDFFormat.TURTLE)).doOnSubscribe(sub -> super.printStep());
-        Mono<Model> read2 = entityServices.getModel(ctx).doOnNext(model -> super.printModel(model, RDFFormat.TURTLE)).doOnSubscribe(sub -> super.printStep());
+        Mono<Model> read1 = entityServices.asModel(ctx).doOnNext(model -> super.printModel(model, RDFFormat.TURTLE)).doOnSubscribe(sub -> super.printStep());
+        Mono<Model> read2 = entityServices.asModel(ctx).doOnNext(model -> super.printModel(model, RDFFormat.TURTLE)).doOnSubscribe(sub -> super.printStep());
 
 
         Mono<Void> jobMono = scheduled.run(ctx).doOnSubscribe(sub -> super.printStep());
@@ -194,8 +194,8 @@ class TestReplaceObjectIdentifiers extends TestsBase {
         super.printStart("Test: Convert anonymous identifiers (Multiple with shared object)");
 
         Mono<Void> importMono = entityServices.importFile(new ClassPathResource("intermediate/externalWithShared.ttl"), RDFFormat.TURTLE, ctx).doOnSubscribe(sub -> super.printStep()).then();
-        Mono<Model> read1 = entityServices.getModel(ctx).doOnNext(model -> super.printModel(model, RDFFormat.TURTLE)).doOnSubscribe(sub -> super.printStep());
-        Mono<Model> read2 = entityServices.getModel(ctx).doOnNext(model -> super.printModel(model, RDFFormat.TURTLE)).doOnSubscribe(sub -> super.printStep());
+        Mono<Model> read1 = entityServices.asModel(ctx).doOnNext(model -> super.printModel(model, RDFFormat.TURTLE)).doOnSubscribe(sub -> super.printStep());
+        Mono<Model> read2 = entityServices.asModel(ctx).doOnNext(model -> super.printModel(model, RDFFormat.TURTLE)).doOnSubscribe(sub -> super.printStep());
 
 
         Mono<Void> jobMono = scheduled.run(ctx).doOnSubscribe(sub -> super.printStep());

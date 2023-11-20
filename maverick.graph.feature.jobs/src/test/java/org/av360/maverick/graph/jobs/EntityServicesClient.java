@@ -8,8 +8,8 @@ import org.av360.maverick.graph.model.rdf.AnnotatedStatement;
 import org.av360.maverick.graph.model.rdf.Triples;
 import org.av360.maverick.graph.services.EntityServices;
 import org.av360.maverick.graph.services.QueryServices;
-import org.av360.maverick.graph.store.EntityStore;
-import org.av360.maverick.graph.store.rdf.fragments.RdfEntity;
+import org.av360.maverick.graph.store.IndividualsStore;
+import org.av360.maverick.graph.store.rdf.fragments.Fragment;
 import org.av360.maverick.graph.store.rdf.helpers.RdfUtils;
 import org.av360.maverick.graph.store.rdf.helpers.TriplesCollector;
 import org.av360.maverick.graph.tests.config.TestSecurityConfig;
@@ -46,11 +46,11 @@ public class EntityServicesClient {
 
     private final QueryServices queryServices;
 
-    private final EntityStore entityStore;
+    private final IndividualsStore entityStore;
 
 
 
-    public EntityServicesClient(EntityServices entityServices, QueryServices queryServices, EntityStore entityStore) {
+    public EntityServicesClient(EntityServices entityServices, QueryServices queryServices, IndividualsStore entityStore) {
         this.entityServices = entityServices;
         this.queryServices = queryServices;
         this.entityStore = entityStore;
@@ -84,6 +84,7 @@ public class EntityServicesClient {
         Flux<DataBuffer> read = DataBufferUtils.read(resource, new DefaultDataBufferFactory(), 1024);
         SessionContext ctx = TestSecurityConfig.createTestContext().updateEnvironment(environment -> environment.setRepositoryType(RepositoryType.ENTITIES));
         return this.entityStore
+                .asMaintainable()
                 .importStatements(read, getFormat(resource).getDefaultMIMEType(), ctx.getEnvironment())
                 .doOnSuccess(subscription -> log.info("Imported file '{}'", resource.getFilename()))
                 .doOnError(throwable -> log.warn("Failed to import file"))
@@ -115,11 +116,11 @@ public class EntityServicesClient {
 
 
 
-    public List<RdfEntity> listAllEntities() {
+    public List<Fragment> listAllEntities() {
         return listAllEntitiesMono().block();
     }
 
-    public Mono<List<RdfEntity>> listAllEntitiesMono() {
+    public Mono<List<Fragment>> listAllEntitiesMono() {
         return this.entityServices.list(100, 0, TestSecurityConfig.createTestContext()).collectList();
     }
 

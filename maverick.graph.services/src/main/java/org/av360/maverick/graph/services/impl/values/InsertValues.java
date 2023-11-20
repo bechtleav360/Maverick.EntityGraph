@@ -106,9 +106,9 @@ public class InsertValues {
     }
 
     public Mono<Transaction> replace(IRI entityIdentifier, IRI predicate, Value oldValue, Value newValue, SessionContext ctx) {
-        return ctrl.entityServices.getStore(ctx).removeStatement(entityIdentifier, predicate, oldValue, new RdfTransaction())
-                .flatMap(trx -> ctrl.entityServices.getStore(ctx).addStatement(entityIdentifier, predicate, newValue, trx))
-                .flatMap(trx -> ctrl.entityServices.getStore(ctx).commit(trx, ctx.getEnvironment()))
+        return ctrl.entityServices.getStore(ctx).asCommitable().markForRemoval(entityIdentifier, predicate, oldValue, new RdfTransaction())
+                .flatMap(trx -> ctrl.entityServices.getStore(ctx).asCommitable().insertStatement(entityIdentifier, predicate, newValue, trx))
+                .flatMap(trx -> ctrl.entityServices.getStore(ctx).asCommitable().commit(trx, ctx.getEnvironment()))
                 .doOnSuccess(trx -> {
                     ctrl.eventPublisher.publishEvent(new ValueReplacedEvent(trx));
                 });

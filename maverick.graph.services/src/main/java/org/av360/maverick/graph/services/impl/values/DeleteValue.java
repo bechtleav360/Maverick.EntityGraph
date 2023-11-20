@@ -40,7 +40,7 @@ public class DeleteValue {
 
         return this.removeValueStatements(entityIdentifier, predicate, languageTag, valueIdentifier, new RdfTransaction(), ctx)
                 .flatMap(trx -> ctrl.deleteDetails.removeDetailStatements(trx, ctx))
-                .flatMap(trx -> ctrl.entityServices.getStore(ctx).commit(trx, ctx.getEnvironment()))
+                .flatMap(trx -> ctrl.entityServices.getStore(ctx).asCommitable().commit(trx, ctx.getEnvironment()))
                 .doOnSuccess(trx -> {
                     ctrl.eventPublisher.publishEvent(new ValueRemovedEvent(trx));
                 });
@@ -51,7 +51,7 @@ public class DeleteValue {
      * Deletes a value with a new transaction. Fails if no entity exists with the given subject
      */
     private Mono<Transaction> removeValueStatements(IRI entityIdentifier, IRI predicate, @Nullable String languageTag, @Nullable String valueIdentifier, Transaction transaction, SessionContext ctx) {
-        return ctrl.entityServices.getStore(ctx).listStatements(entityIdentifier, predicate, null, ctx.getEnvironment())
+        return ctrl.entityServices.getStore(ctx).asStatementsAware().listStatements(entityIdentifier, predicate, null, ctx.getEnvironment())
                 .flatMap(statements -> {
                     if (statements.size() > 1) {
                         List<Statement> statementsToRemove = new ArrayList<>();

@@ -8,7 +8,7 @@ import org.eclipse.rdf4j.sparqlbuilder.core.query.SelectQuery;
 import reactor.core.publisher.Flux;
 
 
-public interface Searchable extends TripleStore {
+public interface Searchable extends RepositoryBehaviour {
 
 
     Flux<BindingSet> query(String q, Environment environment);

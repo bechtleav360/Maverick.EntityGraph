@@ -137,6 +137,7 @@ public class RdfTransaction extends TripleModel implements Transaction {
         return result;
     }
 
+
     /**
      * We merge the named graphs of the transaction and affected model (but not the actual change itself)
      *
@@ -153,6 +154,12 @@ public class RdfTransaction extends TripleModel implements Transaction {
         Model m = super.getBuilder().build();
         m.add(transactionIdentifier, Transactions.STATUS, Transactions.SUCCESS, Transactions.GRAPH_PROVENANCE);
         m.remove(transactionIdentifier, Transactions.STATUS, Transactions.RUNNING, Transactions.GRAPH_PROVENANCE);
+    }
+
+
+    @Override
+    public boolean isCompleted() {
+        return getModel().contains(transactionIdentifier, Transactions.STATUS, Transactions.SUCCESS, Transactions.GRAPH_PROVENANCE);
     }
 
     public void setFailed(String message) {

@@ -14,11 +14,11 @@ import org.av360.maverick.graph.services.TransactionsService;
 import org.av360.maverick.graph.services.transformers.types.AssignLocalTypes;
 import org.av360.maverick.graph.store.TransactionsStore;
 import org.av360.maverick.graph.store.rdf.fragments.RdfTransaction;
+import org.av360.maverick.graph.store.rdf.fragments.TripleModel;
 import org.av360.maverick.graph.store.rdf.helpers.MergingModelCollector;
 import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Value;
-import org.eclipse.rdf4j.model.util.ModelCollector;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
@@ -78,8 +78,8 @@ public class AssignInternalTypesJob implements ScheduledJob {
                 .flatMap(fragment -> this.localTypesTransformer.handle(fragment, ctx.getEnvironment()))
                 .collect(new MergingModelCollector())
                 .doOnNext(model -> log.trace("Collected {} statements for new types", model.size()))
-                .flatMap(model -> this.entityServices.getStore(ctx).insertModel(model, new RdfTransaction()))
-                .flatMapMany(trx -> this.entityServices.getStore(ctx).commit(trx, ctx.getEnvironment()))
+                .map(model -> new RdfTransaction().forInsert(model))
+                .flatMapMany(trx -> this.entityServices.getStore(ctx).asCommitable().commit(trx, ctx.getEnvironment()))
                 .doOnNext(transaction -> Assert.isTrue(transaction.getModel().contains(null, Transactions.STATUS, Transactions.SUCCESS), "Failed transaction: \n" + transaction))
                 .buffer(100)
                 .flatMap(transactions -> this.transactionsService.save(transactions, ctx))
@@ -96,10 +96,8 @@ public class AssignInternalTypesJob implements ScheduledJob {
 
 
     private Mono<Model> loadFragment(SessionContext ctx, Resource value) {
-        return this.entityServices.getStore(ctx).listStatements(value, null, null, ctx.getEnvironment())
-                .map(statements -> statements.stream().collect(new ModelCollector()));
-
-
+        return this.entityServices.getStore(ctx).asFragmentable().getFragment(value, ctx.getEnvironment())
+                .map(TripleModel::getModel);
     }
 
     private Flux<Resource> findCandidates(SessionContext ctx) {

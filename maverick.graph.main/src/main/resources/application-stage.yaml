@@ -18,6 +18,7 @@ application:
     validators:
       checkRequiredType: true
   storage:
+    implementation: "rdf4j"
     vocabularies:
       persistent: true
       path: "/var/data/vocabularies"

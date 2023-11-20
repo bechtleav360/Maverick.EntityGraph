@@ -29,7 +29,9 @@
         <module>maverick.graph.feature.jobs</module>
         <module>maverick.graph.feature.navigation</module>
         <module>maverick.graph.feature.objects-store</module>
+        <module>maverick.graph.feature.postgres-store</module>
         <module>maverick.graph.tests</module>
+
 
 
     </modules>

@@ -58,8 +58,8 @@ class TypeCoercionTests extends TestsBase {
         // Mono<Transaction> tx1 = entityServicesClient.importFileMono(new ClassPathResource("requests/create-esco.ttl"));
 
         Mono<Void> importMono = entityServices.importFile(new ClassPathResource("requests/create-valid-ext.ttl"), RDFFormat.TURTLE, ctx).doOnSubscribe(sub -> super.printStep()).then();
-        Mono<Model> read1 = entityServices.getModel(ctx).doOnSubscribe(sub -> super.printStep());
-        Mono<Model> read2 = entityServices.getModel(ctx).doOnNext(model -> super.printModel(model, RDFFormat.TURTLE)).doOnSubscribe(sub -> super.printStep());
+        Mono<Model> read1 = entityServices.asModel(ctx).doOnSubscribe(sub -> super.printStep());
+        Mono<Model> read2 = entityServices.asModel(ctx).doOnNext(model -> super.printModel(model, RDFFormat.TURTLE)).doOnSubscribe(sub -> super.printStep());
 
 
         Mono<Void> jobMono = scheduled.run(ctx).doOnSubscribe(sub -> super.printStep());
@@ -93,8 +93,8 @@ class TypeCoercionTests extends TestsBase {
 
 
         Mono<Void> importMono = entityServices.importFile(new ClassPathResource("requests/create-valid_multipleWithEmbedded.ttl"), RDFFormat.TURTLE, ctx).doOnSubscribe(sub -> super.printStep()).then();
-        Mono<Model> read1 = entityServices.getModel(ctx).doOnSubscribe(sub -> super.printStep());
-        Mono<Model> read2 = entityServices.getModel(ctx).doOnNext(model -> super.printModel(model, RDFFormat.TURTLE)).doOnSubscribe(sub -> super.printStep());
+        Mono<Model> read1 = entityServices.asModel(ctx).doOnSubscribe(sub -> super.printStep());
+        Mono<Model> read2 = entityServices.asModel(ctx).doOnNext(model -> super.printModel(model, RDFFormat.TURTLE)).doOnSubscribe(sub -> super.printStep());
 
 
         Mono<Void> jobMono = scheduled.run(TestSecurityConfig.createTestContext()).doOnSubscribe(sub -> super.printStep());

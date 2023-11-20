@@ -85,6 +85,10 @@ public class TripleModel implements Triples {
         return this.streamStatements(subject, predicate, object).collect(Collectors.toList());
     }
 
+    public List<Statement> listStatements() {
+        return this.streamStatements(null, null, null).collect(Collectors.toList());
+    }
+
     public Stream<Statement> streamStatements(Resource... contexts) {
         return this.streamStatements(null, null, null, contexts);
     }
