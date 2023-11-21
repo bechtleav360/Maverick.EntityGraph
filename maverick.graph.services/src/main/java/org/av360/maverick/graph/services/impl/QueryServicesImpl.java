@@ -1,14 +1,14 @@
 package org.av360.maverick.graph.services.impl;
 
 import lombok.extern.slf4j.Slf4j;
-import org.av360.maverick.graph.model.aspects.RequiresPrivilege;
+import org.av360.maverick.graph.model.annotations.RequiresPrivilege;
 import org.av360.maverick.graph.model.context.SessionContext;
 import org.av360.maverick.graph.model.enums.RepositoryType;
 import org.av360.maverick.graph.model.errors.requests.InvalidQuery;
 import org.av360.maverick.graph.model.rdf.AnnotatedStatement;
 import org.av360.maverick.graph.model.security.Authorities;
 import org.av360.maverick.graph.services.QueryServices;
-import org.av360.maverick.graph.store.EntityStore;
+import org.av360.maverick.graph.store.FragmentsStore;
 import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.query.QueryLanguage;
 import org.eclipse.rdf4j.query.parser.*;
@@ -27,10 +27,10 @@ import java.util.Set;
 @Slf4j(topic = "graph.srvc.query")
 public class QueryServicesImpl implements QueryServices {
 
-    private final Map<RepositoryType, EntityStore> stores;
+    private final Map<RepositoryType, FragmentsStore> stores;
     private final QueryParser queryParser;
 
-    public QueryServicesImpl(Set<EntityStore> storesSet) {
+    public QueryServicesImpl(Set<FragmentsStore> storesSet) {
         this.stores = new HashMap<>();
 
         storesSet.forEach(store -> {
@@ -47,6 +47,7 @@ public class QueryServicesImpl implements QueryServices {
     @RequiresPrivilege(Authorities.CONTRIBUTOR_VALUE)
     public Flux<BindingSet> queryValues(String query, RepositoryType repositoryType, SessionContext ctx) {
         try {
+            ctx.getEnvironment().withRepositoryType(repositoryType);
             ParsedQuery parsedQuery = queryParser.parseQuery(query, null);
             if(parsedQuery instanceof  ParsedTupleQuery) {
                 return this.queryValuesTrusted(query, repositoryType, ctx);
@@ -105,7 +106,7 @@ public class QueryServicesImpl implements QueryServices {
             return this.stores.get(repositoryType).asSearchable().query(query, ctx.getEnvironment())
                     .doOnSubscribe(subscription -> {
                         if (log.isTraceEnabled())
-                            log.trace("Running select query in {}: {}", ctx.getEnvironment(), query.replace('\n', ' ').trim());
+                            log.trace("Running select query in [{}]: {}", ctx.getEnvironment(), query.replace('\n', ' ').trim());
                     });
         } catch (Exception e) {
             return Flux.error(e);

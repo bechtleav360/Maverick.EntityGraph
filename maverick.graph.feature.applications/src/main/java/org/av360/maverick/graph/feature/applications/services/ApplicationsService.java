@@ -13,7 +13,7 @@ import org.av360.maverick.graph.feature.applications.model.events.ApplicationUpd
 import org.av360.maverick.graph.feature.applications.model.events.GraphApplicationEvent;
 import org.av360.maverick.graph.feature.applications.model.vocab.ApplicationTerms;
 import org.av360.maverick.graph.feature.applications.store.ApplicationsStore;
-import org.av360.maverick.graph.model.aspects.RequiresPrivilege;
+import org.av360.maverick.graph.model.annotations.RequiresPrivilege;
 import org.av360.maverick.graph.model.context.SessionContext;
 import org.av360.maverick.graph.model.entities.Transaction;
 import org.av360.maverick.graph.model.enums.RepositoryType;

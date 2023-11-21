@@ -68,6 +68,7 @@ public class EntityServicesClient {
         SessionContext testContext = TestSecurityConfig.createTestContext();
 
         return this.entityStore
+                .asMaintainable()
                 .importStatements(read, getFormat(resource).getDefaultMIMEType(), testContext.getEnvironment())
                 .doOnSubscribe(subscription -> log.info("Importing file '{}'", resource.getFilename()));
     }

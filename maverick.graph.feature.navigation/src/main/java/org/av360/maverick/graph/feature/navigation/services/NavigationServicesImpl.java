@@ -1,7 +1,7 @@
 package org.av360.maverick.graph.feature.navigation.services;
 
 import org.av360.maverick.graph.api.config.ReactiveRequestUriContextHolder;
-import org.av360.maverick.graph.model.aspects.RequiresPrivilege;
+import org.av360.maverick.graph.model.annotations.RequiresPrivilege;
 import org.av360.maverick.graph.model.context.SessionContext;
 import org.av360.maverick.graph.model.rdf.AnnotatedStatement;
 import org.av360.maverick.graph.model.security.Authorities;

@@ -6,12 +6,12 @@ import io.micrometer.core.instrument.Timer;
 import org.av360.maverick.graph.model.context.Environment;
 import org.av360.maverick.graph.model.context.SessionContext;
 import org.av360.maverick.graph.model.entities.Transaction;
-import org.av360.maverick.graph.model.enums.RepositoryType;
 import org.av360.maverick.graph.model.errors.InsufficientPrivilegeException;
+import org.av360.maverick.graph.model.errors.store.InvalidStoreConfiguration;
 import org.av360.maverick.graph.model.rdf.AnnotatedStatement;
 import org.av360.maverick.graph.model.security.Authorities;
 import org.av360.maverick.graph.model.vocabulary.Transactions;
-import org.av360.maverick.graph.store.EntityStore;
+import org.av360.maverick.graph.store.FragmentsStore;
 import org.av360.maverick.graph.store.RepositoryBuilder;
 import org.av360.maverick.graph.store.behaviours.*;
 import org.av360.maverick.graph.store.rdf.fragments.Fragment;
@@ -56,11 +56,11 @@ import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @SuppressWarnings("FieldCanBeLocal")
-public abstract class AbstractStore implements Searchable, Maintainable, Selectable, StatementsAware, Fragmentable, TripleStore, EntityStore {
+public abstract class AbstractRdfRepository implements Searchable, Maintainable, Selectable, StatementsAware, Fragmentable, TripleStore, FragmentsStore {
 
-    private final RepositoryType repositoryType;
     private RepositoryBuilder repositoryConfiguration;
     private MeterRegistry meterRegistry;
     private Counter transactionsMonoCounter;
@@ -68,15 +68,10 @@ public abstract class AbstractStore implements Searchable, Maintainable, Selecta
     private Timer transactionsMonoTimer;
     private Timer transactionsFluxTimer;
 
-    public AbstractStore(RepositoryType repositoryType) {
-        this.repositoryType = repositoryType;
+    public AbstractRdfRepository() {
+
     }
 
-
-
-    public RepositoryType getRepositoryType() {
-        return this.repositoryType;
-    }
 
     @Override
     public RepositoryBuilder getBuilder() {
@@ -90,7 +85,7 @@ public abstract class AbstractStore implements Searchable, Maintainable, Selecta
 
     @Autowired
     private void setMeterRegistry(@Nullable MeterRegistry meterRegistry) {
-        if(Objects.nonNull(meterRegistry)) {
+        if (Objects.nonNull(meterRegistry)) {
             this.meterRegistry = meterRegistry;
             this.transactionsMonoCounter = meterRegistry.counter("graph.store.transactions", "cardinality", "single");
             this.transactionsMonoTimer = meterRegistry.timer("graph.store.timer", "cardinality", "single");
@@ -111,7 +106,7 @@ public abstract class AbstractStore implements Searchable, Maintainable, Selecta
                     Set<Namespace> namespaces = result.getNamespaces().entrySet().stream()
                             .map(entry -> new SimpleNamespace(entry.getKey(), entry.getValue()))
                             .collect(Collectors.toSet());
-                    return result.stream().map(statement -> AnnotatedStatement.wrap(statement, namespaces)).collect(Collectors.toSet());
+                    return result.stream().map(statement -> AnnotatedStatement.wrap(statement, namespaces));
                 } catch (Exception e) {
                     getLogger().warn("Error while running value query.", e);
                     throw e;
@@ -135,14 +130,12 @@ public abstract class AbstractStore implements Searchable, Maintainable, Selecta
 
                 TupleQuery q = connection.prepareTupleQuery(QueryLanguage.SPARQL, query);
 
-                try (TupleQueryResult result = q.evaluate()) {
-                    Set<BindingSet> collect = result.stream().collect(Collectors.toSet());
-                    if (getLogger().isTraceEnabled())
-                        getLogger().trace("Query resulted in {} bindings in repository '{}'", collect.size(), connection.getRepository());
-                    return collect;
-                } finally {
-                    connection.close();
-                }
+                // iterator -> stream -> flux: when the flux completes, the stream closes and as such also the query result
+                TupleQueryResult result = q.evaluate();
+                Stream<BindingSet> stream = result.stream();
+                if (getLogger().isTraceEnabled())
+                    getLogger().trace("Query resulted in bindings [{}] in repository '{}'", result.getBindingNames(), connection.getRepository());
+                return stream;
 
             } catch (MalformedQueryException e) {
                 getLogger().warn("Error while parsing query, reason: {}", e.getMessage());
@@ -176,9 +169,6 @@ public abstract class AbstractStore implements Searchable, Maintainable, Selecta
             }
         }).then(getBuilder().shutdownRepository(this, environment)).then();
     }
-
-
-
 
 
     private InputStream getInputStreamFromFluxDataBuffer(Publisher<DataBuffer> data) throws IOException {
@@ -234,6 +224,15 @@ public abstract class AbstractStore implements Searchable, Maintainable, Selecta
     }
 
 
+    public Flux<IRI> subjects(@Nullable IRI type, Environment environment) {
+        return this.applyManyWithConnection(environment, connection ->
+                connection.getStatements(null, RDF.TYPE, type, false).stream()
+                        .map(Statement::getSubject)
+                        .filter(Value::isIRI)
+                        .map(value -> (IRI) value)
+        );
+    }
+
 
     public Flux<IRI> types(Resource subj, Environment environment) {
         return this.applyManyWithConnection(environment, connection ->
@@ -241,14 +240,13 @@ public abstract class AbstractStore implements Searchable, Maintainable, Selecta
                         .map(Statement::getObject)
                         .filter(Value::isIRI)
                         .map(value -> (IRI) value)
-                        .collect(Collectors.toSet()));
+        );
     }
 
 
     @Override
     public Flux<Transaction> commit(final Collection<Transaction> transactions, Environment environment, boolean merge) {
         return this.applyManyWithConnection(environment, connection -> {
-            connection.begin();
 
             if (merge) {
                 RdfTransaction merged = new RdfTransaction();
@@ -260,7 +258,7 @@ public abstract class AbstractStore implements Searchable, Maintainable, Selecta
             }
 
 
-            Set<Transaction> result = transactions.stream().peek(trx -> {
+            Stream<Transaction> result = transactions.stream().peek(trx -> {
                 synchronized (connection) {
                     getLogger().trace("Committing transaction '{}' to repository '{}'", trx.getIdentifier().getLocalName(), connection.getRepository().toString());
                     // FIXME: the approach based on the context works only as long as the statements in the graph are all within the global context only
@@ -304,8 +302,7 @@ public abstract class AbstractStore implements Searchable, Maintainable, Selecta
                     }
                 }
 
-            }).collect(Collectors.toSet());
-            connection.close();
+            });
             return result;
         });
 
@@ -336,7 +333,6 @@ public abstract class AbstractStore implements Searchable, Maintainable, Selecta
                 }
 
 
-
                 if (getLogger().isTraceEnabled())
                     getLogger().trace("Loaded {} statements for entity with IRI: <{}>.", entity.getModel().size(), id);
                 return entity;
@@ -345,6 +341,11 @@ public abstract class AbstractStore implements Searchable, Maintainable, Selecta
                 throw e;
             }
         });
+    }
+
+    @Override
+    public Flux<Fragment> listFragments(IRI type, int limit, int offset, Environment environment) {
+        return this.subjects(type, environment).flatMap(subject -> this.getFragment(subject, environment));
     }
 
 
@@ -369,19 +370,18 @@ public abstract class AbstractStore implements Searchable, Maintainable, Selecta
     }
 
     /**
-     *
      * @param connection
      * @param triples
      * @return
      * @deprecated Required as long as we don't have native RDF star in the LMDB repository. See https://github.com/eclipse-rdf4j/rdf4j/issues/3723
-     *
-     *  <<ex:bob foaf:age 23>> ex:certainty 0.9 .
+     * <p>
+     * <<ex:bob foaf:age 23>> ex:certainty 0.9 .
      * becomes
      * _:node1 a rdf:Statement;
-     *         rdf:subject ex:bob ;
-     *         rdf:predicate foaf:age ;
-     *         rdf:object 23 ;
-     *         ex:certainty 0.9 .
+     * rdf:subject ex:bob ;
+     * rdf:predicate foaf:age ;
+     * rdf:object 23 ;
+     * ex:certainty 0.9 .
      */
     @Deprecated
     private Model loadDetailsWithReification(RepositoryConnection connection, TripleModel triples) {
@@ -420,9 +420,6 @@ public abstract class AbstractStore implements Searchable, Maintainable, Selecta
     }
 
 
-
-
-
     @Override
     public Mono<Set<Statement>> listStatements(Resource value, IRI predicate, Value object, Environment environment) {
         return this.applyWithConnection(environment, connection -> {
@@ -455,9 +452,10 @@ public abstract class AbstractStore implements Searchable, Maintainable, Selecta
                         //.then(this.assertPrivilege(environment))
                         .then(this.getBuilder().buildRepository(this, environment))
                         .flatMap(repository -> {
-                            try (RepositoryConnection connection = repository.getConnection()) {
-
+                            try {
+                                RepositoryConnection connection = repository.getConnection();
                                 T result = fun.applyWithException(new RepositoryConnectionWrapper(repository, connection));
+                                connection.close();
                                 if (Objects.isNull(result)) return Mono.empty();
                                 else return Mono.just(result);
                             } catch (Exception e) {
@@ -472,9 +470,8 @@ public abstract class AbstractStore implements Searchable, Maintainable, Selecta
     protected Mono<Void> consumeWithConnection(Environment environment, ThrowingConsumer<RepositoryConnection> fun) {
         return transactionsMonoTimer.record(() ->
                 this.verifyValidAndAuthorized(environment)
-                        // .then(this.assertPrivilege(ctx, requiredAuthority))
                         .flatMap(env -> this.getBuilder().buildRepository(this, env))
-                        .switchIfEmpty(Mono.error(new IOException("Failed to build repository for repository of type: " + this.getRepositoryType())))
+                        .switchIfEmpty(Mono.error(new IOException("Failed to build repository for repository of type: " + environment.getRepositoryType())))
                         .flatMap(repository -> {
                             try (RepositoryConnection connection = repository.getConnection()) {
 
@@ -490,11 +487,14 @@ public abstract class AbstractStore implements Searchable, Maintainable, Selecta
 
     private Mono<Environment> verifyValidAndAuthorized(Environment environment) {
         try {
-            environment.withRepositoryType(this.getRepositoryType());
+
             if (!environment.isAuthorized()) {
                 throw new InsufficientPrivilegeException("Unauthorized operation in environment '%s'".formatted(environment));
             }
-            this.validateEnvironment(environment);
+
+            if (Objects.isNull(environment.getRepositoryType())) {
+                throw new InvalidStoreConfiguration("Missing repository type in environment, aborting request");
+            }
             return Mono.just(environment);
         } catch (Exception e) {
             return Mono.error(e);
@@ -503,19 +503,18 @@ public abstract class AbstractStore implements Searchable, Maintainable, Selecta
 
     }
 
-    protected void validateEnvironment(Environment environment) {
-        // do nothing
-    }
 
-    protected <E, T extends Iterable<E>> Flux<E> applyManyWithConnection(Environment environment, ThrowingFunction<RepositoryConnection, T> fun) {
+    protected <E, T extends Stream<E>> Flux<E> applyManyWithConnection(Environment environment, ThrowingFunction<RepositoryConnection, T> fun) {
 
         Flux<E> result =
                 this.verifyValidAndAuthorized(environment)
                         // .then(this.assertPrivilege(environment, requiredAuthority))
                         .then(this.getBuilder().buildRepository(this, environment))
                         .flatMapMany(repository -> {
-                            try (RepositoryConnection connection = repository.getConnection()) {
-                                return Flux.fromIterable(fun.apply(connection));
+                            try {
+                                RepositoryConnection connection = repository.getConnection();
+                                Stream<E> stream = fun.apply(connection);
+                                return Flux.fromStream(stream).doOnComplete(connection::close);
                             } catch (Exception e) {
                                 this.meterRegistry.counter("graph.store.operations", "cardinality", "multiple", "state", "failure").increment();
                                 getLogger().warn("Error while applying function to repository '{}' with message '{}'. Active connections for repository: {}", repository, e.getMessage(), repository.getConnectionsCount());
@@ -524,15 +523,15 @@ public abstract class AbstractStore implements Searchable, Maintainable, Selecta
                                 this.meterRegistry.counter("graph.store.operations", "cardinality", "multiple", "state", "complete").increment();
                             }
                         });
-                        // .doOnSubscribe(subscription -> getLogger().trace("Applying function with many results."));
+        // .doOnSubscribe(subscription -> getLogger().trace("Applying function with many results."));
 
         // FIXME: should check whether we are called from a scheduler
         if (environment.getSessionContext().isScheduled()) {
             result.timeout(Duration.ofMillis(10000))
                     .onErrorResume(throwable -> {
                         if (throwable instanceof TimeoutException te) {
-                            getLogger().warn("Long-running operation on repository of type '{}' has been canceled.", repositoryType);
-                            return Flux.error(new TimeoutException("Timeout while applying operation to repository:" + repositoryType.toString()));
+                            getLogger().warn("Long-running operation on repository of type '{}' has been canceled.", environment.getRepositoryType());
+                            return Flux.error(new TimeoutException("Timeout while applying operation to repository:" + environment.getRepositoryType().toString()));
                         } else {
                             return Flux.error(throwable);
                         }
@@ -542,6 +541,7 @@ public abstract class AbstractStore implements Searchable, Maintainable, Selecta
 
     }
 
+    @Deprecated
     private Mono<Void> assertPrivilege(SessionContext ctx, GrantedAuthority requiredAuthority) {
         if (Objects.isNull(requiredAuthority)) {
             return Mono.error(new UnsupportedOperationException("Missing required authority while access a repository."));
@@ -549,7 +549,7 @@ public abstract class AbstractStore implements Searchable, Maintainable, Selecta
 
         if (ctx.getAuthentication().isPresent()) {
             if (!Authorities.satisfies(requiredAuthority, ctx.getAuthentication().get().getAuthorities())) {
-                String msg = String.format("Required authority '%s' for repository '%s' not met in ctx with authorities '%s'", requiredAuthority.getAuthority(), repositoryType.name(), ctx.getAuthentication().get().getAuthorities());
+                String msg = String.format("Required authority '%s' for repository '%s' not met in ctx with authorities '%s'", requiredAuthority.getAuthority(), ctx.getEnvironment().getRepositoryType().name(), ctx.getAuthentication().get().getAuthorities());
                 return Mono.error(new InsufficientPrivilegeException(msg));
             } else return Mono.empty();
         } else {

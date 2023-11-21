@@ -20,10 +20,10 @@ import org.av360.maverick.graph.model.errors.store.InvalidStoreConfiguration;
 import org.av360.maverick.graph.store.behaviours.*;
 import org.slf4j.Logger;
 
-public interface EntityStore {
-    RepositoryType getRepositoryType();
-
+public interface FragmentsStore {
     Logger getLogger();
+
+    RepositoryType getRepositoryType();
 
     default Fragmentable asFragmentable() {
         if(this instanceof Fragmentable fragmentable) {

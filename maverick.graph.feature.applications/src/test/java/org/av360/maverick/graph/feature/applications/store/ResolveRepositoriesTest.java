@@ -27,7 +27,7 @@ import java.io.IOException;
 public class ResolveRepositoriesTest {
 
     @Autowired
-    ApplicationRepositoryBuilder builder;
+    ApplicationRdfRepositoryBuilder builder;
 
     @Autowired
     IndividualsStore entityStore;

@@ -2,7 +2,7 @@ package org.av360.maverick.graph.feature.jobs;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
-import org.av360.maverick.graph.model.aspects.Job;
+import org.av360.maverick.graph.model.annotations.Job;
 import org.av360.maverick.graph.model.context.SessionContext;
 import org.av360.maverick.graph.model.entities.ScheduledJob;
 import org.av360.maverick.graph.model.enums.ConfigurationKeysRegistry;
@@ -109,11 +109,13 @@ public class ExportRepositoryJob implements ScheduledJob {
 
         Mono.fromRunnable(() -> {
             try {
-                this.entityServices.getStore(ctx).listStatements(null, null, null, ctx.getEnvironment())
-                        .doOnNext(statements -> {
+                this.entityServices.getStore(ctx)
+                        .asFragmentable()
+                        .listFragments(ctx.getEnvironment())
+                        .doOnNext(fragment -> {
                             RDFWriter writer = RDFWriterRegistry.getInstance().get(RDFFormat.NQUADS).get().getWriter(new OutputStreamWriter(out));
                             writer.startRDF();
-                            statements.forEach(writer::handleStatement);
+                            fragment.listStatements().forEach(writer::handleStatement);
                             writer.endRDF();
                         })
                         .publishOn(Schedulers.boundedElastic())

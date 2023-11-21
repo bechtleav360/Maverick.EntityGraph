@@ -29,6 +29,7 @@ import org.av360.maverick.graph.store.behaviours.Fragmentable;
 import org.av360.maverick.graph.store.postgres.dao.FragmentEntity;
 import org.av360.maverick.graph.store.rdf.fragments.Fragment;
 import org.av360.maverick.graph.store.rdf.fragments.RdfTransaction;
+import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.rio.RDFFormat;
 import org.eclipse.rdf4j.rio.RDFWriter;
@@ -37,6 +38,7 @@ import org.eclipse.rdf4j.rio.RDFWriterRegistry;
 import org.slf4j.Logger;
 import org.springframework.data.r2dbc.core.R2dbcEntityTemplate;
 import org.springframework.stereotype.Component;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.io.StringWriter;
@@ -57,6 +59,11 @@ public class EntityStoreImpl implements IndividualsStore, Fragmentable {
 
     @Override
     public Mono<Fragment> getFragment(Resource subject, int includeNeighborsLevel, boolean includeDetails, Environment environment) {
+        return null;
+    }
+
+    @Override
+    public Flux<Fragment> listFragments(IRI type, int limit, int offset, Environment environment) {
         return null;
     }
 

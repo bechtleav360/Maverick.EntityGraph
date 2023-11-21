@@ -2,11 +2,11 @@ package org.av360.maverick.graph.feature.admin.services;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.Validate;
-import org.av360.maverick.graph.model.aspects.RequiresPrivilege;
+import org.av360.maverick.graph.model.annotations.RequiresPrivilege;
 import org.av360.maverick.graph.model.context.SessionContext;
 import org.av360.maverick.graph.model.enums.RepositoryType;
 import org.av360.maverick.graph.model.security.Authorities;
-import org.av360.maverick.graph.store.EntityStore;
+import org.av360.maverick.graph.store.FragmentsStore;
 import org.eclipse.rdf4j.model.*;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.util.ModelCollector;
@@ -43,11 +43,11 @@ import java.util.zip.GZIPInputStream;
 public class AdminServices {
 
 
-    private final Map<RepositoryType, EntityStore> stores;
+    private final Map<RepositoryType, FragmentsStore> stores;
 
     private boolean maintenanceActive = false;
 
-    public AdminServices(Set<EntityStore> storeSet) {
+    public AdminServices(Set<FragmentsStore> storeSet) {
         this.stores = new HashMap<>();
 
 

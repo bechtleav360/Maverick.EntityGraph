@@ -8,8 +8,8 @@ public interface RepositoryBuilder {
 
 
     // FIXME: remove Triplestore parameter, only required to get requested repository type, which should be part of session context
-    Mono<LabeledRepository> buildRepository(EntityStore store, Environment environment);
+    Mono<LabeledRepository> buildRepository(FragmentsStore store, Environment environment);
 
 
-    Mono<Void> shutdownRepository(EntityStore store, Environment environment);
+    Mono<Void> shutdownRepository(FragmentsStore store, Environment environment);
 }

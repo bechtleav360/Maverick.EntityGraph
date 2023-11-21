@@ -3,9 +3,8 @@ package org.av360.maverick.graph.store.rdf4j.repository;
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
-import org.av360.maverick.graph.model.enums.RepositoryType;
 import org.av360.maverick.graph.store.SchemaStore;
-import org.av360.maverick.graph.store.rdf4j.repository.util.AbstractStore;
+import org.av360.maverick.graph.store.rdf4j.repository.util.AbstractRdfRepository;
 import org.eclipse.rdf4j.model.Namespace;
 import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.model.impl.SimpleNamespace;
@@ -23,16 +22,12 @@ import java.util.*;
 
 @Slf4j(topic = "graph.repo.schema")
 @Component
-public class VocabularyStoreImpl extends AbstractStore implements SchemaStore {
+public class VocabularyStoreImpl extends AbstractRdfRepository implements SchemaStore {
 
     private final Map<String, String> mappings = new HashMap<>();
     @org.springframework.beans.factory.annotation.Value("${application.storage.vocabularies.path:#{null}}")
     private String path;
 
-
-    public VocabularyStoreImpl() {
-        super(RepositoryType.SCHEMA);
-    }
 
 
     @PostConstruct

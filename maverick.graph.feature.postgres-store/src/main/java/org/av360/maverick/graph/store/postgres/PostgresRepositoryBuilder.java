@@ -17,7 +17,7 @@ package org.av360.maverick.graph.store.postgres;
 
 import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.model.context.Environment;
-import org.av360.maverick.graph.store.EntityStore;
+import org.av360.maverick.graph.store.FragmentsStore;
 import org.av360.maverick.graph.store.RepositoryBuilder;
 import org.av360.maverick.graph.store.rdf.LabeledRepository;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -29,12 +29,12 @@ import reactor.core.publisher.Mono;
 @ConfigurationProperties(prefix = "application")
 public class PostgresRepositoryBuilder implements RepositoryBuilder {
     @Override
-    public Mono<LabeledRepository> buildRepository(EntityStore store, Environment environment) {
+    public Mono<LabeledRepository> buildRepository(FragmentsStore store, Environment environment) {
         return null;
     }
 
     @Override
-    public Mono<Void> shutdownRepository(EntityStore store, Environment environment) {
+    public Mono<Void> shutdownRepository(FragmentsStore store, Environment environment) {
         return null;
     }
 }

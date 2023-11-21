@@ -108,7 +108,7 @@ public abstract class TestsBase {
 
     protected void resetRepository(SessionContext ctx) {
         Mono<Void> r1 = this.entityStore.asMaintainable().purge(ctx.getEnvironment())
-                .then(this.transactionsStore.purge(ctx.getEnvironment()));
+                .then(this.transactionsStore.asMaintainable().purge(ctx.getEnvironment()));
 
         StepVerifier.create(r1).verifyComplete();
     }
