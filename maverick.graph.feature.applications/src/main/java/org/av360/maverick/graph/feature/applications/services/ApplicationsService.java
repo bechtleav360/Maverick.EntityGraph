@@ -13,6 +13,7 @@ import org.av360.maverick.graph.feature.applications.model.events.ApplicationUpd
 import org.av360.maverick.graph.feature.applications.model.events.GraphApplicationEvent;
 import org.av360.maverick.graph.feature.applications.model.vocab.ApplicationTerms;
 import org.av360.maverick.graph.feature.applications.store.ApplicationsStore;
+import org.av360.maverick.graph.model.annotations.OnRepositoryType;
 import org.av360.maverick.graph.model.annotations.RequiresPrivilege;
 import org.av360.maverick.graph.model.context.SessionContext;
 import org.av360.maverick.graph.model.entities.Transaction;
@@ -80,6 +81,7 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
      * @return New node as mono
      */
     @RequiresPrivilege(Authorities.MAINTAINER_VALUE)
+    @OnRepositoryType(RepositoryType.APPLICATION)
     public Mono<Application> createApplication(String label, ApplicationFlags flags, Map<String, Serializable> configuration, SessionContext ctx) {
         try {
             Validate.isTrue(ctx.getAuthentication().isPresent());
@@ -114,8 +116,6 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
             this.buildConfigurationItem(key, value, application.iri(), modelBuilder);
         });
 
-        ctx.updateEnvironment(env-> env.setRepositoryType(RepositoryType.APPLICATION));
-
         Mono<Application> applicationMono = this.store.importStatements(modelBuilder.build(), ctx.getEnvironment())
                 .then(Mono.just(application))
                 .doOnSuccess(app -> {
@@ -132,6 +132,7 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
     }
 
     @RequiresPrivilege(Authorities.MAINTAINER_VALUE)
+    @OnRepositoryType(RepositoryType.APPLICATION)
     public Mono<Application> createConfigurationItem(Application application, String configKey, Serializable configValue, SessionContext ctx) {
         this.assertUpdatePrivilege(application, ctx);
 
@@ -150,13 +151,13 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
     }
 
     @RequiresPrivilege(Authorities.MAINTAINER_VALUE)
+    @OnRepositoryType(RepositoryType.APPLICATION)
     public Mono<Void> setMetric(Application application, String key, Serializable value, SessionContext ctx) {
         ModelBuilder m = this.buildMetricsItem(key, value, application.iri(), null);
-        ;
 
+        Transaction trx = new RdfTransaction().forInsert(m.build());
 
-        return this.store.insertStatements(m.build(), new RdfTransaction())
-                        .flatMap(transaction -> this.store.commit(transaction, ctx.updateEnvironment(env -> env.setRepositoryType(RepositoryType.APPLICATION)).getEnvironment()))
+        return this.store.commit(trx, ctx.getEnvironment())
                 .filter(Transaction::isCompleted)
                 .then()
                 .doOnSuccess(app -> {
@@ -166,6 +167,7 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
     }
 
     @RequiresPrivilege(Authorities.MAINTAINER_VALUE)
+    @OnRepositoryType(RepositoryType.APPLICATION)
     public Mono<Void> deleteConfigurationItem(Application application, String configurationKey, SessionContext ctx) {
         this.assertUpdatePrivilege(application, ctx);
 
@@ -182,7 +184,7 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
                 .filter(opt -> opt.get().isIRI())
                 .map(opt -> (IRI) opt.get());
         return nodesToDelete.flatMap(configNode -> this.store.listStatements(configNode, null, null, ctx.getEnvironment()))
-                .flatMap(statements -> this.store.removeStatements(statements, new RdfTransaction()))
+                .map(statements -> new RdfTransaction().forRemoval(statements))
                 .flatMap(transaction -> this.store.commit(transaction, ctx.getEnvironment()))
                 .then()
                 .doOnSuccess(res -> {
@@ -191,6 +193,7 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
                 });
     }
     @RequiresPrivilege(Authorities.READER_VALUE)
+    @OnRepositoryType(RepositoryType.APPLICATION)
     public Flux<ConfigurationItem> listConfigurationItems(Application application, SessionContext ctx) {
         assertReadPrivilege(application, ctx);
 
@@ -207,6 +210,7 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
     }
 
     @RequiresPrivilege(Authorities.MAINTAINER_VALUE)
+    @OnRepositoryType(RepositoryType.APPLICATION)
     public Mono<Void> delete(Application application, SessionContext context) {
         assertUpdatePrivilege(application, context);
 
@@ -214,7 +218,7 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
                 .flatMap(configurationItem -> this.deleteConfigurationItem(application, configurationItem.key(), context)).collectList()
                 .doOnSuccess(suc -> log.trace("Deleted all configuration item statements for application with label '{}'", application.label()))
                 .then( this.store.listStatements(application.iri(), null, null, context.getEnvironment()))
-                .flatMap(statements -> this.store.removeStatements(statements, context.getEnvironment()))
+                .map(statements -> new RdfTransaction().forRemoval(statements))
                 .doOnSuccess(suc -> log.trace("Deleted all application statements for application with label '{}'", application.label()))
                 .then()
                 .doOnSuccess(res -> {
@@ -224,13 +228,13 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
 
 
     }
-    @RequiresPrivilege(Authorities.READER_VALUE)
     public Mono<Application> getApplication(String applicationKey, SessionContext ctx) {
         return this.getApplication(applicationKey, ctx, false);
     }
 
 
     @RequiresPrivilege(Authorities.READER_VALUE)
+    @OnRepositoryType(RepositoryType.APPLICATION)
     public Mono<Application> getApplication(String applicationKey, SessionContext ctx, boolean ignoreCache) {
 
         Application cached = this.caching_enabled && !ignoreCache ? this.cache.getIfPresent(applicationKey) : null;
@@ -253,14 +257,12 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
     }
 
     @RequiresPrivilege(Authorities.READER_VALUE)
+    @OnRepositoryType(RepositoryType.APPLICATION)
     public Flux<Application> listApplications(SessionContext ctx) {
         try {
             Validate.isTrue(ctx.getAuthentication().isPresent());
             Validate.isTrue(ctx.getAuthentication().get().isAuthenticated());
         } catch (Exception e) { return Flux.error(e); }
-
-
-        ctx.updateEnvironment(env -> env.setRepositoryType(RepositoryType.APPLICATION));
 
         if (!this.caching_enabled || this.cache.asMap().isEmpty()) {
 
@@ -307,6 +309,7 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
         }
     }
     @RequiresPrivilege(Authorities.READER_VALUE)
+    @OnRepositoryType(RepositoryType.APPLICATION)
     public Mono<Application> getApplicationByLabel(String applicationLabel, SessionContext ctx) {
         try {
             Validate.isTrue(ctx.getAuthentication().isPresent());
@@ -356,13 +359,17 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
         return builder;
     }
 
+    @Deprecated
     private void assertUpdatePrivilege(Application requestedApplication, SessionContext ctx) {
         if(! this.verifyUpdatePrivilege(requestedApplication, ctx)) throw new InsufficientPrivilegeException("Unknown application or insufficient privilege.");
     }
+
+    @Deprecated
     private void assertReadPrivilege(Application requestedApplication, SessionContext ctx) {
         if(! this.verifyReadingPrivilege(requestedApplication, ctx)) throw new InsufficientPrivilegeException("Unknown application or insufficient privilege.");
     }
 
+    @Deprecated
     private boolean verifyReadingPrivilege(Application requestedApplication, SessionContext ctx) {
         boolean isPublic = requestedApplication.flags().isPublic();
         boolean isSubscriber = (ctx.getAuthenticationOrThrow() instanceof SubscriptionToken subscriptionToken) && (subscriptionToken.getApplication().key().equalsIgnoreCase(requestedApplication.key()));

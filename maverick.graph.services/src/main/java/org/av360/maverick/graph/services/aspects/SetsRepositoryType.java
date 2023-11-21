@@ -47,6 +47,10 @@ public class SetsRepositoryType {
             throw new UnsupportedOperationException("Missing target repository type while accessing a repository.");
         }
 
+        if (RepositoryType.UNSET == onRepositoryType) {
+            throw new UnsupportedOperationException("Missing target repository type while accessing a repository.");
+        }
+
         ctx.getEnvironment().withRepositoryType(onRepositoryType);
 
         return joinPoint.proceed();

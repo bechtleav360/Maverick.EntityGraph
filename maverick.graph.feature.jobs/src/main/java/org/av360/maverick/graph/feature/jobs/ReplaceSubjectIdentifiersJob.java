@@ -155,7 +155,7 @@ public class ReplaceSubjectIdentifiersJob implements ScheduledJob {
 
     private Flux<Transaction> storeTransactions(Collection<Transaction> transactions, SessionContext ctx) {
         //FIXME: through event
-        return this.transactionsService.getStore(ctx).store(transactions, ctx.getEnvironment());
+        return this.transactionsService.save(transactions, ctx);
     }
 
     private Mono<Transaction> deleteStatements(StatementsBag statementsBag, SessionContext ctx) {

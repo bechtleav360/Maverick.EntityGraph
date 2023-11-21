@@ -14,7 +14,6 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 public @interface OnRepositoryType {
 
-    public RepositoryType value() default RepositoryType.ENTITIES;
-
+    public RepositoryType value() default RepositoryType.UNSET;
 
 }
