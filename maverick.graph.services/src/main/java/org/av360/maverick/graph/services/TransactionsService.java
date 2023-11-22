@@ -2,11 +2,10 @@ package org.av360.maverick.graph.services;
 
 import org.av360.maverick.graph.model.context.SessionContext;
 import org.av360.maverick.graph.model.entities.Transaction;
-import org.av360.maverick.graph.store.TransactionsStore;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import java.util.List;
+import java.util.Collection;
 
 public interface TransactionsService {
 
@@ -18,7 +17,7 @@ public interface TransactionsService {
 
     Mono<Transaction> find(String identifier, SessionContext context);
 
-    TransactionsStore getStore(SessionContext ctx);
 
-    Mono<List<Transaction>> save(List<Transaction> transactions, SessionContext context);
+    Flux<Transaction> save(Collection<Transaction> transactions, SessionContext context);
+
 }

@@ -1,4 +1,4 @@
-package org.av360.maverick.graph.model.aspects;
+package org.av360.maverick.graph.model.annotations;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

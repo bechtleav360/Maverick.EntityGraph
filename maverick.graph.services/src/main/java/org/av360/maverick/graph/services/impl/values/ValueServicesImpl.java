@@ -3,7 +3,7 @@ package org.av360.maverick.graph.services.impl.values;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
-import org.av360.maverick.graph.model.aspects.RequiresPrivilege;
+import org.av360.maverick.graph.model.annotations.RequiresPrivilege;
 import org.av360.maverick.graph.model.context.SessionContext;
 import org.av360.maverick.graph.model.entities.Transaction;
 import org.av360.maverick.graph.model.errors.requests.EntityNotFound;
@@ -15,9 +15,8 @@ import org.av360.maverick.graph.services.IdentifierServices;
 import org.av360.maverick.graph.services.SchemaServices;
 import org.av360.maverick.graph.services.ValueServices;
 import org.av360.maverick.graph.store.SchemaStore;
-import org.av360.maverick.graph.store.rdf.fragments.RdfEntity;
+import org.av360.maverick.graph.store.rdf.fragments.Fragment;
 import org.eclipse.rdf4j.model.*;
-import org.eclipse.rdf4j.model.impl.LinkedHashModel;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
@@ -170,8 +169,8 @@ public class ValueServicesImpl implements ValueServices {
                     Statement statement = SimpleValueFactory.getInstance().createStatement(entityIdentifier, predicate, embeddedNode);
                     embedded.add(statement);
                 })
-                .flatMap(pair -> this.entityServices.getStore(ctx).insertModel(new LinkedHashModel(embedded), pair.getRight()))
-                .flatMap(trx -> this.entityServices.getStore(ctx).commit(trx, ctx.getEnvironment()))
+                .flatMap(pair -> this.entityServices.getStore(ctx).asCommitable().insertStatements(embedded, pair.getRight()))
+                .flatMap(trx -> this.entityServices.getStore(ctx).asCommitable().commit(trx, ctx.getEnvironment()))
                 .switchIfEmpty(Mono.just(transaction));
 
     }
@@ -197,24 +196,24 @@ public class ValueServicesImpl implements ValueServices {
 
                 })
 
-                .flatMap(pair -> this.entityServices.getStore(ctx).addStatement(entityIdentifier, predicate, value, transaction))
-                .flatMap(trx -> this.entityServices.getStore(ctx).commit(trx, ctx.getEnvironment()))
+                .flatMap(pair -> this.entityServices.getStore(ctx).asCommitable().insertStatement(entityIdentifier, predicate, value, transaction))
+                .flatMap(trx -> this.entityServices.getStore(ctx).asCommitable().commit(trx, ctx.getEnvironment()))
                 .switchIfEmpty(Mono.just(transaction));
 
     }
 
-    private Mono<Transaction> buildTransactionForIRIStatement(Triple statement, RdfEntity entity, Transaction transaction, boolean replace, SessionContext ctx) {
+    private Mono<Transaction> buildTransactionForIRIStatement(Triple statement, Fragment entity, Transaction transaction, boolean replace, SessionContext ctx) {
         // check if entity already has this statement. If yes, we do nothing
         if (statement.getObject().isIRI() && entity.hasStatement(statement) && !replace) {
             log.trace("Entity {} already has a link '{}' for predicate '{}', ignoring update.", entity.getIdentifier(), statement.getObject(), statement.getPredicate());
             return Mono.empty();
         } else {
-            return this.entityServices.getStore(ctx).addStatement(statement, transaction);
+            return this.entityServices.getStore(ctx).asCommitable().insertStatement(statement, transaction);
         }
     }
 
 
-    private Mono<Transaction> buildTransactionForLiteralStatement(Triple triple, RdfEntity entity, Transaction transaction, boolean replace, SessionContext ctx) {
+    private Mono<Transaction> buildTransactionForLiteralStatement(Triple triple, Fragment entity, Transaction transaction, boolean replace, SessionContext ctx) {
         if (triple.getObject().isLiteral() && entity.hasStatement(triple.getSubject(), triple.getPredicate(), null) && replace) {
             log.trace("Entity {} already has a value for predicate '{}'.", entity.getIdentifier(), triple.getPredicate());
             Literal updateValue = (Literal) triple.getObject();
@@ -228,14 +227,14 @@ public class ValueServicesImpl implements ValueServices {
                     if (updateValue.getLanguage().isPresent() && currentValue.getLanguage().isPresent()) {
                         // entity already has a value for this predicate. It has a language tag. If another value with the same language tag exists, we remove it.
                         if (StringUtils.equals(currentValue.getLanguage().get(), updateValue.getLanguage().get())) {
-                            this.entityServices.getStore(ctx).removeStatement(statement, transaction);
+                            this.entityServices.getStore(ctx).asCommitable().markForRemoval(statement, transaction);
                         }
                     } else {
                         // entity already has a value for this predicate. It has no language tag. If an existing value has a language tag, we throw an error. If not, we remove it.
                         if (currentValue.getLanguage().isPresent())
                             throw new InvalidEntityUpdate(entity.getIdentifier(), "This value already exists with a language tag within this entity. Please add the tag.");
 
-                        this.entityServices.getStore(ctx).removeStatement(statement, transaction);
+                        this.entityServices.getStore(ctx).asCommitable().markForRemoval(statement, transaction);
                     }
 
                 }

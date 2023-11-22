@@ -1,7 +1,7 @@
 package org.av360.maverick.graph.feature.applications.jobs;
 
 import lombok.extern.slf4j.Slf4j;
-import org.av360.maverick.graph.model.aspects.Job;
+import org.av360.maverick.graph.model.annotations.Job;
 import org.av360.maverick.graph.model.enums.ConfigurationKeysRegistry;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;

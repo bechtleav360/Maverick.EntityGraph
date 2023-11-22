@@ -1,11 +1,11 @@
-package org.av360.maverick.graph.services.config;
+package org.av360.maverick.graph.services.aspects;
 
 import org.apache.commons.lang3.StringUtils;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.reflect.MethodSignature;
-import org.av360.maverick.graph.model.aspects.RequiresPrivilege;
+import org.av360.maverick.graph.model.annotations.RequiresPrivilege;
 import org.av360.maverick.graph.model.context.SessionContext;
 import org.av360.maverick.graph.model.errors.InsufficientPrivilegeException;
 import org.av360.maverick.graph.model.security.Authorities;
@@ -21,10 +21,10 @@ import java.util.stream.Collectors;
 
 @Aspect
 @Component
-public class AuthorizeKey {
+public class AuthorizesRequiredPrivilege {
 
 
-    @Around("@annotation(org.av360.maverick.graph.model.aspects.RequiresPrivilege)")
+    @Around("@annotation(org.av360.maverick.graph.model.annotations.RequiresPrivilege)")
     public Object authorize(ProceedingJoinPoint joinPoint) throws Throwable {
 
         Optional<SessionContext> sessionContextOptional = Arrays.stream(joinPoint.getArgs()).filter(o -> o instanceof SessionContext).findFirst().map(obk -> (SessionContext) obk);

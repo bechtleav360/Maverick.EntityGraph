@@ -7,7 +7,7 @@ import org.av360.maverick.graph.model.errors.requests.EntityNotFound;
 import org.av360.maverick.graph.model.errors.requests.InvalidEntityUpdate;
 import org.av360.maverick.graph.model.errors.store.InvalidEntityModelException;
 import org.av360.maverick.graph.model.events.DetailRemovedEvent;
-import org.av360.maverick.graph.store.rdf.fragments.RdfEntity;
+import org.av360.maverick.graph.store.rdf.fragments.Fragment;
 import org.av360.maverick.graph.store.rdf.fragments.RdfTransaction;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Statement;
@@ -43,7 +43,7 @@ public class DeleteDetails {
     Mono<Transaction> removeDetailStatements(Transaction trx, SessionContext ctx) {
         Set<Flux<Statement>> collect = trx.getRemovedStatements().stream()
                 .map(Values::triple)
-                .map(triple -> this.ctrl.entityServices.getStore(ctx).listStatements(triple, null, null, ctx.getEnvironment()).flatMapMany(Flux::fromIterable))
+                .map(triple -> this.ctrl.entityServices.getStore(ctx).asStatementsAware().listStatements(triple, null, null, ctx.getEnvironment()).flatMapMany(Flux::fromIterable))
                 .collect(Collectors.toSet());
         return Flux.merge(collect)
                 .collectList()
@@ -70,7 +70,7 @@ public class DeleteDetails {
                         ctrl.schemaServices.resolvePrefixedName(prefixedValuePredicate),
                         ctrl.schemaServices.resolvePrefixedName(prefixedDetailPredicate)
                 ).flatMap(tuple -> {
-                    RdfEntity entity = tuple.getT1();
+                    Fragment entity = tuple.getT1();
                     IRI valuePredicate = tuple.getT2();
                     IRI detailPredicate = tuple.getT3();
 
@@ -86,17 +86,14 @@ public class DeleteDetails {
 
     }
 
-    private Mono<Transaction> remove(RdfEntity entity, IRI valuePredicate, IRI detailPredicate, SessionContext ctx) {
+    private Mono<Transaction> remove(Fragment entity, IRI valuePredicate, IRI detailPredicate, SessionContext ctx) {
         try {
             Optional<Triple> requestedTriple = this.ctrl.readValues.findSingleValueTriple(entity, valuePredicate);
             if(requestedTriple.isEmpty()) return Mono.error(new InvalidEntityUpdate(entity.getIdentifier(), "No value exists in entity <%s> for predicate <%s>".formatted(entity.getIdentifier(), valuePredicate)));
 
 
-            RdfTransaction trx = new RdfTransaction();
-            entity.getModel().getStatements(requestedTriple.get(), detailPredicate, null)
-                    .forEach(statement -> ctrl.entityServices.getStore(ctx).removeStatement(statement, trx));
-
-            return ctrl.entityServices.getStore(ctx).commit(trx, ctx.getEnvironment());
+            Transaction trx = new RdfTransaction().forRemoval(entity.listStatements(requestedTriple.get(), detailPredicate, null));
+            return ctrl.entityServices.getStore(ctx).asCommitable().commit(trx, ctx.getEnvironment());
 
         } catch (InvalidEntityModelException e) {
             return Mono.error(e);
@@ -105,16 +102,12 @@ public class DeleteDetails {
     }
 
 
-    private Mono<Transaction> removeWithHash(RdfEntity entity, IRI valuePredicate, IRI detailPredicate, String valueHash, SessionContext ctx) {
+    private Mono<Transaction> removeWithHash(Fragment entity, IRI valuePredicate, IRI detailPredicate, String valueHash, SessionContext ctx) {
         Optional<Triple> requestedTriple = this.ctrl.readValues.findValueTripleByHash(entity, valuePredicate, valueHash);
         if(requestedTriple.isEmpty()) return Mono.error(new InvalidEntityUpdate(entity.getIdentifier(), "No value exists in entity <%s> for predicate <%s> and hash '%s'".formatted(entity.getIdentifier(), valuePredicate, valueHash)));
 
-
-        RdfTransaction trx = new RdfTransaction();
-        entity.getModel().getStatements(requestedTriple.get(), detailPredicate, null)
-                .forEach(statement -> ctrl.entityServices.getStore(ctx).removeStatement(statement, trx));
-
-        return ctrl.entityServices.getStore(ctx).commit(trx, ctx.getEnvironment());
+        Transaction trx = new RdfTransaction().forRemoval(entity.listStatements(requestedTriple.get(), detailPredicate, null));
+        return ctrl.entityServices.getStore(ctx).asCommitable().commit(trx, ctx.getEnvironment());
     }
 
 

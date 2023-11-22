@@ -10,9 +10,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.Validate;
 import org.av360.maverick.graph.model.context.Environment;
 import org.av360.maverick.graph.model.enums.RepositoryType;
+import org.av360.maverick.graph.model.errors.store.InvalidStoreConfiguration;
+import org.av360.maverick.graph.store.FragmentsStore;
 import org.av360.maverick.graph.store.RepositoryBuilder;
-import org.av360.maverick.graph.store.behaviours.TripleStore;
 import org.av360.maverick.graph.store.rdf.LabeledRepository;
+import org.av360.maverick.graph.store.rdf4j.repository.util.AbstractRdfRepository;
 import org.eclipse.rdf4j.repository.RepositoryException;
 import org.eclipse.rdf4j.repository.base.RepositoryWrapper;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
@@ -36,7 +38,7 @@ import java.util.Objects;
 @Component
 @Slf4j(topic = "graph.repo.cfg.builder")
 @ConfigurationProperties(prefix = "application")
-public class DefaultRepositoryBuilder implements RepositoryBuilder {
+public class DefaultRdfRepositoryBuilder implements RepositoryBuilder {
 
 
     private final Cache<String, LabeledRepository> cache;
@@ -81,7 +83,7 @@ public class DefaultRepositoryBuilder implements RepositoryBuilder {
         this.meterRegistry = meterRegistry;
     }
 
-    public DefaultRepositoryBuilder() {
+    public DefaultRdfRepositoryBuilder() {
 
         cache = Caffeine.newBuilder()
                 .recordStats()
@@ -99,43 +101,26 @@ public class DefaultRepositoryBuilder implements RepositoryBuilder {
      * @throws IOException If repository cannot be found
      */
     @Override
-    public Mono<LabeledRepository> buildRepository(TripleStore store, Environment target) {
+    public Mono<LabeledRepository> buildRepository(FragmentsStore store, Environment target) {
+        if(store instanceof AbstractRdfRepository repository) {
+            Validate.isTrue(target.isAuthorized(), "Unauthorized status in repository builder");
+            Validate.notNull(target.getRepositoryType(), "Missing repository type in repository builder");
+            Validate.notBlank(target.getRepositoryType().toString(), "Empty repository type in repository builder");
 
-        Validate.isTrue(target.isAuthorized(), "Unauthorized status in repository builder");
-        Validate.notNull(target.getRepositoryType(), "Missing repository type in repository builder");
-        Validate.notBlank(target.getRepositoryType().toString(), "Empty repository type in repository builder");
+            try {
+                LabeledRepository labeledRepository = this.buildDefaultRepository(repository, target);
+                return this.validateRepository(labeledRepository, repository, target);
+            } catch (IOException e) {
+                return Mono.error(e);
+            }
+        } else return Mono.error(new InvalidStoreConfiguration("Store of type %s not supported by for building a RDF repository.".formatted(store.getClass().getSimpleName())));
 
-        try {
-            LabeledRepository labeledRepository = this.buildDefaultRepository(store, target);
-            return this.validateRepository(labeledRepository, store, target);
-        } catch (IOException e) {
-            return Mono.error(e);
-        }
-        /*
-        if (ctx.getAuthenticationOrThrow() instanceof TestingAuthenticationToken) {
-            // default repository always get the default label (also in test mode)
-            repository = this.buildDefaultRepository(store, "default");
-        }
-        else if (ctx.getAuthenticationOrThrow() instanceof ApiKeyAuthenticationToken) {
-            repository = this.buildDefaultRepository(store, "default");
-        }
-        else if (ctx.getAuthenticationOrThrow() instanceof AnonymousAuthenticationToken) {
-            repository = this.buildDefaultRepository(store, "default");
-        }
-        else if (ctx.getAuthenticationOrThrow() instanceof UsernamePasswordAuthenticationToken) {
-            repository = this.buildDefaultRepository(store, "default");
-        }
 
-        try {
-            return Mono.just(this.validateRepository(repository, store, ctx.getEnvironment()));
-        } catch (IOException e) {
-            return Mono.error(e);
-        }
-        */
+
     }
 
     @Override
-    public Mono<Void> shutdownRepository(TripleStore store, Environment environment) {
+    public Mono<Void> shutdownRepository(FragmentsStore store, Environment environment) {
         if(cache != null) {
             String key = formatRepositoryLabel(environment);
             LabeledRepository repository = cache.getIfPresent(key);
@@ -148,24 +133,26 @@ public class DefaultRepositoryBuilder implements RepositoryBuilder {
         return Mono.empty();
     }
 
-    protected Mono<LabeledRepository> validateRepository(@Nullable LabeledRepository repository, TripleStore store, Environment environment) throws IOException {
+    protected Mono<LabeledRepository> validateRepository(@Nullable LabeledRepository repository, FragmentsStore store, Environment environment) throws IOException {
         return Mono.create(sink -> {
             if(!Objects.isNull(repository)) {
                 if(! repository.isInitialized() && repository.getConnectionsCount() == 0) {
                     log.warn("Validation error: Repository of type '{}' is not initialized", repository);
-                    sink.error(new IOException(String.format("Repository %s not initialized", store.getRepositoryType())));
+                    sink.error(new IOException(String.format("Repository %s not initialized", environment.getRepositoryType())));
                 } else {
                     sink.success(repository);
                 }
             } else {
-                sink.error(new IOException(String.format("Cannot resolve repository of type '%s' for environment '%s'", store.getRepositoryType(), environment)));
+                sink.error(new IOException(String.format("Cannot resolve repository of type '%s' for environment '%s'", environment.getRepositoryType(), environment)));
             }
         });
     }
 
-    protected LabeledRepository buildDefaultRepository(TripleStore store, Environment target) {
+    protected LabeledRepository buildDefaultRepository(AbstractRdfRepository store, Environment target) {
 
         String key = formatRepositoryLabel(target);
+
+        // FIXME: this should not be bound to an behaviour (but on environment)
         String path = store.getDirectory();
 
         log.trace("Resolving default repository for environment: {}", target);

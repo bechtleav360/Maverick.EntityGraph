@@ -6,7 +6,7 @@ import org.av360.maverick.graph.model.errors.store.InvalidEntityModelException;
 import org.av360.maverick.graph.model.identifier.ChecksumGenerator;
 import org.av360.maverick.graph.model.rdf.Triples;
 import org.av360.maverick.graph.model.vocabulary.Details;
-import org.av360.maverick.graph.store.rdf.fragments.RdfEntity;
+import org.av360.maverick.graph.store.rdf.fragments.Fragment;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Triple;
@@ -66,7 +66,7 @@ public class ReadValues {
 
 
 
-    Optional<Triple> findValueTripleByLanguageTag(RdfEntity entity, IRI valuePredicate, String languageTag) {
+    Optional<Triple> findValueTripleByLanguageTag(Fragment entity, IRI valuePredicate, String languageTag) {
         return entity.streamValues(entity.getIdentifier(), valuePredicate)
                 .filter(Value::isLiteral)
                 .filter(literal -> ((Literal) literal).getLanguage().map(tag -> tag.equalsIgnoreCase(languageTag)).orElseGet(() -> Boolean.FALSE))
@@ -76,7 +76,7 @@ public class ReadValues {
     }
 
 
-    Optional<Triple> findValueTripleByHash(RdfEntity entity, IRI valuePredicate, String hash) {
+    Optional<Triple> findValueTripleByHash(Fragment entity, IRI valuePredicate, String hash) {
         return entity.streamValues(entity.getIdentifier(), valuePredicate)
                 .filter(literal -> {
                     String generatedHash = this.generateHashForValue(valuePredicate.getLocalName(), literal.stringValue());
@@ -86,7 +86,7 @@ public class ReadValues {
                 .findFirst();
     }
 
-    Optional<Triple> findSingleValueTriple(RdfEntity entity, IRI valuePredicate) throws InvalidEntityModelException {
+    Optional<Triple> findSingleValueTriple(Fragment entity, IRI valuePredicate) throws InvalidEntityModelException {
         List<Triple> list = entity.streamValues(entity.getIdentifier(), valuePredicate)
                 .filter(Value::isLiteral)
                 .map(requestedLiteral -> Values.triple(entity.getIdentifier(), valuePredicate, requestedLiteral))

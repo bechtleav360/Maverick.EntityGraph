@@ -42,6 +42,8 @@ application:
       typeCoercion: true
     validators:
       checkRequiredType: true
+  storage:
+    implementation: "rdf4j"
 #  storage:
 #    vocabularies:
 #      persistent: true

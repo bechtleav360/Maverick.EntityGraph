@@ -9,11 +9,17 @@ import org.av360.maverick.graph.feature.applications.model.events.TokenCreatedEv
 import org.av360.maverick.graph.feature.applications.model.vocab.ApplicationTerms;
 import org.av360.maverick.graph.feature.applications.model.vocab.SubscriptionTerms;
 import org.av360.maverick.graph.feature.applications.store.ApplicationsStore;
+import org.av360.maverick.graph.model.annotations.OnRepositoryType;
+import org.av360.maverick.graph.model.annotations.RequiresPrivilege;
 import org.av360.maverick.graph.model.context.SessionContext;
+import org.av360.maverick.graph.model.entities.Transaction;
+import org.av360.maverick.graph.model.enums.RepositoryType;
 import org.av360.maverick.graph.model.identifier.RandomIdentifier;
+import org.av360.maverick.graph.model.security.Authorities;
 import org.av360.maverick.graph.model.util.StreamsLogger;
 import org.av360.maverick.graph.model.vocabulary.Local;
 import org.av360.maverick.graph.services.IdentifierServices;
+import org.av360.maverick.graph.store.rdf.fragments.RdfTransaction;
 import org.av360.maverick.graph.store.rdf.helpers.BindingsAccessor;
 import org.eclipse.rdf4j.model.util.ModelBuilder;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
@@ -50,8 +56,9 @@ public class SubscriptionsService {
     }
 
 
+    @RequiresPrivilege(Authorities.CONTRIBUTOR_VALUE)
+    @OnRepositoryType(RepositoryType.APPLICATION)
     public Mono<Subscription> getSubscription(String subscriptionIdentifier, SessionContext ctx) {
-
 
         SelectQuery q = Queries.SELECT()
                 .where(QueryVariables.varNodeSubscription.has(SubscriptionTerms.HAS_KEY, subscriptionIdentifier)
@@ -77,7 +84,8 @@ public class SubscriptionsService {
 
     }
 
-
+    @RequiresPrivilege(Authorities.CONTRIBUTOR_VALUE)
+    @OnRepositoryType(RepositoryType.APPLICATION)
     public Flux<Subscription> listSubscriptionsForApplication(String applicationKey, SessionContext ctx) {
 
         return this.applicationsService.getApplication(applicationKey, ctx)
@@ -103,7 +111,8 @@ public class SubscriptionsService {
 
         return Mono.error(new UnsupportedOperationException());
     }
-
+    @RequiresPrivilege(Authorities.CONTRIBUTOR_VALUE)
+    @OnRepositoryType(RepositoryType.APPLICATION)
     public Mono<Subscription> createSubscription(String applicationKey, String subscriptionLabel, SessionContext ctx) {
 
         return this.applicationsService.getApplication(applicationKey, ctx)
@@ -128,7 +137,11 @@ public class SubscriptionsService {
                     modelBuilder.add(SubscriptionTerms.FOR_APPLICATION, apiKey.application().key());
                     modelBuilder.add(apiKey.application().iri(), ApplicationTerms.HAS_API_KEY, apiKey.iri());
 
-                    return this.applicationsStore.insertModel(modelBuilder.build(), ctx.getEnvironment()).then(Mono.just(apiKey));
+                    Transaction transaction = new RdfTransaction().forInsert(modelBuilder.build());
+
+                    return this.applicationsStore.commit(transaction, ctx.getEnvironment())
+                            .flatMap(Transaction::verifyCompleted)
+                            .then(Mono.just(apiKey));
                 })
                 .doOnSuccess(token -> {
                     this.eventPublisher.publishEvent(new TokenCreatedEvent(token));

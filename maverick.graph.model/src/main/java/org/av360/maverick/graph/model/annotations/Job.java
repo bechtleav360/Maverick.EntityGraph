@@ -1,4 +1,4 @@
-package org.av360.maverick.graph.model.aspects;
+package org.av360.maverick.graph.model.annotations;
 
 
 import org.springframework.core.annotation.AliasFor;

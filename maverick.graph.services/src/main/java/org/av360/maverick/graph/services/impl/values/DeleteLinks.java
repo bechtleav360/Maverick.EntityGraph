@@ -29,9 +29,9 @@ public class DeleteLinks {
     }
 
     private Mono<Transaction> removeLinkStatement(IRI entityIdentifier, IRI predicate, IRI targetIdentifier, Transaction transaction, SessionContext ctx) {
-        return ctrl.entityServices.getStore(ctx).listStatements(entityIdentifier, predicate, targetIdentifier, ctx.getEnvironment())
-                .flatMap(statements -> ctrl.entityServices.getStore(ctx).removeStatements(statements, transaction))
-                .flatMap(trx -> ctrl.entityServices.getStore(ctx).commit(trx, ctx.getEnvironment()));
+        return ctrl.entityServices.getStore(ctx).asStatementsAware().listStatements(entityIdentifier, predicate, targetIdentifier, ctx.getEnvironment())
+                .map(transaction::forRemoval)
+                .flatMap(trx -> ctrl.entityServices.getStore(ctx).asCommitable().commit(trx, ctx.getEnvironment()));
 
     }
 }

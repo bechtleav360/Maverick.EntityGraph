@@ -10,6 +10,7 @@ import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.rio.RDFFormat;
 import org.eclipse.rdf4j.rio.Rio;
 import org.reactivestreams.Publisher;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.reactive.server.WebTestClient;
@@ -359,4 +360,34 @@ public class EntitiesTestClient {
     }
 
 
+
+    public RdfConsumer upload(String path) {
+        Resource file = new ClassPathResource(path);
+        return this.upload(file);
+    }
+
+
+    public RdfConsumer upload(Resource file) {
+
+        RDFFormat format = null;
+        if (file.getFilename().endsWith("ttl")) format = RDFFormat.TURTLE;
+        if (file.getFilename().endsWith("jsonld")) format = RDFFormat.JSONLD;
+        if (file.getFilename().endsWith("n3")) format = RDFFormat.N3;
+        if (file.getFilename().endsWith("xml")) format = RDFFormat.RDFXML;
+
+        RdfConsumer rdfConsumer = new RdfConsumer(format, true);
+
+        webClient.post()
+                .uri("/api/entities")
+                .contentType(RdfUtils.getMediaType(format))
+                .accept(RdfUtils.getMediaType(format))
+                .body(BodyInserters.fromResource(file))
+                .header("X-API-KEY", "test")
+                .exchange()
+                .expectStatus().isAccepted()
+                .expectBody()
+                .consumeWith(rdfConsumer);
+
+        return rdfConsumer;
+    }
 }

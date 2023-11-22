@@ -12,7 +12,7 @@ import org.av360.maverick.graph.services.EntityServices;
 import org.av360.maverick.graph.services.QueryServices;
 import org.av360.maverick.graph.services.TransactionsService;
 import org.av360.maverick.graph.services.transformers.replaceIdentifiers.ReplaceExternalIdentifiers;
-import org.av360.maverick.graph.store.EntityStore;
+import org.av360.maverick.graph.store.IndividualsStore;
 import org.av360.maverick.graph.store.TransactionsStore;
 import org.av360.maverick.graph.store.rdf.fragments.RdfTransaction;
 import org.eclipse.rdf4j.model.Model;
@@ -75,7 +75,7 @@ public class ReplaceLinkedIdentifiersJob implements ScheduledJob {
     ) {
     }
 
-    public ReplaceLinkedIdentifiersJob(EntityStore store, TransactionsStore trxStore, EntityServices entityServices, TransactionsService transactionsService, ReplaceExternalIdentifiers transformer, QueryServices queryServices) {
+    public ReplaceLinkedIdentifiersJob(IndividualsStore store, TransactionsStore trxStore, EntityServices entityServices, TransactionsService transactionsService, ReplaceExternalIdentifiers transformer, QueryServices queryServices) {
         this.entityServices = entityServices;
         this.transactionsService = transactionsService;
         this.replaceExternalIdentifiers = transformer;
@@ -120,21 +120,22 @@ public class ReplaceLinkedIdentifiersJob implements ScheduledJob {
 
     private Flux<Transaction> commit(List<Transaction> transactions, SessionContext ctx) {
         // FIXME: assert system authentication
-        return this.entityServices.getStore(ctx).commit(transactions, ctx.getEnvironment());
+        return this.entityServices.getStore(ctx).asCommitable().commit(transactions, ctx.getEnvironment());
     }
 
     private Flux<Transaction> storeTransactions(Collection<Transaction> transactions, SessionContext ctx) {
         //FIXME: through event
-        return this.transactionsService.getStore(ctx).store(transactions, ctx.getEnvironment());
+        return this.transactionsService.save(transactions, ctx);
     }
 
     private Mono<Transaction> deleteStatements(StatementsBag statementsBag, SessionContext ctx) {
         ArrayList<Statement> statements = new ArrayList<>(statementsBag.removableStatements());
-        return this.entityServices.getStore(ctx).removeStatements(statements, statementsBag.transaction());
+        return Mono.just(statementsBag.transaction().forRemoval(statements));
     }
 
     private Mono<StatementsBag> insertStatements(StatementsBag bag, SessionContext ctx) {
-        return this.entityServices.getStore(ctx).insertModel(bag.convertedStatements(), bag.transaction()).then(Mono.just(bag));
+        bag.transaction().forInsert(bag.convertedStatements());
+        return Mono.just(bag);
     }
 
     private Mono<StatementsBag> convertObjectStatements(StatementsBag bag) {
@@ -160,11 +161,11 @@ public class ReplaceLinkedIdentifiersJob implements ScheduledJob {
 
 
     public Flux<StatementsBag> loadObjectStatements(SessionContext ctx) {
-        return this.entityServices.getStore(ctx).listStatements(null, Local.ORIGINAL_IDENTIFIER, null, ctx.getEnvironment())
+        return this.entityServices.getStore(ctx).asStatementsAware().listStatements(null, Local.ORIGINAL_IDENTIFIER, null, ctx.getEnvironment())
                 .flatMapMany(Flux::fromIterable)
                 .filter(statement -> statement.getObject().isResource())
                 .flatMap(st ->
-                        this.entityServices.getStore(ctx).listStatements(null, null, st.getObject(), ctx.getEnvironment())
+                        this.entityServices.getStore(ctx).asStatementsAware().listStatements(null, null, st.getObject(), ctx.getEnvironment())
                                 .map(statements -> statements.stream()
                                         .filter(s -> ! s.getPredicate().equals(Local.ORIGINAL_IDENTIFIER))
                                         .filter(s -> ! s.getPredicate().equals(OWL.SAMEAS))
@@ -191,7 +192,7 @@ public class ReplaceLinkedIdentifiersJob implements ScheduledJob {
                 ))
                 .filter(statement -> statement.getObject().isResource())
                 .flatMap(st ->
-                        this.entityServices.getStore(ctx).listStatements(null, null, st.getObject(), ctx.getEnvironment())
+                        this.entityServices.getStore(ctx).asStatementsAware().listStatements(null, null, st.getObject(), ctx.getEnvironment())
                                 .map(statements -> statements.stream()
                                         .filter(s -> ! s.getPredicate().equals(Local.ORIGINAL_IDENTIFIER))
                                         .filter(s -> ! s.getPredicate().equals(OWL.SAMEAS))

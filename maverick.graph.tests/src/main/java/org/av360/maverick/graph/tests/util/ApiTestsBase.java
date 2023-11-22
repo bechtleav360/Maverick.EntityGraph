@@ -68,13 +68,12 @@ public abstract class ApiTestsBase extends TestsBase {
 
 
 
-
+    @Deprecated
     protected RdfConsumer upload(String path) {
         Resource file = new ClassPathResource(path);
         return this.upload(file);
-
     }
-
+    @Deprecated
     protected RdfConsumer upload(Resource file) {
 
         RDFFormat format = null;

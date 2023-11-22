@@ -35,6 +35,7 @@ application:
     validators:
       checkRequiredType: true
   storage:
+    implementation: "rdf4j"
     vocabularies:
       persistent: true
       path: "D:/Graphen/tdf/vocabularies"

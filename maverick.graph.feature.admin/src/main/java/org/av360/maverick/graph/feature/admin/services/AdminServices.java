@@ -2,11 +2,11 @@ package org.av360.maverick.graph.feature.admin.services;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.Validate;
-import org.av360.maverick.graph.model.aspects.RequiresPrivilege;
+import org.av360.maverick.graph.model.annotations.RequiresPrivilege;
 import org.av360.maverick.graph.model.context.SessionContext;
 import org.av360.maverick.graph.model.enums.RepositoryType;
 import org.av360.maverick.graph.model.security.Authorities;
-import org.av360.maverick.graph.store.behaviours.Maintainable;
+import org.av360.maverick.graph.store.FragmentsStore;
 import org.eclipse.rdf4j.model.*;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.util.ModelCollector;
@@ -43,13 +43,20 @@ import java.util.zip.GZIPInputStream;
 public class AdminServices {
 
 
-    private final Map<RepositoryType, Maintainable> stores;
+    private final Map<RepositoryType, FragmentsStore> stores;
 
     private boolean maintenanceActive = false;
 
-    public AdminServices(Set<Maintainable> maintainables) {
+    public AdminServices(Set<FragmentsStore> storeSet) {
         this.stores = new HashMap<>();
-        maintainables.forEach(store -> stores.put(store.getRepositoryType(), store));
+
+
+        storeSet.forEach(store -> {
+            if(store.isMaintainable()) {
+                stores.put(store.getRepositoryType(), store);
+            }
+
+        });
     }
 
     @RequiresPrivilege(Authorities.MAINTAINER_VALUE)
@@ -58,7 +65,8 @@ public class AdminServices {
         // doesn't work for testing, ignore for now
 
         this.stores.get(ctx.getEnvironment().getRepositoryType())
-                .reset(ctx.getEnvironment())
+                .asMaintainable()
+                .purge(ctx.getEnvironment())
                 .doOnSubscribe(sub -> {
                     this.maintenanceActive = true;
                     log.debug("Purging repository {} through admin services.", ctx.getEnvironment());
@@ -77,6 +85,7 @@ public class AdminServices {
         if (maintenanceActive) return Mono.error(new SchedulingException("Maintenance job still running."));
 
         this.stores.get(ctx.getEnvironment().getRepositoryType())
+                .asMaintainable()
                 .importStatements(bytes, mimetype, ctx.getEnvironment())
                 .doOnSubscribe(sub -> {
                     this.maintenanceActive = true;
@@ -119,7 +128,8 @@ public class AdminServices {
             if (Objects.nonNull(resultingModel)) {
                 final int previousResultCount = resultingModel.size();
                 return this.stores.get(ctx.getEnvironment().getRepositoryType())
-                        .importModel(resultingModel, ctx.getEnvironment())
+                        .asMaintainable()
+                        .importStatements(resultingModel, ctx.getEnvironment())
                         .doOnSuccess(suc -> {
                             if (previousResultCount == limit) {
                                 Mono.just(offset + limit)

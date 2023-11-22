@@ -2,15 +2,14 @@ package org.av360.maverick.graph.store;
 
 import org.av360.maverick.graph.model.context.Environment;
 import org.av360.maverick.graph.model.entities.Transaction;
-import org.av360.maverick.graph.store.behaviours.Maintainable;
-import org.av360.maverick.graph.store.behaviours.ModelAware;
+import org.av360.maverick.graph.model.enums.RepositoryType;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.Collection;
 import java.util.List;
 
-public interface TransactionsStore extends Maintainable, ModelAware {
+public interface TransactionsStore extends FragmentsStore {
 
 
     @Deprecated
@@ -22,5 +21,8 @@ public interface TransactionsStore extends Maintainable, ModelAware {
     Flux<Transaction> store(Collection<Transaction> transaction, Environment environment);
 
 
-
+    @Override
+    default RepositoryType getRepositoryType() {
+        return RepositoryType.TRANSACTIONS;
+    }
 }

@@ -13,8 +13,10 @@ import org.av360.maverick.graph.feature.applications.model.events.ApplicationUpd
 import org.av360.maverick.graph.feature.applications.model.events.GraphApplicationEvent;
 import org.av360.maverick.graph.feature.applications.model.vocab.ApplicationTerms;
 import org.av360.maverick.graph.feature.applications.store.ApplicationsStore;
-import org.av360.maverick.graph.model.aspects.RequiresPrivilege;
+import org.av360.maverick.graph.model.annotations.OnRepositoryType;
+import org.av360.maverick.graph.model.annotations.RequiresPrivilege;
 import org.av360.maverick.graph.model.context.SessionContext;
+import org.av360.maverick.graph.model.entities.Transaction;
 import org.av360.maverick.graph.model.enums.RepositoryType;
 import org.av360.maverick.graph.model.errors.InconsistentModelException;
 import org.av360.maverick.graph.model.errors.InsufficientPrivilegeException;
@@ -24,9 +26,9 @@ import org.av360.maverick.graph.model.util.StreamsLogger;
 import org.av360.maverick.graph.model.vocabulary.Local;
 import org.av360.maverick.graph.model.vocabulary.SDO;
 import org.av360.maverick.graph.services.IdentifierServices;
+import org.av360.maverick.graph.store.rdf.fragments.RdfTransaction;
 import org.av360.maverick.graph.store.rdf.helpers.BindingsAccessor;
 import org.eclipse.rdf4j.model.IRI;
-import org.eclipse.rdf4j.model.impl.LinkedHashModel;
 import org.eclipse.rdf4j.model.util.ModelBuilder;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.sparqlbuilder.core.query.Queries;
@@ -56,12 +58,12 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
 
     private boolean caching_enabled = true;
 
-    private final ApplicationsStore applicationsStore;
+    private final ApplicationsStore store;
     private final ApplicationEventPublisher eventPublisher;
 
 
     public ApplicationsService(ApplicationsStore applicationsStore, ApplicationEventPublisher eventPublisher) {
-        this.applicationsStore = applicationsStore;
+        this.store = applicationsStore;
         this.eventPublisher = eventPublisher;
         // this.cache = Caffeine.newBuilder().recordStats().expireAfterAccess(60, TimeUnit.MINUTES).build();
         this.cache = Caffeine.newBuilder().recordStats().build();
@@ -79,6 +81,7 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
      * @return New node as mono
      */
     @RequiresPrivilege(Authorities.MAINTAINER_VALUE)
+    @OnRepositoryType(RepositoryType.APPLICATION)
     public Mono<Application> createApplication(String label, ApplicationFlags flags, Map<String, Serializable> configuration, SessionContext ctx) {
         try {
             Validate.isTrue(ctx.getAuthentication().isPresent());
@@ -113,9 +116,7 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
             this.buildConfigurationItem(key, value, application.iri(), modelBuilder);
         });
 
-        ctx.updateEnvironment(env-> env.setRepositoryType(RepositoryType.APPLICATION));
-
-        Mono<Application> applicationMono = this.applicationsStore.insertModel(modelBuilder.build(), ctx.getEnvironment())
+        Mono<Application> applicationMono = this.store.importStatements(modelBuilder.build(), ctx.getEnvironment())
                 .then(Mono.just(application))
                 .doOnSuccess(app -> {
                     this.eventPublisher.publishEvent(new ApplicationCreatedEvent(app));
@@ -131,6 +132,7 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
     }
 
     @RequiresPrivilege(Authorities.MAINTAINER_VALUE)
+    @OnRepositoryType(RepositoryType.APPLICATION)
     public Mono<Application> createConfigurationItem(Application application, String configKey, Serializable configValue, SessionContext ctx) {
         this.assertUpdatePrivilege(application, ctx);
 
@@ -138,7 +140,7 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
 
 
         Mono<Void> deleteMono = this.deleteConfigurationItem(application, configKey, ctx);
-        Mono<Void> insertMono = this.applicationsStore.insertModel(m.build(), ctx.updateEnvironment(env -> env.setRepositoryType(RepositoryType.APPLICATION)).getEnvironment());
+        Mono<Void> insertMono = this.store.importStatements(m.build(), ctx.updateEnvironment(env -> env.setRepositoryType(RepositoryType.APPLICATION)).getEnvironment());
 
         return deleteMono.then(insertMono).then(this.getApplication(application.key(), ctx, true))
                 .doOnSuccess(app -> {
@@ -149,10 +151,14 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
     }
 
     @RequiresPrivilege(Authorities.MAINTAINER_VALUE)
+    @OnRepositoryType(RepositoryType.APPLICATION)
     public Mono<Void> setMetric(Application application, String key, Serializable value, SessionContext ctx) {
         ModelBuilder m = this.buildMetricsItem(key, value, application.iri(), null);
 
-        return this.applicationsStore.insertModel(m.build(), ctx.updateEnvironment(env -> env.setRepositoryType(RepositoryType.APPLICATION)).getEnvironment())
+        Transaction trx = new RdfTransaction().forInsert(m.build());
+
+        return this.store.commit(trx, ctx.getEnvironment())
+                .filter(Transaction::isCompleted)
                 .then()
                 .doOnSuccess(app -> {
                     log.trace("Updated metrics '{}' of application with label '{}'", application.key(), application.label());
@@ -161,6 +167,7 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
     }
 
     @RequiresPrivilege(Authorities.MAINTAINER_VALUE)
+    @OnRepositoryType(RepositoryType.APPLICATION)
     public Mono<Void> deleteConfigurationItem(Application application, String configurationKey, SessionContext ctx) {
         this.assertUpdatePrivilege(application, ctx);
 
@@ -170,16 +177,15 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
                         .andHas(ApplicationTerms.CONFIG_VALUE, QueryVariables.varConfigValue)
                         .and(QueryVariables.varNodeConfigurationItem.has(ApplicationTerms.CONFIG_FOR, application.iri()))
                 );
-        Flux<IRI> nodesToDelete = this.applicationsStore.query(listConfigurationItemsQuery, ctx.getEnvironment())
+        Flux<IRI> nodesToDelete = this.store.query(listConfigurationItemsQuery, ctx.getEnvironment())
                 .map(BindingsAccessor::new)
                 .map(ba -> ba.findValue(QueryVariables.varNodeConfigurationItem))
                 .filter(Optional::isPresent)
                 .filter(opt -> opt.get().isIRI())
                 .map(opt -> (IRI) opt.get());
-        return nodesToDelete.flatMap(configNode -> this.applicationsStore.listStatements(configNode, null, null, ctx.getEnvironment()))
-                .map(LinkedHashModel::new)
-                .flatMap(model -> this.applicationsStore.deleteModel(model, ctx.getEnvironment()))
-                .collectList()
+        return nodesToDelete.flatMap(configNode -> this.store.listStatements(configNode, null, null, ctx.getEnvironment()))
+                .map(statements -> new RdfTransaction().forRemoval(statements))
+                .flatMap(transaction -> this.store.commit(transaction, ctx.getEnvironment()))
                 .then()
                 .doOnSuccess(res -> {
                     this.eventPublisher.publishEvent(new ApplicationUpdatedEvent(application));
@@ -187,6 +193,7 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
                 });
     }
     @RequiresPrivilege(Authorities.READER_VALUE)
+    @OnRepositoryType(RepositoryType.APPLICATION)
     public Flux<ConfigurationItem> listConfigurationItems(Application application, SessionContext ctx) {
         assertReadPrivilege(application, ctx);
 
@@ -196,21 +203,22 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
                         .andHas(ApplicationTerms.CONFIG_VALUE, QueryVariables.varConfigValue)
                         .and(QueryVariables.varNodeConfigurationItem.has(ApplicationTerms.CONFIG_FOR, application.iri()))
                 );
-        return this.applicationsStore.query(listConfigurationItemsQuery, ctx.getEnvironment())
+        return this.store.query(listConfigurationItemsQuery, ctx.getEnvironment())
                 .map(BindingsAccessor::new)
                 .flatMap(QueryVariables::buildConfigurationItemFromBindings);
 
     }
 
     @RequiresPrivilege(Authorities.MAINTAINER_VALUE)
+    @OnRepositoryType(RepositoryType.APPLICATION)
     public Mono<Void> delete(Application application, SessionContext context) {
         assertUpdatePrivilege(application, context);
 
         return this.listConfigurationItems(application, context)
                 .flatMap(configurationItem -> this.deleteConfigurationItem(application, configurationItem.key(), context)).collectList()
                 .doOnSuccess(suc -> log.trace("Deleted all configuration item statements for application with label '{}'", application.label()))
-                .then( this.applicationsStore.listStatements(application.iri(), null, null, context.getEnvironment()))
-                .flatMap(statements -> this.applicationsStore.deleteModel(statements, context.getEnvironment()))
+                .then( this.store.listStatements(application.iri(), null, null, context.getEnvironment()))
+                .map(statements -> new RdfTransaction().forRemoval(statements))
                 .doOnSuccess(suc -> log.trace("Deleted all application statements for application with label '{}'", application.label()))
                 .then()
                 .doOnSuccess(res -> {
@@ -220,13 +228,13 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
 
 
     }
-    @RequiresPrivilege(Authorities.READER_VALUE)
     public Mono<Application> getApplication(String applicationKey, SessionContext ctx) {
         return this.getApplication(applicationKey, ctx, false);
     }
 
 
     @RequiresPrivilege(Authorities.READER_VALUE)
+    @OnRepositoryType(RepositoryType.APPLICATION)
     public Mono<Application> getApplication(String applicationKey, SessionContext ctx, boolean ignoreCache) {
 
         Application cached = this.caching_enabled && !ignoreCache ? this.cache.getIfPresent(applicationKey) : null;
@@ -249,14 +257,12 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
     }
 
     @RequiresPrivilege(Authorities.READER_VALUE)
+    @OnRepositoryType(RepositoryType.APPLICATION)
     public Flux<Application> listApplications(SessionContext ctx) {
         try {
             Validate.isTrue(ctx.getAuthentication().isPresent());
             Validate.isTrue(ctx.getAuthentication().get().isAuthenticated());
         } catch (Exception e) { return Flux.error(e); }
-
-
-        ctx.updateEnvironment(env -> env.setRepositoryType(RepositoryType.APPLICATION));
 
         if (!this.caching_enabled || this.cache.asMap().isEmpty()) {
 
@@ -275,12 +281,12 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
                     );
 
             return Mono.zip(
-                            this.applicationsStore.query(listApplicationsQuery, ctx.getEnvironment())
+                            this.store.query(listApplicationsQuery, ctx.getEnvironment())
                                     .map(BindingsAccessor::new)
                                     .flatMap(QueryVariables::buildApplicationFromBindings)
                                     .collectList()
                             ,
-                            this.applicationsStore.query(listConfigurationItemsQuery, ctx.getEnvironment())
+                            this.store.query(listConfigurationItemsQuery, ctx.getEnvironment())
                                     .map(BindingsAccessor::new)
                                     .flatMap(QueryVariables::buildConfigurationItemFromBindings)
                                     .collectList()
@@ -303,6 +309,7 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
         }
     }
     @RequiresPrivilege(Authorities.READER_VALUE)
+    @OnRepositoryType(RepositoryType.APPLICATION)
     public Mono<Application> getApplicationByLabel(String applicationLabel, SessionContext ctx) {
         try {
             Validate.isTrue(ctx.getAuthentication().isPresent());
@@ -352,13 +359,17 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
         return builder;
     }
 
+    @Deprecated
     private void assertUpdatePrivilege(Application requestedApplication, SessionContext ctx) {
         if(! this.verifyUpdatePrivilege(requestedApplication, ctx)) throw new InsufficientPrivilegeException("Unknown application or insufficient privilege.");
     }
+
+    @Deprecated
     private void assertReadPrivilege(Application requestedApplication, SessionContext ctx) {
         if(! this.verifyReadingPrivilege(requestedApplication, ctx)) throw new InsufficientPrivilegeException("Unknown application or insufficient privilege.");
     }
 
+    @Deprecated
     private boolean verifyReadingPrivilege(Application requestedApplication, SessionContext ctx) {
         boolean isPublic = requestedApplication.flags().isPublic();
         boolean isSubscriber = (ctx.getAuthenticationOrThrow() instanceof SubscriptionToken subscriptionToken) && (subscriptionToken.getApplication().key().equalsIgnoreCase(requestedApplication.key()));
