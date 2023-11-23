@@ -1,0 +1,46 @@
+a.external {
+    color: #236AB9
+}
+
+a.definition {
+    color: #448D76
+}
+
+a.internal {
+    color: #E24D2C;
+}
+
+div.fragment {
+    display: inline-block;
+    font-family: monospace;
+    white-space: pre-wrap;
+    margin-top: 1em;
+}
+
+span.ns {
+    font-weight: bold;
+}
+
+body {
+    background-color: lightgray;
+}
+
+
+div.box {
+    background-color: white;
+    width: 90%;
+    margin: 0 auto;
+    padding: 1em;
+}
+
+@media only screen and (max-width: 600px) {
+    div.box {
+        width: 100%;
+    }
+}
+
+@media only screen and (min-width: 1200px) {
+    div.box {
+        width: 80%;
+    }
+}

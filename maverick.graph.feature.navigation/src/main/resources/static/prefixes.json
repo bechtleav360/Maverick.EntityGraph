@@ -1,0 +1,18 @@
+{
+    "hydra": {
+        "url": "https://www.hydra-cg.com/spec/latest/core/#",
+        "external": true
+    },
+    "rdfs": {
+        "url": "https://www.w3.org/TR/rdf-schema/",
+        "external": true
+    },
+    "sdo": {
+        "url": "https://schema.org/",
+        "external": true
+    }, 
+    "schema": {
+        "url": "http://schema.org/",
+        "external": true
+    }
+}

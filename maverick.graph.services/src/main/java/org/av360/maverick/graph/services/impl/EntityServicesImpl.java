@@ -111,6 +111,7 @@ public class EntityServicesImpl implements EntityServices {
                     PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
                     PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
                     PREFIX sdo: <https://schema.org/>
+                    PREFIX schema: <http://schema.org/>
                     PREFIX dcterms: <http://purl.org/dc/terms/>
 
                     SELECT ?id ?sct ?dct ?rdt ?skt (GROUP_CONCAT(DISTINCT ?type; SEPARATOR=",") AS ?types)
@@ -124,6 +125,9 @@ public class EntityServicesImpl implements EntityServices {
                         OFFSET $offset
                       }
                       OPTIONAL { ?id sdo:title ?sct }.
+                      OPTIONAL { ?id sdo:name ?sct }.
+                      OPTIONAL { ?id schema:title ?sct }.
+                      OPTIONAL { ?id schema:name ?sct }.                      
                       OPTIONAL { ?id dcterms:title ?dct }.
                       OPTIONAL { ?id rdfs:label ?rdt }.
                       OPTIONAL { ?id skos:prefLabel ?skt }.

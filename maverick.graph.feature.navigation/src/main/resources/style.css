@@ -1,11 +1,15 @@
-        a.external {
-            color: CornflowerBlue;
-        }
+a.external {
+    color: CornflowerBlue;
+}
 
-        a.internal {
-            color: PaleVioletRed;
-        }
+a.definition {
+    color: rgb(33, 138, 33)
+}
 
-        span.ns {
-            font-weight: bold;
-        }
+a.internal {
+    color: PaleVioletRed;
+}
+
+span.ns {
+    font-weight: bold;
+}

@@ -42,6 +42,16 @@ public class NavigationRestController extends AbstractController {
         return super.acquireContext().flatMapMany(this.navigationServices::start);
     }
 
+    @GetMapping(value = "/s/{scope}", produces = MediaType.TEXT_HTML_VALUE)
+    @ResponseStatus(HttpStatus.OK)
+    public Flux<Statement> navigateToScopeEntryPoint(String scope) {
+        Map<String, String> params = new HashMap<>();
+        params.put("entities", "list");
+
+        return super.acquireContext().flatMapMany(context -> this.navigationServices.browse(params, context));
+    }
+
+
     @GetMapping(value = "/node", produces = MediaType.TEXT_HTML_VALUE)
     @ResponseStatus(HttpStatus.OK)
     public ResponseEntity<Void> navigate(@RequestParam MultiValueMap<String, String> requestParameters, WebSession session) {
