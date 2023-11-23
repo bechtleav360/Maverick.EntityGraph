@@ -10,7 +10,7 @@ import org.eclipse.rdf4j.model.vocabulary.FOAF;
 import org.eclipse.rdf4j.model.vocabulary.SKOS;
 import org.eclipse.rdf4j.model.vocabulary.SKOSXL;
 import org.eclipse.rdf4j.rio.*;
-import org.eclipse.rdf4j.rio.turtle.TurtleWriter;
+import org.eclipse.rdf4j.rio.helpers.BasicWriterSettings;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -22,11 +22,10 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
-public class TurtleHtmlWriter implements RDFWriter {
+public class HtmlWriter implements RDFWriter {
 
-    private String javascript = "const lines=document.getElementById(\"rdf\").innerText.split(\"\\n\"),prefix=JSON.parse(document.getElementById(\"ns\").innerText);var pretty=\"\";lines.forEach(e=>{e=e.replace(/[\\u00A0-\\u9999<>\\&]/g,e=>\"&#\"+e.charCodeAt(0)+\";\");let t=e.match(/(.*)(@prefix)\\s([a-z]+):\\s(.*)\\s/);t?pretty+=`${t[1]}<span class=\"ns\">${t[2]} ${t[3]} ${t[4]}</span>`:e.split(\" \").forEach(e=>{let t=e.match(/([a-z]+):([a-zA-Z]{1}[a-z0-9A-Z]+)/),r=e.match(/\\&#60;(http:\\/\\/localhost.*)\\&#62;/);r?pretty+=`<a class=\"external\" target=\"_blank\" href=\"${r[1]}\">${e}</a>`:t?prefix[t[1]]&&prefix[t[1]].external?pretty+=`<a class=\"external\" target=\"_blank\" href=\"${prefix[t[1]].url}#${t[2]}\">${e}</a>`:pretty+=`<a class=\"internal\" href=\"/nav/node?id=${e}\">${e}</a>`:pretty+=e,pretty+=\" \"}),pretty+=\"</br>\"}),document.querySelector(\"#source\").innerHTML=pretty;";
 
-    private final TurtleWriter delegate;
+    private final RDFWriter delegate;
     private final OutputStream out;
     private final URI requestURI;
 
@@ -40,10 +39,16 @@ public class TurtleHtmlWriter implements RDFWriter {
         }
     }
 
-    public TurtleHtmlWriter(TurtleWriter turtleWriter, OutputStream out, URI requestURI) {
-        delegate = turtleWriter;
+    public HtmlWriter(RDFWriter writer, OutputStream out, URI requestURI) throws IOException {
+        delegate = writer;
         this.out = out;
         this.requestURI = requestURI;
+
+
+        WriterConfig config = new WriterConfig();
+        config.set(BasicWriterSettings.INLINE_BLANK_NODES, true);
+        delegate.set(BasicWriterSettings.INLINE_BLANK_NODES, true);
+
     }
     @Override
     public RDFFormat getRDFFormat() {
@@ -73,15 +78,25 @@ public class TurtleHtmlWriter implements RDFWriter {
     @Override
     public void startRDF() throws RDFHandlerException {
         String header = """
+                <!doctype html>
                 <html lang="en">
                 <head>
                     <title>Maverick Entity Graph Navigation</title>
                     <meta charset="UTF-8">
-                    <style>"""+this.printStyles()+"""
-                    </style>
+                    
+                    <link rel="stylesheet" href="/style.css"></style>
                 </head>
                 <body>
-                    <pre id="source"></pre>
+                <div class="box">
+                    <div id="header_box">
+                        <div id="header"></div>
+                    </div>
+                    <div id="navigation_box">
+                        <div id="navigation"></div>
+                    </div>
+                
+                    <div id="content"></div>
+                </div>
                     <script id="rdf" type="text/turtle">
                 """;
 
@@ -93,13 +108,12 @@ public class TurtleHtmlWriter implements RDFWriter {
     public void endRDF() throws RDFHandlerException {
         String footer = """
                     </script>
-                    <script id="ns" type="application/json">"""+this.getPrefixes()+"""
-                    </script>
-                    <script type="text/javascript">"""+this.printScripts()+"""
-                    </script>
+                    <script id="ns" type="application/json">%s</script>
+                    <!-- <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script> -->
+                    <script src="/script.js"></script>
                 </body>
                 </html>
-                """;
+                """.formatted(this.getPrefixes());
 
         delegate.endRDF();
         appendLine(footer);
@@ -110,12 +124,18 @@ public class TurtleHtmlWriter implements RDFWriter {
     }
 
     private String printScripts() {
-        String s = this.printFile("script.js");
-
-
-
-        s = s.replace("{{host}}", this.requestURI.getHost().replace(".", "\\."));
-        return s;
+        StringWriter sw = new StringWriter();
+        sw.append("""
+                <script type="text/javascript">
+                %s
+                </script>
+                """.formatted(this.printFile("script.js")));
+        sw.append("""
+                <script type="text/javascript">
+                %s
+                </script>
+                """.formatted(this.printFile("vue.js")));
+        return sw.toString().replace("{{host}}", this.requestURI.getHost().replace(".", "\\."));
     }
 
     private String printFile(String name) {

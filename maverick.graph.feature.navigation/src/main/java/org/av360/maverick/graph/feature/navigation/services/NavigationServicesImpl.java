@@ -5,16 +5,15 @@ import org.av360.maverick.graph.model.annotations.RequiresPrivilege;
 import org.av360.maverick.graph.model.context.SessionContext;
 import org.av360.maverick.graph.model.rdf.AnnotatedStatement;
 import org.av360.maverick.graph.model.security.Authorities;
-import org.av360.maverick.graph.model.vocabulary.Local;
 import org.av360.maverick.graph.model.vocabulary.SDO;
 import org.av360.maverick.graph.services.EntityServices;
 import org.av360.maverick.graph.services.NavigationServices;
-import org.av360.maverick.graph.store.rdf.fragments.TripleModel;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.util.ModelBuilder;
+import org.eclipse.rdf4j.model.util.Values;
 import org.eclipse.rdf4j.model.vocabulary.HYDRA;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.model.vocabulary.RDFS;
@@ -37,6 +36,9 @@ public class NavigationServicesImpl implements NavigationServices {
 
     ValueFactory vf = SimpleValueFactory.getInstance();
 
+    private IRI NAVIGATION_CONTEXT = Values.iri("urn:nav");
+    private IRI DATA_CONTEXT = Values.iri("urn:data");
+
 
     @Value("${application.features.modules.navigation.configuration.limit:100}")
     int defaultLimit = 100;
@@ -50,9 +52,9 @@ public class NavigationServicesImpl implements NavigationServices {
 
                     ModelBuilder builder = new ModelBuilder();
 
-                    Resource root = vf.createIRI(Local.URN_PREFIX, "nav");
-                    Resource swaggerLink = vf.createIRI(Local.URN_PREFIX, "explorer");
-                    Resource openApiLink = vf.createIRI(Local.URN_PREFIX, "specification"); //v3/api-docs
+                    Resource apiDocsNode = Values.bnode();
+                    Resource swaggerLink = Values.bnode();
+                    Resource openApiLink = Values.bnode();//v3/api-docs
 
                     /*
                     if(ctx.getDetails() instanceof RequestDetails details) {
@@ -66,7 +68,9 @@ public class NavigationServicesImpl implements NavigationServices {
                             .setNamespace(SDO.PREFIX, SDO.NAMESPACE)
                     ;
 
-                    builder.subject(root)
+                    builder.namedGraph(NAVIGATION_CONTEXT);
+
+                    builder.subject(apiDocsNode)
                             .add(RDF.TYPE, HYDRA.API_DOCUMENTATION)
                             .add(HYDRA.TITLE, "Maverick.EntityGraph")
                             .add(HYDRA.DESCRIPTION, "Opinionated Web API to access linked data fragments in a knowledge graph.")
@@ -99,13 +103,33 @@ public class NavigationServicesImpl implements NavigationServices {
             if (params.get("entities").equalsIgnoreCase("list"))
                 return this.list(params, ctx, null);
             else if (StringUtils.hasLength(params.get("entities"))) {
-                return this.entityServices.find(params.get("entities"), null, ctx).flatMapIterable(TripleModel::asStatements);
+                return this.view(params, ctx);
+
             }
         }
 
         return Flux.empty();
     }
 
+    private Flux<AnnotatedStatement> view(Map<String, String> params, SessionContext ctx) {
+        return this.entityServices.find(params.get("entities"), null, ctx)
+                .map(fragment -> {
+                    ModelBuilder builder = new ModelBuilder();
+                    IRI currentView = this.generateResolvableIRI("/api/entities/%s".formatted(((IRI) fragment.getIdentifier()).getLocalName()));
+                    builder.namedGraph(NAVIGATION_CONTEXT);
+                    builder.setNamespace(HYDRA.PREFIX, HYDRA.NAMESPACE);
+                    builder.add(currentView, RDF.TYPE, HYDRA.VIEW);
+                    builder.add(currentView, HYDRA.DESCRIPTION, "Details of a linked data fragment.");
+                    builder.add(currentView, HYDRA.PREVIOUS, this.generateResolvableIRI("/nav"));
+
+                    builder.namedGraph(DATA_CONTEXT);
+                    builder.build().getNamespaces().addAll(fragment.getNamespaces());
+                    builder.build().addAll(fragment.getModel());
+                    return builder.build();
+                })
+                .map(model -> model.stream().map(statement -> AnnotatedStatement.wrap(statement, model.getNamespaces())))
+                .flatMapMany(Flux::fromStream);
+    }
 
 
     @RequiresPrivilege(Authorities.READER_VALUE)
@@ -120,10 +144,12 @@ public class NavigationServicesImpl implements NavigationServices {
         return this.entityServices.list(limit, offset, ctx, query)
                 .collectList()
                 .map(list -> {
+
                     ModelBuilder builder = new ModelBuilder();
                     IRI nodeCollection = this.generateResolvableIRI("/api/entities");
                     IRI nodePaging = this.generateResolvableIRI("/api/entities",  params);
 
+                    builder.namedGraph(NAVIGATION_CONTEXT);
                     builder.setNamespace(HYDRA.PREFIX, HYDRA.NAMESPACE);
                     builder.add(nodeCollection, RDF.TYPE, HYDRA.COLLECTION);
                     builder.add(nodeCollection, HYDRA.VIEW, nodePaging);
@@ -148,8 +174,8 @@ public class NavigationServicesImpl implements NavigationServices {
                         builder.add(HYDRA.NEXT, this.generateResolvableIRI("/api/entities", params));
                     }
 
+                    builder.namedGraph(DATA_CONTEXT);
                     list.forEach(rdfEntity -> {
-                        builder.add(HYDRA.MEMBER, rdfEntity.getIdentifier());
                         builder.build().getNamespaces().addAll(rdfEntity.getNamespaces());
                         builder.build().addAll(rdfEntity.getModel());
                     });

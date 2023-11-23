@@ -9,7 +9,6 @@ import org.eclipse.rdf4j.model.*;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.rio.RDFFormat;
 import org.eclipse.rdf4j.rio.RDFWriter;
-import org.eclipse.rdf4j.rio.turtle.TurtleWriter;
 import org.reactivestreams.Publisher;
 import org.springframework.core.ResolvableType;
 import org.springframework.core.codec.Encoder;
@@ -163,9 +162,9 @@ public class RdfHtmlEncoder implements Encoder<Statement> {
                 return (T) vf.createIRI(uri);
             }
 
-            if(literal.stringValue().startsWith("/")) {
+            if(literal.stringValue().startsWith("?/")) {
                 String path = literal.stringValue();
-                String uri = UriComponentsBuilder.fromUri(requestURI).replacePath(path).replaceQuery("").build().toUriString();
+                String uri = UriComponentsBuilder.fromUri(requestURI).replacePath(path.substring(1)).replaceQuery("").build().toUriString();
                 return (T) vf.createIRI(uri);
             }
         }
@@ -174,10 +173,10 @@ public class RdfHtmlEncoder implements Encoder<Statement> {
     }
 
 
-    private RDFWriter getWriter(OutputStream out, URI requestURI) {
-        MimeType turtle = MimeType.valueOf(RDFFormat.TURTLE.getDefaultMIMEType());
-        TurtleWriter writer = (TurtleWriter) RdfUtils.getWriterFactory(turtle).get().getWriter(out);
-        return new TurtleHtmlWriter(writer, out, requestURI);
+    private RDFWriter getWriter(OutputStream out, URI requestURI) throws IOException {
+        MimeType mime = MimeType.valueOf(RDFFormat.TURTLESTAR.getDefaultMIMEType());
+        RDFWriter writer = RdfUtils.getWriterFactory(mime).orElseThrow().getWriter(out);
+        return new HtmlWriter(writer, out, requestURI);
     }
 
 

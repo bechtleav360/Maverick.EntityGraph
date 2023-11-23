@@ -70,7 +70,7 @@ public class ValuesController extends AbstractController implements ValuesAPI {
                 .flatMap(ctx -> values.removeValue(key, prefixedProperty, languageTag, valueIdentifier, ctx))
                 .flatMapIterable(Triples::asStatements)
                 .doOnSubscribe(s -> {
-                    if (log.isDebugEnabled()) log.debug("Deleted property '{}' of entity '{}'", prefixedProperty, key);
+                    if (log.isDebugEnabled()) log.debug("Delete property '{}' of entity '{}'", prefixedProperty, key);
                 });
     }
 

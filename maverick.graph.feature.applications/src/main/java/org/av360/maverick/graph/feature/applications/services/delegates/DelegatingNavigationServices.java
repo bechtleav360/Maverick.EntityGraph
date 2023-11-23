@@ -1,18 +1,17 @@
 package org.av360.maverick.graph.feature.applications.services.delegates;
 
 import org.av360.maverick.graph.feature.applications.model.domain.Application;
-import org.av360.maverick.graph.feature.applications.model.vocab.ApplicationTerms;
 import org.av360.maverick.graph.feature.applications.services.ApplicationsService;
 import org.av360.maverick.graph.model.context.SessionContext;
 import org.av360.maverick.graph.model.enums.ConfigurationKeysRegistry;
 import org.av360.maverick.graph.model.rdf.AnnotatedStatement;
-import org.av360.maverick.graph.model.vocabulary.Local;
 import org.av360.maverick.graph.services.NavigationServices;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Namespace;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.util.ModelBuilder;
+import org.eclipse.rdf4j.model.util.Values;
 import org.eclipse.rdf4j.model.vocabulary.HYDRA;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,11 +24,10 @@ import java.util.Map;
 import java.util.Set;
 
 public class DelegatingNavigationServices implements NavigationServices {
-    private final NavigationServices delegate;
-    private ApplicationsService applicationsService;
-    private final SimpleValueFactory vf;
-
     public static final String CONFIG_KEY_CUSTOM_LIST_QUERY = "custom_list_query";
+    private final NavigationServices delegate;
+    private final SimpleValueFactory vf;
+    private ApplicationsService applicationsService;
 
     public DelegatingNavigationServices(NavigationServices delegate, ApplicationsService applicationsService) {
         this.applicationsService = applicationsService;
@@ -50,26 +48,33 @@ public class DelegatingNavigationServices implements NavigationServices {
                         })
                         .switchIfEmpty(Mono.just(List.of(Application.DEFAULT)))
                         .flatMapMany(applications -> Flux.create(sink -> {
-                            IRI appsCollection = vf.createIRI(ResolvableUrlPrefix+"/api/applications");
-                            Resource root = vf.createIRI(Local.URN_PREFIX, "nav");
+                            Resource appsCollection = Values.bnode();
 
                             ModelBuilder builder = new ModelBuilder()
                                     .subject(appsCollection)
                                     .add(RDF.TYPE, HYDRA.COLLECTION)
-                                    .add(HYDRA.TOTAL_ITEMS, applications.size())
-                                    .subject(root)
-                                    .add(HYDRA.ENTRYPOINT, appsCollection);
+                                    .add(HYDRA.TITLE, "Scopes")
+                                    .add(HYDRA.DESCRIPTION, "Collection of available scopes")
+                                    .add(HYDRA.TOTAL_ITEMS, applications.size());
 
                             applications.forEach(application -> {
-                                IRI app = vf.createIRI(Local.Applications.NAMESPACE, application.key());
+                                Resource appNode = Values.bnode(application.label());
+                                builder.subject(appNode)
+                                        .add(HYDRA.TITLE, application.label())
+                                        .add(HYDRA.ENTRYPOINT, "/api/s/%s/entities".formatted(application.label()))
+                                        .add(HYDRA.VIEW, "?/nav/s/%s".formatted(application.label()));
+
+
+                                builder.add(appsCollection, HYDRA.MEMBER, appNode);
+
+                            /*    IRI app = vf.createIRI(Local.Applications.NAMESPACE, application.key());
                                 builder.setNamespace(application.label(), ResolvableUrlPrefix + "/api/s/" + application.label() + "/");
                                 // FIXME: we only add the new namespace to late statements, later we just use the namespaces of the first statement
 
                                 builder.subject(app)
                                         .add(ApplicationTerms.HAS_KEY, application.key())
                                         .add(ApplicationTerms.HAS_LABEL, application.label())
-                                        .add(HYDRA.ENTRYPOINT, "/api/s/%s/entities".formatted(application.label()))
-                                        .add(appsCollection, HYDRA.MEMBER, app);
+                                        .add(HYDRA.ENTRYPOINT, "/api/s/%s/entities".formatted(application.label()));*/
                             });
 
                             Set<Namespace> namespaces = builder.build().getNamespaces();
@@ -80,14 +85,13 @@ public class DelegatingNavigationServices implements NavigationServices {
 
     @Override
     public Flux<AnnotatedStatement> list(Map<String, String> requestParams, SessionContext ctx, @Nullable String query) {
-        if(ctx.getEnvironment().hasScope()) {
+        if (ctx.getEnvironment().hasScope()) {
             return this.applicationsService.getApplication(ctx.getEnvironment().getScope().label(), ctx)
                     .filter(application -> application.configuration().containsKey(CONFIG_KEY_CUSTOM_LIST_QUERY))
                     .map(application -> application.configuration().get(CONFIG_KEY_CUSTOM_LIST_QUERY))
-                    .flatMapMany(appQuery ->  delegate.list(requestParams, ctx, appQuery.toString()))
+                    .flatMapMany(appQuery -> delegate.list(requestParams, ctx, appQuery.toString()))
                     .switchIfEmpty(delegate.list(requestParams, ctx, null));
-        }
-        else return delegate.list(requestParams, ctx, null);
+        } else return delegate.list(requestParams, ctx, null);
     }
 
     @Override
