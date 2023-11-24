@@ -29,7 +29,7 @@ public class InsertDetails {
 
     public Mono<Transaction> insert(String entityKey, String prefixedValueKey, String prefixedDetailKey, String value, @Nullable String valueIdentifier, SessionContext ctx) {
         return Mono.zip(
-                        ctrl.identifierServices.asIRI(entityKey, ctx.getEnvironment()).flatMap(entityIdentifier -> ctrl.entityServices.get(entityIdentifier, 0, true, ctx)),
+                        ctrl.identifierServices.asIRI(entityKey, ctx.getEnvironment()).flatMap(entityIdentifier -> ctrl.entityServices.get(entityIdentifier, true, 0, ctx)),
                         ctrl.schemaServices.resolvePrefixedName(prefixedValueKey),
                         ctrl.schemaServices.resolvePrefixedName(prefixedDetailKey)
                 ).flatMap(tuple -> {
