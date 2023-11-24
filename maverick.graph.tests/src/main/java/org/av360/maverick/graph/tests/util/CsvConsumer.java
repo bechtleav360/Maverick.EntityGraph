@@ -33,13 +33,27 @@ public class CsvConsumer implements Consumer<EntityExchangeResult<byte[]>> {
         });
         rows.forEach(row -> {
             row.values().forEach(value -> {
-                value = StringUtils.abbreviate(value, 40);
+                value = StringUtils.abbreviateMiddle(value, "...", 40);
                 result.append(StringUtils.rightPad(value, 40)).append(" | ");
             });
             result.append('\n');
         });
 
         return result.toString();
+    }
+
+    public static String cutStringMiddle(String input) {
+        int length = input.length();
+        if (length <= 40) {
+            return input; // Return the original string if it's 40 characters or less
+        }
+
+        // Calculate the length of the beginning and end parts
+        int partLength = (40 - 3) / 2; // 3 for the length of the ellipses
+        String start = input.substring(0, partLength);
+        String end = input.substring(length - partLength);
+
+        return start + "..." + end; // Concatenate with ellipses in the middle
     }
 
     @Override

@@ -8,7 +8,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.1.5</version>
+        <version>3.1.6</version>
         <relativePath/>
         <!-- lookup parent from repository -->
     </parent>
@@ -38,7 +38,7 @@
 
     <description>Provides access to the graph through json-ld api</description>
     <properties>
-        <revision>0.4</revision>
+        <revision>0.4.1</revision>
         <maven.compiler.source>${java.version}</maven.compiler.source>
         <maven.compiler.target>${java.version}</maven.compiler.target>
         <java.version>17</java.version>
