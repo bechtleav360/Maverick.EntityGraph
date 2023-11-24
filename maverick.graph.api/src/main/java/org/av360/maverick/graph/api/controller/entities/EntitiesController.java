@@ -44,7 +44,7 @@ public class EntitiesController extends AbstractController implements EntitiesAP
     @Override
     public Flux<AnnotatedStatement> read(@PathVariable String id, @RequestParam(required = false) @Nullable String property) {
         return super.acquireContext()
-                .flatMap(ctx -> entityServices.find(id, property, ctx))
+                .flatMap(ctx -> entityServices.find(id,  property, true, 0,  ctx))
                 .flatMapIterable(TripleModel::asStatements)
                 .doOnSubscribe(s -> {
                     if (log.isDebugEnabled()) log.debug("Request to read entity with id: {}", id);

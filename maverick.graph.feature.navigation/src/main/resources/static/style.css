@@ -11,10 +11,14 @@ a.internal {
 }
 
 div.fragment {
-    display: inline-block;
+    display: block;
     font-family: monospace;
     white-space: pre-wrap;
     margin-top: 1em;
+}
+
+div.header {
+    background-color: aliceblue;
 }
 
 span.ns {

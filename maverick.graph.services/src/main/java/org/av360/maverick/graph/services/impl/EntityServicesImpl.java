@@ -1,5 +1,6 @@
 package org.av360.maverick.graph.services.impl;
 
+import jakarta.annotation.Nullable;
 import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.model.annotations.OnRepositoryType;
 import org.av360.maverick.graph.model.annotations.RequiresPrivilege;
@@ -87,8 +88,8 @@ public class EntityServicesImpl implements EntityServices {
     @Override
     @RequiresPrivilege(Authorities.READER_VALUE)
     @OnRepositoryType(RepositoryType.ENTITIES)
-    public Mono<Fragment> get(IRI entityIri, int includeNeighboursLevel, boolean includeDetails, SessionContext ctx) {
-        return entityStore.asFragmentable().getFragment(entityIri, includeNeighboursLevel, includeDetails, ctx.getEnvironment())
+    public Mono<Fragment> get(IRI entityIri, boolean details, int depth, SessionContext ctx) {
+        return entityStore.asFragmentable().getFragment(entityIri, depth, details, ctx.getEnvironment())
                 .switchIfEmpty(Mono.error(new EntityNotFound(entityIri)));
     }
 
@@ -176,9 +177,9 @@ public class EntityServicesImpl implements EntityServices {
     @Override
     @RequiresPrivilege(Authorities.READER_VALUE)
     @OnRepositoryType(RepositoryType.ENTITIES)
-    public Mono<Fragment> findByKey(String entityKey, boolean includeDetails, SessionContext ctx) {
+    public Mono<Fragment> findByKey(String entityKey, boolean details, int depth, SessionContext ctx) {
         return identifierServices.asIRI(entityKey, ctx.getEnvironment())
-                .flatMap(entityIdentifier -> this.get(entityIdentifier, 1, includeDetails , ctx));
+                .flatMap(entityIdentifier -> this.get(entityIdentifier, details, 1, ctx));
     }
 
     @Override
@@ -202,12 +203,12 @@ public class EntityServicesImpl implements EntityServices {
     @Override
     @RequiresPrivilege(Authorities.READER_VALUE)
     @OnRepositoryType(RepositoryType.ENTITIES)
-    public Mono<Fragment> find(String identifier, String property, SessionContext ctx) {
+    public Mono<Fragment> find(String key, @Nullable String property,  boolean details, int depth, SessionContext ctx) {
         if (StringUtils.hasLength(property)) {
             return schemaServices.resolvePrefixedName(property)
-                    .flatMap(propertyIri -> this.findByProperty(identifier, propertyIri, ctx));
+                    .flatMap(propertyIri -> this.findByProperty(key, propertyIri, ctx));
         } else {
-            return this.findByKey(identifier,  false, ctx);
+            return this.findByKey(key,  false, depth, ctx);
         }
     }
 

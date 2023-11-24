@@ -23,12 +23,12 @@ public interface EntityServices {
      *
      * @param authentication The current authentication
      * @param entityIri      The unique entity URI
-     * @param neighbourLevel how many levels of neigbours to include (0 is entity only, 1 is direct neighbours)
-     * @param includeDetails
+     * @param details
+     * @param depth          how many levels of neigbours to include (0 is entity only, 1 is direct neighbours)
      * @return Entity as Mono
      */
 
-    Mono<Fragment> get(IRI entityIri, int neighbourLevel, boolean includeDetails, SessionContext ctx);
+    Mono<Fragment> get(IRI entityIri, boolean details, int depth, SessionContext ctx);
 
     /**
      * Retrieves an entity representation (identifier, values and relations) with its direct neighbours from store.
@@ -38,7 +38,7 @@ public interface EntityServices {
      * @return Entity as Mono
      */
     default Mono<Fragment> get(IRI entityIri, SessionContext ctx) {
-        return this.get(entityIri, 1, false, ctx);
+        return this.get(entityIri, false, 1, ctx);
     }
 
     /**
@@ -99,15 +99,17 @@ public interface EntityServices {
      *
      * @param authentication The current authentication
      * @param entityKey      The unique entity key
-     * @param includeDetails
+     * @param details
+     * @param depth
      * @return Entity as Mono
      */
 
-    Mono<Fragment> findByKey(String entityKey, boolean includeDetails, SessionContext ctx);
+    Mono<Fragment> findByKey(String entityKey, boolean details, int depth, SessionContext ctx);
 
     Mono<Fragment> findByProperty(String identifier, IRI predicate, SessionContext ctx);
 
-    Mono<Fragment> find(String entityKey, @Nullable String property, SessionContext ctx);
+
+    Mono<Fragment> find(String entityKey, @Nullable String property,  boolean details, int depth, SessionContext ctx);
 
     Mono<Boolean> contains(IRI entityIri, SessionContext ctx);
 

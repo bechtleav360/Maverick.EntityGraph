@@ -17,7 +17,7 @@ public class ReadLinks {
     public Mono<Triples> list(String entityKey, String prefixedPoperty, SessionContext ctx) {
         return Mono.zip(
                 ctrl.identifierServices.asIRI(entityKey, ctx.getEnvironment())
-                        .flatMap(entityIdentifier -> ctrl.entityServices.get(entityIdentifier, 0, true, ctx)),
+                        .flatMap(entityIdentifier -> ctrl.entityServices.get(entityIdentifier, true, 0, ctx)),
                 ctrl.schemaServices.resolvePrefixedName(prefixedPoperty)
         ).map(pair -> {
             Fragment entity = pair.getT1();

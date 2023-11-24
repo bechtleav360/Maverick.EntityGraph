@@ -112,7 +112,7 @@ public class NavigationServicesImpl implements NavigationServices {
     }
 
     private Flux<AnnotatedStatement> view(Map<String, String> params, SessionContext ctx) {
-        return this.entityServices.find(params.get("entities"), null, ctx)
+        return this.entityServices.find(params.get("entities"), null, true, 0, ctx)
                 .map(fragment -> {
                     ModelBuilder builder = new ModelBuilder();
                     IRI currentView = this.generateResolvableIRI("/api/entities/%s".formatted(((IRI) fragment.getIdentifier()).getLocalName()));
