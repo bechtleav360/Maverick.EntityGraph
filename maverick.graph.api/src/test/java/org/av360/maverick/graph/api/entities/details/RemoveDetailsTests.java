@@ -56,7 +56,7 @@ public class RemoveDetailsTests extends ApiTestsBase  {
         RdfConsumer rc1 = super.getTestClient().createEntity(EntitiesGenerator.generateCreativeWork());
         IRI sourceIdentifier = rc1.getEntityIdentifier(SDO.CREATIVE_WORK);
 
-        super.printStep("Setting value");
+        super.printStep("Setting value 'sdo.teaches'");
         super.getTestClient().createValue(sourceIdentifier, "sdo.teaches", "skill");
 
         super.printStep("Setting details");
@@ -68,13 +68,13 @@ public class RemoveDetailsTests extends ApiTestsBase  {
         super.dumpStatementsAsTable(cc1);
         Assertions.assertEquals(11, cc1.getRows().size());
 
-        super.printStep("Removing value");
+        super.printStep("Removing value 'sdo.teaches'");
         super.getTestClient().deleteValue(sourceIdentifier, "sdo.teaches");
 
         super.printStep("Dumping current model");
         CsvConsumer cc2 = super.getTestClient().listAllStatements();
         super.dumpStatementsAsTable(cc2);
-        Assertions.assertEquals(10, cc2.getRows().size());
+        Assertions.assertEquals(4, cc2.getRows().size());
     }
     @Test
     @Disabled
