@@ -1,6 +1,5 @@
-package org.av360.maverick.graph.services.transformers.replaceIdentifiers;
+package org.av360.maverick.graph.services.preprocessors.replaceIdentifiers;
 
-import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.impl.LinkedHashModel;
@@ -10,11 +9,12 @@ import reactor.core.publisher.Mono;
 
 import java.util.Set;
 
-public class AbstractIdentifierReplace {
+
+public class AbstractIdentifierReplace  {
 
     protected final SimpleValueFactory valueFactory = SimpleValueFactory.getInstance();
 
-    public record IdentifierMapping(Resource oldIdentifier, IRI newIdentifier) {}
+    public record IdentifierMapping(Resource oldIdentifier, Resource newIdentifier) {}
 
     protected Mono<Set<IdentifierMapping>> replaceIdentifiers(Set<IdentifierMapping> mappings, Model model) {
         Model res = new LinkedHashModel(model);
@@ -22,8 +22,8 @@ public class AbstractIdentifierReplace {
         mappings.forEach(mapping -> {
             model.filter(mapping.oldIdentifier, null, null)
                     .forEach(statement -> {
-                            res.remove(statement);
-                            res.add(mapping.newIdentifier(), statement.getPredicate(), statement.getObject());
+                        res.remove(statement);
+                        res.add(mapping.newIdentifier(), statement.getPredicate(), statement.getObject());
                     });
         });
 
@@ -53,4 +53,6 @@ public class AbstractIdentifierReplace {
         });
         return Mono.just(mappings);
     }
+
+
 }

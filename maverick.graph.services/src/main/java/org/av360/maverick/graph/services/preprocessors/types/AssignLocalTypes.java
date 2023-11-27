@@ -1,10 +1,10 @@
-package org.av360.maverick.graph.services.transformers.types;
+package org.av360.maverick.graph.services.preprocessors.types;
 
 import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.model.context.Environment;
 import org.av360.maverick.graph.model.vocabulary.Local;
 import org.av360.maverick.graph.services.SchemaServices;
-import org.av360.maverick.graph.services.transformers.Transformer;
+import org.av360.maverick.graph.services.preprocessors.ModelPreprocessor;
 import org.eclipse.rdf4j.model.*;
 import org.eclipse.rdf4j.model.impl.LinkedHashModel;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
@@ -22,7 +22,7 @@ import java.util.stream.StreamSupport;
 @Slf4j(topic = "graph.srvc.trans.types")
 @Component
 @ConditionalOnProperty(name = "application.features.transformers.typeCoercion", havingValue = "true")
-public class AssignLocalTypes implements Transformer {
+public class AssignLocalTypes implements ModelPreprocessor {
 
 
     private SchemaServices schemaServices;
@@ -33,7 +33,11 @@ public class AssignLocalTypes implements Transformer {
     @Override
     public void registerSchemaService(SchemaServices schemaServices) {
         this.schemaServices = schemaServices;
+    }
 
+    @Override
+    public int getOrder() {
+        return 1;
     }
 
     @Override
@@ -41,9 +45,9 @@ public class AssignLocalTypes implements Transformer {
         Model result = new LinkedHashModel(model);
 
         return Flux.fromIterable(Collections.unmodifiableSet(model.subjects()))
-                .filter(sub -> assignIndividuals(sub, model, result))
-                .filter(sub -> assignShared(sub, model, result))
-                .filter(sub -> assignEmbedded(sub, model, result))
+                .filter(sub -> assignIndividualsType(sub, model, result))
+                .filter(sub -> assignClassifierType(sub, model, result))
+                .filter(sub -> assignCompositeType(sub, model, result))
                 .doOnNext(sub -> {
                     log.warn("Subject with the following statements could not be identified for local type: \n {}", model.stream().toList());
                 })
@@ -54,30 +58,29 @@ public class AssignLocalTypes implements Transformer {
 
 
 
-    private boolean assignEmbedded(Resource subject, Model fragment, Model model) {
+    private boolean assignCompositeType(Resource subject, Model fragment, Model model) {
         Optional<Statement> statement = this.handleEmbedded(subject, fragment);
         return statement.map(model::add).isEmpty();
     }
 
 
-    private boolean assignIndividuals(Resource subject, Model source, Model model) {
+    private boolean assignIndividualsType(Resource subject, Model source, Model model) {
         Optional<Statement> statement = this.handleIndividual(subject, source);
         return statement.map(model::add).isEmpty();
     }
 
-    private boolean assignShared(Resource subject, Model fragment, Model model) {
+    private boolean assignClassifierType(Resource subject, Model fragment, Model model) {
         Optional<Statement> statement = this.handleClassifier(subject, fragment);
         return statement.map(model::add).isEmpty();
     }
 
     private Optional<Statement> handleEmbedded(Resource subject, Model fragment) {
+        // Check 1: check if subject is an object
+        boolean isUsedAsObject = isUsedAsObject(subject, fragment);
 
-        // only check if it has a type definition
-        boolean hasTypeDefinition = hasTypeDefinition(subject, fragment);
-
-        if (hasTypeDefinition) {
+        if(isUsedAsObject) {
             Statement statement = valueFactory.createStatement(subject, RDF.TYPE, Local.Entities.TYPE_EMBEDDED);
-            log.trace("Fragment for subject '{}' typed as Embedded.", subject);
+            log.trace("Fragment for subject '{}' typed as embedded composite.", subject);
             return Optional.of(statement);
         } else return Optional.empty();
 
@@ -87,14 +90,15 @@ public class AssignLocalTypes implements Transformer {
 
     private Optional<Statement> handleIndividual(Resource subject, Model fragment) {
 
+
         // Check 1: check if this fragment has a type definition known to be an individual
         boolean hasIndividualsType = hasIndividualsType(subject, fragment);
 
         // Check 2: check if this fragment has at least one known characteristic y (but is not a classifier)
-        boolean hasCharacteristicProperty = hasIndividualsType || (hasCharacteristicProperty(subject, fragment) && ! hasClassifierType(subject, fragment));
+        boolean hasCharacteristicProperty = hasKnownCharacteristicProperty(subject, fragment) && ! hasClassifierType(subject, fragment);
 
-        // Check three: check if this fragment has a property matching a specific pattern (denoting a characteristic property)
-        boolean hasNamingProperty = (hasIndividualsType || hasCharacteristicProperty) || (hasPropertyMatchingPattern(fragment) && ! hasClassifierType(subject, fragment));
+        // Check 3: check if this fragment has a property matching a specific pattern (denoting a characteristic property)
+        boolean hasNamingProperty = hasPotentialCharacteristicProperty(subject, fragment) && ! hasClassifierType(subject, fragment);
 
         if (hasIndividualsType || hasCharacteristicProperty || hasNamingProperty) {
             Statement statement = valueFactory.createStatement(subject, RDF.TYPE, Local.Entities.TYPE_INDIVIDUAL);
@@ -103,6 +107,11 @@ public class AssignLocalTypes implements Transformer {
         } else {
             return Optional.empty();
         }
+    }
+
+    private boolean isUsedAsObject(Resource subject, Model fragment) {
+        return ! fragment.filter(null, null, subject).isEmpty();
+
     }
 
     private Optional<Statement> handleClassifier(Resource subject, Model fragment) {
@@ -116,8 +125,8 @@ public class AssignLocalTypes implements Transformer {
         } else return Optional.empty();
     }
 
-    private boolean hasPropertyMatchingPattern(Model fragment) {
-        return fragment.predicates().stream().anyMatch(iri -> iri.getLocalName().matches("(?i).*(name|title|label|id|key|code).*"));
+    private boolean hasPotentialCharacteristicProperty(Resource subject, Model fragment) {
+        return fragment.filter(subject, null, null).predicates().stream().anyMatch(iri -> iri.getLocalName().matches("(?i).*(id|key|code).*"));
     }
 
     private boolean hasClassifierType(Resource subject, Model fragment) {
@@ -145,7 +154,7 @@ public class AssignLocalTypes implements Transformer {
                 .anyMatch(this.schemaServices::isIndividualType);
     }
 
-    private boolean hasCharacteristicProperty(Resource subject, Model fragment) {
+    private boolean hasKnownCharacteristicProperty(Resource subject, Model fragment) {
         return StreamSupport.stream(fragment.getStatements(subject, null, null).spliterator(), true)
                 .map(Statement::getPredicate)
                 .filter(Value::isIRI)

@@ -38,7 +38,7 @@
 
     <description>Provides access to the graph through json-ld api</description>
     <properties>
-        <revision>0.4.1</revision>
+        <revision>0.4.2</revision>
         <maven.compiler.source>${java.version}</maven.compiler.source>
         <maven.compiler.target>${java.version}</maven.compiler.target>
         <java.version>17</java.version>
@@ -46,7 +46,7 @@
         <micrometer-tracing.version>1.0.0</micrometer-tracing.version>
         <jackson.version>2.15.3</jackson.version>
         <logback.version>1.4.11</logback.version>
-        <rdf4j.version>4.3.7</rdf4j.version>
+        <rdf4j.version>4.3.8</rdf4j.version>
         <springdoc.version>2.2.0</springdoc.version>
         <swagger-annotations-jakarta.version>2.2.15</swagger-annotations-jakarta.version>
     </properties>

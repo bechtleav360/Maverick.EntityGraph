@@ -1,10 +1,10 @@
-package org.av360.maverick.graph.services.transformers.mergeDuplicates;
+package org.av360.maverick.graph.services.preprocessors.mergeDuplicates;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.Triple;
 import org.av360.maverick.graph.model.context.Environment;
 import org.av360.maverick.graph.model.identifier.ChecksumIdentifier;
-import org.av360.maverick.graph.services.transformers.Transformer;
+import org.av360.maverick.graph.services.preprocessors.ModelPreprocessor;
 import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Statement;
@@ -26,11 +26,14 @@ import java.util.stream.Collectors;
  * scheduled job)
  */
 @ConditionalOnProperty(name = "application.features.transformers.mergeDuplicates", havingValue = "true")
-public class MergeDuplicates implements Transformer {
+public class MergeDuplicates implements ModelPreprocessor {
 
 
     // FIXME: should only operate on local model -> the rerouting to existing entity should happen through scheduler
-
+    @Override
+    public int getOrder() {
+        return 200;
+    }
     /**
      * Records with
      * - type: the type of the linked entity

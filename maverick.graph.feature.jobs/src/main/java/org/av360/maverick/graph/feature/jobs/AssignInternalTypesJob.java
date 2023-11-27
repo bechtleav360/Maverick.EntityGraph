@@ -11,7 +11,7 @@ import org.av360.maverick.graph.model.vocabulary.Transactions;
 import org.av360.maverick.graph.services.EntityServices;
 import org.av360.maverick.graph.services.QueryServices;
 import org.av360.maverick.graph.services.TransactionsService;
-import org.av360.maverick.graph.services.transformers.types.AssignLocalTypes;
+import org.av360.maverick.graph.services.preprocessors.types.AssignLocalTypes;
 import org.av360.maverick.graph.store.TransactionsStore;
 import org.av360.maverick.graph.store.rdf.fragments.RdfTransaction;
 import org.av360.maverick.graph.store.rdf.fragments.TripleModel;

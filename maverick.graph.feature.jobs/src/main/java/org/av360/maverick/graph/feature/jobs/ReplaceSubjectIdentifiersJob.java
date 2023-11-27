@@ -11,10 +11,13 @@ import org.av360.maverick.graph.model.vocabulary.Transactions;
 import org.av360.maverick.graph.services.EntityServices;
 import org.av360.maverick.graph.services.QueryServices;
 import org.av360.maverick.graph.services.TransactionsService;
-import org.av360.maverick.graph.services.transformers.replaceIdentifiers.ReplaceAnonymousIdentifiers;
-import org.av360.maverick.graph.services.transformers.replaceIdentifiers.ReplaceExternalIdentifiers;
+import org.av360.maverick.graph.services.preprocessors.replaceIdentifiers.ReplaceAnonymousIdentifiers;
+import org.av360.maverick.graph.services.preprocessors.replaceIdentifiers.ReplaceExternalIdentifiers;
 import org.av360.maverick.graph.store.rdf.fragments.RdfTransaction;
-import org.eclipse.rdf4j.model.*;
+import org.eclipse.rdf4j.model.Model;
+import org.eclipse.rdf4j.model.Resource;
+import org.eclipse.rdf4j.model.Statement;
+import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.impl.LinkedHashModel;
 import org.eclipse.rdf4j.model.util.ModelBuilder;
 import org.springframework.stereotype.Component;
@@ -192,7 +195,7 @@ public class ReplaceSubjectIdentifiersJob implements ScheduledJob {
                 this.replaceExternalIdentifiers.buildIdentifierMappings(model, ctx.getEnvironment()).collectList(),
                 this.replaceAnonymousIdentifiers.buildIdentifierMappings(model, ctx.getEnvironment()).collectList()
         ).map(pair -> {
-            Map<Resource, IRI> map = new HashMap<>();
+            Map<Resource, Resource> map = new HashMap<>();
             pair.getT1().forEach(mapping -> map.put(mapping.oldIdentifier(), mapping.newIdentifier()));
             pair.getT2().forEach(mapping -> map.put(mapping.oldIdentifier(), mapping.newIdentifier()));
             return map;

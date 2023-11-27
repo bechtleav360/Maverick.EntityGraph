@@ -39,7 +39,6 @@ public abstract class TestsBase {
     private static String ECHO_LINE_PREFIX = "-----------";
 
 
-
     protected IRI createIRIFrom(String url) {
         return vf.createIRI(url);
     }
@@ -53,6 +52,8 @@ public abstract class TestsBase {
         this.entityStore = entityStore;
         this.transactionsStore = transactionsStore;
     }
+
+
 
     int steps = 0;
     protected void printStart(String label) {

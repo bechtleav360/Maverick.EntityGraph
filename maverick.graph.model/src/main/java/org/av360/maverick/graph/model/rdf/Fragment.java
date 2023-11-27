@@ -13,10 +13,14 @@
  *
  */
 
-package org.av360.maverick.graph.store.postgres.fragments;
+package org.av360.maverick.graph.model.rdf;
 
-import org.av360.maverick.graph.store.rdf.fragments.RdfFragment;
-import org.springframework.data.repository.reactive.ReactiveCrudRepository;
+import org.eclipse.rdf4j.model.Resource;
 
-public interface FragmentRepository extends ReactiveCrudRepository<RdfFragment, Long> {
+/**
+ * A fragment is a collection of statements with exactly one individual or classifier and optional composites
+ */
+public interface Fragment extends Triples {
+
+    public Resource getIdentifier();
 }

@@ -1,8 +1,9 @@
-package org.av360.maverick.graph.services.transformers;
+package org.av360.maverick.graph.services.preprocessors;
 
 import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.model.context.Environment;
 import org.av360.maverick.graph.services.EntityServices;
+import org.av360.maverick.graph.services.IdentifierServices;
 import org.av360.maverick.graph.services.QueryServices;
 import org.av360.maverick.graph.services.SchemaServices;
 import org.eclipse.rdf4j.model.Model;
@@ -11,47 +12,57 @@ import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Component
 @Slf4j(topic = "graph.srvc.transformers.delegator")
-public class DelegatingTransformer implements Transformer {
+public class DelegatingPreprocessor implements ModelPreprocessor {
 
-    private List<Transformer> transformers;
+    private Set<ModelPreprocessor> transformers;
 
     @Autowired(required = false)
-    public void setRegisteredBeans(List<Transformer> transformers) {
-        this.transformers = transformers;
+    public void setRegisteredBeans(List<ModelPreprocessor> transformers) {
+        this.transformers = new TreeSet<>(Comparator.comparingInt(ModelPreprocessor::getOrder));
+        this.transformers.addAll(transformers);
     }
 
 
     @Override
+    public int getOrder() {
+        return 0;
+    }
+
+    @Override
     public void registerSchemaService(SchemaServices schemaServices) {
-        getRegisteredTransformers().forEach(transformer -> transformer.registerSchemaService(schemaServices));
+        getRegisteredPreprocessors().forEach(preprocessor -> preprocessor.registerSchemaService(schemaServices));
     }
 
     @Override
     public void registerEntityService(EntityServices entityServicesImpl) {
-        getRegisteredTransformers().forEach(transformer -> transformer.registerEntityService(entityServicesImpl));
+        getRegisteredPreprocessors().forEach(preprocessor -> preprocessor.registerEntityService(entityServicesImpl));
     }
 
     @Override
     public void registerQueryService(QueryServices queryServices) {
-        getRegisteredTransformers().forEach(transformer -> transformer.registerQueryService(queryServices));
+        getRegisteredPreprocessors().forEach(preprocessor -> preprocessor.registerQueryService(queryServices));
     }
 
-    public List<Transformer> getRegisteredTransformers() {
+    @Override
+    public void registerIdentifierService(IdentifierServices identifierServices) {
+        getRegisteredPreprocessors().forEach(preprocessor -> preprocessor.registerIdentifierService(identifierServices));
+    }
+
+    private Set<ModelPreprocessor> getRegisteredPreprocessors() {
         if (this.transformers == null || this.transformers.isEmpty()) {
             log.warn("Default transformers are missing (not injected), check your spring configuration");
-            return List.of();
+            return Set.of();
         } else return this.transformers;
     }
 
     @Override
     public Mono<? extends Model> handle(Model triples, Map<String, String> parameters, Environment environment) {
         if (this.transformers == null) {
-            log.trace("No transformers registered, skip.");
+            log.trace("No preprocessors registered, skip.");
             return Mono.just(triples);
         }
 

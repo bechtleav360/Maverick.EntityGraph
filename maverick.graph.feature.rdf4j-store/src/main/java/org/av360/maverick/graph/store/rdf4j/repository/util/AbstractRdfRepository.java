@@ -14,7 +14,7 @@ import org.av360.maverick.graph.model.vocabulary.Transactions;
 import org.av360.maverick.graph.store.FragmentsStore;
 import org.av360.maverick.graph.store.RepositoryBuilder;
 import org.av360.maverick.graph.store.behaviours.*;
-import org.av360.maverick.graph.store.rdf.fragments.Fragment;
+import org.av360.maverick.graph.store.rdf.fragments.RdfFragment;
 import org.av360.maverick.graph.store.rdf.fragments.RdfTransaction;
 import org.av360.maverick.graph.store.rdf.fragments.TripleModel;
 import org.av360.maverick.graph.store.rdf.helpers.RdfUtils;
@@ -310,7 +310,7 @@ public abstract class AbstractRdfRepository implements Searchable, Maintainable,
     }
 
     @Override
-    public Mono<Fragment> getFragment(Resource id, int includeNeighborsLevel, boolean includeDetails, Environment environment) {
+    public Mono<RdfFragment> getFragment(Resource id, int includeNeighborsLevel, boolean includeDetails, Environment environment) {
         return this.applyWithConnection(environment, connection -> {
             getLogger().trace("Loading fragment with id '{}' from repository {}", id, connection.getRepository().toString());
 
@@ -320,7 +320,7 @@ public abstract class AbstractRdfRepository implements Searchable, Maintainable,
                     return null;
                 }
 
-                Fragment entity = new Fragment(id).withResult(statements);
+                RdfFragment entity = new RdfFragment(id).withResult(statements);
 
                 if (includeDetails) {
                     Model details = loadDetailsWithReification(connection, entity);
@@ -344,13 +344,13 @@ public abstract class AbstractRdfRepository implements Searchable, Maintainable,
     }
 
     @Override
-    public Flux<Fragment> listFragments(IRI type, int limit, int offset, Environment environment) {
+    public Flux<RdfFragment> listFragments(IRI type, int limit, int offset, Environment environment) {
         return this.subjects(type, environment).flatMap(subject -> this.getFragment(subject, environment));
     }
 
 
     @Override
-    public Mono<Transaction> insertFragment(Fragment fragment, Environment environment) {
+    public Mono<Transaction> insertFragment(RdfFragment fragment, Environment environment) {
         Transaction trx = new RdfTransaction().forInsert(fragment.listStatements());
         return this.commit(trx, environment);
     }
@@ -395,7 +395,7 @@ public abstract class AbstractRdfRepository implements Searchable, Maintainable,
     }
 
 
-    private Model loadNeighbours(RepositoryConnection connection, Fragment entity) {
+    private Model loadNeighbours(RepositoryConnection connection, RdfFragment entity) {
         HashSet<Value> objects = new HashSet<>(entity.getModel().objects());
         /*Stream<RepositoryResult<Statement>> repositoryResultStream = objects.stream()
                 .filter(Value::isIRI)

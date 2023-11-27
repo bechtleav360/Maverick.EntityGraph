@@ -122,7 +122,7 @@ class TestReplaceObjectIdentifiers extends TestsBase {
 
 
     @Test
-    void externalWithEmbedded() throws IOException {
+    void externalWithClassified() throws IOException {
         SessionContext ctx = TestSecurityConfig.createTestContext();
         super.printStart("Test: Convert mixed identifiers (Multiple)");
 

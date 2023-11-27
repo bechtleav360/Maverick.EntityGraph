@@ -2,11 +2,10 @@ package org.av360.maverick.graph.api.security;
 
 
 import org.av360.maverick.graph.tests.config.TestSecurityConfig;
+import org.av360.maverick.graph.tests.util.ApiTestsBase;
 import org.av360.maverick.graph.tests.util.RdfConsumer;
-import org.av360.maverick.graph.tests.util.TestsBase;
 import org.eclipse.rdf4j.rio.RDFFormat;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
@@ -14,16 +13,13 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.event.RecordApplicationEvents;
-import org.springframework.test.web.reactive.server.WebTestClient;
 import org.springframework.web.reactive.function.BodyInserters;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ContextConfiguration(classes = TestSecurityConfig.class)
 @RecordApplicationEvents
 @ActiveProfiles({"test", "api", "secure"})
-public class TestUnauthenticated extends TestsBase {
-    @Autowired
-    private WebTestClient webClient;
+public class TestUnauthenticated extends ApiTestsBase {
     private boolean isPrepared = false;
 
 
@@ -49,12 +45,14 @@ public class TestUnauthenticated extends TestsBase {
     public void readEntity() {
         this.prepare();
 
+        super.dumpStatementsAsTable();
+
         super.printStart("read entity without authentication");
 
         webClient.get()
                 .uri(uriBuilder -> uriBuilder
                         .path("/api/entities/{id}")
-                        .build("b7fljdhx")
+                        .build("7wytl2xx")
                 )
                 .accept(MediaType.parseMediaType("application/ld+json"))
                 .exchange()

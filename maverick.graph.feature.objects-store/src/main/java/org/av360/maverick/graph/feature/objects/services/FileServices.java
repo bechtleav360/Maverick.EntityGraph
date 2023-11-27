@@ -9,7 +9,7 @@ import org.av360.maverick.graph.model.errors.InconsistentModelException;
 import org.av360.maverick.graph.model.vocabulary.Local;
 import org.av360.maverick.graph.model.vocabulary.SDO;
 import org.av360.maverick.graph.services.*;
-import org.av360.maverick.graph.store.rdf.fragments.Fragment;
+import org.av360.maverick.graph.store.rdf.fragments.RdfFragment;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Value;
@@ -114,7 +114,7 @@ public class FileServices {
                         this.entityServices.get(contentId, ctx),
                         Mono.just(contentId)
                 )).flatMap(pair -> {
-                    Fragment embedded = pair.getT1();
+                    RdfFragment embedded = pair.getT1();
                     IRI contentID = pair.getT2();
 
                     try {

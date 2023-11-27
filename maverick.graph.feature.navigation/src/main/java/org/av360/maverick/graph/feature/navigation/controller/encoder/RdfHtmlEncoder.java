@@ -7,6 +7,9 @@ import org.av360.maverick.graph.services.NavigationServices;
 import org.av360.maverick.graph.store.rdf.helpers.RdfUtils;
 import org.eclipse.rdf4j.model.*;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
+import org.eclipse.rdf4j.model.util.ModelBuilder;
+import org.eclipse.rdf4j.model.util.ModelCollector;
+import org.eclipse.rdf4j.model.util.Values;
 import org.eclipse.rdf4j.rio.RDFFormat;
 import org.eclipse.rdf4j.rio.RDFWriter;
 import org.reactivestreams.Publisher;
@@ -29,6 +32,7 @@ import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Transforms a set of statements to navigable HTML
@@ -58,15 +62,14 @@ public class RdfHtmlEncoder implements Encoder<Statement> {
                     }
                 })
                 .map(statement -> (Statement) statement)
-                // we filter out any internal statements
-                .filter(statement -> ! statement.getObject().equals(Local.Entities.TYPE_INDIVIDUAL))
-                .filter(statement -> ! statement.getObject().equals(Local.Entities.TYPE_EMBEDDED))
-                .filter(statement -> ! statement.getObject().equals(Local.Entities.TYPE_CLASSIFIER))
-                .filter(statement -> ! statement.getPredicate().equals(Local.ORIGINAL_IDENTIFIER))
-                .collectList()
-                .flatMap(list ->  Mono.zip(Mono.just(list), ReactiveRequestUriContextHolder.getURI()))
+
+                .collect(new ModelCollector())
+                .map(this::convertCompositesToBlankNodes)
+                .map(this::filterInternalStatements)
+                .flatMap(model ->  Mono.zip(Mono.just(model), ReactiveRequestUriContextHolder.getURI()))
                 .flatMapMany(tuple -> {
-                    List<Statement> statements = tuple.getT1();
+                    Model statements = tuple.getT1();
+
                     URI requestURI = tuple.getT2(); // we need the request to resolve the current request url
 
                     try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
@@ -76,7 +79,8 @@ public class RdfHtmlEncoder implements Encoder<Statement> {
                         writer.startRDF();
 
                         if(statements.size() > 0) {
-                            this.handleNamespaces(writer, statements.get(0), requestURI);
+
+                            this.handleNamespaces(writer, statements.iterator().next(), requestURI);
                         }
 
                         for (Statement st : statements) {
@@ -95,6 +99,41 @@ public class RdfHtmlEncoder implements Encoder<Statement> {
                         }
                     }
                 });
+    }
+
+    private Model filterInternalStatements(Model model) {
+        // we filter out any internal statements
+        return model.stream()
+                .filter(statement -> ! statement.getObject().equals(Local.Entities.TYPE_INDIVIDUAL))
+                .filter(statement -> ! statement.getObject().equals(Local.Entities.TYPE_CLASSIFIER))
+                .filter(statement -> ! statement.getObject().equals(Local.Entities.TYPE_INDIVIDUAL))
+                .filter(statement -> ! statement.getPredicate().equals(Local.ORIGINAL_IDENTIFIER))
+                .collect(new ModelCollector());
+
+
+    }
+
+    /** for navigational purposes, we convert the embedded objects (as long as there's only one fragment pointing to it) to an embedded object */
+    private Model convertCompositesToBlankNodes(Model statements) {
+        Set<Resource> subjects = statements.filter(null, null, Local.Entities.TYPE_EMBEDDED).subjects();
+        // FIXME: check if multiple pointers to embedded (is inconsistent, but can happen)
+        Map<Resource, BNode> mappings = subjects.stream().collect(Collectors.toMap(str -> str, str -> Values.bnode()));
+
+
+
+        ModelBuilder modelBuilder = new ModelBuilder();
+        statements.forEach(statement -> {
+            if(subjects.contains(statement.getSubject())) {
+                modelBuilder.add(mappings.get(statement.getSubject()), statement.getPredicate(), statement.getObject());
+            } else if(statement.getObject().isResource() && subjects.contains((Resource) statement.getObject())) {
+                modelBuilder.add(statement.getSubject(), statement.getPredicate(), mappings.get((Resource) statement.getObject()));
+            } else {
+                modelBuilder.add(statement.getSubject(), statement.getPredicate(), statement.getObject());
+            }
+        });
+        return modelBuilder.build();
+
+
     }
 
     private void handleStatement(Statement st, RDFWriter writer, URI requestURI) {
@@ -182,6 +221,7 @@ public class RdfHtmlEncoder implements Encoder<Statement> {
 
 
     private boolean handleNamespaces(RDFWriter writer, Statement statement, URI requestURI) {
+
         if (NamespaceAware.class.isAssignableFrom(statement.getClass())) {
             Set<Namespace> namespaces = ((NamespaceAware) statement).getNamespaces();
 
