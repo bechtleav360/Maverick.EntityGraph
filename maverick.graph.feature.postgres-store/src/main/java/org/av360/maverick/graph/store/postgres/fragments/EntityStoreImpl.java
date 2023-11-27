@@ -27,7 +27,7 @@ import org.av360.maverick.graph.model.vocabulary.DC;
 import org.av360.maverick.graph.store.IndividualsStore;
 import org.av360.maverick.graph.store.behaviours.Fragmentable;
 import org.av360.maverick.graph.store.postgres.dao.FragmentEntity;
-import org.av360.maverick.graph.store.rdf.fragments.Fragment;
+import org.av360.maverick.graph.store.rdf.fragments.RdfFragment;
 import org.av360.maverick.graph.store.rdf.fragments.RdfTransaction;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
@@ -58,17 +58,17 @@ public class EntityStoreImpl implements IndividualsStore, Fragmentable {
     }
 
     @Override
-    public Mono<Fragment> getFragment(Resource subject, int includeNeighborsLevel, boolean includeDetails, Environment environment) {
+    public Mono<RdfFragment> getFragment(Resource subject, int includeNeighborsLevel, boolean includeDetails, Environment environment) {
         return null;
     }
 
     @Override
-    public Flux<Fragment> listFragments(IRI type, int limit, int offset, Environment environment) {
+    public Flux<RdfFragment> listFragments(IRI type, int limit, int offset, Environment environment) {
         return null;
     }
 
     @Override
-    public Mono<Transaction> insertFragment(Fragment fragment, Environment environment) {
+    public Mono<Transaction> insertFragment(RdfFragment fragment, Environment environment) {
 
         Resource identifier = fragment.getIdentifier();
         Validate.isTrue(identifier.isIRI());

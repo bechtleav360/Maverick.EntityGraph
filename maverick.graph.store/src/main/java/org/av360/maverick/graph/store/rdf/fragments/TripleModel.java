@@ -2,6 +2,7 @@ package org.av360.maverick.graph.store.rdf.fragments;
 
 import org.av360.maverick.graph.model.errors.InconsistentModelException;
 import org.av360.maverick.graph.model.rdf.AnnotatedStatement;
+import org.av360.maverick.graph.model.rdf.Fragment;
 import org.av360.maverick.graph.model.rdf.Triples;
 import org.av360.maverick.graph.store.rdf.helpers.NamespacedModelBuilder;
 import org.eclipse.rdf4j.model.*;
@@ -58,10 +59,14 @@ public class TripleModel implements Triples {
 
 
 
-    public Map<Resource, Model> listFragments() {
-        Map<Resource, Model> result = new HashMap<>();
+    @Override
+    public Collection<Fragment> listFragments() {
+        Set<Fragment> result = new HashSet<>();
         this.getModel().subjects().forEach(subject ->  {
-            result.put(subject, this.getModel().filter(subject, null, null));
+            Model filteredModel = this.getModel().filter(subject, null, null);
+            RdfFragment rdfFragment = new RdfFragment(subject).withModel(filteredModel);
+
+            result.add(rdfFragment);
         });
         return result;
     }
@@ -93,12 +98,14 @@ public class TripleModel implements Triples {
         return this.streamStatements(null, null, null, contexts);
     }
 
+    @Override
     public void reduce(Predicate<Statement> filterFunction) {
         Set<Statement> collect = this.streamStatements().filter(filterFunction).collect(Collectors.toSet());
         this.getModel().clear();;
         this.getModel().addAll(collect);
     }
 
+    @Override
     public Triples filter(Predicate<Statement> filterFunction) {
         this.reduce(filterFunction);
         return (Triples) this;
@@ -110,14 +117,17 @@ public class TripleModel implements Triples {
 
 
 
+    @Override
     public Stream<Value> streamValues(Resource subject, IRI predicate) {
         return this.streamStatements(subject, predicate, null).map(Statement::getObject);
     }
 
+    @Override
     public Value getDistinctValue(Resource subject, IRI predicate) throws NoSuchElementException, InconsistentModelException {
         return this.findDistinctValue(subject, predicate).orElseThrow();
     }
 
+    @Override
     public Optional<Value> findDistinctValue(Resource subject, IRI predicate) throws  InconsistentModelException {
         Set<Value> collect = this.streamValues(subject, predicate).collect(Collectors.toUnmodifiableSet());
         if(collect.isEmpty()) return Optional.empty();
@@ -126,11 +136,13 @@ public class TripleModel implements Triples {
     }
 
 
+    @Override
     public boolean hasStatement(Resource obj, IRI pred, Value val) {
         return this.getModel().getStatements(obj, pred, val).iterator().hasNext();
     }
 
 
+    @Override
     public boolean hasStatement(Triple triple) {
         return this.hasStatement(triple.getSubject(), triple.getPredicate(), triple.getObject());
 

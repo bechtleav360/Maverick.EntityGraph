@@ -19,7 +19,7 @@ import io.r2dbc.spi.ConnectionFactory;
 import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.model.entities.Transaction;
 import org.av360.maverick.graph.store.behaviours.Fragmentable;
-import org.av360.maverick.graph.store.rdf.fragments.Fragment;
+import org.av360.maverick.graph.store.rdf.fragments.RdfFragment;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.util.Values;
 import org.eclipse.rdf4j.model.vocabulary.DC;
@@ -102,7 +102,7 @@ public class FragmentsTests {
 
 
         IRI node = Values.iri("http://example.com/1234");
-        Fragment fragment = new Fragment(node);
+        RdfFragment fragment = new RdfFragment(node);
         fragment.getModel().add(node, DC.TITLE, Values.literal("a title"));
         fragment.getModel().add(node, DC.DESCRIPTION, Values.literal("a description"));
 

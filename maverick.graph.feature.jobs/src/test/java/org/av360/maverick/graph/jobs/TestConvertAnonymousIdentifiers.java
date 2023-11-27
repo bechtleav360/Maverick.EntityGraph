@@ -69,7 +69,7 @@ class TestConvertAnonymousIdentifiers extends TestsBase {
                 .assertNext(model -> {
                     Assertions.assertEquals(4, model.size());
                     Assertions.assertEquals(1, model.subjects().size());
-                    Assertions.assertEquals(Local.Entities.NAMESPACE + "b2p6u4vx", model.subjects().stream().findFirst().get().stringValue());
+                    Assertions.assertEquals(Local.Entities.NAMESPACE + "sew68axx", model.subjects().stream().findFirst().get().stringValue());
                 })
                 .verifyComplete();
 

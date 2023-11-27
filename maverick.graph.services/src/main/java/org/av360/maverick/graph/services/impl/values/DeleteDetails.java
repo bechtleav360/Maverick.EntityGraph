@@ -7,7 +7,7 @@ import org.av360.maverick.graph.model.errors.requests.EntityNotFound;
 import org.av360.maverick.graph.model.errors.requests.InvalidEntityUpdate;
 import org.av360.maverick.graph.model.errors.store.InvalidEntityModelException;
 import org.av360.maverick.graph.model.events.DetailRemovedEvent;
-import org.av360.maverick.graph.store.rdf.fragments.Fragment;
+import org.av360.maverick.graph.store.rdf.fragments.RdfFragment;
 import org.av360.maverick.graph.store.rdf.fragments.RdfTransaction;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Statement;
@@ -82,7 +82,7 @@ public class DeleteDetails {
                         ctrl.schemaServices.resolvePrefixedName(prefixedValuePredicate),
                         ctrl.schemaServices.resolvePrefixedName(prefixedDetailPredicate)
                 ).flatMap(tuple -> {
-                    Fragment entity = tuple.getT1();
+                    RdfFragment entity = tuple.getT1();
                     IRI valuePredicate = tuple.getT2();
                     IRI detailPredicate = tuple.getT3();
 
@@ -98,7 +98,7 @@ public class DeleteDetails {
 
     }
 
-    private Mono<Transaction> remove(Fragment entity, IRI valuePredicate, IRI detailPredicate, SessionContext ctx) {
+    private Mono<Transaction> remove(RdfFragment entity, IRI valuePredicate, IRI detailPredicate, SessionContext ctx) {
         try {
             Optional<Triple> requestedTriple = this.ctrl.readValues.findSingleValueTriple(entity, valuePredicate);
             if (requestedTriple.isEmpty())
@@ -115,7 +115,7 @@ public class DeleteDetails {
     }
 
 
-    private Mono<Transaction> removeWithHash(Fragment entity, IRI valuePredicate, IRI detailPredicate, String valueHash, SessionContext ctx) {
+    private Mono<Transaction> removeWithHash(RdfFragment entity, IRI valuePredicate, IRI detailPredicate, String valueHash, SessionContext ctx) {
         Optional<Triple> requestedTriple = this.ctrl.readValues.findValueTripleByHash(entity, valuePredicate, valueHash);
         if (requestedTriple.isEmpty())
             return Mono.error(new InvalidEntityUpdate(entity.getIdentifier(), "No value exists in entity <%s> for predicate <%s> and hash '%s'".formatted(entity.getIdentifier(), valuePredicate, valueHash)));

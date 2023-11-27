@@ -10,6 +10,7 @@ import org.eclipse.rdf4j.model.Namespace;
 import reactor.core.publisher.Mono;
 
 import java.io.Serializable;
+import java.util.Collection;
 
 public interface IdentifierServices {
 
@@ -28,6 +29,18 @@ public interface IdentifierServices {
 
     default Mono<IRI> asReproducibleIRI(String namespace, Environment environment, Serializable... parts) {
         return Mono.just(createReproducibleIdentifier(namespace, parts));
+    }
+
+    default Mono<IRI>  asReproducibleIRI(Namespace namespace, Environment environment, Collection<Serializable> parts) {
+        return asReproducibleIRI(namespace.getName(), environment, parts);
+    }
+
+    default Mono<IRI> asReproducibleIRI(String namespace, Environment environment, Collection<Serializable> parts) {
+        return Mono.just(createReproducibleIdentifier(namespace, parts));
+    }
+
+    static LocalIdentifier  createReproducibleIdentifier(String namespace, Collection<Serializable> parts) {
+        return new ChecksumIdentifier(namespace, parts);
     }
 
     default Mono<IRI> asReproducibleIRI(Namespace namespace, Environment environment, Serializable... parts) {
@@ -50,4 +63,6 @@ public interface IdentifierServices {
     default Mono<IRI> asRandomIRI(Namespace ns, Environment environment) {
         return asRandomIRI(ns.getName(), environment);
     }
+
+
 }

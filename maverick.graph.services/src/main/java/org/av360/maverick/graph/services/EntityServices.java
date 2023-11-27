@@ -5,7 +5,7 @@ import org.av360.maverick.graph.model.context.SessionContext;
 import org.av360.maverick.graph.model.entities.Transaction;
 import org.av360.maverick.graph.model.rdf.Triples;
 import org.av360.maverick.graph.store.IndividualsStore;
-import org.av360.maverick.graph.store.rdf.fragments.Fragment;
+import org.av360.maverick.graph.store.rdf.fragments.RdfFragment;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.rio.RDFFormat;
@@ -28,7 +28,7 @@ public interface EntityServices {
      * @return Entity as Mono
      */
 
-    Mono<Fragment> get(IRI entityIri, boolean details, int depth, SessionContext ctx);
+    Mono<RdfFragment> get(IRI entityIri, boolean details, int depth, SessionContext ctx);
 
     /**
      * Retrieves an entity representation (identifier, values and relations) with its direct neighbours from store.
@@ -37,7 +37,7 @@ public interface EntityServices {
      * @param authentication   The current authentication
      * @return Entity as Mono
      */
-    default Mono<Fragment> get(IRI entityIri, SessionContext ctx) {
+    default Mono<RdfFragment> get(IRI entityIri, SessionContext ctx) {
         return this.get(entityIri, false, 1, ctx);
     }
 
@@ -49,7 +49,7 @@ public interface EntityServices {
      * @param offset
      * @return
      */
-     Flux<Fragment> list(int limit, int offset, SessionContext ctx);
+     Flux<RdfFragment> list(int limit, int offset, SessionContext ctx);
 
 
     /**
@@ -60,7 +60,7 @@ public interface EntityServices {
      * @param offset
      * @return
      */
-    Flux<Fragment> list(int limit, int offset, SessionContext ctx, String query);
+    Flux<RdfFragment> list(int limit, int offset, SessionContext ctx, String query);
 
     /**
      * Deletes an entity with all its values from the store.
@@ -104,12 +104,11 @@ public interface EntityServices {
      * @return Entity as Mono
      */
 
-    Mono<Fragment> findByKey(String entityKey, boolean details, int depth, SessionContext ctx);
+    Mono<RdfFragment> findByKey(String entityKey, boolean details, int depth, SessionContext ctx);
 
-    Mono<Fragment> findByProperty(String identifier, IRI predicate, SessionContext ctx);
+    Mono<RdfFragment> findByProperty(String identifier, IRI predicate, SessionContext ctx);
 
-
-    Mono<Fragment> find(String entityKey, @Nullable String property,  boolean details, int depth, SessionContext ctx);
+    Mono<RdfFragment> find(String entityKey, @Nullable String property, boolean details, int depth, SessionContext ctx);
 
     Mono<Boolean> contains(IRI entityIri, SessionContext ctx);
 

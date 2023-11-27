@@ -1,0 +1,16 @@
+@prefix ns1: <https://schema.org/> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+[] a ns1:VideoObject ;
+    ns1:identifier "_a1234" ;
+    ns1:title "Video 1" ;
+    ns1:hasDefinedTerm [
+       a ns1:DefinedTerm ;
+       rdfs:label "title"
+    ] ;
+    ns1:creator [
+        ns1:firstName "Max" ;
+        ns1:sureName "Mustermann"
+
+    ] .

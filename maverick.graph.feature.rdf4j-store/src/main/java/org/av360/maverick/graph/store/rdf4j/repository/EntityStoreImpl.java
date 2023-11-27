@@ -4,7 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.model.context.Environment;
 import org.av360.maverick.graph.model.entities.Transaction;
 import org.av360.maverick.graph.store.IndividualsStore;
-import org.av360.maverick.graph.store.rdf.fragments.Fragment;
+import org.av360.maverick.graph.store.rdf.fragments.RdfFragment;
 import org.av360.maverick.graph.store.rdf4j.repository.util.AbstractRdfRepository;
 import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
@@ -29,7 +29,7 @@ public class EntityStoreImpl extends AbstractRdfRepository implements Individual
 
 
     @Override
-    public Mono<Transaction> insertFragment(Fragment fragment, Environment environment) {
+    public Mono<Transaction> insertFragment(RdfFragment fragment, Environment environment) {
         return null;
     }
 }

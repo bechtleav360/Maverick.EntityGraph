@@ -8,7 +8,7 @@ import org.av360.maverick.graph.model.rdf.Triples;
 import org.av360.maverick.graph.services.EntityServices;
 import org.av360.maverick.graph.services.QueryServices;
 import org.av360.maverick.graph.store.IndividualsStore;
-import org.av360.maverick.graph.store.rdf.fragments.Fragment;
+import org.av360.maverick.graph.store.rdf.fragments.RdfFragment;
 import org.av360.maverick.graph.store.rdf.helpers.RdfUtils;
 import org.av360.maverick.graph.store.rdf.helpers.TriplesCollector;
 import org.av360.maverick.graph.tests.config.TestSecurityConfig;
@@ -110,11 +110,11 @@ public class EntityServicesClient {
 
 
 
-    public List<Fragment> listAllEntities() {
+    public List<RdfFragment> listAllEntities() {
         return listAllEntitiesMono().block();
     }
 
-    public Mono<List<Fragment>> listAllEntitiesMono() {
+    public Mono<List<RdfFragment>> listAllEntitiesMono() {
         return this.entityServices.list(100, 0, TestSecurityConfig.createTestContext()).collectList();
     }
 

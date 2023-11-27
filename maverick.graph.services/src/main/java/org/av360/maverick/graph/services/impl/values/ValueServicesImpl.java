@@ -15,7 +15,7 @@ import org.av360.maverick.graph.services.IdentifierServices;
 import org.av360.maverick.graph.services.SchemaServices;
 import org.av360.maverick.graph.services.ValueServices;
 import org.av360.maverick.graph.store.SchemaStore;
-import org.av360.maverick.graph.store.rdf.fragments.Fragment;
+import org.av360.maverick.graph.store.rdf.fragments.RdfFragment;
 import org.eclipse.rdf4j.model.*;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.springframework.context.ApplicationEventPublisher;
@@ -202,7 +202,7 @@ public class ValueServicesImpl implements ValueServices {
 
     }
 
-    private Mono<Transaction> buildTransactionForIRIStatement(Triple statement, Fragment entity, Transaction transaction, boolean replace, SessionContext ctx) {
+    private Mono<Transaction> buildTransactionForIRIStatement(Triple statement, RdfFragment entity, Transaction transaction, boolean replace, SessionContext ctx) {
         // check if entity already has this statement. If yes, we do nothing
         if (statement.getObject().isIRI() && entity.hasStatement(statement) && !replace) {
             log.trace("Entity {} already has a link '{}' for predicate '{}', ignoring update.", entity.getIdentifier(), statement.getObject(), statement.getPredicate());
@@ -213,7 +213,7 @@ public class ValueServicesImpl implements ValueServices {
     }
 
 
-    private Mono<Transaction> buildTransactionForLiteralStatement(Triple triple, Fragment entity, Transaction transaction, boolean replace, SessionContext ctx) {
+    private Mono<Transaction> buildTransactionForLiteralStatement(Triple triple, RdfFragment entity, Transaction transaction, boolean replace, SessionContext ctx) {
         if (triple.getObject().isLiteral() && entity.hasStatement(triple.getSubject(), triple.getPredicate(), null) && replace) {
             log.trace("Entity {} already has a value for predicate '{}'.", entity.getIdentifier(), triple.getPredicate());
             Literal updateValue = (Literal) triple.getObject();

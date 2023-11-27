@@ -7,7 +7,7 @@ import org.av360.maverick.graph.model.errors.InconsistentModelException;
 import org.av360.maverick.graph.model.errors.requests.InvalidEntityUpdate;
 import org.av360.maverick.graph.model.errors.store.InvalidEntityModelException;
 import org.av360.maverick.graph.model.events.DetailInsertedEvent;
-import org.av360.maverick.graph.store.rdf.fragments.Fragment;
+import org.av360.maverick.graph.store.rdf.fragments.RdfFragment;
 import org.av360.maverick.graph.store.rdf.fragments.RdfTransaction;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Statement;
@@ -33,7 +33,7 @@ public class InsertDetails {
                         ctrl.schemaServices.resolvePrefixedName(prefixedValueKey),
                         ctrl.schemaServices.resolvePrefixedName(prefixedDetailKey)
                 ).flatMap(tuple -> {
-                    Fragment entity = tuple.getT1();
+                    RdfFragment entity = tuple.getT1();
                     IRI valuePredicate = tuple.getT2();
                     IRI detailPredicate = tuple.getT3();
 
@@ -50,14 +50,14 @@ public class InsertDetails {
 
     }
 
-    private Mono<Transaction> insertWithHash(Fragment entity, IRI valuePredicate, IRI detailPredicate, String value, String hash, SessionContext ctx) {
+    private Mono<Transaction> insertWithHash(RdfFragment entity, IRI valuePredicate, IRI detailPredicate, String value, String hash, SessionContext ctx) {
         return this.buildDetailStatementForValueWithHash(entity, valuePredicate, detailPredicate, value, hash)
                 .map(statement -> new RdfTransaction().forInsert(statement))
                 .flatMap(trx -> ctrl.entityServices.getStore(ctx).asCommitable().commit(trx, ctx.getEnvironment()));
     }
 
 
-    private Mono<Transaction> insertWithoutHash(Fragment entity, IRI valuePredicate, IRI detailPredicate, String value, SessionContext ctx) {
+    private Mono<Transaction> insertWithoutHash(RdfFragment entity, IRI valuePredicate, IRI detailPredicate, String value, SessionContext ctx) {
 
         try {
             Optional<Value> distinctValue = entity.findDistinctValue(entity.getIdentifier(), valuePredicate);
@@ -81,7 +81,7 @@ public class InsertDetails {
     }
 
 
-    Mono<Statement> buildDetailStatementForValueWithHash(Fragment entity, IRI valuePredicate, IRI detailPredicate, String value, String valueHash) {
+    Mono<Statement> buildDetailStatementForValueWithHash(RdfFragment entity, IRI valuePredicate, IRI detailPredicate, String value, String valueHash) {
         Optional<Triple> requestedTriple = this.ctrl.readValues.findValueTripleByHash(entity, valuePredicate, valueHash);
         if (requestedTriple.isEmpty())
             return Mono.error(new InvalidEntityUpdate(entity.getIdentifier(), "No value exists in entity <%s> for predicate <%s> and hash '%s'".formatted(entity.getIdentifier(), valuePredicate, valueHash)));
@@ -90,7 +90,7 @@ public class InsertDetails {
         return Mono.just(annotationStatement);
     }
 
-    Mono<Statement> buildDetailStatementForSingleValue(Fragment entity, IRI valuePredicate, IRI detailPredicate) {
+    Mono<Statement> buildDetailStatementForSingleValue(RdfFragment entity, IRI valuePredicate, IRI detailPredicate) {
         try {
             Optional<Triple> requestedTriple = this.ctrl.readValues.findSingleValueTriple(entity, valuePredicate);
             if (requestedTriple.isEmpty())

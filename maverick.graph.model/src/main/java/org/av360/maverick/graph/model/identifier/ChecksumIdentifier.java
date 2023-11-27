@@ -6,6 +6,7 @@ import org.springframework.util.Assert;
 
 import java.io.Serializable;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.stream.Collectors;
 import java.util.zip.CRC32C;
 import java.util.zip.Checksum;
@@ -41,12 +42,12 @@ public class ChecksumIdentifier extends LocalIRI implements LocalIdentifier  {
     }
 
 
+    public ChecksumIdentifier(String namespace, Collection<Serializable> parts) {
+        super(namespace);
 
+        String collect = parts.stream().map(Object::toString).collect(Collectors.joining());
+        Assert.hasLength(collect, "No content to generate reproducible identifier.");
+        super.setLocalName(ChecksumGenerator.generateChecksum(collect, LENGTH, PADDING_CHAR));
 
-
-
-
-
-
-
+    }
 }

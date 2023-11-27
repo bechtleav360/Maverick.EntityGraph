@@ -9,7 +9,7 @@ import org.av360.maverick.graph.model.entities.ScheduledJob;
 import org.av360.maverick.graph.model.enums.RepositoryType;
 import org.av360.maverick.graph.services.QueryServices;
 import org.av360.maverick.graph.services.TransactionsService;
-import org.av360.maverick.graph.services.transformers.types.AssignLocalTypes;
+import org.av360.maverick.graph.services.preprocessors.types.AssignLocalTypes;
 import org.av360.maverick.graph.store.TransactionsStore;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Value;

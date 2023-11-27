@@ -6,7 +6,7 @@ import org.av360.maverick.graph.model.entities.Transaction;
 import org.av360.maverick.graph.model.vocabulary.Transactions;
 import org.av360.maverick.graph.store.TransactionsStore;
 import org.av360.maverick.graph.store.behaviours.Maintainable;
-import org.av360.maverick.graph.store.rdf.fragments.Fragment;
+import org.av360.maverick.graph.store.rdf.fragments.RdfFragment;
 import org.av360.maverick.graph.store.rdf4j.repository.util.AbstractRdfRepository;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Value;
@@ -55,7 +55,7 @@ public class TransactionsStoreImpl extends AbstractRdfRepository implements Tran
 
 
     @Override
-    public Mono<Transaction> insertFragment(Fragment fragment, Environment environment) {
+    public Mono<Transaction> insertFragment(RdfFragment fragment, Environment environment) {
         return null;
     }
 }

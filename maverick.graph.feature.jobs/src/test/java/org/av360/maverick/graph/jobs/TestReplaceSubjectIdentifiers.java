@@ -1,15 +1,18 @@
 package org.av360.maverick.graph.jobs;
 
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.IterableUtils;
 import org.av360.maverick.graph.feature.jobs.ReplaceSubjectIdentifiersJob;
 import org.av360.maverick.graph.model.context.SessionContext;
 import org.av360.maverick.graph.model.entities.Transaction;
+import org.av360.maverick.graph.model.vocabulary.Local;
 import org.av360.maverick.graph.services.EntityServices;
 import org.av360.maverick.graph.tests.config.TestRepositoryConfig;
 import org.av360.maverick.graph.tests.config.TestSecurityConfig;
 import org.av360.maverick.graph.tests.util.TestsBase;
 import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.vocabulary.OWL;
+import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.rio.RDFFormat;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
@@ -78,6 +81,40 @@ class TestReplaceSubjectIdentifiers extends TestsBase {
                     Assertions.assertTrue(model.subjects().iterator().next().isIRI());
 
                     super.printModel(model, RDFFormat.TURTLE);
+                }).verifyComplete();
+
+    }
+
+    @Test
+    void testReplaceAnonymousIdentifiersWithShared() throws IOException {
+
+        super.printStart("testReplaceAnonymousIdentifiersInComplex");
+        SessionContext ctx = TestSecurityConfig.createTestContext();
+
+        Mono<Transaction> importMono = entityServices.importFile(new ClassPathResource("requests/create-valid-complex.ttl"), RDFFormat.TURTLE, ctx).doOnSubscribe(sub -> super.printStep());
+        Mono<Model> readModelMono = entityServices.asModel(ctx).doOnSubscribe(sub -> super.printStep());
+        Mono<Void> actionMono = scheduled.run(ctx).doOnSubscribe(sub -> super.printStep());
+
+        StepVerifier.create(importMono.then(readModelMono))
+                .assertNext(md -> {
+                    Assertions.assertTrue(md.subjects().size() > 0);
+                }).verifyComplete();
+
+        StepVerifier.create(actionMono)
+                .thenAwait(Duration.of(1, ChronoUnit.SECONDS))
+                .verifyComplete();
+
+        StepVerifier.create(readModelMono)
+                .consumeNextWith(model -> {
+                    super.printModel(model, RDFFormat.TURTLE);
+                    Assertions.assertTrue(IterableUtils.size(model.getStatements(null, RDF.TYPE, Local.Entities.TYPE_EMBEDDED)) == 1);
+                    Assertions.assertTrue(IterableUtils.size(model.getStatements(null, RDF.TYPE, Local.Entities.TYPE_INDIVIDUAL)) == 1);
+                    Assertions.assertTrue(IterableUtils.size(model.getStatements(null, RDF.TYPE, Local.Entities.TYPE_CLASSIFIER)) == 1);
+
+                    Assertions.assertEquals(3, model.subjects().size());
+                    Assertions.assertTrue(model.subjects().iterator().next().isIRI());
+
+
                 }).verifyComplete();
 
     }

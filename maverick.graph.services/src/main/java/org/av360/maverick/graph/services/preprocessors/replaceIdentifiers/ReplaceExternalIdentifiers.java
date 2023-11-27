@@ -1,10 +1,10 @@
-package org.av360.maverick.graph.services.transformers.replaceIdentifiers;
+package org.av360.maverick.graph.services.preprocessors.replaceIdentifiers;
 
 import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.model.context.Environment;
 import org.av360.maverick.graph.model.vocabulary.Local;
 import org.av360.maverick.graph.services.IdentifierServices;
-import org.av360.maverick.graph.services.transformers.Transformer;
+import org.av360.maverick.graph.services.preprocessors.ModelPreprocessor;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.Value;
@@ -27,10 +27,14 @@ import java.util.stream.Collectors;
 @Slf4j(topic = "graph.srvc.trans.ids.ext")
 @Component
 @ConditionalOnProperty(name = "application.features.transformers.replaceGlobalIdentifiers", havingValue = "true")
-public class ReplaceExternalIdentifiers extends AbstractIdentifierReplace implements Transformer {
+public class ReplaceExternalIdentifiers extends AbstractIdentifierReplace implements ModelPreprocessor {
 
     protected final IdentifierServices identifierServices;
 
+    @Override
+    public int getOrder() {
+        return 110;
+    }
 
     public ReplaceExternalIdentifiers(IdentifierServices identifierServices) {
         this.identifierServices = identifierServices;
@@ -87,4 +91,6 @@ public class ReplaceExternalIdentifiers extends AbstractIdentifierReplace implem
     public IdentifierServices getIdentifierService() {
         return this.identifierServices;
     }
+
+
 }
