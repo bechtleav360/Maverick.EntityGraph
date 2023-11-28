@@ -16,6 +16,12 @@ public interface SchemaStore extends FragmentsStore {
 
     Optional<Namespace> getNamespaceForPrefix(String key);
 
+    default Optional<String> getPrefixForNamespace(Namespace namespace) {
+        return this.getPrefixForNamespace(namespace.getName());
+    }
+
+    Optional<String> getPrefixForNamespace(String name);
+
     @Override
     default RepositoryType getRepositoryType() {
         return RepositoryType.SCHEMA;
