@@ -74,6 +74,15 @@ public class VocabularyStoreImpl extends AbstractRdfRepository implements Schema
     }
 
     @Override
+    public Optional<String> getPrefixForNamespace(String name) {
+        return mappings.entrySet()
+                .stream()
+                .filter(entry -> name.equals(entry.getValue()))
+                .map(Map.Entry::getKey)
+                .findFirst();
+    }
+
+    @Override
     public Logger getLogger() {
         return log;
     }

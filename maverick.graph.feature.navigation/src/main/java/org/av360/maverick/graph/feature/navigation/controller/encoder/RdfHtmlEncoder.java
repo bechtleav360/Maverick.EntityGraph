@@ -4,6 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.api.config.ReactiveRequestUriContextHolder;
 import org.av360.maverick.graph.model.vocabulary.Local;
 import org.av360.maverick.graph.services.NavigationServices;
+import org.av360.maverick.graph.store.SchemaStore;
 import org.av360.maverick.graph.store.rdf.helpers.RdfUtils;
 import org.eclipse.rdf4j.model.*;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
@@ -31,6 +32,7 @@ import java.io.OutputStream;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -43,7 +45,10 @@ public class RdfHtmlEncoder implements Encoder<Statement> {
 
     private final SimpleValueFactory vf;
 
-    public RdfHtmlEncoder() {
+    private final SchemaStore schemaStore;
+
+    public RdfHtmlEncoder(SchemaStore schemaStore) {
+        this.schemaStore = schemaStore;
         this.vf = SimpleValueFactory.getInstance();
     }
 
@@ -62,13 +67,13 @@ public class RdfHtmlEncoder implements Encoder<Statement> {
                     }
                 })
                 .map(statement -> (Statement) statement)
-
-                .collect(new ModelCollector())
+                .collect(ModelCollector.toTreeModel())
                 .map(this::convertCompositesToBlankNodes)
-                .map(this::filterInternalStatements)
+                .map(this::filterStatements)
+                .map(this::extractNamespaces)
                 .flatMap(model ->  Mono.zip(Mono.just(model), ReactiveRequestUriContextHolder.getURI()))
                 .flatMapMany(tuple -> {
-                    Model statements = tuple.getT1();
+                    Model model = tuple.getT1();
 
                     URI requestURI = tuple.getT2(); // we need the request to resolve the current request url
 
@@ -78,12 +83,9 @@ public class RdfHtmlEncoder implements Encoder<Statement> {
 
                         writer.startRDF();
 
-                        if(statements.size() > 0) {
+                        model.getNamespaces().forEach(namespace -> writer.handleNamespace(namespace.getPrefix(), namespace.getName()));
 
-                            this.handleNamespaces(writer, statements.iterator().next(), requestURI);
-                        }
-
-                        for (Statement st : statements) {
+                        for (Statement st : model) {
                             this.handleStatement(st, writer, requestURI);
 
                         }
@@ -101,9 +103,33 @@ public class RdfHtmlEncoder implements Encoder<Statement> {
                 });
     }
 
-    private Model filterInternalStatements(Model model) {
+
+    private Model extractNamespaces(Model model) {
+        model.forEach(statement -> {
+            this.handleNamespace(statement, model);
+        });
+        return model;
+    }
+
+    private void handleNamespace(Statement s, Model m) {
+        if(s.getSubject() instanceof IRI iri) {
+            this.handleNamespaceIRI(iri, m);
+        }
+        if(s.getObject() instanceof IRI iri) {
+            this.handleNamespaceIRI(iri, m);
+        }
+        this.handleNamespaceIRI(s.getPredicate(), m);
+    }
+
+    private void handleNamespaceIRI(IRI iri, Model m) {
+        Optional<String> prefixForNamespace = this.schemaStore.getPrefixForNamespace(iri.getNamespace());
+        prefixForNamespace.ifPresent(s -> m.setNamespace(s, iri.getNamespace()));
+    }
+
+    private Model filterStatements(Model model) {
         // we filter out any internal statements
         return model.stream()
+                .filter(this::isLiteralWithCommonLanguageTag)
                 .filter(statement -> ! statement.getObject().equals(Local.Entities.TYPE_INDIVIDUAL))
                 .filter(statement -> ! statement.getObject().equals(Local.Entities.TYPE_CLASSIFIER))
                 .filter(statement -> ! statement.getObject().equals(Local.Entities.TYPE_INDIVIDUAL))
@@ -111,6 +137,15 @@ public class RdfHtmlEncoder implements Encoder<Statement> {
                 .collect(new ModelCollector());
 
 
+    }
+
+    private boolean isLiteralWithCommonLanguageTag(Statement statement) {
+        if(statement.getObject() instanceof Literal literal) {
+            if(literal.getLanguage().isPresent()) {
+                return literal.getLanguage().map(lang -> lang.startsWith("en") || lang.startsWith("de") || lang.startsWith("fr") || lang.startsWith("es")).orElse(Boolean.FALSE);
+            } else return true;
+        }
+        return true;
     }
 
     /** for navigational purposes, we convert the embedded objects (as long as there's only one fragment pointing to it) to an embedded object */

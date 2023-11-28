@@ -48,6 +48,8 @@ public class HtmlWriter implements RDFWriter {
         WriterConfig config = new WriterConfig();
         config.set(BasicWriterSettings.INLINE_BLANK_NODES, true);
         delegate.set(BasicWriterSettings.INLINE_BLANK_NODES, true);
+        delegate.set(BasicWriterSettings.PRETTY_PRINT, true);
+
 
     }
     @Override

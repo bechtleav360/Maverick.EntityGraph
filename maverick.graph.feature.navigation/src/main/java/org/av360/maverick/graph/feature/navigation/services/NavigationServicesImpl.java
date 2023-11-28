@@ -32,17 +32,12 @@ import java.util.stream.Collectors;
 @Service
 public class NavigationServicesImpl implements NavigationServices {
 
-    private EntityServices entityServices;
-
     ValueFactory vf = SimpleValueFactory.getInstance();
-
-    private IRI NAVIGATION_CONTEXT = Values.iri("urn:nav");
-    private IRI DATA_CONTEXT = Values.iri("urn:data");
-
-
     @Value("${application.features.modules.navigation.configuration.limit:100}")
     int defaultLimit = 100;
-
+    private EntityServices entityServices;
+    private IRI NAVIGATION_CONTEXT = Values.iri("urn:nav");
+    private IRI DATA_CONTEXT = Values.iri("urn:data");
 
     @Override
     @RequiresPrivilege(Authorities.READER_VALUE)
@@ -54,7 +49,8 @@ public class NavigationServicesImpl implements NavigationServices {
 
                     Resource apiDocsNode = Values.bnode();
                     Resource swaggerLink = Values.bnode();
-                    Resource openApiLink = Values.bnode();//v3/api-docs
+                    Resource openApiLink = Values.bnode();
+                    Resource navView = Values.bnode();
 
                     /*
                     if(ctx.getDetails() instanceof RequestDetails details) {
@@ -74,10 +70,16 @@ public class NavigationServicesImpl implements NavigationServices {
                             .add(RDF.TYPE, HYDRA.API_DOCUMENTATION)
                             .add(HYDRA.TITLE, "Maverick.EntityGraph")
                             .add(HYDRA.DESCRIPTION, "Opinionated Web API to access linked data fragments in a knowledge graph.")
-                            .add(HYDRA.ENTRYPOINT, this.generateResolvableIRI("/api/entities"))
+                            .add(HYDRA.ENTRYPOINT, ("?/api"))
                             .add(HYDRA.VIEW, swaggerLink)
-                            .add(HYDRA.VIEW, openApiLink);
+                            .add(HYDRA.VIEW, openApiLink)
+                            .add(HYDRA.VIEW, navView);
 
+                    builder.subject(navView)
+                            .add(RDF.TYPE, HYDRA.LINK)
+                            .add(HYDRA.TITLE, "Navigating through the graph")
+                            .add(HYDRA.RETURNS, vf.createLiteral(MediaType.TEXT_HTML_VALUE))
+                            .add(HYDRA.ENTRYPOINT, this.generateResolvableIRI("/nav"));
                     builder.subject(swaggerLink)
                             .add(RDF.TYPE, HYDRA.LINK)
                             .add(HYDRA.TITLE, "Swagger UI to interact with the API")
@@ -93,7 +95,6 @@ public class NavigationServicesImpl implements NavigationServices {
                 .map(model -> model.stream().map(statement -> AnnotatedStatement.wrap(statement, model.getNamespaces())).collect(Collectors.toSet()))
                 .flatMapMany(Flux::fromIterable);
     }
-
 
 
     @Override
@@ -140,14 +141,13 @@ public class NavigationServicesImpl implements NavigationServices {
         params.put("offset", offset.toString());
 
 
-
         return this.entityServices.list(limit, offset, ctx, query)
                 .collectList()
                 .map(list -> {
 
                     ModelBuilder builder = new ModelBuilder();
                     IRI nodeCollection = this.generateResolvableIRI("/api/entities");
-                    IRI nodePaging = this.generateResolvableIRI("/api/entities",  params);
+                    IRI nodePaging = this.generateResolvableIRI("/api/entities", params);
 
                     builder.namedGraph(NAVIGATION_CONTEXT);
                     builder.setNamespace(HYDRA.PREFIX, HYDRA.NAMESPACE);
@@ -161,16 +161,16 @@ public class NavigationServicesImpl implements NavigationServices {
 
                     builder.add(HYDRA.LIMIT, limit);
                     builder.add(HYDRA.OFFSET, offset);
-                    if(offset > 0) {
-                        params.put("offset", Math.max(offset - limit, 0)+"");
-                        builder.add(HYDRA.PREVIOUS, this.generateResolvableIRI("/api/entities",  params));
+                    if (offset > 0) {
+                        params.put("offset", Math.max(offset - limit, 0) + "");
+                        builder.add(HYDRA.PREVIOUS, this.generateResolvableIRI("/api/entities", params));
                     }
-                    if(offset > limit) {
+                    if (offset > limit) {
                         params.put("offset", "0");
-                        builder.add(HYDRA.FIRST, this.generateResolvableIRI("/api/entities",  params));
+                        builder.add(HYDRA.FIRST, this.generateResolvableIRI("/api/entities", params));
                     }
-                    if(list.size() <= limit) {
-                        params.put("offset", (offset+limit)+"");
+                    if (list.size() <= limit) {
+                        params.put("offset", (offset + limit) + "");
                         builder.add(HYDRA.NEXT, this.generateResolvableIRI("/api/entities", params));
                     }
 
@@ -192,11 +192,11 @@ public class NavigationServicesImpl implements NavigationServices {
         sb.append(path);
 
         Iterator<Map.Entry<String, String>> entriesItr = params.entrySet().iterator();
-        if(entriesItr.hasNext()) sb.append("?");
-        while(entriesItr.hasNext()) {
+        if (entriesItr.hasNext()) sb.append("?");
+        while (entriesItr.hasNext()) {
             Map.Entry<String, String> next = entriesItr.next();
             sb.append(next.getKey()).append("=").append(next.getValue());
-            if(entriesItr.hasNext()) sb.append("&");
+            if (entriesItr.hasNext()) sb.append("&");
         }
 
         return vf.createIRI(sb.toString());
