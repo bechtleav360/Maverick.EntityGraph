@@ -3,6 +3,7 @@ package org.av360.maverick.graph.feature.applications.scoped;
 import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.feature.applications.config.ApplicationsTestsBase;
 import org.av360.maverick.graph.feature.applications.model.domain.ApplicationFlags;
+import org.av360.maverick.graph.model.vocabulary.ICAL;
 import org.av360.maverick.graph.tests.config.TestSecurityConfig;
 import org.av360.maverick.graph.tests.util.RdfConsumer;
 import org.junit.jupiter.api.AfterEach;
@@ -54,7 +55,7 @@ public class CreateScopedEntities  extends ApplicationsTestsBase {
         super.printStep();
         RdfConsumer c2 = entitiesTestClient.listEntities("/api/s/test_app/entities");
         Assertions.assertEquals(1, c2.getStatements().size());
-
+        Assertions.assertEquals("test_app.78q5z6xx", c2.getEntityIdentifier(ICAL.VEVENT).getLocalName());
         super.printStep();
         RdfConsumer c3 = entitiesTestClient.listEntities("/api/entities");
         Assertions.assertEquals(0, c3.getStatements().size());

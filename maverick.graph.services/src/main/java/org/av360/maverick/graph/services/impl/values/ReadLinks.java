@@ -16,7 +16,7 @@ public class ReadLinks {
 
     public Mono<Triples> list(String entityKey, String prefixedPoperty, SessionContext ctx) {
         return Mono.zip(
-                ctrl.identifierServices.asIRI(entityKey, ctx.getEnvironment())
+                ctrl.identifierServices.asLocalIRI(entityKey, ctx.getEnvironment())
                         .flatMap(entityIdentifier -> ctrl.entityServices.get(entityIdentifier, true, 0, ctx)),
                 ctrl.schemaServices.resolvePrefixedName(prefixedPoperty)
         ).map(pair -> {

@@ -20,7 +20,6 @@ import org.av360.maverick.graph.model.entities.Transaction;
 import org.av360.maverick.graph.model.enums.RepositoryType;
 import org.av360.maverick.graph.model.errors.InconsistentModelException;
 import org.av360.maverick.graph.model.errors.InsufficientPrivilegeException;
-import org.av360.maverick.graph.model.identifier.LocalIdentifier;
 import org.av360.maverick.graph.model.security.Authorities;
 import org.av360.maverick.graph.model.util.StreamsLogger;
 import org.av360.maverick.graph.model.vocabulary.Local;
@@ -92,7 +91,7 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
         } catch (Exception e) { return Mono.error(e); }
 
 
-        LocalIdentifier subject = IdentifierServices.createRandomIdentifier(Local.Applications.NAMESPACE);
+        IRI subject = IdentifierServices.buildRandomIRI(Local.Applications.NAMESPACE);
 
         Application application = new Application(
                 subject,
@@ -338,7 +337,7 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
     private ModelBuilder buildConfigurationItem(String configKey, Serializable configValue, IRI applicationIdentifier, @Nullable ModelBuilder builder) {
         if(Objects.isNull(builder)) builder = new ModelBuilder();
 
-        LocalIdentifier configNode = IdentifierServices.createRandomIdentifier(Local.Applications.NAMESPACE);
+        IRI configNode = IdentifierServices.buildRandomIRI(Local.Applications.NAMESPACE);
         builder.add(configNode, RDF.TYPE, ApplicationTerms.CONFIGURATION_ITEM);
         builder.add(configNode, ApplicationTerms.CONFIG_KEY, configKey);
         builder.add(configNode, ApplicationTerms.CONFIG_VALUE, configValue.toString());
@@ -350,7 +349,7 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
     private ModelBuilder buildMetricsItem(String metricsName, Serializable value, IRI applicationIdentifier, @Nullable ModelBuilder builder) {
         if(Objects.isNull(builder)) builder = new ModelBuilder();
 
-        LocalIdentifier configNode = IdentifierServices.createRandomIdentifier(Local.Applications.NAMESPACE);
+        IRI configNode = IdentifierServices.buildRandomIRI(Local.Applications.NAMESPACE);
         builder.add(configNode, RDF.TYPE, SDO.QUANTITATIVE_VALUE);
         builder.add(configNode, SDO.NAME, metricsName);
         builder.add(configNode, SDO.VALUE, value);

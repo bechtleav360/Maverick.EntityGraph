@@ -176,7 +176,7 @@ public class EntityServicesImpl implements EntityServices {
     @RequiresPrivilege(Authorities.READER_VALUE)
     @OnRepositoryType(RepositoryType.ENTITIES)
     public Mono<RdfFragment> findByKey(String entityKey, boolean details, int depth, SessionContext ctx) {
-        return identifierServices.asIRI(entityKey, ctx.getEnvironment())
+        return identifierServices.asLocalIRI(entityKey, ctx.getEnvironment())
                 .flatMap(entityIdentifier -> this.get(entityIdentifier, details, 1, ctx));
     }
 
@@ -221,7 +221,7 @@ public class EntityServicesImpl implements EntityServices {
     @RequiresPrivilege(Authorities.READER_VALUE)
     @OnRepositoryType(RepositoryType.ENTITIES)
     public Mono<IRI> resolveAndVerify(String key, SessionContext ctx) {
-        return this.identifierServices.asIRI(key, ctx.getEnvironment())
+        return this.identifierServices.asLocalIRI(key, ctx.getEnvironment())
                 .filterWhen(iri -> this.contains(iri, ctx))
                 .switchIfEmpty(Mono.error(new EntityNotFound(key)))
                 .doOnSuccess(res -> log.trace("Resolved entity key {} to qualified identifier {}", key, res.stringValue()));
@@ -287,7 +287,7 @@ public class EntityServicesImpl implements EntityServices {
     @RequiresPrivilege(Authorities.MAINTAINER_VALUE)
     @OnRepositoryType(RepositoryType.ENTITIES)
     public Mono<Transaction> remove(String entityKey, SessionContext ctx) {
-        return this.identifierServices.asIRI(entityKey, ctx.getEnvironment()).flatMap(iri -> this.remove(iri, ctx));
+        return this.identifierServices.asLocalIRI(entityKey, ctx.getEnvironment()).flatMap(iri -> this.remove(iri, ctx));
     }
 
     @Override
@@ -330,7 +330,7 @@ public class EntityServicesImpl implements EntityServices {
                 the incoming model can contain multiple entities, all will be linked to
                 the model cannot contain the link statements itself (we are creating them)
          */
-        return this.identifierServices.asIRI(id, ctx.getEnvironment())
+        return this.identifierServices.asLocalIRI(id, ctx.getEnvironment())
                 .flatMap(iri -> {
                     return this.entityStore.asFragmentable().getFragment(iri, 0, false, ctx.getEnvironment())
                             .switchIfEmpty(Mono.error(new EntityNotFound(id)))
@@ -396,7 +396,7 @@ public class EntityServicesImpl implements EntityServices {
     public Mono<Boolean> valueIsSet(String id, String predicatePrefix, String predicateKey, SessionContext ctx) {
         LocalIRI entityIdentifier = LocalIRI.withDefaultNamespace(id);
 
-        return this.identifierServices.asIRI(id, ctx.getEnvironment())
+        return this.identifierServices.asLocalIRI(id, ctx.getEnvironment())
                 .flatMap(iri ->
                         schemaServices.getNamespaceFor(predicatePrefix)
                                 .map(ns -> LocalIRI.withDefinedNamespace(ns, predicateKey))

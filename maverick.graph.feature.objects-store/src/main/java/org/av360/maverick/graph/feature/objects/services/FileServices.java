@@ -62,7 +62,7 @@ public class FileServices {
         return entityServices.resolveAndVerify(entityKey, ctx)
                 .flatMap(entityId -> Mono.zip(
                         Mono.just(new LocalStorageDetails().setEntityId(entityId).setFilename(filename).setLanguage(language)),
-                        identifierServices.asReproducibleIRI(Local.Entities.NS, ctx.getEnvironment(), entityId.getLocalName(), filename),
+                        identifierServices.asReproducibleLocalIRI(Local.Entities.NS, ctx.getEnvironment(), entityId.getLocalName(), filename),
                         schemaServices.resolvePrefixedName(prefixedPoperty)
                 ))
                 .flatMap(pair -> Mono.zip(

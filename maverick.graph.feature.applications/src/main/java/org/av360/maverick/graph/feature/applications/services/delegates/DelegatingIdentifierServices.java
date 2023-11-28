@@ -2,13 +2,14 @@ package org.av360.maverick.graph.feature.applications.services.delegates;
 
 import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.model.context.Environment;
-import org.av360.maverick.graph.model.identifier.LocalIdentifier;
 import org.av360.maverick.graph.services.IdentifierServices;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
+import org.eclipse.rdf4j.model.util.Values;
 import reactor.core.publisher.Mono;
 
 import java.io.Serializable;
+import java.util.Collection;
 
 /***
  * The thing with the ids: to support navigation by links, we have to encode the scope within the identifier
@@ -35,37 +36,30 @@ public class DelegatingIdentifierServices implements IdentifierServices {
 
 
     @Override
-    public Mono<String> validate(String identifier, Environment environment) {
-        if(identifier.contains(".")) return Mono.just(identifier);
+    public String validate(String identifier, Environment environment) {
+        if(identifier.contains(".")) return identifier;
 
         if(environment.hasScope()) {
-            return Mono.just(String.format("%s.%s", environment.getScope().label(), identifier));
+            return String.format("%s.%s", environment.getScope().label(), identifier);
         } else return delegate.validate(identifier, environment);
 
     }
 
+
     @Override
-    public Mono<IRI> asIRI(String key, String namespace, Environment environment) {
-        return this.validate(key, environment)
-                .flatMap(validatedKey -> delegate.asIRI(validatedKey, namespace, environment));
+    public Mono<IRI> asReproducibleLocalIRI(String namespace, Environment environment, Collection<Serializable> parts) {
+        IRI identifier = IdentifierServices.buildReproducibleIRI(namespace, parts);
+        String scopedKey =  this.validate(identifier.getLocalName(), environment);
+        return Mono.just(Values.iri(identifier.getNamespace(), scopedKey));
     }
 
 
+
     @Override
-    public Mono<IRI> asReproducibleIRI(String namespace, Environment environment, Serializable... parts) {
-        LocalIdentifier identifier = IdentifierServices.createReproducibleIdentifier(namespace, parts);
-        return this.validate(identifier.getLocalName(), environment)
-                .map(validatedKey -> valueFactory.createIRI(namespace, validatedKey));
-
-
-
-    }
-    @Override
-    public Mono<IRI> asRandomIRI(String namespace, Environment environment) {
-        LocalIdentifier identifier = IdentifierServices.createRandomIdentifier(namespace);
-        return this.validate(identifier.getLocalName(), environment)
-                .map(validatedKey -> valueFactory.createIRI(namespace, validatedKey));
-
+    public Mono<IRI> asRandomLocalIRI(String namespace, Environment environment) {
+        IRI identifier = IdentifierServices.buildRandomIRI(namespace);
+        String scopedKey =  this.validate(identifier.getLocalName(), environment);
+        return Mono.just(Values.iri(identifier.getNamespace(), scopedKey));
     }
 
 }

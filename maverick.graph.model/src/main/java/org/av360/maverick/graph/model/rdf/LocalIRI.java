@@ -1,10 +1,11 @@
 package org.av360.maverick.graph.model.rdf;
 
+import org.av360.maverick.graph.model.identifier.LocalIdentifier;
 import org.av360.maverick.graph.model.vocabulary.Local;
 import org.eclipse.rdf4j.model.Namespace;
 import org.eclipse.rdf4j.model.base.AbstractIRI;
 
-public class LocalIRI extends AbstractIRI {
+public class LocalIRI extends AbstractIRI implements LocalIdentifier {
 
 
     private String namespace;
