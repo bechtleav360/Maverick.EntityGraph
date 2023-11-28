@@ -130,7 +130,7 @@ public class ReplaceAnonymousIdentifiers extends AbstractIdentifierReplace imple
 
 
         // we build the identifier from entity type and value
-        return identifierServices.asReproducibleIRI(Local.Entities.NS, environment, serializables).map(iri -> (Resource) iri);
+        return identifierServices.asReproducibleLocalIRI(Local.Entities.NS, environment, serializables).map(iri -> (Resource) iri);
 
     }
 

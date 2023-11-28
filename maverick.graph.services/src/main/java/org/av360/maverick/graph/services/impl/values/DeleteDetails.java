@@ -78,7 +78,7 @@ public class DeleteDetails {
      */
     public Mono<Transaction> remove(String entityKey, String prefixedValuePredicate, String prefixedDetailPredicate, String valueIdentifier, SessionContext ctx) {
         return Mono.zip(
-                        ctrl.identifierServices.asIRI(entityKey, ctx.getEnvironment()).flatMap(entityIdentifier -> ctrl.entityServices.get(entityIdentifier, true, 0, ctx)),
+                        ctrl.identifierServices.asLocalIRI(entityKey, ctx.getEnvironment()).flatMap(entityIdentifier -> ctrl.entityServices.get(entityIdentifier, true, 0, ctx)),
                         ctrl.schemaServices.resolvePrefixedName(prefixedValuePredicate),
                         ctrl.schemaServices.resolvePrefixedName(prefixedDetailPredicate)
                 ).flatMap(tuple -> {

@@ -33,7 +33,7 @@ public class ReadValues {
     }
 
     public Mono<Triples> listValues(String entityKey, @Nullable String prefixedValuePredicate, SessionContext ctx) {
-        return valueServices.identifierServices.asIRI(entityKey, ctx.getEnvironment())
+        return valueServices.identifierServices.asLocalIRI(entityKey, ctx.getEnvironment())
                 .flatMap(entityIdentifier -> valueServices.entityServices.get(entityIdentifier, true, 0, ctx))
                 .flatMap(entity -> {
                     if(Objects.isNull(prefixedValuePredicate)) {

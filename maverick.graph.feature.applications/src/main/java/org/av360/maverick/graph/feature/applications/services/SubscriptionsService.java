@@ -118,7 +118,7 @@ public class SubscriptionsService {
         return this.applicationsService.getApplication(applicationKey, ctx)
                 .map(application ->
                         new Subscription(
-                                IdentifierServices.createRandomIdentifier(Local.Applications.NAMESPACE),
+                                IdentifierServices.buildRandomIRI(Local.Applications.NAMESPACE),
                                 subscriptionLabel,
                                 RandomIdentifier.generateRandomKey(16),
                                 true,
