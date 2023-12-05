@@ -10,6 +10,7 @@ import org.av360.maverick.graph.model.errors.InsufficientPrivilegeException;
 import org.av360.maverick.graph.model.errors.store.InvalidStoreConfiguration;
 import org.av360.maverick.graph.model.rdf.AnnotatedStatement;
 import org.av360.maverick.graph.model.security.Authorities;
+import org.av360.maverick.graph.model.vocabulary.Local;
 import org.av360.maverick.graph.model.vocabulary.Transactions;
 import org.av360.maverick.graph.store.FragmentsStore;
 import org.av360.maverick.graph.store.RepositoryBuilder;
@@ -120,6 +121,20 @@ public abstract class AbstractRdfRepository implements Searchable, Maintainable,
             }
         });
     }
+
+    @Override
+    public Mono<Long> countFragments(Environment environment) {
+        return this.applyWithConnection(environment, connection -> {
+            try {
+                long count = connection.getStatements(null, null, Local.Entities.TYPE_INDIVIDUAL).stream().count();
+                return count;
+            } catch (Exception e) {
+                getLogger().error("Unknown error while running query", e);
+                throw e;
+            }
+        });
+    }
+
 
     public Flux<BindingSet> query(String query, Environment environment) {
         return this.applyManyWithConnection(environment, connection -> {

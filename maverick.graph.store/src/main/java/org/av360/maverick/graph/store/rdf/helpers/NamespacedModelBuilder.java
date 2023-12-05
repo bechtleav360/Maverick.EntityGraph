@@ -22,9 +22,9 @@ public class NamespacedModelBuilder extends ModelBuilder {
     static {
         namespaceMap = new HashMap<>(Namespaces.DEFAULT_RDF4J.size() + 10);
         Namespaces.DEFAULT_RDF4J.forEach(namespace -> namespaceMap.put(namespace.getName(), namespace));
-        namespaceMap.put(Local.Entities.NAMESPACE, Local.Entities.NS);
-        namespaceMap.put(Local.Transactions.NAMESPACE, Local.Transactions.NS);
-        namespaceMap.put(Local.Versions.NAMESPACE, Local.Versions.NS);
+        namespaceMap.put(Local.Entities.NAME, Local.Entities.NS);
+        namespaceMap.put(Local.Transactions.NAME, Local.Transactions.NAMESPACE);
+        namespaceMap.put(Local.Versions.NAME, Local.Versions.NAMESPACE);
         namespaceMap.put(SDO.NAMESPACE, SDO.NS);
         namespaceMap.put(ICAL.NAMESPACE, ICAL.NS);
     }

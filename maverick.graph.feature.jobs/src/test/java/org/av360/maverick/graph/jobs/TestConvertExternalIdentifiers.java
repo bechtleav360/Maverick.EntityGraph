@@ -72,7 +72,7 @@ class TestConvertExternalIdentifiers extends TestsBase {
 
 
         SimpleValueFactory vf = SimpleValueFactory.getInstance();
-        IRI iri = vf.createIRI(Local.Entities.NAMESPACE + "bjfbd0ox");
+        IRI iri = vf.createIRI(Local.Entities.NAME + "bjfbd0ox");
         StepVerifier.create(read2)
                 .assertNext(model -> {
                     Assertions.assertEquals(5, model.size());

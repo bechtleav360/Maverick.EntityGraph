@@ -47,4 +47,5 @@ public interface Fragmentable extends RepositoryBehaviour {
      */
     Mono<Boolean> exists(Resource subj, Environment environment);
 
+    Mono<Long> countFragments(Environment environment);
 }

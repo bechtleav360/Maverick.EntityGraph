@@ -86,20 +86,23 @@ public class HtmlWriter implements RDFWriter {
                     <title>Maverick Entity Graph Navigation</title>
                     <meta charset="UTF-8">
                     
-                    <link rel="stylesheet" href="/style.css"></style>
+                    <link rel="stylesheet" href="/style.css"></link>
                 </head>
                 <body>
                 <div class="box">
+                    
                     <div id="header_box">
                         <div id="header"></div>
                     </div>
                     <div id="navigation_box">
                         <div id="navigation"></div>
                     </div>
-                
-                    <div id="content"></div>
+                    <div id="content_box">
+                        <div id="content"></div>
+                    </div>
+                    <span id="session" class="hidden"></span>
                 </div>
-                    <script id="rdf" type="text/turtle">
+                <div id="rdf_box"><script type="text/turtle" id="rdf">
                 """;
 
         appendLine(header);
@@ -109,7 +112,7 @@ public class HtmlWriter implements RDFWriter {
     @Override
     public void endRDF() throws RDFHandlerException {
         String footer = """
-                    </script>
+                    </script></div>
                     <script id="ns" type="application/json">%s</script>
                     <!-- <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script> -->
                     <script src="/script.js"></script>
@@ -121,24 +124,9 @@ public class HtmlWriter implements RDFWriter {
         appendLine(footer);
     }
 
-    private String printStyles() {
-        return this.printFile("style.css");
-    }
 
-    private String printScripts() {
-        StringWriter sw = new StringWriter();
-        sw.append("""
-                <script type="text/javascript">
-                %s
-                </script>
-                """.formatted(this.printFile("script.js")));
-        sw.append("""
-                <script type="text/javascript">
-                %s
-                </script>
-                """.formatted(this.printFile("vue.js")));
-        return sw.toString().replace("{{host}}", this.requestURI.getHost().replace(".", "\\."));
-    }
+
+
 
     private String printFile(String name) {
         StringWriter sw = new StringWriter();

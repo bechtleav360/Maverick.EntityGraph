@@ -124,4 +124,12 @@ public interface EntityServices {
      * @return
      */
     Mono<Model> asModel(SessionContext ctx);
+
+    /**
+     * Counts the number of individuals in the repository
+     *
+     * @param ctx
+     * @return
+     */
+    Mono<Long> count(SessionContext ctx);
 }

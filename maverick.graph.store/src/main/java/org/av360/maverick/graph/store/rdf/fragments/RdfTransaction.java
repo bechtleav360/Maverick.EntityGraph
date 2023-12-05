@@ -35,12 +35,12 @@ public class RdfTransaction extends TripleModel implements Transaction {
 
     public RdfTransaction() {
         super();
-        transactionIdentifier = DefaultIdentifierFactory.getInstance().createRandomIdentifier(Local.Transactions.NAMESPACE);
+        transactionIdentifier = DefaultIdentifierFactory.getInstance().createRandomIdentifier(Local.Transactions.NAME);
 
         super.getBuilder()
                 .namedGraph(Transactions.GRAPH_PROVENANCE)
                 .setNamespace(PROV.NS)
-                .setNamespace(Local.Transactions.NS)
+                .setNamespace(Local.Transactions.NAMESPACE)
                 .subject(transactionIdentifier)
                 .add(Transactions.STATUS, Transactions.RUNNING)
                 .add(RDF.TYPE, Transactions.TRANSACTION)

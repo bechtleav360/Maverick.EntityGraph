@@ -79,7 +79,7 @@ public class ReplaceExternalIdentifiers extends AbstractIdentifierReplace implem
                 .filter(Value::isIRI)
                 .map(val -> (IRI) val)
                 .filter(iri -> !iri.stringValue().startsWith(Local.URN_PREFIX))
-                .flatMap(iri -> identifierServices.asReproducibleLocalIRI(Local.Entities.NAMESPACE, environment, iri)
+                .flatMap(iri -> identifierServices.asReproducibleLocalIRI(Local.Entities.NAME, environment, iri)
                         .map(generated -> new IdentifierMapping(iri, generated))
                 );
 

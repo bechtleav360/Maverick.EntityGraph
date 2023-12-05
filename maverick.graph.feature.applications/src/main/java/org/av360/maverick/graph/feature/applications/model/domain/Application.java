@@ -21,7 +21,7 @@ public record Application(IRI iri, String label, String key, ApplicationFlags fl
 
 
     public static Application DEFAULT = new Application(
-            SimpleValueFactory.getInstance().createIRI(Local.Applications.NAMESPACE, "default"),
+            SimpleValueFactory.getInstance().createIRI(Local.Applications.NAME, "default"),
             Globals.DEFAULT_APPLICATION_LABEL,
             "default",
             new ApplicationFlags(false, false),

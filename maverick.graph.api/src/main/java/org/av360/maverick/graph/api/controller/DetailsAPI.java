@@ -57,12 +57,12 @@ public interface DetailsAPI {
             description = """
                     Returns a list of details for a given value
                     """)
-    @GetMapping(value = "/entities/{id:[\\w|\\d|\\-|\\_]+}/{type}/{prefixedValueKey:[\\w|\\d]+\\.[\\w|\\d]+}/details",
+    @GetMapping(value = "/entities/{key:[\\w|\\d|\\-|\\_]+}/{type}/{prefixedValueKey:[\\w|\\d]+\\.[\\w|\\d]+}/details",
             consumes = MediaType.TEXT_PLAIN_VALUE,
             produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE})
     @ResponseStatus(HttpStatus.OK)
     Flux<AnnotatedStatement> getDetails(
-            @PathVariable @Parameter(name = "entity identifier") String id,
+            @PathVariable @Parameter(name = "entity identifier") String key,
             @PathVariable(required = true, value = "values") @Parameter(name = "property type") PropertyType type,
             @PathVariable String prefixedValueKey,
             @RequestParam(required = false) boolean valueIdentifier

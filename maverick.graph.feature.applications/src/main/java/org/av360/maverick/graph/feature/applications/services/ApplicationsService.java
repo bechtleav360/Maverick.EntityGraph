@@ -91,7 +91,7 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
         } catch (Exception e) { return Mono.error(e); }
 
 
-        IRI subject = IdentifierServices.buildRandomIRI(Local.Applications.NAMESPACE);
+        IRI subject = IdentifierServices.buildRandomIRI(Local.Applications.NAME);
 
         Application application = new Application(
                 subject,
@@ -337,7 +337,7 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
     private ModelBuilder buildConfigurationItem(String configKey, Serializable configValue, IRI applicationIdentifier, @Nullable ModelBuilder builder) {
         if(Objects.isNull(builder)) builder = new ModelBuilder();
 
-        IRI configNode = IdentifierServices.buildRandomIRI(Local.Applications.NAMESPACE);
+        IRI configNode = IdentifierServices.buildRandomIRI(Local.Applications.NAME);
         builder.add(configNode, RDF.TYPE, ApplicationTerms.CONFIGURATION_ITEM);
         builder.add(configNode, ApplicationTerms.CONFIG_KEY, configKey);
         builder.add(configNode, ApplicationTerms.CONFIG_VALUE, configValue.toString());
@@ -349,7 +349,7 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
     private ModelBuilder buildMetricsItem(String metricsName, Serializable value, IRI applicationIdentifier, @Nullable ModelBuilder builder) {
         if(Objects.isNull(builder)) builder = new ModelBuilder();
 
-        IRI configNode = IdentifierServices.buildRandomIRI(Local.Applications.NAMESPACE);
+        IRI configNode = IdentifierServices.buildRandomIRI(Local.Applications.NAME);
         builder.add(configNode, RDF.TYPE, SDO.QUANTITATIVE_VALUE);
         builder.add(configNode, SDO.NAME, metricsName);
         builder.add(configNode, SDO.VALUE, value);

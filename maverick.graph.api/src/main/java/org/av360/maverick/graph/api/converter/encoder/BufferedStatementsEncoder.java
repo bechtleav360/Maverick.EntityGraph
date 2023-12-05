@@ -231,16 +231,16 @@ public class BufferedStatementsEncoder implements Encoder<Statement> {
         String ns = urn.getNamespace();
         String path = "";
 
-        if (ns.startsWith(Local.Entities.NAMESPACE)) {
+        if (ns.startsWith(Local.Entities.NAME)) {
             if (parts.length == 1) {
                 path += "/api/entities/" + parts[0];
             } else {
                 path += "/api/s/" + parts[0] + "/entities/" + parts[1];
             }
 
-        } else if (urn.getNamespace().startsWith(Local.Transactions.NAMESPACE)) {
+        } else if (urn.getNamespace().startsWith(Local.Transactions.NAME)) {
             path = "/api/transactions/" + parts[0];
-        } else if (urn.getNamespace().startsWith(Local.Applications.NAMESPACE)) {
+        } else if (urn.getNamespace().startsWith(Local.Applications.NAME)) {
             path = "/api/applications/" + parts[0];
         } else {
             path = parts[0];

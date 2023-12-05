@@ -67,6 +67,7 @@ public class EntityStoreImpl implements IndividualsStore, Fragmentable {
         return null;
     }
 
+
     @Override
     public Mono<Transaction> insertFragment(RdfFragment fragment, Environment environment) {
 
@@ -119,6 +120,11 @@ public class EntityStoreImpl implements IndividualsStore, Fragmentable {
     @Override
     public Mono<Boolean> exists(Resource subj, Environment environment) {
         return Mono.just(Boolean.TRUE);
+    }
+
+    @Override
+    public Mono<Long> countFragments(Environment environment) {
+        return null;
     }
 
     @Override
