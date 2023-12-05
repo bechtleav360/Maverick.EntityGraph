@@ -30,7 +30,7 @@ public class LocalIRI extends AbstractIRI implements LocalIdentifier {
     }
 
     public static LocalIRI withDefaultNamespace(String localname) {
-        return new LocalIRI(Local.Entities.NAMESPACE, localname);
+        return new LocalIRI(Local.Entities.NAME, localname);
     }
 
     public static LocalIRI withDefinedNamespace(String namespace, String localname) {

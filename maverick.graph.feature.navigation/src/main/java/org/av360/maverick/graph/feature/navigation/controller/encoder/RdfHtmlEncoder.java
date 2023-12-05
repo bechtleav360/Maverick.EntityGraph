@@ -205,7 +205,7 @@ public class RdfHtmlEncoder implements Encoder<Statement> {
                 String ns = iri.getNamespace();
                 String path = "";
 
-                if(ns.startsWith(Local.Entities.NAMESPACE)) {
+                if(ns.startsWith(Local.Entities.NAME)) {
                     if(parts.length == 1) {
                         path += "/api/entities/"+parts[0];
                     } else {
@@ -214,11 +214,11 @@ public class RdfHtmlEncoder implements Encoder<Statement> {
 
                 }
 
-                else if(iri.getNamespace().startsWith(Local.Transactions.NAMESPACE)) {
+                else if(iri.getNamespace().startsWith(Local.Transactions.NAME)) {
                     path = "/api/transactions/"+parts[0];
                 }
 
-                else if(iri.getNamespace().startsWith(Local.Applications.NAMESPACE)) {
+                else if(iri.getNamespace().startsWith(Local.Applications.NAME)) {
                     path = "/api/applications/"+parts[0];
                 }
 

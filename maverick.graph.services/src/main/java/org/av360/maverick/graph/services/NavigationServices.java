@@ -15,6 +15,9 @@ public interface NavigationServices {
 
     Flux<AnnotatedStatement> list(Map<String, String> requestParams, SessionContext ctx, @Nullable String query);
 
+
+    Flux<AnnotatedStatement> view(Map<String, String> requestParams, SessionContext ctx);
+
     Flux<AnnotatedStatement> browse(Map<String, String> params, SessionContext ctx);
 
 

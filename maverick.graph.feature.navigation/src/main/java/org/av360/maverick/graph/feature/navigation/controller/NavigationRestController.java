@@ -42,13 +42,45 @@ public class NavigationRestController extends AbstractController {
         return super.acquireContext().flatMapMany(this.navigationServices::start);
     }
 
-    @GetMapping(value = "/s/{scope}", produces = MediaType.TEXT_HTML_VALUE)
+    @GetMapping(value = "/s/{scope}/entities", produces = MediaType.TEXT_HTML_VALUE)
     @ResponseStatus(HttpStatus.OK)
-    public Flux<Statement> navigateToScopeEntryPoint(String scope) {
-        Map<String, String> params = new HashMap<>();
-        params.put("entities", "list");
+    public Flux<Statement> navigateToScopeEntryPoint(
+            @PathVariable("scope") String scope,
+            @RequestParam(value = "limit", required = false) Integer limit,
+            @RequestParam(value = "offset", required = false) Integer offset) {
 
-        return super.acquireContext().flatMapMany(context -> this.navigationServices.browse(params, context));
+        Map<String, String> config = new HashMap<>();
+        if(Objects.nonNull(limit)) config.put("limit", String.valueOf(limit.intValue()));
+        if(Objects.nonNull(offset)) config.put("offset", String.valueOf(offset.intValue()));
+
+        return super
+                .acquireContext()
+                .doOnSubscribe(sub -> log.info("Request to navigate to entry point for scope {}", scope))
+                .flatMapMany(context -> this.navigationServices.list(config, context, null));
+    }
+
+    @GetMapping(value = "/s/{scope}/entities/{key}", produces = MediaType.TEXT_HTML_VALUE)
+    @ResponseStatus(HttpStatus.OK)
+    public Flux<Statement> navigateToViewEntityEntryPoint(@PathVariable("scope") String scope, @PathVariable("key") String key) {
+        Map<String, String> config = new HashMap<>();
+        config.put("entities", "view");
+        config.put("key", key);
+
+        return super.acquireContext()
+                .doOnSubscribe(sub -> log.info("Request to navigate to entity {} in  scope {}", key, scope))
+                .flatMapMany(context -> this.navigationServices.browse(config, context));
+    }
+
+    @GetMapping(value = "/entities/{key}", produces = MediaType.TEXT_HTML_VALUE)
+    @ResponseStatus(HttpStatus.OK)
+    public Flux<Statement> navigateToViewEntityEntryPoint(@PathVariable("key") String key) {
+        Map<String, String> config = new HashMap<>();
+        config.put("entities", "view");
+        config.put("key", key);
+
+        return super.acquireContext()
+                .doOnSubscribe(sub -> log.info("Request to navigate to entity {} in default scope", key))
+                .flatMapMany(context -> this.navigationServices.browse(config, context));
     }
 
 
@@ -106,7 +138,9 @@ public class NavigationRestController extends AbstractController {
         log.info("Request to navigate to params {}", params);
 
 
-        return super.acquireContext().flatMapMany(context -> this.navigationServices.browse(new HashMap<>(params.toSingleValueMap()), context));
+        return super.acquireContext()
+                .doOnSubscribe(sub -> log.info("Request to navigate to start page"))
+                .flatMapMany(context -> this.navigationServices.browse(new HashMap<>(params.toSingleValueMap()), context));
     }
 
 

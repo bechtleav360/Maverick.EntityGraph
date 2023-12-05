@@ -16,7 +16,10 @@ public class RoutesConfiguration {
 
     @Bean
     RouterFunction<ServerResponse> redirectStart() {
-        return route(GET("/"), req -> ServerResponse.temporaryRedirect(URI.create("/nav")).build());
+        return route()
+                .add(route(GET("/"), req -> ServerResponse.temporaryRedirect(URI.create("/nav")).build()))
+                .add(route(GET("/nav/"), req -> ServerResponse.temporaryRedirect(URI.create("/nav")).build()))
+                .build();
     }
 
 }

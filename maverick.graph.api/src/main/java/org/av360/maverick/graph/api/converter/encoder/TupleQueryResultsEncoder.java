@@ -24,7 +24,7 @@ import java.util.List;
 import java.util.Map;
 
 @Slf4j(topic = "graph.ctrl.io.encoder.query")
-public class TupleQueryResultsEncoder implements Encoder<TupleQueryResult> {
+public class    TupleQueryResultsEncoder implements Encoder<TupleQueryResult> {
     private static final List<MimeType> mimeTypes;
 
     static {

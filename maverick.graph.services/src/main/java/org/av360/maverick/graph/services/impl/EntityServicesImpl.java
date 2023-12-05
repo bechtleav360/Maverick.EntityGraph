@@ -177,7 +177,7 @@ public class EntityServicesImpl implements EntityServices {
     @OnRepositoryType(RepositoryType.ENTITIES)
     public Mono<RdfFragment> findByKey(String entityKey, boolean details, int depth, SessionContext ctx) {
         return identifierServices.asLocalIRI(entityKey, ctx.getEnvironment())
-                .flatMap(entityIdentifier -> this.get(entityIdentifier, details, 1, ctx));
+                .flatMap(entityIdentifier -> this.get(entityIdentifier, details, depth, ctx));
     }
 
     @Override
@@ -267,6 +267,13 @@ public class EntityServicesImpl implements EntityServices {
     public Mono<Model> asModel(SessionContext ctx) {
         return this.entityStore.asStatementsAware().listStatements(null, null, null, ctx.getEnvironment())
                 .map(statements -> statements.stream().collect(new ModelCollector()));
+    }
+
+    @Override
+    @RequiresPrivilege(Authorities.READER_VALUE)
+    @OnRepositoryType(RepositoryType.ENTITIES)
+    public Mono<Long> count(SessionContext ctx) {
+        return this.entityStore.asFragmentable().countFragments(ctx.getEnvironment());
     }
 
 

@@ -212,7 +212,7 @@ public class ReplaceLinkedIdentifiersJob implements ScheduledJob {
                   }
                   LIMIT 1000
                 """;
-        String query = String.format(tpl, Local.Entities.NAMESPACE);
+        String query = String.format(tpl, Local.Entities.NAME);
         return this.queryServices.queryValues(query, RepositoryType.ENTITIES, ctx)
                 .map(bindings -> bindings.getValue("a"))
                 .filter(Value::isResource)

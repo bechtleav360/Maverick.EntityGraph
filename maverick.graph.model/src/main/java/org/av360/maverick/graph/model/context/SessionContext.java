@@ -107,5 +107,8 @@ public class SessionContext {
     }
 
 
-
+    public SessionContext withRequestDetails(RequestDetails requestDetails) {
+        this.requestDetails = requestDetails;
+        return  this;
+    }
 }

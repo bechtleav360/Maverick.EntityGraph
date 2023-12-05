@@ -14,11 +14,12 @@ div.fragment {
     display: block;
     font-family: monospace;
     white-space: pre-wrap;
-    margin-top: 1em;
+    margin-top: 0.5em;
 }
 
 div.header {
     background-color: aliceblue;
+    margin: 1em;
 }
 
 span.ns {
@@ -34,8 +35,21 @@ div.box {
     background-color: white;
     width: 90%;
     margin: 0 auto;
+    padding: 0.5em;
+}
+
+div#header_box {
+    background-color: #ededed;
     padding: 1em;
 }
+div#navigation_box {
+    background-color: #f7f7f7;
+    padding: 1em;
+}
+div#content_box {
+    padding: 1em;
+}
+
 
 @media only screen and (max-width: 600px) {
     div.box {
@@ -47,4 +61,8 @@ div.box {
     div.box {
         width: 80%;
     }
+}
+
+.hidden {
+    display: none; /* Hide the div */
 }

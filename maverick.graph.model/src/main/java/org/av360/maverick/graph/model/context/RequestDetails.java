@@ -5,6 +5,7 @@ import org.springframework.http.server.reactive.ServerHttpRequest;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.io.Serializable;
+import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -20,6 +21,7 @@ public class RequestDetails {
     private Map<String, String> parameter;
 
     private Map<String, String> configuration;
+    private URI requestUri;
 
     public RequestDetails () {
         this.configuration = new HashMap<>();
@@ -84,5 +86,9 @@ public class RequestDetails {
 
     public void setConfiguration(Map<String, String> configuration) {
         this.configuration = configuration;
+    }
+
+    public void setRequestURI(URI requestUri) {
+        this.requestUri = requestUri;
     }
 }

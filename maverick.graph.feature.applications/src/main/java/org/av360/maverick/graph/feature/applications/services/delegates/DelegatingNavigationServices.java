@@ -2,9 +2,13 @@ package org.av360.maverick.graph.feature.applications.services.delegates;
 
 import org.av360.maverick.graph.feature.applications.model.domain.Application;
 import org.av360.maverick.graph.feature.applications.services.ApplicationsService;
+import org.av360.maverick.graph.model.annotations.OnRepositoryType;
+import org.av360.maverick.graph.model.annotations.RequiresPrivilege;
 import org.av360.maverick.graph.model.context.SessionContext;
 import org.av360.maverick.graph.model.enums.ConfigurationKeysRegistry;
+import org.av360.maverick.graph.model.enums.RepositoryType;
 import org.av360.maverick.graph.model.rdf.AnnotatedStatement;
+import org.av360.maverick.graph.model.security.Authorities;
 import org.av360.maverick.graph.services.NavigationServices;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Namespace;
@@ -62,7 +66,7 @@ public class DelegatingNavigationServices implements NavigationServices {
                                 builder.subject(appNode)
                                         .add(HYDRA.TITLE, application.label())
                                         .add(HYDRA.ENTRYPOINT, "/api/s/%s/entities".formatted(application.label()))
-                                        .add(HYDRA.VIEW, "?/nav/s/%s".formatted(application.label()));
+                                        .add(HYDRA.VIEW, "?/nav/s/%s/entities".formatted(application.label()));
 
 
                                 builder.add(appsCollection, HYDRA.MEMBER, appNode);
@@ -84,17 +88,34 @@ public class DelegatingNavigationServices implements NavigationServices {
     }
 
     @Override
+    @RequiresPrivilege(Authorities.READER_VALUE)
+    @OnRepositoryType(RepositoryType.ENTITIES)
     public Flux<AnnotatedStatement> list(Map<String, String> requestParams, SessionContext ctx, @Nullable String query) {
+        if(ctx.getEnvironment().hasScope()) {
+            requestParams.put("scope", ctx.getEnvironment().getScope().label());
+        }
+
+        return delegate.list(requestParams, ctx, null);
+        /*
         if (ctx.getEnvironment().hasScope()) {
             return this.applicationsService.getApplication(ctx.getEnvironment().getScope().label(), ctx)
                     .filter(application -> application.configuration().containsKey(CONFIG_KEY_CUSTOM_LIST_QUERY))
                     .map(application -> application.configuration().get(CONFIG_KEY_CUSTOM_LIST_QUERY))
                     .flatMapMany(appQuery -> delegate.list(requestParams, ctx, appQuery.toString()))
                     .switchIfEmpty(delegate.list(requestParams, ctx, null));
-        } else return delegate.list(requestParams, ctx, null);
+        } else return delegate.list(requestParams, ctx, null);*/
     }
 
     @Override
+    @RequiresPrivilege(Authorities.READER_VALUE)
+    @OnRepositoryType(RepositoryType.ENTITIES)
+    public Flux<AnnotatedStatement> view(Map<String, String> requestParams, SessionContext ctx) {
+        return this.delegate.view(requestParams, ctx);
+    }
+
+    @Override
+    @RequiresPrivilege(Authorities.READER_VALUE)
+    @OnRepositoryType(RepositoryType.ENTITIES)
     public Flux<AnnotatedStatement> browse(Map<String, String> params, SessionContext ctx) {
         return delegate.browse(params, ctx);
     }
