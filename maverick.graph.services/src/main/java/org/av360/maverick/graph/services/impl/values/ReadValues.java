@@ -3,7 +3,6 @@ package org.av360.maverick.graph.services.impl.values;
 import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.model.context.SessionContext;
 import org.av360.maverick.graph.model.errors.store.InvalidEntityModelException;
-import org.av360.maverick.graph.model.identifier.ChecksumGenerator;
 import org.av360.maverick.graph.model.rdf.Triples;
 import org.av360.maverick.graph.model.vocabulary.Details;
 import org.av360.maverick.graph.store.rdf.fragments.RdfFragment;
@@ -15,6 +14,9 @@ import org.eclipse.rdf4j.model.util.Values;
 import reactor.core.publisher.Mono;
 
 import javax.annotation.Nullable;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
@@ -99,6 +101,23 @@ public class ReadValues {
 
 
     String generateHashForValue(String predicate, String value) {
-        return ChecksumGenerator.generateChecksum(predicate+value, 8, 'o');
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest((predicate+value).getBytes(StandardCharsets.UTF_8));
+            StringBuilder hexString = new StringBuilder();
+
+            for (byte b : hash) {
+                String hex = Integer.toHexString(0xff & b);
+                if (hex.length() == 1) {
+                    hexString.append('0');
+                }
+                hexString.append(hex);
+            }
+
+            return hexString.toString();
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+            return null;
+        }
     }
 }
