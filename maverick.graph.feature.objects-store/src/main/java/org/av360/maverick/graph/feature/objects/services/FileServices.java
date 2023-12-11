@@ -2,10 +2,14 @@ package org.av360.maverick.graph.feature.objects.services;
 
 import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.feature.objects.model.LocalStorageDetails;
+import org.av360.maverick.graph.model.annotations.OnRepositoryType;
+import org.av360.maverick.graph.model.annotations.RequiresPrivilege;
 import org.av360.maverick.graph.model.context.SessionContext;
 import org.av360.maverick.graph.model.entities.Transaction;
+import org.av360.maverick.graph.model.enums.RepositoryType;
 import org.av360.maverick.graph.model.enums.UriSchemes;
 import org.av360.maverick.graph.model.errors.InconsistentModelException;
+import org.av360.maverick.graph.model.security.Authorities;
 import org.av360.maverick.graph.model.vocabulary.Local;
 import org.av360.maverick.graph.model.vocabulary.SDO;
 import org.av360.maverick.graph.services.*;
@@ -58,6 +62,8 @@ public class FileServices {
         dataBufferFactory = new DefaultDataBufferFactory();
     }
 
+    @RequiresPrivilege(Authorities.CONTRIBUTOR_VALUE)
+    @OnRepositoryType(RepositoryType.ENTITIES)
     public Mono<Transaction> store(String entityKey, Flux<DataBuffer> bytes, String prefixedPoperty, String filename, @Nullable String language, SessionContext ctx) {
         return entityServices.resolveAndVerify(entityKey, ctx)
                 .flatMap(entityId -> Mono.zip(
@@ -102,12 +108,13 @@ public class FileServices {
                     }
 
 
-                    return valueServices.insertEmbedded(sd.getEntityId(), sd.getProperty(), sd.getIdentifier(), builder.build(), ctx);
+                    return valueServices.insertEmbedded(sd.getEntityId(), sd.getProperty(), sd.getIdentifier(), builder.build(), ctx.getEnvironment().withRepositoryType(RepositoryType.ENTITIES));
                 });
 
     }
 
-
+    @RequiresPrivilege(Authorities.READER_VALUE)
+    @OnRepositoryType(RepositoryType.ENTITIES)
     public Mono<FileAccessResult> read(String contentKey, SessionContext ctx) {
         return entityServices.resolveAndVerify(contentKey, ctx)
                 .flatMap(contentId -> Mono.zip(

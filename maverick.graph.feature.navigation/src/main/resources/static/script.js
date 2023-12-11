@@ -28,6 +28,10 @@ function render_links(line) {
 
                         result += `<a class="internal" rel="next" href="${hrefUrl}">${iri[1]}</a>`
                             // render as url
+                    } else if (iri[3].startsWith('/content')) {
+                        var hrefUrl = iri[3]
+                        result += `<a class="content" rel="next" href="${hrefUrl}">${iri[1]}</a>`
+                          // render as url
                     }
                     else if (iri[3].startsWith('/webjars') || iri[3].startsWith('/v3')) {
                         result += `<a class="external" target="_blank" rel="external" href="${iri[1]}">${iri[1]}</a>`

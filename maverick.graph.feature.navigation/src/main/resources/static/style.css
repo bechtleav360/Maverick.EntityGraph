@@ -10,6 +10,10 @@ a.internal {
     color: #E24D2C;
 }
 
+a.content {
+    color: #6666ff;
+}
+
 div.fragment {
     display: block;
     font-family: monospace;

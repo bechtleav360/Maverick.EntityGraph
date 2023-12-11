@@ -132,7 +132,7 @@ public class RdfHtmlEncoder implements Encoder<Statement> {
                 .filter(this::isLiteralWithCommonLanguageTag)
                 .filter(statement -> ! statement.getObject().equals(Local.Entities.TYPE_INDIVIDUAL))
                 .filter(statement -> ! statement.getObject().equals(Local.Entities.TYPE_CLASSIFIER))
-                .filter(statement -> ! statement.getObject().equals(Local.Entities.TYPE_INDIVIDUAL))
+                .filter(statement -> ! statement.getObject().equals(Local.Entities.TYPE_EMBEDDED))
                 .filter(statement -> ! statement.getPredicate().equals(Local.ORIGINAL_IDENTIFIER))
                 .collect(new ModelCollector());
 
@@ -237,6 +237,12 @@ public class RdfHtmlEncoder implements Encoder<Statement> {
             }
 
             if(literal.stringValue().startsWith("?/")) {
+                String path = literal.stringValue();
+                String uri = UriComponentsBuilder.fromUri(requestURI).replacePath(path.substring(1)).replaceQuery("").build().toUriString();
+                return (T) vf.createIRI(uri);
+            }
+
+            if(literal.stringValue().startsWith("/content")) {
                 String path = literal.stringValue();
                 String uri = UriComponentsBuilder.fromUri(requestURI).replacePath(path.substring(1)).replaceQuery("").build().toUriString();
                 return (T) vf.createIRI(uri);

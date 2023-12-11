@@ -23,6 +23,7 @@ import org.av360.maverick.graph.store.FragmentsStore;
 import org.eclipse.rdf4j.model.*;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.util.ModelCollector;
+import org.eclipse.rdf4j.query.QueryEvaluationException;
 import org.eclipse.rdf4j.query.TupleQuery;
 import org.eclipse.rdf4j.query.TupleQueryResult;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
@@ -60,7 +61,7 @@ public class EndpointImporter {
         return this.importFromEndpoint(repository, 1000, 0, ctx);
     }
 
-    private Mono<Void>  importFromEndpoint(SPARQLRepository repository, int limit, int offset, SessionContext ctx) {
+    private Mono<Void> importFromEndpoint(SPARQLRepository repository, int limit, int offset, SessionContext ctx) {
         String query = """
                 SELECT ?s ?p ?o WHERE { ?s ?p ?o } LIMIT %d OFFSET %d
                 """
@@ -86,13 +87,15 @@ public class EndpointImporter {
                     }
 
                 }).filter(Objects::nonNull).collect(new ModelCollector());
+            } catch (QueryEvaluationException qe) {
+                log.error("Failed to evaluate query: %s with error: %s".formatted(query, qe.getMessage()));
             } catch (Exception e) {
                 return Mono.error(e);
             }
 
             if (Objects.nonNull(resultingModel)) {
-                if(resultingModel.isEmpty()) {
-                    log.debug("Finished importing around {} statements from endpoint {}", offset,  endpoint);
+                if (resultingModel.isEmpty()) {
+                    log.debug("Finished importing around {} statements from endpoint {}", offset, endpoint);
                 }
 
                 return this.stores.get(ctx.getEnvironment().getRepositoryType())
@@ -103,7 +106,7 @@ public class EndpointImporter {
                                     .delayElement(Duration.of(100, ChronoUnit.MILLIS))
                                     .flatMap(nlimit -> this.importFromEndpoint(repository, limit, nlimit, ctx))
                                     .doOnSubscribe(subscription -> {
-                                        log.debug("Importing next {} statements from endpoint {} with offset {}", limit, endpoint, offset+limit);
+                                        log.debug("Importing next {} statements from endpoint {} with offset {}", limit, endpoint, offset + limit);
                                     })
                                     .subscribeOn(Schedulers.newSingle("import"))
                                     .subscribe();
@@ -144,7 +147,7 @@ public class EndpointImporter {
      * @return
      */
     private Value convertValue(Value object, SessionContext ctx, SPARQLRepository repository) {
-        if(object instanceof Resource resource) {
+        if (object instanceof Resource resource) {
             return this.convertResource(resource, ctx, repository);
         } else return object;
     }
@@ -158,7 +161,7 @@ public class EndpointImporter {
      * @return
      */
     private Resource convertResource(Resource subject, SessionContext ctx, SPARQLRepository repository) {
-        if(subject instanceof IRI iri) {
+        if (subject instanceof IRI iri) {
             return this.identifierServices.validateIRI(iri, ctx.getEnvironment(), repository.toString(), repository.getAdditionalHttpHeaders());
         } else return subject;
     }

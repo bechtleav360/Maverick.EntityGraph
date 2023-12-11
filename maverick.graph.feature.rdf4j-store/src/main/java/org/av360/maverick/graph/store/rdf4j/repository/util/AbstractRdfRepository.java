@@ -337,10 +337,14 @@ public abstract class AbstractRdfRepository implements Searchable, Maintainable,
 
                 RdfFragment entity = new RdfFragment(id).withResult(statements);
 
+                Model composites = loadComposites(connection, entity);
+                entity.getModel().addAll(composites);
                 if (includeDetails) {
                     Model details = loadDetailsWithReification(connection, entity);
                     entity.getModel().addAll(details);
                 }
+
+
 
                 if (includeNeighborsLevel == 1) {
                     Model neighbours = loadNeighbours(connection, entity);
@@ -357,6 +361,8 @@ public abstract class AbstractRdfRepository implements Searchable, Maintainable,
             }
         });
     }
+
+
 
     @Override
     public Flux<RdfFragment> listFragments(IRI type, int limit, int offset, Environment environment) {
@@ -409,6 +415,20 @@ public abstract class AbstractRdfRepository implements Searchable, Maintainable,
 
     }
 
+    private Model loadComposites(RepositoryConnection connection, RdfFragment entity) {
+        HashSet<Value> objects = new HashSet<>(entity.getModel().objects());
+
+        Set<Resource> compositeResources = objects.stream()
+                .filter(Value::isIRI)
+                .flatMap(value -> connection.getStatements((IRI) value, RDF.TYPE, Local.Entities.TYPE_EMBEDDED).stream())
+                .map(Statement::getSubject)
+                .collect(Collectors.toSet());
+
+        Model result = compositeResources.stream()
+                .flatMap(resource -> connection.getStatements(resource, null, null).stream())
+                .collect(new ModelCollector());
+        return result;
+    }
 
     private Model loadNeighbours(RepositoryConnection connection, RdfFragment entity) {
         HashSet<Value> objects = new HashSet<>(entity.getModel().objects());
