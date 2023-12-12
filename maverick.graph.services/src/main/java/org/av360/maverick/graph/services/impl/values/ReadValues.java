@@ -59,7 +59,7 @@ public class ReadValues {
                 .stream().filter(statement -> statement.getSubject().isIRI())
                 .forEach(statement -> {
                     Triple triple = Values.triple(statement);
-                    String hash = this.generateHashForValue(statement.getPredicate().getLocalName(), statement.getObject().stringValue());
+                    String hash = this.generateHashForValue(statement.getPredicate().stringValue(), statement.getObject().stringValue());
                     entity.getModel().add(triple, Details.HASH, Values.literal(hash));
                 });
         return Mono.just(entity);
@@ -81,7 +81,7 @@ public class ReadValues {
     Optional<Triple> findValueTripleByHash(RdfFragment entity, IRI valuePredicate, String hash) {
         return entity.streamValues(entity.getIdentifier(), valuePredicate)
                 .filter(literal -> {
-                    String generatedHash = this.generateHashForValue(valuePredicate.getLocalName(), literal.stringValue());
+                    String generatedHash = this.generateHashForValue(valuePredicate.stringValue(), literal.stringValue());
                     return hash.equalsIgnoreCase(generatedHash);
                 })
                 .map(requestedLiteral -> Values.triple(entity.getIdentifier(), valuePredicate, requestedLiteral))

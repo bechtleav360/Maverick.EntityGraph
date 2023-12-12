@@ -69,7 +69,7 @@ public class DeleteValue {
                                 return Mono.error(new InvalidEntityUpdate(entityIdentifier, "Invalid to remove links via the values api."));
                             } else if (object.isLiteral()) {
                                 if (StringUtils.isNotBlank(valueIdentifier)) {
-                                    String hash = ctrl.readValues.generateHashForValue(predicate.getLocalName(), object.stringValue());
+                                    String hash = ctrl.readValues.generateHashForValue(predicate.stringValue(), object.stringValue());
                                     if (hash.equalsIgnoreCase(valueIdentifier)) {
                                         statementsToRemove.add(st);
                                     }
