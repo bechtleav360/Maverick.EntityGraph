@@ -80,7 +80,7 @@ public interface ValueServices {
      * @param authentication   The current authentication
      * @return The transaction information.
      */
-    Mono<Transaction> insertEmbedded(IRI entityIdentifier, IRI predicate, Resource value, Set<Statement> embedded, SessionContext ctx);
+    Mono<Transaction> insertComposite(IRI entityIdentifier, IRI predicate, Resource value, Set<Statement> embedded, SessionContext ctx);
 
     /**
      * @param authentication   The current authentication

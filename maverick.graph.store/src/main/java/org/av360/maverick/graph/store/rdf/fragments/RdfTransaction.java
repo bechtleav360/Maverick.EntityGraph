@@ -110,11 +110,10 @@ public class RdfTransaction extends TripleModel implements Transaction {
         return this.include(statements, Activity.INSERTED);
     }
 
-
-
-
-
-
+    @Override
+    public Transaction updates(Collection<Statement> statements) {
+        return this.include(statements, Activity.UPDATED);
+    }
 
     public static boolean isTransaction(Model model) {
         return model.contains(null, RDF.TYPE, Transactions.TRANSACTION);

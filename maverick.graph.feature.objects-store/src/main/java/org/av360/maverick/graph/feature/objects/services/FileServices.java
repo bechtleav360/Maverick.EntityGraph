@@ -108,7 +108,7 @@ public class FileServices {
                     }
 
 
-                    return valueServices.insertEmbedded(sd.getEntityId(), sd.getProperty(), sd.getIdentifier(), builder.build(), ctx.getEnvironment().withRepositoryType(RepositoryType.ENTITIES));
+                    return valueServices.insertComposite(sd.getEntityId(), sd.getProperty(), sd.getIdentifier(), builder.build(), ctx.getEnvironment().withRepositoryType(RepositoryType.ENTITIES));
                 });
 
     }

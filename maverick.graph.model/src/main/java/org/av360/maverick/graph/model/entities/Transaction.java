@@ -7,6 +7,7 @@ import org.av360.maverick.graph.model.vocabulary.Transactions;
 import org.eclipse.rdf4j.model.*;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.util.ModelCollector;
+import org.eclipse.rdf4j.model.util.Statements;
 import reactor.core.publisher.Mono;
 
 import java.util.Collection;
@@ -16,6 +17,8 @@ public interface Transaction extends Triples {
 
 
     Transaction inserts(Collection<Statement> statements);
+
+    Transaction updates(Collection<Statement> statements);
 
     Transaction affects(Collection<Statement> statements);
 
@@ -28,9 +31,28 @@ public interface Transaction extends Triples {
     default Transaction inserts(Resource subject, IRI predicate, Value value) {
         return this.inserts(subject, predicate, value, null);
     }
+    default Transaction updates(Resource subject, IRI predicate, Value value) {
+        return this.updates(subject, predicate, value, null);
+    }
+
+    default Transaction updates(Resource subject, IRI predicate, Value value, Resource context) {
+        return this.updates(Statements.statement(subject, predicate, value, context));
+    }
+
+    default Transaction updates(Statement statement) {
+        return this.updates(List.of(statement));
+    }
+
+    default Transaction inserts(Statement statement) {
+        return this.inserts(List.of(statement));
+    }
+
+    default Transaction inserts(Triple triple) {
+        return this.inserts(Statements.statement(triple));
+    }
 
     default Transaction inserts(Resource subject, IRI predicate, Value value, Resource context) {
-        return this.inserts(List.of(SimpleValueFactory.getInstance().createStatement(subject, predicate, value, context)));
+        return this.inserts(Statements.statement(subject, predicate, value, context));
     }
 
     /**
@@ -92,4 +114,7 @@ public interface Transaction extends Triples {
     default Transaction forInsert(Collection<Statement> statements) {
         return this.inserts(statements);
     }
+
+
+
 }

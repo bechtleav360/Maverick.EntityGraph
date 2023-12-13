@@ -113,8 +113,8 @@ public class ValueServicesImpl implements ValueServices {
 
     @Override
     @RequiresPrivilege(Authorities.CONTRIBUTOR_VALUE)
-    public Mono<Transaction> insertEmbedded(IRI entityIdentifier, IRI predicate, Resource embeddedNode, Set<Statement> embedded, SessionContext ctx) {
-        return this.insertValues.insert(entityIdentifier, predicate, embeddedNode, embedded, ctx);
+    public Mono<Transaction> insertComposite(IRI entityIdentifier, IRI predicate, Resource embeddedNode, Set<Statement> embedded, SessionContext ctx) {
+        return this.insertValues.insertComposite(entityIdentifier, predicate, embeddedNode, embedded, ctx);
     }
 
 
@@ -167,17 +167,19 @@ public class ValueServicesImpl implements ValueServices {
     }
 
 
-    Mono<Transaction> insertStatements(IRI entityIdentifier, IRI predicate, Resource embeddedNode, Set<Statement> embedded, Transaction transaction, SessionContext ctx) {
+    Mono<Transaction> insertStatements(IRI entityIdentifier, IRI predicate, Resource embeddedNode, Set<Statement> statementsToInsert, Transaction transaction, SessionContext ctx) {
+        if(embeddedNode.isBNode()) return Mono.error(new InvalidEntityUpdate(entityIdentifier, "Trying to link to shared node as anonymous node."));
+
         return this.entityServices.get(entityIdentifier, ctx)
                 .switchIfEmpty(Mono.error(new EntityNotFound(entityIdentifier.stringValue())))
-                .map(entity -> Pair.of(entity, transaction.affects(entity.getModel())))
-                .filter(pair -> !embeddedNode.isBNode())
-                .switchIfEmpty(Mono.error(new InvalidEntityUpdate(entityIdentifier, "Trying to link to shared node as anonymous node.")))
-                .doOnNext(pair -> {
+                .map(entity -> transaction.affects(entity.getModel()))
+                .map(trx -> {
+                    trx.inserts(statementsToInsert);
+
                     Statement statement = SimpleValueFactory.getInstance().createStatement(entityIdentifier, predicate, embeddedNode);
-                    embedded.add(statement);
+                    trx.updates(statement);
+                    return trx;
                 })
-                .flatMap(pair -> this.entityServices.getStore(ctx).asCommitable().insertStatements(embedded, pair.getRight()))
                 .flatMap(trx -> this.entityServices.getStore(ctx).asCommitable().commit(trx, ctx.getEnvironment()))
                 .switchIfEmpty(Mono.just(transaction));
 
@@ -203,8 +205,7 @@ public class ValueServicesImpl implements ValueServices {
                     } else return Mono.empty();
 
                 })
-
-                .flatMap(pair -> this.entityServices.getStore(ctx).asCommitable().insertStatement(entityIdentifier, predicate, value, transaction))
+                .map(trx -> trx.inserts(entityIdentifier, predicate, value))
                 .flatMap(trx -> this.entityServices.getStore(ctx).asCommitable().commit(trx, ctx.getEnvironment()))
                 .switchIfEmpty(Mono.just(transaction));
 
@@ -216,7 +217,7 @@ public class ValueServicesImpl implements ValueServices {
             log.trace("Entity {} already has a link '{}' for predicate '{}', ignoring update.", entity.getIdentifier(), statement.getObject(), statement.getPredicate());
             return Mono.empty();
         } else {
-            return this.entityServices.getStore(ctx).asCommitable().insertStatement(statement, transaction);
+            return Mono.just(transaction.inserts(statement));
         }
     }
 

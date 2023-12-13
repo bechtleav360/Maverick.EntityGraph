@@ -121,7 +121,6 @@ public class BufferedStatementsDecoder implements Decoder<Triples> {
                         }
                     })
                     .doOnComplete(() ->  {
-                        log.info("Temporary file writing completed to file: {}", tempFile );
                         tempFile.toFile().deleteOnExit();
                     })
                     .then(Mono.just(tempFile));

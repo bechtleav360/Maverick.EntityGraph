@@ -64,32 +64,27 @@ public class DeleteValue {
 
                         for (Statement st : statements) {
                             Value object = st.getObject();
-
-                            if (object.isIRI()) {
-                                return Mono.error(new InvalidEntityUpdate(entityIdentifier, "Invalid to remove links via the values api."));
-                            } else if (object.isLiteral()) {
-                                if (StringUtils.isNotBlank(valueIdentifier)) {
-                                    String hash = ctrl.readValues.generateHashForValue(predicate.stringValue(), object.stringValue());
-                                    if (hash.equalsIgnoreCase(valueIdentifier)) {
-                                        statementsToRemove.add(st);
-                                    }
-                                } else if (StringUtils.isNotBlank(languageTag)) {
-                                    Literal currentLiteral = (Literal) object;
-                                    if (StringUtils.equals(currentLiteral.getLanguage().orElse("invalid"), languageTag)) {
-                                        statementsToRemove.add(st);
-                                    }
+                            if (StringUtils.isNotBlank(valueIdentifier)) {
+                                String hash = ctrl.readValues.generateHashForValue(predicate.stringValue(), object.stringValue());
+                                if (hash.equalsIgnoreCase(valueIdentifier)) {
+                                    statementsToRemove.add(st);
+                                }
+                            } else if (StringUtils.isNotBlank(languageTag)) {
+                                Literal currentLiteral = (Literal) object;
+                                if (StringUtils.equals(currentLiteral.getLanguage().orElse("invalid"), languageTag)) {
+                                    statementsToRemove.add(st);
                                 }
                             }
                         }
 
                         if (statementsToRemove.isEmpty() && StringUtils.isNotBlank(valueIdentifier)) {
-                            return Mono.error(new InvalidEntityUpdate(entityIdentifier, "No value found with requested hash '%s'".formatted(valueIdentifier)));
+                            return Mono.error(new InvalidEntityUpdate(entityIdentifier, "No value found with requested value identifier '%s'".formatted(valueIdentifier)));
                         }
                         if (statementsToRemove.isEmpty() && StringUtils.isNotBlank(languageTag)) {
                             return Mono.error(new InvalidEntityUpdate(entityIdentifier, "No value found with requested language tag '%s'".formatted(languageTag)));
                         }
                         if (statementsToRemove.size() > 1 && StringUtils.isNotBlank(languageTag)) {
-                            return Mono.error(new InvalidEntityUpdate(entityIdentifier, "Multiple values found for language tag '%s'. Please delete by hash.".formatted(languageTag)));
+                            return Mono.error(new InvalidEntityUpdate(entityIdentifier, "Multiple values found for language tag '%s'. Please delete by value identifier.".formatted(languageTag)));
                         }
 
                         return Mono.just(transaction.removes(statementsToRemove));

@@ -29,7 +29,8 @@ public class BindingSetEncoder implements Encoder<BindingSet> {
     static {
         mimeTypes = List.of(
                 MimeType.valueOf(TupleQueryResultFormat.JSON.getDefaultMIMEType()),
-                MimeType.valueOf(TupleQueryResultFormat.CSV.getDefaultMIMEType())
+                // MimeType.valueOf(TupleQueryResultFormat.CSV.getDefaultMIMEType())
+                MimeType.valueOf("text/csv; charset=utf-8")
         );
     }
 

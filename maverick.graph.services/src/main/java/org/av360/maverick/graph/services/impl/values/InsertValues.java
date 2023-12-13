@@ -98,7 +98,7 @@ public class InsertValues {
         });
     }
 
-    public Mono<Transaction> insert(IRI entityIdentifier, IRI predicate, Resource embeddedNode, Set<Statement> embedded, SessionContext ctx) {
+    public Mono<Transaction> insertComposite(IRI entityIdentifier, IRI predicate, Resource embeddedNode, Set<Statement> embedded, SessionContext ctx) {
         return ctrl.insertStatements(entityIdentifier, predicate, embeddedNode, embedded, new RdfTransaction(), ctx)
                 .doOnSuccess(trx -> {
                     ctrl.eventPublisher.publishEvent(new ValueInsertedEvent(trx));
@@ -107,7 +107,7 @@ public class InsertValues {
 
     public Mono<Transaction> replace(IRI entityIdentifier, IRI predicate, Value oldValue, Value newValue, SessionContext ctx) {
         return ctrl.entityServices.getStore(ctx).asCommitable().markForRemoval(entityIdentifier, predicate, oldValue, new RdfTransaction())
-                .flatMap(trx -> ctrl.entityServices.getStore(ctx).asCommitable().insertStatement(entityIdentifier, predicate, newValue, trx))
+                .map(transaction -> transaction.inserts(entityIdentifier, predicate, newValue))
                 .flatMap(trx -> ctrl.entityServices.getStore(ctx).asCommitable().commit(trx, ctx.getEnvironment()))
                 .doOnSuccess(trx -> {
                     ctrl.eventPublisher.publishEvent(new ValueReplacedEvent(trx));
