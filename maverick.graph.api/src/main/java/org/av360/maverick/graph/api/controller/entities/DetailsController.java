@@ -1,7 +1,6 @@
 package org.av360.maverick.graph.api.controller.entities;
 
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.NotImplementedException;
 import org.av360.maverick.graph.api.controller.AbstractController;
 import org.av360.maverick.graph.api.controller.DetailsAPI;
 import org.av360.maverick.graph.model.enums.PropertyType;
@@ -18,7 +17,6 @@ import reactor.core.publisher.Flux;
 public class DetailsController extends AbstractController implements DetailsAPI {
 
 
-
     protected final ValueServices values;
 
     protected final EntityServices entities;
@@ -28,17 +26,16 @@ public class DetailsController extends AbstractController implements DetailsAPI 
         this.entities = entities;
     }
 
+
     @Override
-    public Flux<AnnotatedStatement> getDetails(
-            String id,
-            PropertyType type,
-            String prefixedValueKey,
-            boolean hash
-    ) {
-        return Flux.error(new NotImplementedException("Method has not been implemented yet."));
+    public Flux<Detail> getDetails(String key, PropertyType type, String prefixedProperty, String valueIdentifier) {
+        return super.acquireContext()
+                .flatMapMany(ctx -> values.listDetails(key, prefixedProperty, valueIdentifier, ctx))
+                .map(pair -> new Detail(pair.getKey().stringValue(), pair.getValue().stringValue()))
+                .doOnSubscribe(s -> {
+                    if (log.isDebugEnabled()) log.  debug("Reading details for property '{}' of entity '{}'", prefixedProperty, key);
+                });
     }
-
-
 
     @Override
     public Flux<AnnotatedStatement> remove(
@@ -66,7 +63,7 @@ public class DetailsController extends AbstractController implements DetailsAPI 
     ) {
         Assert.isTrue(!value.matches("(?s).*[\\n\\r].*"), "Newlines in request body are not supported");
         return super.acquireContext()
-                .flatMap(ctx -> values.insertDetail(key, prefixedProperty, prefixedDetailProperty, value, valueIdentifier , ctx))
+                .flatMap(ctx -> values.insertDetail(key, prefixedProperty, prefixedDetailProperty, value, valueIdentifier, ctx))
                 .flatMapIterable(Triples::asStatements)
                 .doOnSubscribe(s -> {
                     if (log.isDebugEnabled())
@@ -74,9 +71,6 @@ public class DetailsController extends AbstractController implements DetailsAPI 
                 });
 
     }
-
-
-
 
 
 }

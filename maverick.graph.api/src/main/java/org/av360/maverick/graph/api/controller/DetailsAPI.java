@@ -49,23 +49,46 @@ import reactor.core.publisher.Flux;
                 
                 """)
 public interface DetailsAPI {
-
+    @Schema(
+            example = """
+                    [
+                        {
+                            "property": "urn:pwid:annot:source",
+                            "value": "mistral"
+                        }
+                    ]
+                    """
+    )
+    public record Detail(String property, String value) {
+    }
 
     @Operation(
             operationId = "listDetails",
             summary = "Returns all details for a value or relation",
             description = """
                     Returns a list of details for a given value
-                    """)
-    @GetMapping(value = "/entities/{key:[\\w|\\d|\\-|\\_]+}/{type}/{prefixedValueKey:[\\w|\\d]+\\.[\\w|\\d]+}/details",
-            consumes = MediaType.TEXT_PLAIN_VALUE,
-            produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE})
+                    """,
+            parameters = {
+                    @Parameter(name = "key", description = "Unique identifier for the entity", required = true, in = ParameterIn.PATH, schema = @Schema(type = "string")),
+                    @Parameter(name = "type", description = "Add a detail either for a value or a relation", required = true, in = ParameterIn.PATH, schema = @Schema(type = "string", allowableValues = {"relations", "values"})),
+                    @Parameter(name = "prefixedProperty", description = "Prefixed property for the entity value", required = true, in = ParameterIn.PATH, schema = @Schema(type = "string")),
+                    @Parameter(name = "valueIdentifier", description = "Identifier for the specific value", required = false, in = ParameterIn.QUERY, schema = @Schema(type = "string"))
+            },
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "Successfully listed the details", content = @Content(schema = @Schema(implementation = Transaction.class))),
+                    @ApiResponse(responseCode = "404", description = "Entity with specified ID not found", content = {@Content(mediaType = "application/json", schema = @Schema(implementation = ErrorAttributes.class))}),
+                    @ApiResponse(responseCode = "400", description = "Invalid request parameters", content = {@Content(mediaType = "application/json", schema = @Schema(implementation = ErrorAttributes.class))})
+            }
+
+    )
+    @GetMapping(value = "/entities/{key:[\\w|\\d|\\-|\\_]+}/{type}/{prefixedProperty:[\\w|\\d]+\\.[\\w|\\d]+}/details",
+            produces = {MediaType.APPLICATION_JSON_VALUE})
     @ResponseStatus(HttpStatus.OK)
-    Flux<AnnotatedStatement> getDetails(
+    Flux<Detail> getDetails(
             @PathVariable @Parameter(name = "entity identifier") String key,
-            @PathVariable(required = true, value = "values") @Parameter(name = "property type") PropertyType type,
-            @PathVariable String prefixedValueKey,
-            @RequestParam(required = false) boolean valueIdentifier
+            @PathVariable PropertyType type,
+            @PathVariable String prefixedProperty,
+            @RequestParam String valueIdentifier
     );
 
 

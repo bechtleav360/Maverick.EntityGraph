@@ -33,6 +33,7 @@ import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 
 import javax.annotation.Nullable;
+import java.util.List;
 
 @RequestMapping(path = "/api")
 //@Api(tags = "Values")
@@ -57,6 +58,24 @@ import javax.annotation.Nullable;
         
         """)
 public interface ValuesAPI {
+
+    @Schema(
+            example = """
+                    [
+                        {
+                            "property: "https://schema.org/description",
+                            "value": "...",
+                            "details: [
+                                "property": "urn:pwid:annot:source",
+                                "value": "mistral"
+                            ]
+                        }
+                    ]
+                    """
+    )
+    public record ValueObject(String property, String value, List<DetailsAPI.Detail> details) {
+    }
+
     @Operation(
             operationId = "listValues",
             summary = "Returns a list of values of the selected entity identified by the Entity Key.",
@@ -79,7 +98,13 @@ public interface ValuesAPI {
     @GetMapping(value = "/entities/{key:[\\w|\\d|\\-|\\_]+}/values", produces = {RdfMimeTypes.TURTLESTAR_VALUE})
     @ResponseStatus(HttpStatus.OK)
     Flux<AnnotatedStatement> list(@PathVariable String key,
-                                  @Nullable @RequestParam(required = false) String prefixedKey);
+                                  @Nullable @RequestParam(required = false) String prefixedProperty);
+
+
+    @GetMapping(value = "/entities/{key:[\\w|\\d|\\-|\\_]+}/values", produces = {MediaType.APPLICATION_JSON_VALUE})
+    @ResponseStatus(HttpStatus.OK)
+    Flux<ValueObject> listAsJson(@PathVariable String key,
+                                  @Nullable @RequestParam(required = false) String prefixedProperty);
 
     //  @ApiOperation(value = "Sets a value for an entity. Replaces an existing value. ")
     @Operation(

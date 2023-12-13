@@ -98,6 +98,8 @@ public class TripleModel implements Triples {
         return this.streamStatements(null, null, null, contexts);
     }
 
+
+
     @Override
     public void reduce(Predicate<Statement> filterFunction) {
         Set<Statement> collect = this.streamStatements().filter(filterFunction).collect(Collectors.toSet());
@@ -141,6 +143,17 @@ public class TripleModel implements Triples {
         return this.getModel().getStatements(obj, pred, val).iterator().hasNext();
     }
 
+
+    @Override
+    public Optional<Statement> findStatement(Resource object, IRI predicate, Value value) {
+        Iterator<Statement> itr = this.getModel().getStatements(object, predicate, value).iterator();
+
+        if(itr.hasNext()) {
+            return Optional.of(itr.next());
+        } else {
+            return Optional.empty();
+        }
+    }
 
     @Override
     public boolean hasStatement(Triple triple) {

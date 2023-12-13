@@ -1,5 +1,6 @@
 package org.av360.maverick.graph.feature.applications.controller.ext;
 
+import io.swagger.v3.oas.annotations.Parameter;
 import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.api.controller.*;
 import org.av360.maverick.graph.api.controller.entities.EntitiesController;
@@ -57,14 +58,13 @@ public class ScopedApiOperations extends AbstractController {
             consumes = MediaType.TEXT_PLAIN_VALUE,
             produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE})
     @ResponseStatus(HttpStatus.OK)
-    Flux<AnnotatedStatement> getDetails(
-            @PathVariable String label,
-            @PathVariable String id,
-            @PathVariable(required = true, value = "values") PropertyType type,
-            @PathVariable String prefixedValueKey,
-            @RequestParam(required = false) boolean hash
+    Flux<DetailsAPI.Detail> getDetails(
+            @PathVariable @Parameter(name = "entity identifier") String key,
+            @PathVariable PropertyType type,
+            @PathVariable String prefixedProperty,
+            @RequestParam String valueIdentifier
     ) {
-        return this.detailsCtrl.getDetails(id, type, prefixedValueKey, hash);
+        return this.detailsCtrl.getDetails(key, type, prefixedProperty, valueIdentifier);
     }
 
 

@@ -14,6 +14,10 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Flux;
 
+import javax.annotation.Nullable;
+import java.util.List;
+import java.util.stream.Stream;
+
 @RestController
 @Slf4j(topic = "graph.ctrl.api.values")
 public class ValuesController extends AbstractController implements ValuesAPI {
@@ -36,6 +40,42 @@ public class ValuesController extends AbstractController implements ValuesAPI {
         return super.acquireContext()
                 .flatMap(ctx -> values.listValues(key, prefixedProperty, ctx))
                 .flatMapIterable(Triples::asStatements)
+                .doOnSubscribe(s -> {
+                    if (log.isDebugEnabled())
+                        log.debug("Request to list values of entity '{}'", key);
+                });
+    }
+
+    @Override
+    public Flux<ValueObject> listAsJson(String key, @Nullable String prefixedProperty) {
+        /*
+        TODO:
+            - [ ] show only literals of selected item
+            - [ ] embed details
+            - [ ] embed composites as json
+
+
+         */
+
+        return super.acquireContext()
+                .flatMap(ctx -> values.listValues(key, prefixedProperty, ctx))
+                .flatMapMany(triples -> {
+                    Stream<ValueObject> valueObjectStream = triples.streamStatements()
+                            .filter(statement -> statement.getObject().isLiteral() && statement.getSubject().isIRI())
+                            .filter(statement -> {
+                                boolean match = statement.getSubject().stringValue().endsWith(key);
+                                    return match;
+
+                            })
+                            .map(statement -> {
+                                return new ValueObject(
+                                        statement.getPredicate().stringValue(),
+                                        statement.getObject().stringValue(),
+                                        List.of()
+                                );
+                            });
+                    return Flux.fromStream(valueObjectStream);
+                })
                 .doOnSubscribe(s -> {
                     if (log.isDebugEnabled())
                         log.debug("Request to list values of entity '{}'", key);

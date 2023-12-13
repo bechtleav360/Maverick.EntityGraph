@@ -16,6 +16,9 @@ public interface Triples extends NamespaceAware, Serializable  {
 
     Stream<Statement> streamStatements(Resource... contexts);
 
+    Optional<Statement> findStatement(Resource object, IRI predicate, Value value);
+    boolean hasStatement(Resource object, IRI predicate, Value value);
+
     Model getModel();
 
     default Collection<AnnotatedStatement> asStatements() {
@@ -41,7 +44,7 @@ public interface Triples extends NamespaceAware, Serializable  {
 
     Optional<Value> findDistinctValue(Resource subject, IRI predicate) throws  InconsistentModelException;
 
-    boolean hasStatement(Resource obj, IRI pred, Value val);
+
 
     boolean hasStatement(Triple triple);
 }

@@ -20,6 +20,7 @@ import org.eclipse.rdf4j.model.*;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import javax.annotation.Nullable;
@@ -44,6 +45,7 @@ public class ValueServicesImpl implements ValueServices {
     final DeleteValue deleteValue;
     final InsertDetails insertDetails;
     final DeleteLinks deleteLinks;
+    private final ReadDetails readDetails;
     public DeleteDetails deleteDetails;
 
 
@@ -65,6 +67,7 @@ public class ValueServicesImpl implements ValueServices {
         this.insertDetails = new InsertDetails(this);
         this.deleteLinks = new DeleteLinks(this);
         this.deleteDetails = new DeleteDetails(this);
+        this.readDetails = new ReadDetails(this);
 
 
     }
@@ -156,6 +159,11 @@ public class ValueServicesImpl implements ValueServices {
     @RequiresPrivilege(Authorities.READER_VALUE)
     public Mono<Triples> listValues(String entityKey, @Nullable String prefixedPoperty, SessionContext ctx) {
         return this.readValues.listValues(entityKey, prefixedPoperty, ctx);
+    }
+
+    @Override
+    public Flux<Pair<IRI, Value>> listDetails(String key, String prefixedProperty, String valueIdentifier, SessionContext ctx) {
+        return this.readDetails.listDetails(key, prefixedProperty, valueIdentifier, ctx);
     }
 
 

@@ -1,5 +1,6 @@
 package org.av360.maverick.graph.services;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.av360.maverick.graph.model.context.SessionContext;
 import org.av360.maverick.graph.model.entities.Transaction;
 import org.av360.maverick.graph.model.rdf.Triples;
@@ -7,6 +8,7 @@ import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.Value;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import javax.annotation.Nullable;
@@ -138,4 +140,5 @@ public interface ValueServices {
     Mono<Triples> listValues(String id, @Nullable String prefixedKey, SessionContext ctx);
 
 
+    Flux<Pair<IRI, Value>> listDetails(String key, String prefixedProperty, String valueIdentifier, SessionContext ctx);
 }

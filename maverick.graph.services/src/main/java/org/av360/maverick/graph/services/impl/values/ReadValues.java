@@ -43,7 +43,15 @@ public class ReadValues {
                         return this.insertValueIdentifiers(entity);
                     } else {
                         return this.valueServices.schemaServices.resolvePrefixedName(prefixedValuePredicate)
-                                .map(valuePredicate -> entity.filter(st -> st.getPredicate().equals(valuePredicate)))
+                                .map(valuePredicate -> entity.filter(st -> {
+                                    if(st.getSubject().isTriple()) {
+                                        // include details for the given value predicate
+                                        return ((Triple) st.getSubject()).getPredicate().equals(valuePredicate);
+                                    } else {
+                                        // include the value statements
+                                        return st.getPredicate().equals(valuePredicate);
+                                    }
+                                }))
                                 .flatMap(triples -> this.insertValueIdentifiers(triples));
                     }
                 });
