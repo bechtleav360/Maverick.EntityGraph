@@ -55,7 +55,7 @@ public interface ContentApi {
                     @Parameter(name = "prefixedProperty", description = "Prefixed property for the entity value", required = true, in = ParameterIn.PATH, schema = @Schema(type = "string")),
             },
             responses = {
-                    @ApiResponse(responseCode = "200", description = "Successfully stored the content as binary object", content = @Content(mediaType = RdfMimeTypes.TURTLESTAR_VALUE, schema = @Schema(implementation = AnnotatedStatement.class)))
+                    @ApiResponse(responseCode = "200", description = "Successfully stored the content as binary object", content = @Content(schema = @Schema(implementation = AnnotatedStatement.class)))
             }
     )
     @PostMapping(value = "/api/entities/{key:[\\w|\\d|\\-|\\_]+}/objects/{prefixedProperty:[\\w|\\d]+\\.[\\w|\\d|\\-|\\_]+}",
