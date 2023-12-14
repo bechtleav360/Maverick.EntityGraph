@@ -5,6 +5,7 @@ import org.springframework.util.MultiValueMap;
 import reactor.core.publisher.Mono;
 
 import java.net.URI;
+import java.util.Objects;
 
 /**
  * We need the details from the user request at several occasions throughout the lifecycle of a request.
@@ -19,7 +20,11 @@ public class ReactiveRequestUriContextHolder {
 
 
   public static Mono<URI> getURI() {
-    return Mono.deferContextual(Mono::just).map(ctx -> ctx.get(CONTEXT_URI_KEY));
+    return Mono.deferContextual(Mono::just).flatMap(ctx -> {
+        if(Objects.nonNull(ctx) && ctx.hasKey(CONTEXT_URI_KEY)) {
+            return Mono.just(ctx.get(CONTEXT_URI_KEY));
+        } else return Mono.empty();
+    });
   }
 
   public static Mono<MultiValueMap<String, String>> getHeaders() {
