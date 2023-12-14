@@ -218,6 +218,7 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
                 .doOnSuccess(suc -> log.trace("Deleted all configuration item statements for application with label '{}'", application.label()))
                 .then( this.store.listStatements(application.iri(), null, null, context.getEnvironment()))
                 .map(statements -> new RdfTransaction().forRemoval(statements))
+                .flatMap(trx -> this.store.asCommitable().commit(trx, context.getEnvironment()))
                 .doOnSuccess(suc -> log.trace("Deleted all application statements for application with label '{}'", application.label()))
                 .then()
                 .doOnSuccess(res -> {
