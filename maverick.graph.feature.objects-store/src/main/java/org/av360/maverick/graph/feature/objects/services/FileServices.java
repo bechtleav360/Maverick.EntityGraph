@@ -83,12 +83,9 @@ public class FileServices {
                     return sd;
                 })
                 .doOnNext(contentLocation -> log.debug("Writing file with id '{}' into uri '{}'", contentLocation.getIdentifier().getLocalName(), contentLocation.getStoragePath().toUri()))
-                .flatMap(localStorageDetails -> {
-                        localStorageDetails.getStoragePath().getParent().toFile().mkdirs();
-                        return DataBufferUtils.write(bytes, localStorageDetails.getStoragePath(), StandardOpenOption.CREATE)
-                                .doOnError(error -> log.error("Failed to store file due to reason: {}", error.getMessage()))
-                                .then(Mono.just(localStorageDetails));
-                        }
+                .flatMap(localStorageDetails -> DataBufferUtils.write(bytes, localStorageDetails.getStoragePath(), StandardOpenOption.CREATE)
+                        .doOnError(error -> log.error("Failed to store file due to reason: {}", error.getMessage()))
+                        .then(Mono.just(localStorageDetails))
                 )
                 .map(localStorageDetails -> localStorageDetails.setDetails(localStorageDetails.getStoragePath().toFile()))
                 .flatMap(sd -> {

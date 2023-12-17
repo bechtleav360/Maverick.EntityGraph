@@ -62,8 +62,9 @@ public class DelegatingContentResolver implements ContentLocationResolverService
                         contentDir = application.configuration().get(CONFIG_KEY_CONTENT_PATH).toString();
                     }
 
-                    return this.resolvePath(contentDir, entityID.getLocalName(), filename, language)
-                            .map(path -> new ContentLocation(path.toUri(), "/content/s/%s/%s".formatted(application.label(), this.normalizeLocalname(contentId)), filename, language));
+                    String entityKey = this.normalizeLocalname(contentId);
+                    return this.resolvePath(contentDir, entityKey, filename, application.label(), language)
+                            .map(path -> new ContentLocation(path.toUri(), "/content/s/%s/%s".formatted(application.label(), entityKey), filename, language));
 
 
                 })
@@ -77,8 +78,8 @@ public class DelegatingContentResolver implements ContentLocationResolverService
     }
 
     @Override
-    public Mono<Path> resolvePath(String baseDirectory, String entityKey, String filename,  @Nullable String language) {
-        return delegate.resolvePath(baseDirectory, entityKey, filename, language);
+    public Mono<Path> resolvePath(String baseDirectory, String entityKey, String filename,  @Nullable String scope, @Nullable String language) {
+        return delegate.resolvePath(baseDirectory, entityKey, filename, scope, language);
     }
 
     @Override

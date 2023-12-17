@@ -15,7 +15,7 @@ import java.nio.file.Path;
  * This class is also responsible for asserting access rights (checking if given authentication has sufficient privilege)
  */
 public interface ContentLocationResolverService {
-    Mono<Path> resolvePath(String baseDirectory, String entityKey,  String filename, @Nullable String language);
+    Mono<Path> resolvePath(String baseDirectory, String entityKey,  String filename, @Nullable String scope,  @Nullable String language);
 
     String getDefaultBaseDirectory();
     record ContentLocation(URI storageURI, String apiPath, String filename, String language) {}

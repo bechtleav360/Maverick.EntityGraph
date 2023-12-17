@@ -12,6 +12,7 @@ import org.springframework.util.StringUtils;
 import reactor.core.publisher.Mono;
 
 import javax.annotation.Nullable;
+import java.io.IOException;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 
@@ -38,17 +39,28 @@ public class DefaultContentLocationResolver implements ContentLocationResolverSe
 
 
 
-        return resolvePath(getDefaultBaseDirectory(), entityID.getLocalName(), filename, language)
+        return resolvePath(getDefaultBaseDirectory(), entityID.getLocalName(), filename, null, language)
                 .map(path -> new ContentLocation(path.toUri(), "/content/%s".formatted(contentId.getLocalName()), filename, language));
 
     }
 
-    public Mono<Path> resolvePath(String configuredPath, String entityKey, String filename, @Nullable String language) {
+    public Mono<Path> resolvePath(String configuredPath, String entityKey, String filename, @Nullable String scope, @Nullable String language) {
         try {
             Path path = Path.of(configuredPath);
-            path.toFile().mkdirs();
+
+            if(StringUtils.hasLength(scope)) {
+                path = path.resolve(scope);
+            } else {
+                path = path.resolve("default");
+            }
+
             path = path.resolve(entityKey);
-            path = path.resolve(validateFilename(filename, language));
+            if(path.toFile().mkdirs() || path.toFile().exists()) {
+                Path updated_path = path.resolve(validateFilename(filename, language));
+                path = updated_path;
+            } else {
+                return Mono.error(new IOException("Failed to created directories for path: "+path));
+            }
 
             return Mono.just(path);
         } catch (SecurityException | InvalidPathException invalidPathException) {
@@ -57,14 +69,13 @@ public class DefaultContentLocationResolver implements ContentLocationResolverSe
     }
 
     private String validateFilename(String filename, @Nullable String language) {
-        String result = "";
         String[] split = filename.split("\\.");
         if(StringUtils.hasLength(language)) {
-            if(split.length > 1) result = "%s_%s.%s".formatted(split[0], language, split[1]);
-            else result = "%s_%s".formatted(filename, language);
+            if(split.length > 1) return  "%s_%s.%s".formatted(split[0], language, split[1]);
+            else return "%s_%s".formatted(filename, language);
+        } else {
+            return filename;
         }
-        return result;
-
     }
 
 }
