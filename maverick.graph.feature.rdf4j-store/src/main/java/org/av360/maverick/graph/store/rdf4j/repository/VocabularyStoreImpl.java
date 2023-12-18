@@ -35,15 +35,15 @@ public class VocabularyStoreImpl extends AbstractRdfRepository implements Schema
         Namespaces.DEFAULT_RDF4J.forEach(ns -> {
             mappings.put(ns.getPrefix(), ns.getName());
         });
-
-        mappings.putAll(this.loadNamespacesFromFile("ns/namespaces_default.json"));
         mappings.putAll(this.loadNamespacesFromFile("ns/namespaces_extended.json"));
+        mappings.putAll(this.loadNamespacesFromFile("ns/namespaces_default.json"));
+
         log.debug("Loaded locally configured prefixes, having {} defined namespaces", mappings.size());
 
     }
 
     private Map<String, String> loadNamespacesFromFile(String path) {
-        try (InputStream resourceAsStream = getClass().getClassLoader().getResourceAsStream("ns/namespaces_default.json")) {
+        try (InputStream resourceAsStream = getClass().getClassLoader().getResourceAsStream(path)) {
             assert resourceAsStream != null;
 
             String s = IOUtils.toString(resourceAsStream, StandardCharsets.UTF_8);
