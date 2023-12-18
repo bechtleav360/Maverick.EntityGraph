@@ -5,6 +5,6 @@
     "esco": "http://data.europa.eu/esco/model#",
     "megt": "https://w3id.org/av360/transactions#",
     "meg": "http://w3id.org/av360/entities#",
-    "eav": "http://w3id.org/eav#"
+    "eav": "http://w3id.org/eav/"
   }
 }
