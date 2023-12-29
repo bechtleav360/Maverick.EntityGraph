@@ -2,6 +2,7 @@ package org.av360.maverick.graph.model.errors.requests;
 
 import org.av360.maverick.graph.model.errors.InvalidRequest;
 import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Resource;
 import org.springframework.http.HttpStatus;
 
 public class EntityNotFound extends InvalidRequest {
@@ -13,6 +14,15 @@ public class EntityNotFound extends InvalidRequest {
 
     public EntityNotFound(IRI identifier) {
         this.identifier = identifier.getLocalName();
+    }
+
+    public EntityNotFound(Resource identifier) {
+        if(identifier instanceof IRI iri) {
+            this.identifier = iri.getLocalName();
+        } else {
+            this.identifier = identifier.stringValue();
+        }
+
     }
 
     @Override

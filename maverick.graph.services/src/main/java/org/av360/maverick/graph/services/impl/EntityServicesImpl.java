@@ -28,10 +28,7 @@ import org.av360.maverick.graph.store.rdf.fragments.RdfTransaction;
 import org.av360.maverick.graph.store.rdf.helpers.BindingsAccessor;
 import org.av360.maverick.graph.store.rdf.helpers.RdfUtils;
 import org.av360.maverick.graph.store.rdf.helpers.TriplesCollector;
-import org.eclipse.rdf4j.model.IRI;
-import org.eclipse.rdf4j.model.Literal;
-import org.eclipse.rdf4j.model.Model;
-import org.eclipse.rdf4j.model.Resource;
+import org.eclipse.rdf4j.model.*;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.util.ModelBuilder;
 import org.eclipse.rdf4j.model.util.ModelCollector;
@@ -86,7 +83,7 @@ public class EntityServicesImpl implements EntityServices {
     @Override
     @RequiresPrivilege(Authorities.READER_VALUE)
     @OnRepositoryType(RepositoryType.ENTITIES)
-    public Mono<RdfFragment> get(IRI entityIri, boolean details, int depth, SessionContext ctx) {
+    public Mono<RdfFragment> get(Resource entityIri, boolean details, int depth, SessionContext ctx) {
         return entityStore.asFragmentable().getFragment(entityIri, depth, details, ctx.getEnvironment())
                 .switchIfEmpty(Mono.error(new EntityNotFound(entityIri)));
     }
@@ -183,7 +180,7 @@ public class EntityServicesImpl implements EntityServices {
     @Override
     @RequiresPrivilege(Authorities.READER_VALUE)
     @OnRepositoryType(RepositoryType.ENTITIES)
-    public Mono<RdfFragment> findByProperty(String identifier, IRI predicate, SessionContext ctx) {
+    public Mono<RdfFragment> findByProperty(String identifier, IRI predicate, boolean details, int depth, SessionContext ctx) {
         Literal identifierLit = Values.literal(identifier);
 
         Variable idVariable = SparqlBuilder.var("id");
@@ -194,8 +191,10 @@ public class EntityServicesImpl implements EntityServices {
         return this.queryServices.queryValues(query.getQueryString(), RepositoryType.ENTITIES, ctx)
                 .next()
                 .map(bindings -> bindings.getValue(idVariable.getVarName()))
-                .flatMap(id -> this.entityStore.asFragmentable().getFragment((Resource) id, 1, false, ctx.getEnvironment()))
-                .switchIfEmpty(Mono.error(new EntityNotFound(identifier)));
+                .filter(Value::isResource)
+                .flatMap(entityIdentifier -> this.get((Resource) entityIdentifier, details, depth, ctx));
+                //.flatMap(id -> this.entityStore.asFragmentable().getFragment((Resource) id, 1, false, ctx.getEnvironment()))
+                //.switchIfEmpty(Mono.error(new EntityNotFound(identifier)));
     }
 
     @Override
@@ -204,9 +203,9 @@ public class EntityServicesImpl implements EntityServices {
     public Mono<RdfFragment> find(String key, @Nullable String property, boolean details, int depth, SessionContext ctx) {
         if (StringUtils.hasLength(property)) {
             return schemaServices.resolvePrefixedName(property)
-                    .flatMap(propertyIri -> this.findByProperty(key, propertyIri, ctx));
+                    .flatMap(propertyIri -> this.findByProperty(key, propertyIri, details, depth, ctx));
         } else {
-            return this.findByKey(key,  false, depth, ctx);
+            return this.findByKey(key,  details, depth, ctx);
         }
     }
 

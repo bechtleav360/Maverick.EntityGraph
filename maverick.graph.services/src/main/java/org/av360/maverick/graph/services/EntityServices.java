@@ -1,15 +1,19 @@
 package org.av360.maverick.graph.services;
 
 import jakarta.annotation.Nullable;
+import org.av360.maverick.graph.model.annotations.OnRepositoryType;
+import org.av360.maverick.graph.model.annotations.RequiresPrivilege;
 import org.av360.maverick.graph.model.context.SessionContext;
 import org.av360.maverick.graph.model.entities.Transaction;
+import org.av360.maverick.graph.model.enums.RepositoryType;
 import org.av360.maverick.graph.model.rdf.Triples;
+import org.av360.maverick.graph.model.security.Authorities;
 import org.av360.maverick.graph.store.IndividualsStore;
 import org.av360.maverick.graph.store.rdf.fragments.RdfFragment;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Model;
+import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.rio.RDFFormat;
-import org.springframework.core.io.Resource;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -27,19 +31,21 @@ public interface EntityServices {
      * @param depth          how many levels of neigbours to include (0 is entity only, 1 is direct neighbours)
      * @return Entity as Mono
      */
-
-    Mono<RdfFragment> get(IRI entityIri, boolean details, int depth, SessionContext ctx);
+    @RequiresPrivilege(Authorities.READER_VALUE)
+    @OnRepositoryType(RepositoryType.ENTITIES)
+    Mono<RdfFragment> get(Resource entityIri, boolean details, int depth, SessionContext ctx);
 
     /**
      * Retrieves an entity representation (identifier, values and relations) with its direct neighbours from store.
      *
-     * @param entityIri The unique entity URI
+     * @param entityIri The unique entity identifier
      * @param authentication   The current authentication
      * @return Entity as Mono
      */
-    default Mono<RdfFragment> get(IRI entityIri, SessionContext ctx) {
+    default Mono<RdfFragment> get(Resource entityIri, SessionContext ctx) {
         return this.get(entityIri, false, 1, ctx);
     }
+
 
     /**
      * Lists all entities using the default query
@@ -106,7 +112,7 @@ public interface EntityServices {
 
     Mono<RdfFragment> findByKey(String entityKey, boolean details, int depth, SessionContext ctx);
 
-    Mono<RdfFragment> findByProperty(String identifier, IRI predicate, SessionContext ctx);
+    Mono<RdfFragment> findByProperty(String identifier, IRI predicate, boolean details, int depth, SessionContext ctx);
 
     Mono<RdfFragment> find(String entityKey, @Nullable String property, boolean details, int depth, SessionContext ctx);
 
@@ -116,7 +122,7 @@ public interface EntityServices {
 
     IndividualsStore getStore(SessionContext ctx);
 
-    Mono<Transaction> importFile(Resource resource, RDFFormat format, SessionContext ctx);
+    Mono<Transaction> importFile(org.springframework.core.io.Resource resource, RDFFormat format, SessionContext ctx);
 
     /**
      * Returns the complete content
