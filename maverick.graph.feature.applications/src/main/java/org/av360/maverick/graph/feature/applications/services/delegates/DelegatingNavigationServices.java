@@ -10,7 +10,7 @@ import org.av360.maverick.graph.model.enums.RepositoryType;
 import org.av360.maverick.graph.model.rdf.AnnotatedStatement;
 import org.av360.maverick.graph.model.security.Authorities;
 import org.av360.maverick.graph.services.NavigationServices;
-import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Namespace;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
@@ -18,7 +18,6 @@ import org.eclipse.rdf4j.model.util.ModelBuilder;
 import org.eclipse.rdf4j.model.util.Values;
 import org.eclipse.rdf4j.model.vocabulary.HYDRA;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
-import org.springframework.beans.factory.annotation.Autowired;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -53,8 +52,8 @@ public class DelegatingNavigationServices implements NavigationServices {
                         .switchIfEmpty(Mono.just(List.of(Application.DEFAULT)))
                         .flatMapMany(applications -> Flux.create(sink -> {
                             Resource appsCollection = Values.bnode();
-
                             ModelBuilder builder = new ModelBuilder()
+                                    .namedGraph(NavigationServices.NAVIGATION_CONTEXT)
                                     .subject(appsCollection)
                                     .add(RDF.TYPE, HYDRA.COLLECTION)
                                     .add(HYDRA.TITLE, "Scopes")
@@ -65,7 +64,7 @@ public class DelegatingNavigationServices implements NavigationServices {
                                 Resource appNode = Values.bnode(application.label());
                                 builder.subject(appNode)
                                         .add(HYDRA.TITLE, application.label())
-                                        .add(HYDRA.ENTRYPOINT, "/api/s/%s/entities".formatted(application.label()))
+                                        .add(HYDRA.ENTRYPOINT, "?/api/s/%s/entities".formatted(application.label()))
                                         .add(HYDRA.VIEW, "?/nav/s/%s/entities".formatted(application.label()));
 
 
@@ -96,14 +95,6 @@ public class DelegatingNavigationServices implements NavigationServices {
         }
 
         return delegate.list(requestParams, ctx, null);
-        /*
-        if (ctx.getEnvironment().hasScope()) {
-            return this.applicationsService.getApplication(ctx.getEnvironment().getScope().label(), ctx)
-                    .filter(application -> application.configuration().containsKey(CONFIG_KEY_CUSTOM_LIST_QUERY))
-                    .map(application -> application.configuration().get(CONFIG_KEY_CUSTOM_LIST_QUERY))
-                    .flatMapMany(appQuery -> delegate.list(requestParams, ctx, appQuery.toString()))
-                    .switchIfEmpty(delegate.list(requestParams, ctx, null));
-        } else return delegate.list(requestParams, ctx, null);*/
     }
 
     @Override
@@ -121,13 +112,8 @@ public class DelegatingNavigationServices implements NavigationServices {
     }
 
     @Override
-    public IRI generateResolvableIRI(String path, Map<String, String> params) {
+    public Literal generateResolvableIRI(String path, Map<String, String> params) {
         return delegate.generateResolvableIRI(path, params);
     }
 
-
-    @Autowired
-    public void setApplicationsService(ApplicationsService applicationsService) {
-        this.applicationsService = applicationsService;
-    }
 }

@@ -1,0 +1,10 @@
+{
+  "@context": {
+    "hydra": "http://www.w3.org/ns/hydra/core#",
+    "sdo": "https://schema.org/",
+    "owl": "http://www.w3.org/2002/07/owl#",
+    "schema": "http://schema.org/",
+    "owl:sameAs": { "@id": "owl:sameAs", "@type": "@id" }
+  },
+    "@type": {}
+}

@@ -3,13 +3,21 @@ package org.av360.maverick.graph.services;
 import jakarta.annotation.Nullable;
 import org.av360.maverick.graph.model.context.SessionContext;
 import org.av360.maverick.graph.model.rdf.AnnotatedStatement;
+import org.av360.maverick.graph.model.vocabulary.Local;
 import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Literal;
+import org.eclipse.rdf4j.model.util.Values;
 import reactor.core.publisher.Flux;
 
 import java.util.Map;
 
 public interface NavigationServices {
-    public static String ResolvableUrlPrefix = "http://??";
+    public static String ResolvableUrlPrefix = "urn:pwid:meg:nav:";
+
+    IRI NAVIGATION_CONTEXT = Values.iri(Local.URN_PREFIX+"nav");
+    IRI DATA_CONTEXT = Values.iri(Local.URN_PREFIX+"data");
+    IRI DETAILS_CONTEXT = Values.iri(Local.URN_PREFIX+"details");
+
 
     Flux<AnnotatedStatement> start(SessionContext ctx);
 
@@ -21,9 +29,9 @@ public interface NavigationServices {
     Flux<AnnotatedStatement> browse(Map<String, String> params, SessionContext ctx);
 
 
-    IRI generateResolvableIRI(String path, Map<String, String> params);
+    Literal generateResolvableIRI(String path, Map<String, String> params);
 
-    default IRI generateResolvableIRI(String path) {
+    default Literal generateResolvableIRI(String path) {
         return this.generateResolvableIRI(path, Map.of());
     }
 }

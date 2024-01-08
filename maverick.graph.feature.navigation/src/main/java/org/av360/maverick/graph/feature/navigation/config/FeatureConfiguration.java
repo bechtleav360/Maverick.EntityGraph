@@ -1,6 +1,6 @@
 package org.av360.maverick.graph.feature.navigation.config;
 
-import org.av360.maverick.graph.feature.navigation.controller.encoder.RdfHtmlEncoder;
+import org.av360.maverick.graph.feature.navigation.controller.encoder.JsonLdEncoder;
 import org.av360.maverick.graph.store.SchemaStore;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -29,6 +29,6 @@ public class FeatureConfiguration implements WebFluxConfigurer {
     }
 
     public void configureHttpMessageCodecs(ServerCodecConfigurer configurer) {
-        configurer.customCodecs().register(new RdfHtmlEncoder(schemaStore));
+        configurer.customCodecs().register(new JsonLdEncoder(this.schemaStore));
     }
 }
