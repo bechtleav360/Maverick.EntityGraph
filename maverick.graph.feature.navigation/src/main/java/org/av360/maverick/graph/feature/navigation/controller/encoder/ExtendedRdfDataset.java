@@ -17,14 +17,31 @@ package org.av360.maverick.graph.feature.navigation.controller.encoder;
 
 import com.apicatalog.rdf.*;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
+import java.util.stream.Collectors;
 
-public class NamespaceAwareRdfDataset implements RdfDataset {
+public class ExtendedRdfDataset implements RdfDataset {
 
     final RdfDataset delegate;
+    final Set<Annotation> annotations;
+
+    public Set<Annotation> getAnnotationsByIdentifierAndProperty(String identifier, String predicate) {
+        return getAnnotations().stream()
+                .filter(annotation -> annotation.subject().equalsIgnoreCase(identifier) && annotation.predicate().equalsIgnoreCase(predicate))
+                .collect(Collectors.toSet());
+    }
+
+    public record Annotation(String subject, String predicate, String object, String annotationPredicate, String annotationValue) {}
+
+    public void addAnnotation(String subject, String predicate, String object, String annotationPredicate, String annotationValue) {
+        this.annotations.add(new Annotation(subject, predicate, object, annotationPredicate, annotationValue));
+    }
+
+
+    public Set<Annotation> getAnnotations() {
+        return Collections.unmodifiableSet(annotations);
+    }
+
 
     public Set<String> getNamespaces() {
         return namespaces;
@@ -33,9 +50,10 @@ public class NamespaceAwareRdfDataset implements RdfDataset {
     final Set<String> namespaces;
 
 
-    public NamespaceAwareRdfDataset(RdfDataset delegate) {
+    public ExtendedRdfDataset(RdfDataset delegate) {
         this.delegate = delegate;
         this.namespaces = new HashSet<>();
+        this.annotations = new HashSet<>();
     }
 
     @Override

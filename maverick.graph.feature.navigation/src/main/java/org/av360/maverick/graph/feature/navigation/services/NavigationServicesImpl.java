@@ -156,7 +156,6 @@ public class NavigationServicesImpl implements NavigationServices {
                             .filter(statement -> ! statement.getSubject().isTriple())
                             .forEach(statement -> builder.add(statement.getSubject(), statement.getPredicate(), statement.getObject()));
 
-                    builder.namedGraph(DETAILS_CONTEXT);
                     fragment.streamStatements()
                             .filter(statement -> statement.getSubject().isTriple())
                             .forEach(statement -> builder.add(statement.getSubject(), statement.getPredicate(), statement.getObject()));

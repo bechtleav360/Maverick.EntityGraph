@@ -21,7 +21,7 @@ import com.apicatalog.rdf.RdfTriple;
 import com.apicatalog.rdf.RdfValue;
 import com.apicatalog.rdf.impl.DefaultRdfProvider;
 import com.apicatalog.rdf.spi.RdfProvider;
-import org.av360.maverick.graph.feature.navigation.controller.encoder.NamespaceAwareRdfDataset;
+import org.av360.maverick.graph.feature.navigation.controller.encoder.ExtendedRdfDataset;
 import org.eclipse.rdf4j.model.*;
 
 import java.util.EnumSet;
@@ -33,9 +33,11 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collector;
 
-public class RdfDatasetCollector implements Collector<Statement, NamespaceAwareRdfDataset, NamespaceAwareRdfDataset> {
+public class RdfDatasetCollector implements Collector<Statement, ExtendedRdfDataset, ExtendedRdfDataset> {
 
     private final RdfProvider rdfProvider;
+
+
 
     public RdfDatasetCollector(RdfProvider rdfProvider) {
         this.rdfProvider = rdfProvider;
@@ -46,16 +48,16 @@ public class RdfDatasetCollector implements Collector<Statement, NamespaceAwareR
     }
 
     @Override
-    public Supplier<NamespaceAwareRdfDataset> supplier() {
-        return () -> new NamespaceAwareRdfDataset(rdfProvider.createDataset());
+    public Supplier<ExtendedRdfDataset> supplier() {
+        return () -> new ExtendedRdfDataset(rdfProvider.createDataset());
     }
 
     @Override
-    public BiConsumer<NamespaceAwareRdfDataset, Statement> accumulator() {
+    public BiConsumer<ExtendedRdfDataset, Statement> accumulator() {
         return (m, s) -> {
             synchronized (m) {
                 this.extractNamespaces(s, m);
-                RdfNQuad quad = this.convert(s);
+                RdfNQuad quad = this.convert(s, m);
                 if(Objects.nonNull(quad)) {
                     m.add(quad);
                 }
@@ -64,7 +66,7 @@ public class RdfDatasetCollector implements Collector<Statement, NamespaceAwareR
         };
     }
 
-    private void extractNamespaces(Statement s, NamespaceAwareRdfDataset m) {
+    private void extractNamespaces(Statement s, ExtendedRdfDataset m) {
         m.registerNamespace(s.getPredicate().getNamespace());
         if(s.getObject() instanceof IRI iri) m.registerNamespace(iri.getNamespace());
         if(s.getSubject() instanceof IRI iri) m.registerNamespace(iri.getNamespace());
@@ -72,7 +74,7 @@ public class RdfDatasetCollector implements Collector<Statement, NamespaceAwareR
     }
 
     @Override
-    public BinaryOperator<NamespaceAwareRdfDataset> combiner() {
+    public BinaryOperator<ExtendedRdfDataset> combiner() {
         return (m1, m2) -> {
             m2.toList().forEach(m1::add);
             return m1;
@@ -80,7 +82,7 @@ public class RdfDatasetCollector implements Collector<Statement, NamespaceAwareR
     }
 
     @Override
-    public Function<NamespaceAwareRdfDataset, NamespaceAwareRdfDataset> finisher() {
+    public Function<ExtendedRdfDataset, ExtendedRdfDataset> finisher() {
         return Function.identity();
     }
 
@@ -100,7 +102,7 @@ public class RdfDatasetCollector implements Collector<Statement, NamespaceAwareR
         return null;
     }
 
-    private RdfNQuad convert(Statement statement) {
+    private RdfNQuad convert(Statement statement, ExtendedRdfDataset m) {
         Resource subject = statement.getSubject();
         IRI predicate = statement.getPredicate();
         Value object = statement.getObject();
@@ -117,15 +119,16 @@ public class RdfDatasetCollector implements Collector<Statement, NamespaceAwareR
         } else if (subject.isIRI()) {
             convertedSubject = rdfProvider.createIRI(subject.stringValue());
         } else if(subject instanceof Triple triple) {
-            Resource tripleSubject = triple.getSubject();
-            IRI triplePredicate = triple.getPredicate();
-            Literal tripleValue = (Literal) triple.getObject();
 
-            RdfResource convertedTripleSubject = rdfProvider.createIRI(tripleSubject.stringValue());
-            RdfResource convertedTriplePredicate = rdfProvider.createIRI(triplePredicate.stringValue());
-            RdfValue convertedTripleObject = rdfProvider.createTypedString(tripleValue.stringValue(), tripleValue.getDatatype().stringValue());
+            m.addAnnotation(
+                triple.getSubject().stringValue(),
+                triple.getPredicate().stringValue(),
+                triple.getObject().stringValue(),
+                    predicate.stringValue(),
+                    object.stringValue()
+            );
 
-            convertedSubjectTriple = rdfProvider.createTriple(convertedTripleSubject, convertedTriplePredicate, convertedTripleObject);
+            convertedSubject = null;
 
         }
 
@@ -154,5 +157,8 @@ public class RdfDatasetCollector implements Collector<Statement, NamespaceAwareR
             return null;
         }
 
+    }
+
+    private void handleSubjectTriple(Triple triple) {
     }
 }

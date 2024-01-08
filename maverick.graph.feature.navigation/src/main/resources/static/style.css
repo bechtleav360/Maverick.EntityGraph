@@ -21,6 +21,11 @@ div.fragment {
     margin-top: 0.5em;
 }
 
+pre#json-renderer {
+    white-space: pre-wrap; /* Wraps the text */
+    word-wrap: break-word; /* Breaks long words */
+}
+
 div.header {
     background-color: aliceblue;
     margin: 1em;
