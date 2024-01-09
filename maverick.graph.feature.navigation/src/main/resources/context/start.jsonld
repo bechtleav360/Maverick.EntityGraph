@@ -1,0 +1,18 @@
+{
+  "@context": {
+    "hydra": "http://www.w3.org/ns/hydra/core#",
+    "sdo": "https://schema.org/",
+    "member": { "@id": "hydra:member", "@type": "@id" },
+    "hydra:description": { "@id": "hydra:description", "@type": "@id" },
+    "hydra:title": { "@id": "hydra:title", "@type": "@id" },
+    "hydra:entrypoint": { "@id": "hydra:entrypoint", "@type": "@id" },
+    "view": { "@id": "hydra:view", "@type": "@id" },
+    "view": "hydra:view",
+    "title": "hydra:title",
+    "entrypoint": "hydra:entrypoint",
+    "description": "hydra:description"
+
+  },
+  "@type": ["hydra:ApiDocumentation", "hydra:Collection"]
+
+}

@@ -8,13 +8,12 @@ import org.av360.maverick.graph.model.context.SessionContext;
 import org.av360.maverick.graph.model.enums.RepositoryType;
 import org.av360.maverick.graph.model.rdf.AnnotatedStatement;
 import org.av360.maverick.graph.model.security.Authorities;
+import org.av360.maverick.graph.model.vocabulary.Local;
 import org.av360.maverick.graph.model.vocabulary.SDO;
 import org.av360.maverick.graph.services.EntityServices;
 import org.av360.maverick.graph.services.NavigationServices;
 import org.av360.maverick.graph.store.rdf.fragments.RdfFragment;
-import org.eclipse.rdf4j.model.IRI;
-import org.eclipse.rdf4j.model.Resource;
-import org.eclipse.rdf4j.model.ValueFactory;
+import org.eclipse.rdf4j.model.*;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.impl.TreeModel;
 import org.eclipse.rdf4j.model.util.ModelBuilder;
@@ -32,7 +31,6 @@ import reactor.core.publisher.Mono;
 
 import java.net.URI;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Service
 public class NavigationServicesImpl implements NavigationServices {
@@ -41,8 +39,7 @@ public class NavigationServicesImpl implements NavigationServices {
     @Value("${application.features.modules.navigation.configuration.limit:100}")
     int defaultLimit = 100;
     private EntityServices entityServices;
-    private IRI NAVIGATION_CONTEXT = Values.iri("urn:nav");
-    private IRI DATA_CONTEXT = Values.iri("urn:data");
+
 
     private Map<UUID, List<String>> history = new HashMap<>();
 
@@ -54,25 +51,28 @@ public class NavigationServicesImpl implements NavigationServices {
 
                     ModelBuilder builder = new ModelBuilder();
 
-                    Resource apiDocsNode = Values.bnode();
-                    Resource swaggerLink = Values.bnode();
-                    Resource openApiLink = Values.bnode();
-                    Resource navView = Values.bnode();
+                    Resource apiDocsNode = Values.bnode("apiDocs");
+                    Resource swaggerLink = Values.bnode("swagger");
+                    Resource openApiLink = Values.bnode("openAPI");
+                    Resource navView = Values.bnode("navigation");
 
                     /*
+
+
                     if(ctx.getDetails() instanceof RequestDetails details) {
                         this.sessionHistory.add(session.getId(), details.path());
                         this.sessionHistory.previous(session.getId()).map(path -> builder.add(root, HYDRA.PREVIOUS, "?"+path));
                     }
                     */
 
-
+                    builder.namedGraph(NavigationServices.NAVIGATION_CONTEXT);
                     builder.setNamespace(HYDRA.PREFIX, HYDRA.NAMESPACE)
                             .setNamespace(RDFS.PREFIX, RDFS.NAMESPACE)
                             .setNamespace(SDO.PREFIX, SDO.NAMESPACE)
+                            .setNamespace(Local.PREFIX, Local.URN_PREFIX)
                     ;
 
-                    builder.namedGraph(NAVIGATION_CONTEXT);
+                    // builder.namedGraph(NAVIGATION_CONTEXT);
 
                     builder.subject(apiDocsNode)
                             .add(RDF.TYPE, HYDRA.API_DOCUMENTATION)
@@ -92,21 +92,21 @@ public class NavigationServicesImpl implements NavigationServices {
                             .add(RDF.TYPE, HYDRA.LINK)
                             .add(HYDRA.TITLE, "Navigating through the graph")
                             .add(HYDRA.RETURNS, vf.createLiteral(MediaType.TEXT_HTML_VALUE))
-                            .add(HYDRA.ENTRYPOINT, this.generateResolvableIRI(""));
+                            .add(HYDRA.ENTRYPOINT, "?/nav");
                     builder.subject(swaggerLink)
                             .add(RDF.TYPE, HYDRA.LINK)
                             .add(HYDRA.TITLE, "Swagger UI to interact with the API")
                             .add(HYDRA.RETURNS, vf.createLiteral(MediaType.TEXT_HTML_VALUE))
-                            .add(HYDRA.ENTRYPOINT, this.generateResolvableIRI("/webjars/swagger-ui/index.html", Map.of("urls.primaryName", "Entities API")));
+                            .add(HYDRA.ENTRYPOINT, "?/webjars/swagger-ui/index.html");
                     builder.subject(openApiLink)
                             .add(RDF.TYPE, HYDRA.LINK)
                             .add(HYDRA.TITLE, "Machine-readable OpenApi Documentation")
                             .add(HYDRA.RETURNS, vf.createLiteral(MediaType.APPLICATION_JSON_VALUE))
-                            .add(HYDRA.ENTRYPOINT, this.generateResolvableIRI("/v3/api-docs"));
+                            .add(HYDRA.ENTRYPOINT, "?/v3/api-docs");
                     return builder.build();
                 })
-                .map(model -> model.stream().map(statement -> AnnotatedStatement.wrap(statement, model.getNamespaces())).collect(Collectors.toSet()))
-                .flatMapMany(Flux::fromIterable);
+                .map(model -> model.stream().map(statement -> AnnotatedStatement.wrap(statement, model.getNamespaces())))
+                .flatMapMany(Flux::fromStream);
     }
 
 
@@ -134,8 +134,11 @@ public class NavigationServicesImpl implements NavigationServices {
         return this.entityServices.find(params.get("key"), null, true, 0, ctx)
                 .map(fragment -> {
                     ModelBuilder builder = new ModelBuilder();
+                    builder.build().getNamespaces().addAll(fragment.getNamespaces());
+
                     // IRI currentView = this.generateResolvableIRI("/api/entities/%s".formatted(((IRI) fragment.getIdentifier()).getLocalName()));
                     Resource currentView = Values.bnode();
+
                     builder.namedGraph(NAVIGATION_CONTEXT);
                     builder.setNamespace(HYDRA.PREFIX, HYDRA.NAMESPACE);
                     builder.add(currentView, RDF.TYPE, HYDRA.VIEW);
@@ -148,10 +151,15 @@ public class NavigationServicesImpl implements NavigationServices {
                         builder.add(currentView, HYDRA.PREVIOUS, this.generateResolvableIRI(""));
                     }
 
-
                     builder.namedGraph(DATA_CONTEXT);
-                    builder.build().getNamespaces().addAll(fragment.getNamespaces());
-                    builder.build().addAll(fragment.getModel());
+                    fragment.streamStatements()
+                            .filter(statement -> ! statement.getSubject().isTriple())
+                            .forEach(statement -> builder.add(statement.getSubject(), statement.getPredicate(), statement.getObject()));
+
+                    fragment.streamStatements()
+                            .filter(statement -> statement.getSubject().isTriple())
+                            .forEach(statement -> builder.add(statement.getSubject(), statement.getPredicate(), statement.getObject()));
+
                     return builder.build();
                 })
                 .map(model -> model.stream().map(statement -> AnnotatedStatement.wrap(statement, model.getNamespaces())))
@@ -185,7 +193,7 @@ public class NavigationServicesImpl implements NavigationServices {
                     builder.add(nodeCollection, RDF.TYPE, HYDRA.COLLECTION);
                     builder.add(nodeCollection, HYDRA.TOTAL_ITEMS, Values.literal(count));
                     builder.add(nodeCollection, HYDRA.VIEW, nodePaging);
-                    builder.add(nodeCollection, HYDRA.PREVIOUS, this.generateResolvableIRI(""));
+                    builder.add(nodeCollection, HYDRA.ENTRYPOINT, this.generateResolvableIRI(""));
 
                     // create navigation
                     builder.subject(nodePaging);
@@ -208,12 +216,20 @@ public class NavigationServicesImpl implements NavigationServices {
                         urlParameters.put("offset", "0");
                         builder.add(HYDRA.FIRST, this.generateResolvableIRI("entities", urlParameters));
                     }
+                    Model resultingModel = builder.build();
 
 
                     builder.namedGraph(DATA_CONTEXT);
                     list.forEach(rdfEntity -> {
-                        builder.build().getNamespaces().addAll(rdfEntity.getNamespaces());
-                        builder.build().addAll(rdfEntity.getModel());
+                        resultingModel.getNamespaces().addAll(rdfEntity.getNamespaces());
+                        resultingModel.add(nodeCollection, HYDRA.MEMBER, rdfEntity.getIdentifier(), NAVIGATION_CONTEXT);
+                        this.generateEntityViewURL(rdfEntity.getIdentifier()).ifPresent(literal -> {
+                            resultingModel.add(rdfEntity.getIdentifier(), HYDRA.VIEW, literal, NAVIGATION_CONTEXT);
+                        });
+
+
+                        rdfEntity.streamStatements()
+                                .forEach(s -> resultingModel.add(s.getSubject(), s.getPredicate(), s.getObject(), DATA_CONTEXT));
                     });
 
                     return builder.build();
@@ -223,8 +239,23 @@ public class NavigationServicesImpl implements NavigationServices {
                 .flatMapMany(Flux::fromStream);
     }
 
-    public IRI generateResolvableIRI(String path, Map<String, String> params) {
-        StringBuilder sb = new StringBuilder(ResolvableUrlPrefix);
+    private Optional<Literal> generateEntityViewURL(Resource identifier) {
+        if(identifier instanceof IRI iri) {
+            String localName = iri.getLocalName();
+            String[] split = localName.split("\\.");
+            Literal literal = null;
+            if(split.length == 2) {
+                literal = Values.literal("?/nav/s/%s/entities/%s".formatted(split[0], split[1]));
+            } else {
+                literal = Values.literal("?/nav/s/default/entities/%s".formatted(localName));
+            }
+            return Optional.ofNullable(literal);
+
+        } else return Optional.empty();
+    }
+
+    public Literal generateResolvableIRI(String path, Map<String, String> params) {
+        StringBuilder sb = new StringBuilder("?");
         // FIXME: scope infection, should be handled in delegating
         if (!path.startsWith("/")) {
             sb.append("/nav");
@@ -246,7 +277,7 @@ public class NavigationServicesImpl implements NavigationServices {
             if (entriesItr.hasNext()) sb.append("&");
         }
 
-        return vf.createIRI(sb.toString());
+        return Values.literal(sb.toString());
     }
 
 

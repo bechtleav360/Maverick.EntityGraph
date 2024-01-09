@@ -30,6 +30,7 @@
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
         </dependency>
+
         <dependency>
             <groupId>org.av360.maverick.graph</groupId>
             <artifactId>graph-api</artifactId>

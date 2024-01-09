@@ -6,6 +6,8 @@ import org.av360.maverick.graph.model.rdf.AnnotatedStatement;
 import org.av360.maverick.graph.services.NavigationServices;
 import org.eclipse.rdf4j.model.Statement;
 import org.springframework.core.annotation.Order;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -38,13 +40,49 @@ public class NavigationRestController extends AbstractController {
 
     @GetMapping(produces = MediaType.TEXT_HTML_VALUE)
     @ResponseStatus(HttpStatus.OK)
-    public Flux<AnnotatedStatement> start() {
-        return super.acquireContext().flatMapMany(this.navigationServices::start);
+    @ResponseBody
+    public ResponseEntity<Flux<AnnotatedStatement>> start() {
+        Flux<AnnotatedStatement> result = super.acquireContext().flatMapMany(this.navigationServices::start);
+        return ResponseEntity.ok().body(result);
+    }
+
+    @GetMapping(value = "/context", produces = MediaType.APPLICATION_JSON_VALUE)
+    @ResponseStatus(HttpStatus.OK)
+    @ResponseBody
+    public ResponseEntity<Resource>  startContext() {
+        Resource file = new ClassPathResource("context/start.jsonld");
+        return ResponseEntity
+                .ok()
+                .body(file);
+
+
+    }
+
+    @GetMapping(value = "/s/{scope}/entities/context", produces = MediaType.APPLICATION_JSON_VALUE)
+    @ResponseStatus(HttpStatus.OK)
+    @ResponseBody
+    public ResponseEntity<Resource> startScopeContext() {
+        Resource file = new ClassPathResource("context/list.jsonld");
+        return ResponseEntity
+                .ok()
+                .body(file);
+
+    }
+
+    @GetMapping(value = "/s/{scope}/entities/{key}/context", produces = MediaType.APPLICATION_JSON_VALUE)
+    @ResponseStatus(HttpStatus.OK)
+    @ResponseBody
+    public ResponseEntity<Resource> entityContext() {
+        Resource file = new ClassPathResource("context/entity.jsonld");
+        return ResponseEntity
+                .ok()
+                .body(file);
+
     }
 
     @GetMapping(value = "/s/{scope}/entities", produces = MediaType.TEXT_HTML_VALUE)
     @ResponseStatus(HttpStatus.OK)
-    public Flux<Statement> navigateToScopeEntryPoint(
+    public Flux<Statement> startScope(
             @PathVariable("scope") String scope,
             @RequestParam(value = "limit", required = false) Integer limit,
             @RequestParam(value = "offset", required = false) Integer offset) {

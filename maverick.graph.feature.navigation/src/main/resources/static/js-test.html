@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <title>Maverick Entity Graph Navigation</title>
+    <meta charset="UTF-8">
+
+    <link rel="stylesheet" href="style.css"></link>
+</head>
+<body>
+<div class="box">
+
+    <div id="header_box">
+        <div id="header"></div>
+    </div>
+    <div id="navigation_box">
+        <div id="navigation"></div>
+    </div>
+    <div id="content_box">
+        <div id="content"></div>
+    </div>
+    <div id="details_box">
+        <div id="details"></div>
+    </div>
+    <span id="session" class="hidden"></span>
+</div>
+<div id="rdf_box"><script type="text/x-trigstar" id="rdf">
+
+@prefix hydra: <http://www.w3.org/ns/hydra/core#> .
+@prefix url: <http://schema.org/> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix sdo: <https://schema.org/> .
+@prefix eav: <https://w3id.org/eav/> .
+
+<urn:pwid:meg:nav> {
+[] a hydra:view;
+  hydra:description "Details of a linked data fragment.";
+  hydra:previous <https://entitygraph.azurewebsites.net/nav> .
+}
+
+<urn:pwid:meg:data> {
+<https://entitygraph.azurewebsites.net/api/s/hoch-und-weit/entities/53is9uxx> a url:LearningResource;
+  url:creator <https://entitygraph.azurewebsites.net/api/s/hoch-und-weit/entities/kpn78bxx>;
+  url:description """•	Stärkung intergenerationeller Solidarität in den Wohnquartieren
+•	Schaffung quartiersbezogener Strukturen für gelingendes Altern bei Einbindung älterer und alter Menschen
+•	Bedarfserhebung und Gestaltung von zielgruppenspezifischen Beratungsangeboten und nachbarschaftlichen Unterstützungsstrukturen
+•	Ansätze von Case- und Care-Management unter Einbezug von Ressourcen im Sozialraum und freiwilligem Engagement
+•	Lobbyarbeit, Sozialplanung und Beratung kommunaler und politischer Gremien"""@de;
+  url:name "Altern in Sozialraum und Quartier - Kommunale Beratung und Vernetzung"@de;
+  owl:sameAs <https://hoch-und-weit.de/weiterbildungsangebote/Katholische-Hochschule-Freiburg-staatlich-anerkannte-Hochschule-Catholic-University-of-Applied-Sciences/Altern-in-Sozialraum-und-Quartier-Kommunale-Beratung-und-Vernetzung/127381?kp=e3d80518-cac0-4cf3-9b3b-895954cc26ca>;
+  sdo:audience <http://purl.org/dcx/lrmi-vocabs/educationalAudienceRole/generalPublic>;
+  sdo:competencyRequired "No required competencies found"@en;
+  sdo:teaches "This learning resource focuses on strengthening intergenerational solidarity in neighborhoods, creating quarter-specific structures for successful aging with the inclusion of older and elderly people, raising awareness and designing targeted advisory services and community support structures, implementing approaches to case and care management involving resources in the social sphere and voluntary engagement, and lobbying, social planning, and consultation for local and political committees."@en .
+}
+
+<urn:pwid:meg:details> {
+<<<urn:pwid:meg:e:hoch-und-weit.53is9uxx> sdo:audience <http://purl.org/dcx/lrmi-vocabs/educationalAudienceRole/generalPublic>>>
+  eav:confidence "0.8";
+  eav:created "2023-12-25T04:29:51.884105+01:00";
+  eav:explanation "The description mentions lobbying and advising local and political authorities, which suggests an administrative or managerial role. However, the resource could also be useful for professionals in the field of aging or community development. Therefore, while I am fairly confident in suggesting 'administrator' as an audience type, there is still some uncertainty.";
+  eav:model "mistral-7b-instruct-v0.2.Q5_K_M.gguf" .
+
+<<<urn:pwid:meg:e:hoch-und-weit.53is9uxx> sdo:competencyRequired "No required competencies found"@en>>
+  eav:confidence "0.9";
+  eav:created "2023-12-28T21:58:18.161030+00:00";
+  eav:explanation "The description clearly outlines several key areas of focus for the course, which can be inferred as requiring a combination of interpersonal, organizational, and advocacy skills, as well as an understanding of social structures and resources within communities. These are all competencies that are typically developed through education and experience in the field of aging and community development.";
+  eav:model "TheBloke/Mistral-7B-Instruct-v0.2-GGUF/mistral-7b-instruct-v0.2.Q5_K_M.gguf" .
+
+<<<urn:pwid:meg:e:hoch-und-weit.53is9uxx> sdo:teaches "This learning resource focuses on strengthening intergenerational solidarity in neighborhoods, creating quarter-specific structures for successful aging with the inclusion of older and elderly people, raising awareness and designing targeted advisory services and community support structures, implementing approaches to case and care management involving resources in the social sphere and voluntary engagement, and lobbying, social planning, and consultation for local and political committees."@en>>
+  eav:confidence "0.9";
+  eav:created "2023-12-31T19:38:09.649427+00:00";
+  eav:explanation "The name and description of this learning resource clearly indicate that it is centered around promoting intergenerational solidarity and successful aging in neighborhoods through community building and support structures, as well as advocacy and planning efforts at the local level. The specific skills mentioned include raising awareness, designing targeted advisory services, creating community support structures, implementing care management approaches, and engaging in lobbying and social planning activities.";
+  eav:model "TheBloke/Mistral-7B-Instruct-v0.2-GGUF/mistral-7b-instruct-v0.2.Q5_K_M.gguf" .
+}
+</script></div>
+<script id="ns" type="application/json">{"hydra":{"url":"https://www.hydra-cg.com/spec/latest/core/#","external":true},"rdf":{"url":"https://www.w3.org/TR/rdf-syntax-grammar/","external":true},"owl":{"url":"http://www.w3.org/2002/07/owl#","external":true},"eav":{"url":"https://w3id.org/eav/","external":true},"url":{"url":"http://schema.org/","external":true},"sdo":{"url":"https://schema.org/","external":true}}</script>
+<!-- <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script> -->
+<script src="https://unpkg.com/n3/browser/n3.min.js"></script>
+<script src="script_n3.js"></script>
+</body>
+</html>
+

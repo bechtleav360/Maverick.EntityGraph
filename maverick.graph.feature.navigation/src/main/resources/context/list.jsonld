@@ -1,0 +1,17 @@
+{
+  "@context": {
+    "hydra": "http://www.w3.org/ns/hydra/core#",
+    "sdo": "https://schema.org/",
+    "hydra:view": { "@id": "hydra:view", "@type": "@id" },
+    "hydra:limit": { "@id": "hydra:limit", "@type": "@id" },
+    "hydra:next": { "@id": "hydra:next", "@type": "@id" },
+    "hydra:previous": { "@id": "hydra:previous", "@type": "@id" },
+    "hydra:first": { "@id": "hydra:first", "@type": "@id" },
+    "hydra:last": { "@id": "hydra:last", "@type": "@id" }
+  },
+  "@type": "hydra:Collection",
+  "hydra:totalItems": {},
+  "hydra:view": {},
+  "hydra:member": [ {"@type": {}} ]
+
+}

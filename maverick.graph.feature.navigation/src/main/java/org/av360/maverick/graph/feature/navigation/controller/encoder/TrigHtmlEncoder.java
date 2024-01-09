@@ -8,9 +8,7 @@ import org.av360.maverick.graph.store.SchemaStore;
 import org.av360.maverick.graph.store.rdf.helpers.RdfUtils;
 import org.eclipse.rdf4j.model.*;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
-import org.eclipse.rdf4j.model.util.ModelBuilder;
 import org.eclipse.rdf4j.model.util.ModelCollector;
-import org.eclipse.rdf4j.model.util.Values;
 import org.eclipse.rdf4j.rio.RDFFormat;
 import org.eclipse.rdf4j.rio.RDFWriter;
 import org.reactivestreams.Publisher;
@@ -34,27 +32,27 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * Transforms a set of statements to navigable HTML
  */
 @Slf4j(topic = "graph.ctrl.io.encoder.html")
-public class RdfHtmlEncoder implements Encoder<Statement> {
+public class TrigHtmlEncoder implements Encoder<Statement> {
 
 
     private final SimpleValueFactory vf;
 
     private final SchemaStore schemaStore;
 
-    public RdfHtmlEncoder(SchemaStore schemaStore) {
+    public TrigHtmlEncoder(SchemaStore schemaStore) {
         this.schemaStore = schemaStore;
         this.vf = SimpleValueFactory.getInstance();
     }
 
     @Override
     public boolean canEncode(ResolvableType elementType, MimeType mimeType) {
-        return mimeType != null && mimeType.equals(MimeTypeUtils.TEXT_HTML);
+        return false;
+        // return mimeType != null && mimeType.equals(MimeTypeUtils.TEXT_HTML);
     }
 
     @Override
@@ -68,8 +66,8 @@ public class RdfHtmlEncoder implements Encoder<Statement> {
                 })
                 .map(statement -> (Statement) statement)
                 .collect(ModelCollector.toTreeModel())
-                .map(this::convertCompositesToBlankNodes)
-                .map(this::filterStatements)
+                .map(EncoderFilters::convertCompositesToBlankNodes)
+                .map(EncoderFilters::filterInternalTypeStatements)
                 .map(this::extractNamespaces)
                 .flatMap(model ->  Mono.zip(Mono.just(model), ReactiveRequestUriContextHolder.getURI()))
                 .flatMapMany(tuple -> {
@@ -126,50 +124,12 @@ public class RdfHtmlEncoder implements Encoder<Statement> {
         prefixForNamespace.ifPresent(s -> m.setNamespace(s, iri.getNamespace()));
     }
 
-    private Model filterStatements(Model model) {
-        // we filter out any internal statements
-        return model.stream()
-                .filter(this::isLiteralWithCommonLanguageTag)
-                .filter(statement -> ! statement.getObject().equals(Local.Entities.TYPE_INDIVIDUAL))
-                .filter(statement -> ! statement.getObject().equals(Local.Entities.TYPE_CLASSIFIER))
-                .filter(statement -> ! statement.getObject().equals(Local.Entities.TYPE_EMBEDDED))
-                .filter(statement -> ! statement.getPredicate().equals(Local.ORIGINAL_IDENTIFIER))
-                .collect(new ModelCollector());
 
-
-    }
-
-    private boolean isLiteralWithCommonLanguageTag(Statement statement) {
-        if(statement.getObject() instanceof Literal literal) {
-            if(literal.getLanguage().isPresent()) {
-                return literal.getLanguage().map(lang -> lang.startsWith("en") || lang.startsWith("de") || lang.startsWith("fr") || lang.startsWith("es")).orElse(Boolean.FALSE);
-            } else return true;
-        }
-        return true;
-    }
-
-    /** for navigational purposes, we convert the embedded objects (as long as there's only one fragment pointing to it) to an embedded object */
-    private Model convertCompositesToBlankNodes(Model statements) {
-        Set<Resource> subjects = statements.filter(null, null, Local.Entities.TYPE_EMBEDDED).subjects();
-        // FIXME: check if multiple pointers to embedded (is inconsistent, but can happen)
-        Map<Resource, BNode> mappings = subjects.stream().collect(Collectors.toMap(str -> str, str -> Values.bnode()));
 
 
 
-        ModelBuilder modelBuilder = new ModelBuilder();
-        statements.forEach(statement -> {
-            if(subjects.contains(statement.getSubject())) {
-                modelBuilder.add(mappings.get(statement.getSubject()), statement.getPredicate(), statement.getObject());
-            } else if(statement.getObject().isResource() && subjects.contains((Resource) statement.getObject())) {
-                modelBuilder.add(statement.getSubject(), statement.getPredicate(), mappings.get((Resource) statement.getObject()));
-            } else {
-                modelBuilder.add(statement.getSubject(), statement.getPredicate(), statement.getObject());
-            }
-        });
-        return modelBuilder.build();
+    /** for navigational purposes, we convert the embedded objects (as long as there's only one fragment pointing to it) to an embedded object */
 
-
-    }
 
     private void handleStatement(Statement st, RDFWriter writer, URI requestURI) {
 
