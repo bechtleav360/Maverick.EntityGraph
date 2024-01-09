@@ -13,7 +13,7 @@
  *
  */
 
-package org.av360.maverick.graph.feature.navigation.controller.encoder;
+package org.av360.maverick.graph.services.util.io;
 
 import com.apicatalog.rdf.*;
 

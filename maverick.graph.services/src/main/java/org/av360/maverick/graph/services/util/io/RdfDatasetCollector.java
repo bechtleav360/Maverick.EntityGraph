@@ -13,7 +13,7 @@
  *
  */
 
-package org.av360.maverick.graph.feature.navigation.services.rio;
+package org.av360.maverick.graph.services.util.io;
 
 import com.apicatalog.rdf.RdfNQuad;
 import com.apicatalog.rdf.RdfResource;
@@ -21,7 +21,6 @@ import com.apicatalog.rdf.RdfTriple;
 import com.apicatalog.rdf.RdfValue;
 import com.apicatalog.rdf.impl.DefaultRdfProvider;
 import com.apicatalog.rdf.spi.RdfProvider;
-import org.av360.maverick.graph.feature.navigation.controller.encoder.ExtendedRdfDataset;
 import org.eclipse.rdf4j.model.*;
 
 import java.util.EnumSet;
