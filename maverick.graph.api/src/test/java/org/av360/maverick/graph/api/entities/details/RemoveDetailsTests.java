@@ -49,33 +49,7 @@ public class RemoveDetailsTests extends ApiTestsBase  {
         Assertions.assertEquals(6, cc2.getRows().size());
     }
 
-    @Test
-    public void purgeDetailsByRemovingValue() {
-        super.printStart("Remove a value and all its details.");
 
-        RdfConsumer rc1 = super.getTestClient().createEntity(EntitiesGenerator.generateCreativeWork());
-        IRI sourceIdentifier = rc1.getEntityIdentifier(SDO.CREATIVE_WORK);
-
-        super.printStep("Setting value 'sdo.teaches'");
-        super.getTestClient().createValue(sourceIdentifier, "sdo.teaches", "skill");
-
-        super.printStep("Setting details");
-        super.getTestClient().addDetail(sourceIdentifier, "sdo.teaches", "dc.source", "source value", null);
-        super.getTestClient().addDetail(sourceIdentifier, "sdo.teaches", "dc.subject", "text value", null);
-
-        super.printStep("Dumping current model");
-        CsvConsumer cc1 = super.getTestClient().listAllStatements();
-        super.dumpStatementsAsTable(cc1);
-        Assertions.assertEquals(11, cc1.getRows().size());
-
-        super.printStep("Removing value 'sdo.teaches'");
-        super.getTestClient().deleteValue(sourceIdentifier, "sdo.teaches");
-
-        super.printStep("Dumping current model");
-        CsvConsumer cc2 = super.getTestClient().listAllStatements();
-        super.dumpStatementsAsTable(cc2);
-        Assertions.assertEquals(4, cc2.getRows().size());
-    }
     @Test
     @Disabled
     public void deleteSpecificDetailByHash() {

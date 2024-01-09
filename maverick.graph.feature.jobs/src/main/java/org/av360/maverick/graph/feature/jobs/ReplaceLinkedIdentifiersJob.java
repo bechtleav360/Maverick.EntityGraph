@@ -130,7 +130,7 @@ public class ReplaceLinkedIdentifiersJob implements ScheduledJob {
 
     private Mono<Transaction> deleteStatements(StatementsBag statementsBag, SessionContext ctx) {
         ArrayList<Statement> statements = new ArrayList<>(statementsBag.removableStatements());
-        return Mono.just(statementsBag.transaction().forRemoval(statements));
+        return Mono.just(statementsBag.transaction().removes(statements));
     }
 
     private Mono<StatementsBag> insertStatements(StatementsBag bag, SessionContext ctx) {

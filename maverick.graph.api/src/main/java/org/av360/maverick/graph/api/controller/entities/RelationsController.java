@@ -25,14 +25,14 @@ import javax.annotation.Nullable;
 public class RelationsController extends AbstractController implements RelationsAPI {
 
 
-    protected final ValueServices values;
+    protected final ValueServices valueServices;
 
-    protected final EntityServices entities;
+    protected final EntityServices entityServices;
     protected final SchemaServices schemaServices;
 
-    public RelationsController(ValueServices values, EntityServices entities, SchemaServices schemaServices) {
-        this.values = values;
-        this.entities = entities;
+    public RelationsController(ValueServices valueServices, EntityServices entityServices, SchemaServices schemaServices) {
+        this.valueServices = valueServices;
+        this.entityServices = entityServices;
         this.schemaServices = schemaServices;
     }
 
@@ -44,7 +44,7 @@ public class RelationsController extends AbstractController implements Relations
     @Override
     public Flux<AnnotatedStatement> getLinksByType(@PathVariable String key, @PathVariable String prefixedProperty) {
         return super.acquireContext()
-                .flatMap(ctx -> this.values.listRelations(key, prefixedProperty, ctx))
+                .flatMap(ctx -> this.valueServices.listRelations(key, prefixedProperty, ctx))
                 .flatMapIterable(Triples::asStatements)
                 .doOnSubscribe((Subscription s) -> {
                     if (log.isDebugEnabled())
@@ -56,7 +56,7 @@ public class RelationsController extends AbstractController implements Relations
     @Override
     public Flux<AnnotatedStatement> insert(@PathVariable String key, @PathVariable String prefixedProperty, @PathVariable String targetKey, @Nullable @RequestParam(required = false) Boolean replace) {
         return super.acquireContext()
-                .flatMap(ctx -> this.values.insertLink(key, prefixedProperty, targetKey, replace, ctx))
+                .flatMap(ctx -> this.valueServices.insertLink(key, prefixedProperty, targetKey, replace, ctx))
                 .flatMapIterable(Triples::asStatements)
                 .doOnSubscribe((Subscription s) -> {
                     if (log.isDebugEnabled())
@@ -69,7 +69,7 @@ public class RelationsController extends AbstractController implements Relations
     @Override
     public Flux<AnnotatedStatement> deleteLink(@PathVariable String key, @PathVariable String prefixedProperty, @PathVariable String targetKey) {
         return super.acquireContext()
-                .flatMap(ctx -> this.values.removeLink(key, prefixedProperty, targetKey, ctx))
+                .flatMap(ctx -> this.valueServices.removeLink(key, prefixedProperty, targetKey, ctx))
                 .flatMap(Mono::just)
                 .flatMapIterable(Triples::asStatements)
                 .doOnSubscribe(s -> {

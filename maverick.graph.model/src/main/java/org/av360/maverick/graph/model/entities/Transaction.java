@@ -99,13 +99,8 @@ public interface Transaction extends Triples {
 
     }
 
-    default Transaction forRemoval(Statement statement) {
-        return this.forRemoval(List.of(statement));
-    }
 
-    default Transaction forRemoval(Collection<Statement> statements) {
-        return this.affects(statements).removes(statements);
-    }
+
 
     default Transaction forInsert(Statement statement) {
         return this.forInsert(List.of(statement));
@@ -116,5 +111,14 @@ public interface Transaction extends Triples {
     }
 
 
+    default Transaction removes(Statement statement) {
+        return this.removes(List.of(statement));
+    }
+    default Transaction removes(IRI subject, IRI predicate, Value value) {
+        return this.removes(Statements.statement(subject, predicate, value, null));
+    }
 
+    default Transaction removes(IRI subject, IRI predicate, Value value, Resource context) {
+        return this.removes(Statements.statement(subject, predicate, value, context));
+    }
 }

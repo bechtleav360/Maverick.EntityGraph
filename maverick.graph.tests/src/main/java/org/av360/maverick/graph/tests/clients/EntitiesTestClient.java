@@ -319,6 +319,8 @@ public class EntitiesTestClient {
 
 
 
+
+
     public WebTestClient.ResponseSpec addDetail(IRI entityIdentifier, String valueProperty, String detailProperty, String detailValue, @Nullable RdfConsumer consumer) {
         WebTestClient.ResponseSpec exchange = webClient.post()
                 .uri(uriBuilder -> uriBuilder

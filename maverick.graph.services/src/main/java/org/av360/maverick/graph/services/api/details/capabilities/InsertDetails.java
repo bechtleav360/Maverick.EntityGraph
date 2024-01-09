@@ -1,4 +1,19 @@
-package org.av360.maverick.graph.services.impl.values;
+/*
+ * Copyright (c) 2024.
+ *
+ *  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the
+ *  European Commission - subsequent versions of the EUPL (the "Licence");
+ *
+ *  You may not use this work except in compliance with the Licence.
+ *  You may obtain a copy of the Licence at:
+ *
+ *  https://joinup.ec.europa.eu/software/page/eupl5
+ *
+ *  Unless required by applicable law or agreed to in writing, software distributed under the Licence is distributed on an "AS IS" basis,  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  See the Licence for the specific language governing permissions and limitations under the Licence.
+ *
+ */
+
+package org.av360.maverick.graph.services.api.details.capabilities;
 
 import jakarta.annotation.Nullable;
 import org.av360.maverick.graph.model.context.SessionContext;
@@ -7,6 +22,7 @@ import org.av360.maverick.graph.model.errors.InconsistentModelException;
 import org.av360.maverick.graph.model.errors.requests.InvalidEntityUpdate;
 import org.av360.maverick.graph.model.errors.store.InvalidEntityModelException;
 import org.av360.maverick.graph.model.events.DetailInsertedEvent;
+import org.av360.maverick.graph.services.api.Api;
 import org.av360.maverick.graph.store.rdf.fragments.RdfFragment;
 import org.av360.maverick.graph.store.rdf.fragments.RdfTransaction;
 import org.eclipse.rdf4j.model.IRI;
@@ -21,17 +37,18 @@ import java.util.Objects;
 import java.util.Optional;
 
 public class InsertDetails {
-    private final ValueServicesImpl ctrl;
+    private final Api api;
 
-    public InsertDetails(ValueServicesImpl valueServices) {
-        this.ctrl = valueServices;
+    public InsertDetails(Api valueServices) {
+        this.api = valueServices;
     }
 
     public Mono<Transaction> insert(String entityKey, String prefixedValueKey, String prefixedDetailKey, String value, @Nullable String valueIdentifier, SessionContext ctx) {
         return Mono.zip(
-                        ctrl.identifierServices.asLocalIRI(entityKey, ctx.getEnvironment()).flatMap(entityIdentifier -> ctrl.entityServices.get(entityIdentifier, true, 0, ctx)),
-                        ctrl.schemaServices.resolvePrefixedName(prefixedValueKey),
-                        ctrl.schemaServices.resolvePrefixedName(prefixedDetailKey)
+                        api.identifiers().localIdentifiers().asLocalIRI(entityKey, ctx.getEnvironment())
+                                .flatMap(entityIdentifier -> api.entities().select().get(entityIdentifier, true, 0, ctx)),
+                        api.identifiers().prefixes().resolvePrefixedName(prefixedValueKey),
+                        api.identifiers().prefixes().resolvePrefixedName(prefixedDetailKey)
                 ).flatMap(tuple -> {
                     RdfFragment entity = tuple.getT1();
                     IRI valuePredicate = tuple.getT2();
@@ -44,7 +61,7 @@ public class InsertDetails {
                     }
                 })
                 .doOnSuccess(trx -> {
-                    ctrl.eventPublisher.publishEvent(new DetailInsertedEvent(trx));
+                    api.publishEvent(new DetailInsertedEvent(trx));
                 });
 
 
@@ -53,7 +70,7 @@ public class InsertDetails {
     private Mono<Transaction> insertWithHash(RdfFragment entity, IRI valuePredicate, IRI detailPredicate, String value, String hash, SessionContext ctx) {
         return this.buildDetailStatementForValueWithHash(entity, valuePredicate, detailPredicate, value, hash)
                 .map(statement -> new RdfTransaction().forInsert(statement))
-                .flatMap(trx -> ctrl.entityServices.getStore(ctx).asCommitable().commit(trx, ctx.getEnvironment()));
+                .flatMap(trx -> api.entities().commit(trx, ctx.getEnvironment()));
     }
 
 
@@ -71,8 +88,8 @@ public class InsertDetails {
 
             Transaction trx = new RdfTransaction()
                     .forInsert(insertStatement)
-                    .forRemoval(entity.listStatements(triple, detailPredicate, null));
-            return ctrl.entityServices.getStore(ctx).asCommitable().commit(trx, ctx.getEnvironment());
+                    .removes(entity.listStatements(triple, detailPredicate, null));
+            return api.entities().commit(trx, ctx.getEnvironment());
 
 
         } catch (InconsistentModelException e) {
@@ -82,7 +99,8 @@ public class InsertDetails {
 
 
     Mono<Statement> buildDetailStatementForValueWithHash(RdfFragment entity, IRI valuePredicate, IRI detailPredicate, String value, String valueHash) {
-        Optional<Triple> requestedTriple = this.ctrl.readValues.findValueTripleByHash(entity, valuePredicate, valueHash);
+        Optional<Triple> requestedTriple =  this.api.values().read().findValueTripleByHash(entity, valuePredicate, valueHash);
+
         if (requestedTriple.isEmpty())
             return Mono.error(new InvalidEntityUpdate(entity.getIdentifier(), "No value exists in entity <%s> for predicate <%s> and hash '%s'".formatted(entity.getIdentifier(), valuePredicate, valueHash)));
 
@@ -92,7 +110,7 @@ public class InsertDetails {
 
     Mono<Statement> buildDetailStatementForSingleValue(RdfFragment entity, IRI valuePredicate, IRI detailPredicate) {
         try {
-            Optional<Triple> requestedTriple = this.ctrl.readValues.findSingleValueTriple(entity, valuePredicate);
+            Optional<Triple> requestedTriple =  this.api.values().read().findSingleValueTriple(entity, valuePredicate);
             if (requestedTriple.isEmpty())
                 return Mono.error(new InvalidEntityUpdate(entity.getIdentifier(), "No value exists in entity <%s> for predicate <%s>".formatted(entity.getIdentifier(), valuePredicate)));
 

@@ -1,4 +1,19 @@
-package org.av360.maverick.graph.services.impl.values;
+/*
+ * Copyright (c) 2024.
+ *
+ *  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the
+ *  European Commission - subsequent versions of the EUPL (the "Licence");
+ *
+ *  You may not use this work except in compliance with the Licence.
+ *  You may obtain a copy of the Licence at:
+ *
+ *  https://joinup.ec.europa.eu/software/page/eupl5
+ *
+ *  Unless required by applicable law or agreed to in writing, software distributed under the Licence is distributed on an "AS IS" basis,  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  See the Licence for the specific language governing permissions and limitations under the Licence.
+ *
+ */
+
+package org.av360.maverick.graph.services.api.values.capabilities;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -6,6 +21,8 @@ import org.av360.maverick.graph.model.context.SessionContext;
 import org.av360.maverick.graph.model.entities.Transaction;
 import org.av360.maverick.graph.model.errors.requests.InvalidEntityUpdate;
 import org.av360.maverick.graph.model.events.ValueRemovedEvent;
+import org.av360.maverick.graph.services.api.Api;
+import org.av360.maverick.graph.services.api.values.ValuesUtils;
 import org.av360.maverick.graph.store.rdf.fragments.RdfTransaction;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
@@ -19,18 +36,17 @@ import java.util.List;
 
 @Slf4j(topic = "graph.svc.value.remove")
 public class DeleteValue {
-    private final ValueServicesImpl ctrl;
+    private final Api api;
 
 
-    public DeleteValue(ValueServicesImpl valueServices) {
-
-        this.ctrl = valueServices;
+    public DeleteValue(Api ctrl) {
+        this.api = ctrl;
     }
 
     public Mono<Transaction> remove(String entityKey, String predicate, String languageTag, String valueIdentifier, SessionContext ctx) {
         return Mono.zip(
-                        ctrl.entityServices.resolveAndVerify(entityKey, ctx),
-                        ctrl.schemaServices.resolvePrefixedName(predicate)
+                        api.entities().select().resolveAndVerify(entityKey, ctx),
+                        api.identifiers().prefixes().resolvePrefixedName(predicate)
                 )
                 .switchIfEmpty(Mono.error(new InvalidEntityUpdate(entityKey, "Failed to remove literal")))
                 .flatMap(tuple -> this.remove(tuple.getT1(), tuple.getT2(), languageTag, valueIdentifier, ctx));
@@ -39,10 +55,11 @@ public class DeleteValue {
     public Mono<Transaction> remove(IRI entityIdentifier, IRI predicate, String languageTag, String valueIdentifier, SessionContext ctx) {
 
         return this.removeValueStatements(entityIdentifier, predicate, languageTag, valueIdentifier, new RdfTransaction(), ctx)
-                .flatMap(trx -> ctrl.deleteDetails.removeDetailStatements(trx, ctx))
-                .flatMap(trx -> ctrl.entityServices.getStore(ctx).asCommitable().commit(trx, ctx.getEnvironment()))
+                .flatMap(trx -> api.details().removes().removeAllDetails(entityIdentifier, predicate, languageTag, valueIdentifier, trx, ctx))
+                .flatMap(trx -> api.entities().getStore().asCommitable().commit(trx, ctx.getEnvironment()))
+                //.flatMap(trx -> ser.entityServices.getStore(ctx).asCommitable().commit(trx, ctx.getEnvironment()))
                 .doOnSuccess(trx -> {
-                    ctrl.eventPublisher.publishEvent(new ValueRemovedEvent(trx));
+                    api.publishEvent(new ValueRemovedEvent(trx));
                 });
     }
 
@@ -51,7 +68,7 @@ public class DeleteValue {
      * Deletes a value with a new transaction. Fails if no entity exists with the given subject
      */
     private Mono<Transaction> removeValueStatements(IRI entityIdentifier, IRI predicate, @Nullable String languageTag, @Nullable String valueIdentifier, Transaction transaction, SessionContext ctx) {
-        return ctrl.entityServices.getStore(ctx).asStatementsAware().listStatements(entityIdentifier, predicate, null, ctx.getEnvironment())
+        return api.entities().getStore().asStatementsAware().listStatements(entityIdentifier, predicate, null, ctx.getEnvironment())
                 .flatMap(statements -> {
                     if (statements.size() > 1) {
                         List<Statement> statementsToRemove = new ArrayList<>();
@@ -65,7 +82,7 @@ public class DeleteValue {
                         for (Statement st : statements) {
                             Value object = st.getObject();
                             if (StringUtils.isNotBlank(valueIdentifier)) {
-                                String hash = ctrl.readValues.generateHashForValue(predicate.stringValue(), object.stringValue());
+                                String hash = ValuesUtils.generateHashForValue(predicate.stringValue(), object.stringValue());
                                 if (hash.equalsIgnoreCase(valueIdentifier)) {
                                     statementsToRemove.add(st);
                                 }
@@ -92,7 +109,6 @@ public class DeleteValue {
                         return Mono.just(transaction.removes(statements));
                     }
 
-                })
-               ;
+                });
     }
 }

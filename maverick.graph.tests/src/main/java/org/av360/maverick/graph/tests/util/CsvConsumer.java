@@ -4,6 +4,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.Assertions;
 import org.springframework.test.web.reactive.server.EntityExchangeResult;
 
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -33,6 +35,10 @@ public class CsvConsumer implements Consumer<EntityExchangeResult<byte[]>> {
         });
         rows.forEach(row -> {
             row.values().forEach(value -> {
+                if(value.startsWith("_:")) {
+                    value = this.generateHash(value);
+                }
+
                 value = StringUtils.abbreviateMiddle(value, "...", 40);
                 result.append(StringUtils.rightPad(value, 40)).append(" | ");
             });
@@ -41,6 +47,32 @@ public class CsvConsumer implements Consumer<EntityExchangeResult<byte[]>> {
 
         return result.toString();
     }
+
+    private String generateHash(String input)  {
+        MessageDigest digest = null;
+        try {
+            digest = MessageDigest.getInstance("SHA-256");
+            byte[] encodedhash = digest.digest(input.getBytes());
+            return bytesToHex(encodedhash);
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException(e);
+        }
+
+    }
+
+    private String bytesToHex(byte[] hash) {
+        StringBuilder hexString = new StringBuilder(2 * hash.length);
+        for (int i = 0; i < hash.length; i++) {
+            String hex = Integer.toHexString(0xff & hash[i]);
+            if (hex.length() == 1) {
+                hexString.append('0');
+            }
+            hexString.append(hex);
+        }
+        return hexString.toString();
+    }
+
+
 
     public static String cutStringMiddle(String input) {
         int length = input.length();

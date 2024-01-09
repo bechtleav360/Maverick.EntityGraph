@@ -13,6 +13,7 @@ import org.av360.maverick.graph.model.security.Authorities;
 import org.av360.maverick.graph.model.vocabulary.Local;
 import org.av360.maverick.graph.model.vocabulary.SDO;
 import org.av360.maverick.graph.services.*;
+import org.av360.maverick.graph.services.api.Api;
 import org.av360.maverick.graph.store.rdf.fragments.RdfFragment;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
@@ -52,12 +53,15 @@ public class FileServices {
     private final IdentifierServices identifierServices;
     private final DefaultDataBufferFactory dataBufferFactory;
 
-    public FileServices(ContentLocationResolverService filePathResolver, ValueServices valueServices, EntityServices entityServices, SchemaServices schemaServices, IdentifierServices identifierServices) {
+    private final Api api;
+
+    public FileServices(ContentLocationResolverService filePathResolver, ValueServices valueServices, EntityServices entityServices, SchemaServices schemaServices, IdentifierServices identifierServices, Api api) {
         this.filePathResolver = filePathResolver;
         this.valueServices = valueServices;
         this.entityServices = entityServices;
         this.schemaServices = schemaServices;
         this.identifierServices = identifierServices;
+        this.api = api;
 
         dataBufferFactory = new DefaultDataBufferFactory();
     }
@@ -65,11 +69,11 @@ public class FileServices {
     @RequiresPrivilege(Authorities.CONTRIBUTOR_VALUE)
     @OnRepositoryType(RepositoryType.ENTITIES)
     public Mono<Transaction> store(String entityKey, Flux<DataBuffer> bytes, String prefixedPoperty, String filename, @Nullable String language, SessionContext ctx) {
-        return entityServices.resolveAndVerify(entityKey, ctx)
+        return this.api.entities().select().resolveAndVerify(entityKey, ctx)
                 .flatMap(entityId -> Mono.zip(
                         Mono.just(new LocalStorageDetails().setEntityId(entityId).setFilename(filename).setLanguage(language)),
                         identifierServices.asReproducibleLocalIRI(Local.Entities.NS, ctx.getEnvironment(), entityId.getLocalName(), filename),
-                        schemaServices.resolvePrefixedName(prefixedPoperty)
+                        this.api.identifiers().prefixes().resolvePrefixedName(prefixedPoperty)
                 ))
                 .flatMap(pair -> Mono.zip(
                         Mono.just(pair.getT1().setFileId(pair.getT2()).setProperty(pair.getT3())),
@@ -115,7 +119,7 @@ public class FileServices {
     @RequiresPrivilege(Authorities.READER_VALUE)
     @OnRepositoryType(RepositoryType.ENTITIES)
     public Mono<FileAccessResult> read(String contentKey, SessionContext ctx) {
-        return entityServices.resolveAndVerify(contentKey, ctx)
+        return this.api.entities().select().resolveAndVerify(contentKey, ctx)
                 .flatMap(contentId -> Mono.zip(
                         this.entityServices.get(contentId, ctx),
                         Mono.just(contentId)

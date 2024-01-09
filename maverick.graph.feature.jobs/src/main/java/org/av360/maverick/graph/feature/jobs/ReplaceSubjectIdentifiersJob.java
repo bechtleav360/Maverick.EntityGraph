@@ -162,7 +162,7 @@ public class ReplaceSubjectIdentifiersJob implements ScheduledJob {
     }
 
     private Mono<Transaction> deleteStatements(StatementsBag statementsBag, SessionContext ctx) {
-        return Mono.just(statementsBag.transaction().forRemoval(statementsBag.removableStatements()));
+        return Mono.just(statementsBag.transaction().removes(statementsBag.removableStatements()));
     }
 
     private Mono<StatementsBag> insertStatements(StatementsBag statementsBag, SessionContext ctx) {

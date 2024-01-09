@@ -183,7 +183,7 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
                 .filter(opt -> opt.get().isIRI())
                 .map(opt -> (IRI) opt.get());
         return nodesToDelete.flatMap(configNode -> this.store.listStatements(configNode, null, null, ctx.getEnvironment()))
-                .map(statements -> new RdfTransaction().forRemoval(statements))
+                .map(statements -> new RdfTransaction().removes(statements))
                 .flatMap(transaction -> this.store.commit(transaction, ctx.getEnvironment()))
                 .then()
                 .doOnSuccess(res -> {
@@ -217,7 +217,7 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
                 .flatMap(configurationItem -> this.deleteConfigurationItem(application, configurationItem.key(), context)).collectList()
                 .doOnSuccess(suc -> log.trace("Deleted all configuration item statements for application with label '{}'", application.label()))
                 .then( this.store.listStatements(application.iri(), null, null, context.getEnvironment()))
-                .map(statements -> new RdfTransaction().forRemoval(statements))
+                .map(statements -> new RdfTransaction().removes(statements))
                 .flatMap(trx -> this.store.asCommitable().commit(trx, context.getEnvironment()))
                 .doOnSuccess(suc -> log.trace("Deleted all application statements for application with label '{}'", application.label()))
                 .then()
