@@ -23,6 +23,7 @@ public class SchemaServicesImpl implements SchemaServices {
     }
 
     @Override
+    @Deprecated(forRemoval = true) // use services Api
     public Mono<IRI> resolvePrefixedName(String prefixedName) {
         String[] property = splitPrefixedIdentifier(prefixedName);
         return this.getNamespaceFor(property[0])
@@ -89,6 +90,7 @@ public class SchemaServicesImpl implements SchemaServices {
         ;
     }
 
+    @Deprecated(forRemoval = true)
     protected String[] splitPrefixedIdentifier(String prefixedKey) {
         String[] property = prefixedKey.split("\\.");
         Assert.isTrue(property.length == 2, "Failed to extract prefix and label from path parameter " + prefixedKey);

@@ -118,8 +118,6 @@ public interface EntityServices {
 
     Mono<Boolean> contains(IRI entityIri, SessionContext ctx);
 
-    Mono<IRI> resolveAndVerify(String entityKey, SessionContext ctx);
-
     IndividualsStore getStore(SessionContext ctx);
 
     Mono<Transaction> importFile(org.springframework.core.io.Resource resource, RDFFormat format, SessionContext ctx);

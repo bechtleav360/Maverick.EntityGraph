@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023.
+ * Copyright (c) 2023-2024.
  *
  *  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the
  *  European Commission - subsequent versions of the EUPL (the "Licence");
@@ -13,12 +13,13 @@
  *
  */
 
-package org.av360.maverick.graph.services.impl.values;
+package org.av360.maverick.graph.services.api.details.capabilities;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.av360.maverick.graph.model.context.SessionContext;
 import org.av360.maverick.graph.model.errors.requests.DetailNotFound;
 import org.av360.maverick.graph.model.vocabulary.Details;
+import org.av360.maverick.graph.services.api.Api;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Statement;
@@ -29,15 +30,15 @@ import reactor.core.publisher.Flux;
 import java.util.Optional;
 
 public class ReadDetails {
-    private final ValueServicesImpl ctrl;
+    private final Api services;
 
-    public ReadDetails(ValueServicesImpl valueServices) {
+    public ReadDetails(Api ctrl) {
 
-        this.ctrl = valueServices;
+        this.services = ctrl;
     }
 
     public Flux<Pair<IRI, Value>> listDetails(String entityKey, String prefixedProperty, String valueIdentifier, SessionContext ctx) {
-        return this.ctrl.listValues(entityKey, prefixedProperty, ctx)
+        return this.services.values().read().listValues(entityKey, prefixedProperty, ctx)
                 .flatMapMany(triples -> {
                     Literal valueIdentifierLiteral = Values.literal(valueIdentifier);
 

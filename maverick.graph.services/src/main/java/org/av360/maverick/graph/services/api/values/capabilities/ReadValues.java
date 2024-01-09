@@ -1,10 +1,27 @@
-package org.av360.maverick.graph.services.impl.values;
+/*
+ * Copyright (c) 2024.
+ *
+ *  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the
+ *  European Commission - subsequent versions of the EUPL (the "Licence");
+ *
+ *  You may not use this work except in compliance with the Licence.
+ *  You may obtain a copy of the Licence at:
+ *
+ *  https://joinup.ec.europa.eu/software/page/eupl5
+ *
+ *  Unless required by applicable law or agreed to in writing, software distributed under the Licence is distributed on an "AS IS" basis,  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  See the Licence for the specific language governing permissions and limitations under the Licence.
+ *
+ */
+
+package org.av360.maverick.graph.services.api.values.capabilities;
 
 import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.model.context.SessionContext;
 import org.av360.maverick.graph.model.errors.store.InvalidEntityModelException;
 import org.av360.maverick.graph.model.rdf.Triples;
 import org.av360.maverick.graph.model.vocabulary.Details;
+import org.av360.maverick.graph.services.api.Api;
+import org.av360.maverick.graph.services.api.values.ValuesUtils;
 import org.av360.maverick.graph.store.rdf.fragments.RdfFragment;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
@@ -14,9 +31,6 @@ import org.eclipse.rdf4j.model.util.Values;
 import reactor.core.publisher.Mono;
 
 import javax.annotation.Nullable;
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
@@ -26,23 +40,24 @@ import java.util.Optional;
 public class ReadValues {
 
 
-    private final ValueServicesImpl valueServices;
+    private final Api api;
 
 
-    public ReadValues(ValueServicesImpl valueServices) {
+    public ReadValues(Api api) {
 
-        this.valueServices = valueServices;
+        this.api = api;
     }
 
     public Mono<Triples> listValues(String entityKey, @Nullable String prefixedValuePredicate, SessionContext ctx) {
-        return valueServices.identifierServices.asLocalIRI(entityKey, ctx.getEnvironment())
-                .flatMap(entityIdentifier -> valueServices.entityServices.get(entityIdentifier, true, 0, ctx))
+
+        return api.identifiers().localIdentifiers().asLocalIRI(entityKey, ctx.getEnvironment())
+                .flatMap(entityIdentifier -> api.entities().select().get(entityIdentifier, true, 0, ctx))
                 .flatMap(entity -> {
                     if(Objects.isNull(prefixedValuePredicate)) {
                         entity.reduce(statement -> statement.getObject().isLiteral());
                         return this.insertValueIdentifiers(entity);
                     } else {
-                        return this.valueServices.schemaServices.resolvePrefixedName(prefixedValuePredicate)
+                        return this.api.identifiers().prefixes().resolvePrefixedName(prefixedValuePredicate)
                                 .map(valuePredicate -> entity.filter(st -> {
                                     if(st.getSubject().isTriple()) {
                                         // include details for the given value predicate
@@ -67,7 +82,7 @@ public class ReadValues {
                 .stream().filter(statement -> statement.getSubject().isIRI())
                 .forEach(statement -> {
                     Triple triple = Values.triple(statement);
-                    String hash = this.generateHashForValue(statement.getPredicate().stringValue(), statement.getObject().stringValue());
+                    String hash = ValuesUtils.generateHashForValue(statement.getPredicate().stringValue(), statement.getObject().stringValue());
                     entity.getModel().add(triple, Details.HASH, Values.literal(hash));
                 });
         return Mono.just(entity);
@@ -76,7 +91,7 @@ public class ReadValues {
 
 
 
-    Optional<Triple> findValueTripleByLanguageTag(RdfFragment entity, IRI valuePredicate, String languageTag) {
+    public Optional<Triple> findValueTripleByLanguageTag(RdfFragment entity, IRI valuePredicate, String languageTag) {
         return entity.streamValues(entity.getIdentifier(), valuePredicate)
                 .filter(Value::isLiteral)
                 .filter(literal -> ((Literal) literal).getLanguage().map(tag -> tag.equalsIgnoreCase(languageTag)).orElseGet(() -> Boolean.FALSE))
@@ -86,17 +101,17 @@ public class ReadValues {
     }
 
 
-    Optional<Triple> findValueTripleByHash(RdfFragment entity, IRI valuePredicate, String hash) {
+    public Optional<Triple> findValueTripleByHash(RdfFragment entity, IRI valuePredicate, String hash) {
         return entity.streamValues(entity.getIdentifier(), valuePredicate)
                 .filter(literal -> {
-                    String generatedHash = this.generateHashForValue(valuePredicate.stringValue(), literal.stringValue());
+                    String generatedHash = ValuesUtils.generateHashForValue(valuePredicate.stringValue(), literal.stringValue());
                     return hash.equalsIgnoreCase(generatedHash);
                 })
                 .map(requestedLiteral -> Values.triple(entity.getIdentifier(), valuePredicate, requestedLiteral))
                 .findFirst();
     }
 
-    Optional<Triple> findSingleValueTriple(RdfFragment entity, IRI valuePredicate) throws InvalidEntityModelException {
+    public Optional<Triple> findSingleValueTriple(RdfFragment entity, IRI valuePredicate) throws InvalidEntityModelException {
         List<Triple> list = entity.streamValues(entity.getIdentifier(), valuePredicate)
                 .filter(Value::isLiteral)
                 .map(requestedLiteral -> Values.triple(entity.getIdentifier(), valuePredicate, requestedLiteral))
@@ -108,28 +123,7 @@ public class ReadValues {
 
 
 
-    String generateHashForValue(String predicate, String value) {
-        try {
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            byte[] hash = digest.digest((predicate+value).getBytes(StandardCharsets.UTF_8));
-            StringBuilder hexString = new StringBuilder();
 
-            for (byte b : hash) {
-                String hex = Integer.toHexString(0xff & b);
-                if (hex.length() == 1) {
-                    hexString.append('0');
-                }
-                hexString.append(hex);
-            }
-
-
-
-            return hexString.toString();
-        } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
-            return null;
-        }
-    }
 
 
 }
