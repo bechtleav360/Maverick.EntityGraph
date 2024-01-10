@@ -1,7 +1,7 @@
 package org.av360.maverick.graph.feature.jobs.schedulers;
 
 import lombok.extern.slf4j.Slf4j;
-import org.av360.maverick.graph.feature.jobs.AssignInternalTypesJob;
+import org.av360.maverick.graph.feature.jobs.jobs.AssignInternalTypesJob;
 import org.av360.maverick.graph.model.context.SessionContext;
 import org.av360.maverick.graph.model.events.JobScheduledEvent;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
