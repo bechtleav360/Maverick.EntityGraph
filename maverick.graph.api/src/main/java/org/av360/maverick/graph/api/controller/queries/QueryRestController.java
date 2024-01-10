@@ -1,6 +1,5 @@
 package org.av360.maverick.graph.api.controller.queries;
 
-import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.api.controller.AbstractController;
 import org.av360.maverick.graph.api.controller.QueryAPI;
@@ -8,14 +7,12 @@ import org.av360.maverick.graph.model.enums.RepositoryType;
 import org.av360.maverick.graph.model.rdf.AnnotatedStatement;
 import org.av360.maverick.graph.services.QueryServices;
 import org.eclipse.rdf4j.query.BindingSet;
-import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Flux;
 
 @RestController
-@RequestMapping(path = "/api/query")
+
 @Slf4j(topic = "graph.ctrl.queries")
-@SecurityRequirement(name = "api_key")
 public class QueryRestController extends AbstractController implements QueryAPI {
     protected final QueryServices queryServices;
 

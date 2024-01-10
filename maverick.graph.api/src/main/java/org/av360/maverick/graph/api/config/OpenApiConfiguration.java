@@ -69,10 +69,31 @@ public class OpenApiConfiguration {
 
     @Bean("QueryApiDefinitionBuilder")
     public GroupedOpenApi.Builder queryAPIBuilder(@Value("${info.app.version:unknown}") String version) {
+        String description = """
+                This Web API enables the execution of SPARQL queries, specifically tailored for SELECT and CONSTRUCT types, allowing users to interact with and retrieve data from the repositories.
+                                
+                #### Supported Query Types
+                
+                `SELECT`: Retrieves and lists data based on specified criteria.
+                
+                `CONSTRUCT`: Constructs new RDF graphs from existing dataset data.
+                                
+                #### Result Encoding
+                All results are returned in Unicode encoding, ensuring broad compatibility with international characters and symbols. 
+                Make sure you attach the correct encoding ("text/csv; charset=utf-8") to your Accept Header. 
+                                
+                #### Query Limitations
+                Users should respect the imposed query limits to ensure service stability and responsiveness.
+                Overly complex or large queries may be restricted to maintain system performance.
+                                
+                """;
+
         return GroupedOpenApi.builder()
                 .group("Query API")
                 .addOpenApiCustomizer(openApi -> {
-                    openApi.info(new Info().title("Query Service API").description("API to run sparql queries.").version(version));
+                    openApi.info(new Info()
+                            .title("Query Service API")
+                            .description(description).version(version));
                 })
                 .pathsToMatch("/api/query/**");
     }
