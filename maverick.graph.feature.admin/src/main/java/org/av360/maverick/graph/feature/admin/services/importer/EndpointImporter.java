@@ -56,6 +56,7 @@ public class EndpointImporter {
     public Mono<Void> runImport(SessionContext ctx) {
 
         SPARQLRepository repository = new SPARQLRepository(endpoint);
+
         repository.setAdditionalHttpHeaders(headers);
 
         return this.importFromEndpoint(repository, 1000, 0, ctx);
@@ -83,6 +84,7 @@ public class EndpointImporter {
                         return vf.createStatement(subject, predicate, object);
                     } catch (Exception e) {
                         log.warn("Failed importing binding: {}", bindings);
+                        log.warn("Exception: {}", e.getMessage());
                         return null;
                     }
 
