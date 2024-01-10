@@ -57,9 +57,9 @@ public class JsonLdEncoder implements Encoder<Statement> {
                         log.trace("Setting up buffered statements stream for response with mimetype '{}'", mimeType != null ? mimeType.toString() : "unset");
                     }
                 })
-                .flatMap(statement -> Mono.zip(Mono.just(statement), ReactiveRequestUriContextHolder.getURI()))
-                .map(tuple -> EncoderFilters.resolveURLs(tuple.getT1(), tuple.getT2()))
                 .filter(EncoderFilters::filterInternalTypeStatements)
+                .flatMap(statement -> Mono.zip(Mono.just(statement), ReactiveRequestUriContextHolder.getURI()))
+                .map(EncoderFilters::resolveURLs)
                 .collect(RdfDatasetCollector.toDataset())
                 .flatMap(dataset -> Mono.zip(
                         Mono.just(dataset),

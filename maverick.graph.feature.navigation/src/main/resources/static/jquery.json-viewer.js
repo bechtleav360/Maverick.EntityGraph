@@ -18,12 +18,31 @@
      * This doesn't attempt to validate URLs, there's no use and syntax can be too complex
      * @return boolean
      */
-    function isUrl(string) {
+    function isExternalUrl(string) {
         var protocols = ['http', 'https', 'ftp', 'ftps'];
         for (var i = 0; i < protocols.length; ++i) {
             if (string.startsWith(protocols[i] + '://')) {
                 return true;
             }
+        }
+        return false;
+    }
+
+    function isApiUrl(string) {
+        const currentUrl = new URL(window.location.href);
+        const domain = currentUrl.origin;
+        return string.startsWith(domain+"/api");
+    }
+
+    function isNavigationUrl(string) {
+        const currentUrl = new URL(window.location.href);
+        const domain = currentUrl.origin;
+        return string.startsWith(domain+"/nav");
+    }
+
+    function isJsonLdKeyword(string) {
+        if (string.startsWith("@")) {
+            return true;
         }
         return false;
     }
@@ -50,8 +69,14 @@
             // Escape tags and quotes
             json = htmlEscape(json);
 
-            if (options.withLinks && isUrl(json)) {
-                html += '<a href="' + json + '" class="json-string" target="_blank">' + json + '</a>';
+            if (options.withLinks && isNavigationUrl(json)) {
+                html += '<a href="' + json + '" class="json-nav-url" target="_self">' + json + '</a>';
+            } else if (options.withLinks && isApiUrl(json)) {
+                html += '<a href="' + json + '" class="json-url" target="_blank">' + json + '</a>';
+            } else if (options.withLinks && isExternalUrl(json)) {
+                html += '<a href="' + json + '" class="json-url" target="_blank">' + json + '</a>';
+            } else if ( isJsonLdKeyword(json) ) {
+                html += '<a href="' + json + '" class="jsonld-keyword" target="_self">' + json + '</a>';
             } else {
                 // Escape double quotes in the rendered non-URL string.
                 json = json.replace(/&quot;/g, '\\&quot;');
