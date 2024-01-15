@@ -58,7 +58,7 @@ public class AnnotationsInjector {
             if(v.getValueType() == JsonValue.ValueType.OBJECT) {
                 result.add(k, this.expandObjectWithAnnotations(v.asJsonObject(), k, jsonObject, dataset));
             } else if(v.getValueType() == JsonValue.ValueType.ARRAY) {
-                result.add(k, this.expandArrayWithAnnotations(v.asJsonArray(), k, jsonObject, dataset));
+                result.add(k, this.expandArrayWithAnnotations(v.asJsonArray(), dataset));
             } else {
                 result.add(k,v);
             }
@@ -66,11 +66,11 @@ public class AnnotationsInjector {
         return result;
     }
 
-    private JsonArrayBuilder expandArrayWithAnnotations(JsonArray jsonArray, String parentField, JsonValue parentObject, ExtendedRdfDataset dataset) {
+    private JsonArrayBuilder expandArrayWithAnnotations(JsonArray jsonArray, ExtendedRdfDataset dataset) {
         JsonArrayBuilder result = JsonProvider.instance().createArrayBuilder();
         jsonArray.forEach(item -> {
             if(item.getValueType() == JsonValue.ValueType.ARRAY) {
-                result.add(this.expandArrayWithAnnotations(item.asJsonArray(), null, jsonArray, dataset));
+                result.add(this.expandArrayWithAnnotations(item.asJsonArray(), dataset));
             } else if(item.getValueType() == JsonValue.ValueType.OBJECT) {
                 result.add(this.expandObjectWithAnnotations(item.asJsonObject(), null, jsonArray, dataset));
             } else {
@@ -88,7 +88,7 @@ public class AnnotationsInjector {
 
         JsonObjectBuilder result = JsonProvider.instance().createObjectBuilder();
         jsonObject.forEach((k,v) -> {
-            if(k.equalsIgnoreCase("@id")) return;
+            // if(k.equalsIgnoreCase("@id")) return;
 
             String subject = ((JsonString) jsonObject.get("@id")).getString();
 
@@ -98,9 +98,7 @@ public class AnnotationsInjector {
                     JsonArrayBuilder arrayCopy = JsonProvider.instance().createArrayBuilder();
                     // we have to compare the values to identify which particular value was annotated
                     v.asJsonArray().forEach(arrayItem -> {
-                        if(arrayItem.getValueType() != JsonValue.ValueType.OBJECT || ! arrayItem.asJsonObject().containsKey("@value")) {
-                            arrayCopy.add(arrayItem);
-                        } else {
+                        if(arrayItem.getValueType() == JsonValue.ValueType.OBJECT && arrayItem.asJsonObject().containsKey("@value")) {
                             Set<ExtendedRdfDataset.Annotation> filteredAnnotations = annotations.stream()
                                     .filter(annotation -> arrayItem.asJsonObject().get("@value").getValueType() == JsonValue.ValueType.STRING && annotation.object().equalsIgnoreCase(((JsonString) arrayItem.asJsonObject().get("@value")).getString()))
                                     .collect(Collectors.toSet());
@@ -110,7 +108,21 @@ public class AnnotationsInjector {
                             } else {
                                 arrayCopy.add(arrayItem);
                             }
+                        } else  if(arrayItem.getValueType() == JsonValue.ValueType.OBJECT && arrayItem.asJsonObject().containsKey("@id")) {
+                            Set<ExtendedRdfDataset.Annotation> filteredAnnotations = annotations.stream()
+                                    .filter(annotation -> arrayItem.asJsonObject().get("@id").getValueType() == JsonValue.ValueType.STRING)
+                                    .filter(annotation -> annotation.object().equalsIgnoreCase(((JsonString) arrayItem.asJsonObject().get("@id")).getString()))
+                                    .collect(Collectors.toSet());
+                            if(! filteredAnnotations.isEmpty()) {
+                                JsonObjectBuilder jsonObjectBuilder = this.injectAnnotation(arrayItem, filteredAnnotations);
+                                arrayCopy.add(jsonObjectBuilder);
+                            } else {
+                                arrayCopy.add(arrayItem);
+                            }
+                        } else {
+                            arrayCopy.add(arrayItem);
                         }
+
                     });
                     result.add(k, arrayCopy);
                 } else if(v.getValueType() == JsonValue.ValueType.OBJECT) {

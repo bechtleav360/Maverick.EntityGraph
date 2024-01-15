@@ -15,6 +15,7 @@
 
 package org.av360.maverick.graph.feature.navigation.controller.encoder;
 
+import jakarta.annotation.Nullable;
 import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.api.config.ReactiveRequestUriContextHolder;
 import org.av360.maverick.graph.services.util.io.JsonLdWriter;
@@ -45,12 +46,12 @@ public class JsonLdEncoder implements Encoder<Statement> {
     }
 
     @Override
-    public boolean canEncode(ResolvableType elementType, MimeType mimeType) {
+    public boolean canEncode(ResolvableType elementType, @Nullable MimeType mimeType) {
         return mimeType != null && mimeType.equals(MimeTypeUtils.TEXT_HTML);
     }
 
     @Override
-    public Flux<DataBuffer> encode(Publisher<? extends Statement> inputStream, DataBufferFactory bufferFactory, ResolvableType elementType, MimeType mimeType, Map<String, Object> hints) {
+    public Flux<DataBuffer> encode(Publisher<? extends Statement> inputStream, DataBufferFactory bufferFactory, ResolvableType elementType, @Nullable MimeType mimeType, @Nullable Map<String, Object> hints) {
         return Flux.from(inputStream)
                 .doOnSubscribe(c -> {
                     if (log.isTraceEnabled()) {
@@ -66,7 +67,7 @@ public class JsonLdEncoder implements Encoder<Statement> {
                         ReactiveRequestUriContextHolder.getURI().map(uri -> UriComponentsBuilder.fromUri(uri).replacePath(uri.getPath()+"/context").build(Map.of()))
                 ))
                 .flatMap(JsonLdWriter::buildJsonObject)
-                .flatMap(JsonLdWriter::serializeJsonObject)
+                .flatMap(JsonLdWriter::serializeJsonValue)
                 .map(this::wrapInHtml)
                 .flatMapMany(serialized -> {
                     Flux<DataBuffer> dataBufferFlux = Flux.empty();

@@ -16,18 +16,15 @@
 package org.av360.maverick.graph.services.util.io;
 
 import com.apicatalog.jsonld.JsonLd;
-import com.apicatalog.jsonld.JsonLdEmbed;
 import com.apicatalog.jsonld.JsonLdError;
 import com.apicatalog.jsonld.JsonLdOptions;
 import com.apicatalog.jsonld.document.Document;
 import com.apicatalog.jsonld.document.JsonDocument;
 import com.apicatalog.jsonld.document.RdfDocument;
 import com.apicatalog.jsonld.json.JsonProvider;
-import jakarta.json.JsonArray;
-import jakarta.json.JsonObject;
-import jakarta.json.JsonWriter;
-import jakarta.json.JsonWriterFactory;
+import jakarta.json.*;
 import jakarta.json.stream.JsonGenerator;
+import lombok.extern.slf4j.Slf4j;
 import org.eclipse.rdf4j.model.Statement;
 import reactor.core.publisher.Mono;
 import reactor.util.function.Tuple2;
@@ -41,6 +38,7 @@ import java.util.Set;
 /**
  * Utility class which converts a Collection of RDF Statements into a compacted Json LD document
  */
+@Slf4j
 public class JsonLdWriter {
 
 
@@ -48,7 +46,7 @@ public class JsonLdWriter {
         return statements.stream().collect(RdfDatasetCollector.toDataset());
     }
 
-    public static Mono<String> serializeJsonObject(JsonObject object) {
+    public static Mono<String> serializeJsonValue(JsonValue object) {
         JsonWriterFactory writerFactory = JsonProvider.instance().createWriterFactory(Map.of(JsonGenerator.PRETTY_PRINTING, true));
         try (StringWriter stringWriter = new StringWriter(); JsonWriter jsonWriter = writerFactory.createWriter(stringWriter)) {
             jsonWriter.write(object); // Write JSON object to writer
@@ -57,6 +55,8 @@ public class JsonLdWriter {
             return Mono.error(e);
         }
     }
+
+
 
     public static Mono<JsonObject> buildJsonObject(Tuple2<ExtendedRdfDataset, URI> tuple) {
         return buildJsonObject(tuple.getT1(), tuple.getT2());
@@ -68,7 +68,7 @@ public class JsonLdWriter {
         options.setOmitGraph(true);
         options.setRdfStar(true);
         // options.setUseRdfType(true);
-        options.setEmbed(JsonLdEmbed.ALWAYS);
+        // options.setEmbed(JsonLdEmbed.ALWAYS);
 
         try {
             Document document = RdfDocument.of(dataset);
@@ -78,7 +78,9 @@ public class JsonLdWriter {
             // add annotations by hand
             jsonValues = new AnnotationsInjector().expandWithAnnotations(jsonValues, dataset).build();
 
-            JsonDocument jsonDocument = null;
+            // serializeJsonValue(jsonValues).doOnNext(log::info).subscribe();
+
+            JsonDocument jsonDocument;
 
             if(jsonValues.size() == 1) {
                 jsonDocument = JsonDocument.of(jsonValues.get(0).asJsonObject());
