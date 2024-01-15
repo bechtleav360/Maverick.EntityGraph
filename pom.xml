@@ -280,6 +280,8 @@
                 <directory>src/main/resources</directory>
                 <includes>
                     <include>**/*.json</include>
+                    <include>**/*.ttl</include>
+                    <include>**/*.jsonld</include>
                 </includes>
                 <filtering>true</filtering>
             </resource>
