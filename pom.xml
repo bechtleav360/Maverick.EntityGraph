@@ -275,6 +275,7 @@
         </dependencies>
     </dependencyManagement>
     <build>
+        <!--
         <resources>
             <resource>
                 <directory>src/main/resources</directory>
@@ -286,6 +287,7 @@
                 <filtering>true</filtering>
             </resource>
         </resources>
+        -->
         <plugins>
             <plugin>
                 <groupId>io.github.git-commit-id</groupId>
