@@ -6,6 +6,7 @@ import org.springframework.test.web.reactive.server.WebTestClient;
 import org.springframework.web.reactive.function.BodyInserters;
 
 import java.util.Map;
+import java.util.Set;
 
 public class ApplicationsTestClient {
 
@@ -17,14 +18,17 @@ public class ApplicationsTestClient {
 
 
     public WebTestClient.ResponseSpec createApplication(String label, ApplicationFlags flags) {
+        return this.createApplication(label, flags, Set.of());
+    }
 
-        Requests.RegisterApplicationRequest req = new Requests.RegisterApplicationRequest(label, flags, Map.of());
+    public WebTestClient.ResponseSpec createApplication(String label, ApplicationFlags flags, Set<String> tags) {
+
+        Requests.RegisterApplicationRequest req = new Requests.RegisterApplicationRequest(label, flags, tags, Map.of());
 
         return webClient.post()
                 .uri("/api/applications")
                 .body(BodyInserters.fromValue(req))
                 .exchange();
-
     }
 
     public WebTestClient.ResponseSpec getApplication(String applicationKey) {

@@ -18,6 +18,7 @@ import org.springframework.scheduling.support.CronTrigger;
 import org.springframework.util.StringUtils;
 
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
 
@@ -45,7 +46,7 @@ public abstract class ScopedJobScheduler {
 
     @PostConstruct
     public void initializeScheduledJobs() {
-        applicationsService.listApplications(new SessionContext().setSystemAuthentication()).doOnNext(this::scheduleRunnableTask).subscribe();
+        applicationsService.listApplications(Set.of(), new SessionContext().setSystemAuthentication()).doOnNext(this::scheduleRunnableTask).subscribe();
     }
 
     protected void scheduleRunnableTask(Application application) {

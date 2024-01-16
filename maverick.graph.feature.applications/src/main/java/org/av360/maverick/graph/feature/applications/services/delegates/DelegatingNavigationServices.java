@@ -43,7 +43,7 @@ public class DelegatingNavigationServices implements NavigationServices {
     public Flux<AnnotatedStatement> start(SessionContext ctx) {
 
         return delegate.start(ctx).mergeWith(
-                applicationsService.listApplications(ctx)
+                applicationsService.listApplications(Set.of(), ctx)
                         .collectList()
                         .map(list -> {
                             list.add(Application.DEFAULT);

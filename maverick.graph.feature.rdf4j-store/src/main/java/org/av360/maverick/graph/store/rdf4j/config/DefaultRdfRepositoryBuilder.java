@@ -2,6 +2,7 @@ package org.av360.maverick.graph.store.rdf4j.config;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
+import com.github.benmanes.caffeine.cache.RemovalCause;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.annotation.PostConstruct;
@@ -34,6 +35,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 
 @Component
 @Slf4j(topic = "graph.repo.cfg.builder")
@@ -86,6 +88,17 @@ public class DefaultRdfRepositoryBuilder implements RepositoryBuilder {
     public DefaultRdfRepositoryBuilder() {
 
         cache = Caffeine.newBuilder()
+                .expireAfterAccess(120, TimeUnit.SECONDS)
+                .evictionListener((String key, LabeledRepository labeledRepository, RemovalCause cause) -> {
+                    log.debug("Repository {} shutting down due to reason: {}", key, cause);
+                    if(Objects.nonNull(labeledRepository) && labeledRepository.isInitialized()) {
+                        try {
+                            labeledRepository.shutDown();
+                        } catch (RepositoryException exception) {
+                            log.warn("Exception while shutting down for repository {}: {}", key, exception.getMessage());
+                        }
+                    }
+                } )
                 .recordStats()
                 .build();
 

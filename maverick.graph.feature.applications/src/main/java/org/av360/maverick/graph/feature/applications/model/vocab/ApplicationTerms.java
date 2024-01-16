@@ -19,6 +19,8 @@ public class ApplicationTerms {
     public static final IRI HAS_API_KEY = LocalIRI.from(NAMESPACE, "hasApiKey");
     public static final IRI HAS_KEY = DC.IDENTIFIER;
 
+    public static final IRI HAS_KEYWORD = LocalIRI.from(NAMESPACE, "hasKeyword");
+
     public static final IRI HAS_LABEL = RDFS.LABEL;
     public static final IRI IS_PERSISTENT = LocalIRI.from(NAMESPACE, "isPersistent");
     public static final IRI IS_PUBLIC = LocalIRI.from(NAMESPACE, "isPublic");

@@ -3,6 +3,7 @@ package org.av360.maverick.graph.feature.applications.services;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.Validate;
 import org.av360.maverick.graph.feature.applications.config.Globals;
 import org.av360.maverick.graph.feature.applications.model.domain.*;
@@ -32,6 +33,7 @@ import org.eclipse.rdf4j.model.util.ModelBuilder;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.sparqlbuilder.core.query.Queries;
 import org.eclipse.rdf4j.sparqlbuilder.core.query.SelectQuery;
+import org.eclipse.rdf4j.sparqlbuilder.graphpattern.TriplePattern;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ApplicationListener;
 import org.springframework.stereotype.Service;
@@ -43,6 +45,7 @@ import java.io.Serializable;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -74,14 +77,15 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
     /**
      * Creates a new node.
      *
-     * @param label          Label for the node
-     * @param flags          Flags for this node
      * @param authentication Current authentication information
+     * @param label          Label for the node
+     * @param tags
+     * @param flags          Flags for this node
      * @return New node as mono
      */
     @RequiresPrivilege(Authorities.MAINTAINER_VALUE)
     @OnRepositoryType(RepositoryType.APPLICATION)
-    public Mono<Application> createApplication(String label, ApplicationFlags flags, Map<String, Serializable> configuration, SessionContext ctx) {
+    public Mono<Application> createApplication(String label, Set<String> tags, ApplicationFlags flags, Map<String, Serializable> configuration, SessionContext ctx) {
         try {
             Validate.isTrue(ctx.getAuthentication().isPresent());
             Validate.isTrue(ctx.getAuthenticationOrThrow().isAuthenticated());
@@ -97,6 +101,7 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
                 subject,
                 label,
                 subject.getLocalName(),
+                tags,
                 flags,
                 configuration
         );
@@ -110,6 +115,10 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
         modelBuilder.add(ApplicationTerms.HAS_LABEL, application.label());
         modelBuilder.add(ApplicationTerms.IS_PERSISTENT, flags.isPersistent());
         modelBuilder.add(ApplicationTerms.IS_PUBLIC, flags.isPublic());
+
+        application.tags().forEach(tag -> {
+            modelBuilder.add(ApplicationTerms.HAS_KEYWORD, tag);
+        });
 
         application.configuration().forEach((key, value) -> {
             this.buildConfigurationItem(key, value, application.iri(), modelBuilder);
@@ -128,6 +137,14 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
                 .onErrorResume(throwable -> throwable instanceof InvalidApplication, throwable -> applicationMono);
 
 
+    }
+
+    @RequiresPrivilege(Authorities.MAINTAINER_VALUE)
+    @OnRepositoryType(RepositoryType.APPLICATION)
+    public Mono<Application> createTag(Application application, String tag, String value, SessionContext ctx) {
+        return Mono.error(new NotImplementedException());
+        /*Statements.t(application.iri(), ApplicationTerms.HAS_KEYWORD, Values.literal(value))
+        Mono<Void> insertMono = this.store.importStatements(m.build(), ctx.updateEnvironment(env -> env.setRepositoryType(RepositoryType.APPLICATION)).getEnvironment());*/
     }
 
     @RequiresPrivilege(Authorities.MAINTAINER_VALUE)
@@ -241,7 +258,7 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
         Mono<Application> response = null;
         if (Objects.isNull(cached)) {
             // rebuild cache
-            response = this.listApplications(ctx)
+            response = this.listApplications(Set.of(), ctx)
                     .filter(application -> {
                         boolean res = application.key().equalsIgnoreCase(applicationKey);
                         return res;
@@ -258,7 +275,7 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
 
     @RequiresPrivilege(Authorities.READER_VALUE)
     @OnRepositoryType(RepositoryType.APPLICATION)
-    public Flux<Application> listApplications(SessionContext ctx) {
+    public Flux<Application> listApplications(Set<String> tags, SessionContext ctx) {
         try {
             Validate.isTrue(ctx.getAuthentication().isPresent());
             Validate.isTrue(ctx.getAuthentication().get().isAuthenticated());
@@ -266,13 +283,18 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
 
         if (!this.caching_enabled || this.cache.asMap().isEmpty()) {
 
+            TriplePattern whereClause = QueryVariables.varNodeApplication.isA(ApplicationTerms.TYPE)
+                    .andHas(ApplicationTerms.HAS_KEY, QueryVariables.varAppKey)
+                    .andHas(ApplicationTerms.HAS_LABEL, QueryVariables.varAppLabel)
+                    .andHas(ApplicationTerms.IS_PERSISTENT, QueryVariables.varAppFlagPersistent)
+                    .andHas(ApplicationTerms.IS_PUBLIC, QueryVariables.varAppFlagPublic);
+
+            tags.forEach(tag -> {
+                whereClause.andHas(ApplicationTerms.HAS_KEYWORD, tag);
+            });
+
             SelectQuery listApplicationsQuery = Queries.SELECT()
-                    .where(QueryVariables.varNodeApplication.isA(ApplicationTerms.TYPE)
-                            .andHas(ApplicationTerms.HAS_KEY, QueryVariables.varAppKey)
-                            .andHas(ApplicationTerms.HAS_LABEL, QueryVariables.varAppLabel)
-                            .andHas(ApplicationTerms.IS_PERSISTENT, QueryVariables.varAppFlagPersistent)
-                            .andHas(ApplicationTerms.IS_PUBLIC, QueryVariables.varAppFlagPublic)
-                    );
+                    .where(whereClause);
             SelectQuery listConfigurationItemsQuery = Queries.SELECT()
                     .where(QueryVariables.varNodeConfigurationItem.isA(ApplicationTerms.CONFIGURATION_ITEM)
                             .andHas(ApplicationTerms.CONFIG_KEY, QueryVariables.varConfigKey)
@@ -319,7 +341,7 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
 
         if (applicationLabel.equalsIgnoreCase(Globals.DEFAULT_APPLICATION_LABEL)) return Mono.empty();
 
-        return this.listApplications(ctx)
+        return this.listApplications(Set.of(), ctx)
                 .filter(application -> application.label().equalsIgnoreCase(applicationLabel))
                 .switchIfEmpty(Mono.error(new InvalidApplication(applicationLabel)))
                 .single()
@@ -386,6 +408,7 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
 
         return isApplicationAdmin || isAdmin;
     }
+
 
 
 }

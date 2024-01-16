@@ -22,15 +22,14 @@ import org.av360.maverick.graph.model.context.SessionContext;
 import org.av360.maverick.graph.model.entities.ScheduledJob;
 import org.av360.maverick.graph.model.entities.Transaction;
 import org.av360.maverick.graph.model.enums.RepositoryType;
-import org.av360.maverick.graph.model.vocabulary.SCHEMA;
-import org.av360.maverick.graph.model.vocabulary.SDO;
 import org.av360.maverick.graph.services.EntityServices;
 import org.av360.maverick.graph.services.QueryServices;
 import org.av360.maverick.graph.services.ValueServices;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
-import org.eclipse.rdf4j.model.vocabulary.*;
+import org.eclipse.rdf4j.model.vocabulary.OWL;
+import org.eclipse.rdf4j.model.vocabulary.RDFS;
 import org.eclipse.rdf4j.sparqlbuilder.constraint.Expressions;
 import org.eclipse.rdf4j.sparqlbuilder.core.SparqlBuilder;
 import org.eclipse.rdf4j.sparqlbuilder.core.Variable;
@@ -109,7 +108,7 @@ public class MergeDuplicatesJob implements ScheduledJob {
 
         return this.checkForDuplicates(RDFS.LABEL, ctx)
                 .then(this.checkForDuplicates(OWL.SAMEAS, ctx))
-                .then(this.checkForDuplicates(SDO.IDENTIFIER, ctx))
+                /*.then(this.checkForDuplicates(SDO.IDENTIFIER, ctx))
                 .then(this.checkForDuplicates(SDO.TERM_CODE, ctx))
                 .then(this.checkForDuplicates(SDO.NAME, ctx))
                 .then(this.checkForDuplicates(SDO.URL, ctx))
@@ -119,7 +118,7 @@ public class MergeDuplicatesJob implements ScheduledJob {
                 .then(this.checkForDuplicates(SCHEMA.URL, ctx))
                 .then(this.checkForDuplicates(SKOS.PREF_LABEL, ctx))
                 .then(this.checkForDuplicates(DCTERMS.IDENTIFIER, ctx))
-                .then(this.checkForDuplicates(DC.IDENTIFIER, ctx))
+                .then(this.checkForDuplicates(DC.IDENTIFIER, ctx))*/
                 .doOnError(throwable -> log.error("Exception while checking for duplicates: {}", throwable.getMessage()))
                 .doOnSubscribe(sub -> {
                     ctx.updateEnvironment(env -> env.setRepositoryType(RepositoryType.ENTITIES));

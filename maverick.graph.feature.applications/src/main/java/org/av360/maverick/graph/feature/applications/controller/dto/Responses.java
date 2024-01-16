@@ -5,13 +5,14 @@ import org.av360.maverick.graph.feature.applications.model.domain.ApplicationFla
 import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * @see "https://dev.to/brunooliveira/practical-java-16-using-jackson-to-serialize-records-4og4"
  */
 public class Responses {
 
-    public record ApplicationResponse(String key, String label, ApplicationFlags flags, Map<String, Serializable> configuration) {
+    public record ApplicationResponse(String key, String label, ApplicationFlags flags, Set<String> tags, Map<String, Serializable> configuration) {
 
     }
 
@@ -24,7 +25,7 @@ public class Responses {
 
     }
 
-    public record ApplicationWithApiKeys(String key, String label, ApplicationFlags flags, List<SubscriptionResponse> keys) {
+    public record ApplicationWithApiKeys(String key, String label, ApplicationFlags flags, Set<String> tags, List<SubscriptionResponse> keys) {
 
     }
 

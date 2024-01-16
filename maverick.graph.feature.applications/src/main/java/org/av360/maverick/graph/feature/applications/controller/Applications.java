@@ -23,6 +23,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.Map;
+import java.util.Set;
 
 @RestController
 @RequestMapping(path = "/api/applications")
@@ -55,12 +56,13 @@ public class Applications extends AbstractController {
 
 
         return super.acquireContext()
-                .flatMap(ctx -> this.applicationsService.createApplication(request.label(), request.flags(), request.configuration(), ctx))
+                .flatMap(ctx -> this.applicationsService.createApplication(request.label(), request.tags(), request.flags(), request.configuration(), ctx))
                 .map(application ->
                         new Responses.ApplicationResponse(
                                 application.key(),
                                 application.label(),
                                 application.flags(),
+                                application.tags(),
                                 application.configuration()
                         )
                 ).doOnSubscribe(subscription -> log.info("Request to create a new node with the label '{}' and flags: {}", request.label(), request.flags()));
@@ -69,14 +71,15 @@ public class Applications extends AbstractController {
     //@ApiOperation(value = "List all applications")
     @GetMapping(value = "")
     @ResponseStatus(HttpStatus.OK)
-    Flux<Responses.ApplicationResponse> listApplications() {
+    Flux<Responses.ApplicationResponse> listApplications( @RequestParam(value = "tag", required = false) Set<String> tags) {
         return super.acquireContext()
-                .flatMapMany(this.applicationsService::listApplications)
+                .flatMapMany(ctx -> this.applicationsService.listApplications(tags, ctx))
                 .map(application ->
                         new Responses.ApplicationResponse(
                                 application.key(),
                                 application.label(),
                                 application.flags(),
+                                application.tags(),
                                 application.configuration()
                         )
                 ).doOnSubscribe(subscription -> log.info("Request to list all applications"));
@@ -92,11 +95,31 @@ public class Applications extends AbstractController {
                                 application.key(),
                                 application.label(),
                                 application.flags(),
+                                application.tags(),
                                 application.configuration()
                         )
                 ).doOnSubscribe(subscription -> log.info("Request to get application with id '{}'", applicationKey));
     }
 
+
+    @PostMapping(value = "/{applicationKey}/tags/{tag}")
+    @ResponseStatus(HttpStatus.OK)
+    Mono<Responses.ApplicationResponse> createTag(@PathVariable String applicationKey, @PathVariable String tag, @RequestBody String value) {
+        return super.acquireContext()
+                .flatMap(ctx ->
+                        this.applicationsService.getApplication(applicationKey, ctx)
+                                .flatMap(application -> this.applicationsService.createTag(application, tag, value, ctx)))
+                .map(application ->
+                        new Responses.ApplicationResponse(
+                                application.key(),
+                                application.label(),
+                                application.flags(),
+                                application.tags(),
+                                application.configuration()
+                        )
+
+                ).doOnSubscribe(subscription -> log.info("Request to update tag '{}' for application with id '{}'", tag, applicationKey));
+    }
 
     @PostMapping(value = "/{applicationKey}/configuration/{configurationKey}")
     @ResponseStatus(HttpStatus.OK)
@@ -110,6 +133,7 @@ public class Applications extends AbstractController {
                                 application.key(),
                                 application.label(),
                                 application.flags(),
+                                application.tags(),
                                 application.configuration()
                         )
 
@@ -156,6 +180,7 @@ public class Applications extends AbstractController {
                                         apiKey.application().key(),
                                         apiKey.application().label(),
                                         apiKey.application().flags(),
+                                        apiKey.application().tags(),
                                         apiKey.application().configuration()
                                 )
                         )
