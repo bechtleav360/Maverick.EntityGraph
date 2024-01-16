@@ -245,6 +245,9 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
 
 
     }
+
+    @RequiresPrivilege(Authorities.READER_VALUE)
+    @OnRepositoryType(RepositoryType.APPLICATION)
     public Mono<Application> getApplication(String applicationKey, SessionContext ctx) {
         return this.getApplication(applicationKey, ctx, false);
     }
@@ -289,9 +292,8 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
                     .andHas(ApplicationTerms.IS_PERSISTENT, QueryVariables.varAppFlagPersistent)
                     .andHas(ApplicationTerms.IS_PUBLIC, QueryVariables.varAppFlagPublic);
 
-            tags.forEach(tag -> {
-                whereClause.andHas(ApplicationTerms.HAS_KEYWORD, tag);
-            });
+            if (Objects.nonNull(tags)) tags.forEach(tag -> whereClause.andHas(ApplicationTerms.HAS_KEYWORD, tag));
+
 
             SelectQuery listApplicationsQuery = Queries.SELECT()
                     .where(whereClause);
