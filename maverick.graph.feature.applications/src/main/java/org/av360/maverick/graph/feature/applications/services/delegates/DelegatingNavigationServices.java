@@ -9,6 +9,7 @@ import org.av360.maverick.graph.model.enums.ConfigurationKeysRegistry;
 import org.av360.maverick.graph.model.enums.RepositoryType;
 import org.av360.maverick.graph.model.rdf.AnnotatedStatement;
 import org.av360.maverick.graph.model.security.Authorities;
+import org.av360.maverick.graph.model.vocabulary.DC;
 import org.av360.maverick.graph.services.NavigationServices;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Namespace;
@@ -67,6 +68,7 @@ public class DelegatingNavigationServices implements NavigationServices {
                                         .add(HYDRA.ENTRYPOINT, "?/api/s/%s/entities".formatted(application.label()))
                                         .add(HYDRA.VIEW, "?/nav/s/%s/entities".formatted(application.label()));
 
+                                application.tags().forEach(tag -> builder.add(DC.SUBJECT, Values.literal(tag)));
 
                                 builder.add(appsCollection, HYDRA.MEMBER, appNode);
 

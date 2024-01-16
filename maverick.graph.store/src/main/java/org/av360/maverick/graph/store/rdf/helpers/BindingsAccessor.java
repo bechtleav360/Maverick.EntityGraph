@@ -60,10 +60,15 @@ public class BindingsAccessor {
         return findValue(var).map(Value::stringValue);
     }
 
-    public Set<String> asSet(String concatenatedStringVarName) {
+
+    public Set<String> asSet(Variable var, String separator) {
+        return this.asSet(var.getVarName(), separator);
+    }
+
+    public Set<String> asSet(String concatenatedStringVarName, String separator) {
         return this.findValue(concatenatedStringVarName)
                 .map(Value::stringValue)
-                .map(s -> s.split(","))
+                .map(s -> s.split(separator))
                 .map(Set::of)
                 .orElse(Set.of());
     }

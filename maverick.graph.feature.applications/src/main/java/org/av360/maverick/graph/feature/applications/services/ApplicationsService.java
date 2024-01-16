@@ -3,7 +3,6 @@ package org.av360.maverick.graph.feature.applications.services;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.Validate;
 import org.av360.maverick.graph.feature.applications.config.Globals;
 import org.av360.maverick.graph.feature.applications.model.domain.*;
@@ -29,11 +28,17 @@ import org.av360.maverick.graph.services.IdentifierServices;
 import org.av360.maverick.graph.store.rdf.fragments.RdfTransaction;
 import org.av360.maverick.graph.store.rdf.helpers.BindingsAccessor;
 import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.util.ModelBuilder;
+import org.eclipse.rdf4j.model.util.Statements;
+import org.eclipse.rdf4j.model.util.Values;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
+import org.eclipse.rdf4j.sparqlbuilder.constraint.Expression;
+import org.eclipse.rdf4j.sparqlbuilder.constraint.Expressions;
 import org.eclipse.rdf4j.sparqlbuilder.core.query.Queries;
 import org.eclipse.rdf4j.sparqlbuilder.core.query.SelectQuery;
-import org.eclipse.rdf4j.sparqlbuilder.graphpattern.TriplePattern;
+import org.eclipse.rdf4j.sparqlbuilder.graphpattern.GraphPattern;
+import org.eclipse.rdf4j.sparqlbuilder.rdf.Rdf;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ApplicationListener;
 import org.springframework.stereotype.Service;
@@ -58,7 +63,7 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
 
     private final Cache<String, Application> cache;
 
-    private boolean caching_enabled = true;
+    public static boolean APPLICATION_CACHING = true;
 
     private final ApplicationsStore store;
     private final ApplicationEventPublisher eventPublisher;
@@ -70,8 +75,6 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
         // this.cache = Caffeine.newBuilder().recordStats().expireAfterAccess(60, TimeUnit.MINUTES).build();
         this.cache = Caffeine.newBuilder().recordStats().build();
     }
-
-
 
 
     /**
@@ -92,7 +95,9 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
             Validate.isTrue(Authorities.satisfies(Authorities.SYSTEM, ctx.getAuthenticationOrThrow().getAuthorities()));
 
             // FIXME: authorize in service
-        } catch (Exception e) { return Mono.error(e); }
+        } catch (Exception e) {
+            return Mono.error(e);
+        }
 
 
         IRI subject = IdentifierServices.buildRandomIRI(Local.Applications.NAME);
@@ -141,10 +146,15 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
 
     @RequiresPrivilege(Authorities.MAINTAINER_VALUE)
     @OnRepositoryType(RepositoryType.APPLICATION)
-    public Mono<Application> createTag(Application application, String tag, String value, SessionContext ctx) {
-        return Mono.error(new NotImplementedException());
-        /*Statements.t(application.iri(), ApplicationTerms.HAS_KEYWORD, Values.literal(value))
-        Mono<Void> insertMono = this.store.importStatements(m.build(), ctx.updateEnvironment(env -> env.setRepositoryType(RepositoryType.APPLICATION)).getEnvironment());*/
+    public Mono<Application> createTag(Application application, String tag, SessionContext ctx) {
+        Statement statement = Statements.statement(application.iri(), ApplicationTerms.HAS_KEYWORD, Values.literal(tag), null);
+        return this.store.importStatements(Set.of(statement), ctx.updateEnvironment(env -> env.setRepositoryType(RepositoryType.APPLICATION)).getEnvironment())
+                .then(this.getApplication(application.key(), ctx, true))
+                .doOnSuccess(app -> {
+                    this.eventPublisher.publishEvent(new ApplicationUpdatedEvent(app));
+                    log.debug("Added tag '{}' to application with label '{}'", tag, app.label());
+                })
+                .doOnSubscribe(StreamsLogger.debug(log, "Adding tag '{}' to application with label '{}'", tag, application.label()));
     }
 
     @RequiresPrivilege(Authorities.MAINTAINER_VALUE)
@@ -208,6 +218,7 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
                     log.debug("Removed configuration item with key '{}' from application with label '{}'", configurationKey, application.label());
                 });
     }
+
     @RequiresPrivilege(Authorities.READER_VALUE)
     @OnRepositoryType(RepositoryType.APPLICATION)
     public Flux<ConfigurationItem> listConfigurationItems(Application application, SessionContext ctx) {
@@ -233,7 +244,7 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
         return this.listConfigurationItems(application, context)
                 .flatMap(configurationItem -> this.deleteConfigurationItem(application, configurationItem.key(), context)).collectList()
                 .doOnSuccess(suc -> log.trace("Deleted all configuration item statements for application with label '{}'", application.label()))
-                .then( this.store.listStatements(application.iri(), null, null, context.getEnvironment()))
+                .then(this.store.listStatements(application.iri(), null, null, context.getEnvironment()))
                 .map(statements -> new RdfTransaction().removes(statements))
                 .flatMap(trx -> this.store.asCommitable().commit(trx, context.getEnvironment()))
                 .doOnSuccess(suc -> log.trace("Deleted all application statements for application with label '{}'", application.label()))
@@ -257,7 +268,7 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
     @OnRepositoryType(RepositoryType.APPLICATION)
     public Mono<Application> getApplication(String applicationKey, SessionContext ctx, boolean ignoreCache) {
 
-        Application cached = this.caching_enabled && !ignoreCache ? this.cache.getIfPresent(applicationKey) : null;
+        Application cached = APPLICATION_CACHING && !ignoreCache ? this.cache.getIfPresent(applicationKey) : null;
         Mono<Application> response = null;
         if (Objects.isNull(cached)) {
             // rebuild cache
@@ -270,7 +281,7 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
                     .switchIfEmpty(Mono.error(new InvalidApplication(applicationKey)))
                     .single();
         } else {
-            response =  Mono.just(cached);
+            response = Mono.just(cached);
         }
 
         return response.filter(application -> verifyReadingPrivilege(application, ctx));
@@ -282,21 +293,40 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
         try {
             Validate.isTrue(ctx.getAuthentication().isPresent());
             Validate.isTrue(ctx.getAuthentication().get().isAuthenticated());
-        } catch (Exception e) { return Flux.error(e); }
+        } catch (Exception e) {
+            return Flux.error(e);
+        }
 
-        if (!this.caching_enabled || this.cache.asMap().isEmpty()) {
+        if (!APPLICATION_CACHING || this.cache.asMap().isEmpty()) {
 
-            TriplePattern whereClause = QueryVariables.varNodeApplication.isA(ApplicationTerms.TYPE)
+            GraphPattern whereClause = QueryVariables.varNodeApplication.isA(ApplicationTerms.TYPE)
                     .andHas(ApplicationTerms.HAS_KEY, QueryVariables.varAppKey)
                     .andHas(ApplicationTerms.HAS_LABEL, QueryVariables.varAppLabel)
                     .andHas(ApplicationTerms.IS_PERSISTENT, QueryVariables.varAppFlagPersistent)
-                    .andHas(ApplicationTerms.IS_PUBLIC, QueryVariables.varAppFlagPublic);
+                    .andHas(ApplicationTerms.IS_PUBLIC, QueryVariables.varAppFlagPublic)
+                    .and(QueryVariables.varNodeApplication.has(ApplicationTerms.HAS_KEYWORD, QueryVariables.varAppKeyword).optional());
 
-            if (Objects.nonNull(tags)) tags.forEach(tag -> whereClause.andHas(ApplicationTerms.HAS_KEYWORD, tag));
+            if (Objects.nonNull(tags) && ! tags.isEmpty()) {
+                Expression<?>[] array = tags.stream()
+                        .map(tag -> Expressions.equals(QueryVariables.varAppKeyword, Rdf.literalOf(tag)))
+                        .toArray(Expression[]::new);
+                whereClause.filter(Expressions.and(array));
+            }
 
 
-            SelectQuery listApplicationsQuery = Queries.SELECT()
-                    .where(whereClause);
+            SelectQuery listApplicationsQuery = Queries.SELECT(
+                            QueryVariables.varNodeApplication,
+                            QueryVariables.varAppKey,
+                            QueryVariables.varAppLabel,
+                            QueryVariables.varAppFlagPersistent,
+                            QueryVariables.varAppFlagPublic,
+                            Expressions.group_concat(QueryVariables.varAppKeyword).as(QueryVariables.varAppKeywordList))
+                    .where(whereClause)
+                    .groupBy(QueryVariables.varNodeApplication, QueryVariables.varAppKey, QueryVariables.varAppLabel, QueryVariables.varAppFlagPersistent, QueryVariables.varAppFlagPublic);
+
+            String query = listApplicationsQuery.getQueryString();
+
+
             SelectQuery listConfigurationItemsQuery = Queries.SELECT()
                     .where(QueryVariables.varNodeConfigurationItem.isA(ApplicationTerms.CONFIGURATION_ITEM)
                             .andHas(ApplicationTerms.CONFIG_KEY, QueryVariables.varConfigKey)
@@ -325,20 +355,33 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
                         });
                         return Flux.fromIterable(applications.values());
                     })
-                    .doOnNext(application -> this.cache.put(application.key(), application))
+                    .doOnNext(application -> {
+                        if(APPLICATION_CACHING) {
+                            this.cache.put(application.key(), application);
+                        }
+                    })
                     .filter(application -> verifyReadingPrivilege(application, ctx))
                     .doOnSubscribe(StreamsLogger.debug(log, "Loading all applications from repository ({})", ctx.getEnvironment()));
         } else {
-            return Flux.fromIterable(this.cache.asMap().values()).filter(application -> verifyReadingPrivilege(application, ctx));
+            return Flux.fromIterable(this.cache.asMap().values())
+                    .filter(application -> verifyReadingPrivilege(application, ctx))
+                    .filter(application -> {
+                        if(Objects.isNull(tags) || tags.isEmpty()) return true;
+                        return tags.stream().map(requestedTag -> application.tags().contains(requestedTag)).reduce(true, Boolean::logicalAnd);
+                    })
+                    ;
         }
     }
+
     @RequiresPrivilege(Authorities.READER_VALUE)
     @OnRepositoryType(RepositoryType.APPLICATION)
     public Mono<Application> getApplicationByLabel(String applicationLabel, SessionContext ctx) {
         try {
             Validate.isTrue(ctx.getAuthentication().isPresent());
             Validate.isTrue(ctx.getAuthentication().get().isAuthenticated());
-        } catch (Exception e) { return Mono.error(e); }
+        } catch (Exception e) {
+            return Mono.error(e);
+        }
 
 
         if (applicationLabel.equalsIgnoreCase(Globals.DEFAULT_APPLICATION_LABEL)) return Mono.empty();
@@ -358,9 +401,8 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
     }
 
 
-
     private ModelBuilder buildConfigurationItem(String configKey, Serializable configValue, IRI applicationIdentifier, @Nullable ModelBuilder builder) {
-        if(Objects.isNull(builder)) builder = new ModelBuilder();
+        if (Objects.isNull(builder)) builder = new ModelBuilder();
 
         IRI configNode = IdentifierServices.buildRandomIRI(Local.Applications.NAME);
         builder.add(configNode, RDF.TYPE, ApplicationTerms.CONFIGURATION_ITEM);
@@ -372,7 +414,7 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
     }
 
     private ModelBuilder buildMetricsItem(String metricsName, Serializable value, IRI applicationIdentifier, @Nullable ModelBuilder builder) {
-        if(Objects.isNull(builder)) builder = new ModelBuilder();
+        if (Objects.isNull(builder)) builder = new ModelBuilder();
 
         IRI configNode = IdentifierServices.buildRandomIRI(Local.Applications.NAME);
         builder.add(configNode, RDF.TYPE, SDO.QUANTITATIVE_VALUE);
@@ -385,12 +427,14 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
 
     @Deprecated
     private void assertUpdatePrivilege(Application requestedApplication, SessionContext ctx) {
-        if(! this.verifyUpdatePrivilege(requestedApplication, ctx)) throw new InsufficientPrivilegeException("Unknown application or insufficient privilege.");
+        if (!this.verifyUpdatePrivilege(requestedApplication, ctx))
+            throw new InsufficientPrivilegeException("Unknown application or insufficient privilege.");
     }
 
     @Deprecated
     private void assertReadPrivilege(Application requestedApplication, SessionContext ctx) {
-        if(! this.verifyReadingPrivilege(requestedApplication, ctx)) throw new InsufficientPrivilegeException("Unknown application or insufficient privilege.");
+        if (!this.verifyReadingPrivilege(requestedApplication, ctx))
+            throw new InsufficientPrivilegeException("Unknown application or insufficient privilege.");
     }
 
     @Deprecated
@@ -410,7 +454,6 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
 
         return isApplicationAdmin || isAdmin;
     }
-
 
 
 }

@@ -32,7 +32,7 @@ public class CreateScopedEntities  extends ApplicationsTestsBase {
 
     @AfterEach
     public void resetRepository() {
-        super.resetRepository("test_app");
+        super.resetRepository();
     }
 
     @Test
@@ -62,10 +62,6 @@ public class CreateScopedEntities  extends ApplicationsTestsBase {
 
 
 
-
-
-        super.resetRepository();
-        // check if correct application events have been recorded
     }
 
 }

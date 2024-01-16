@@ -3,6 +3,7 @@ package org.av360.maverick.graph.feature.applications.api;
 import org.av360.maverick.graph.feature.applications.config.ApplicationsTestsBase;
 import org.av360.maverick.graph.feature.applications.controller.dto.Responses;
 import org.av360.maverick.graph.feature.applications.model.domain.ApplicationFlags;
+import org.av360.maverick.graph.feature.applications.services.ApplicationsService;
 import org.av360.maverick.graph.model.context.SessionContext;
 import org.av360.maverick.graph.model.enums.RepositoryType;
 import org.av360.maverick.graph.services.QueryServices;
@@ -15,6 +16,7 @@ import org.eclipse.rdf4j.sparqlbuilder.core.query.SelectQuery;
 import org.json.JSONArray;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -30,6 +32,10 @@ import java.util.List;
 @ActiveProfiles({"test", "api"})
 class ApplicationsTest extends ApplicationsTestsBase {
 
+    @BeforeAll
+    static void before() {
+        ApplicationsService.APPLICATION_CACHING = false;
+    }
 
     @Autowired
     private QueryServices queryServices;
@@ -39,7 +45,7 @@ class ApplicationsTest extends ApplicationsTestsBase {
 
     @AfterEach
     public void resetRepository() {
-        super.resetRepository("test_app");
+        super.resetRepository();
     }
 
     @Test

@@ -12,8 +12,10 @@ public class ApplicationsTestClient {
 
     private final WebTestClient webClient;
 
+
     public ApplicationsTestClient(WebTestClient webClient) {
         this.webClient = webClient;
+
     }
 
 
@@ -31,6 +33,16 @@ public class ApplicationsTestClient {
                 .exchange();
     }
 
+    public WebTestClient.ResponseSpec  addApplicationTag(String key, String testTag) {
+        return webClient.post()
+                .uri(uriBuilder -> uriBuilder
+                        .path("/api/applications/{id}/tags")
+                        .build(key)
+                )
+                .body(BodyInserters.fromValue(testTag))
+                .exchange();
+    }
+
     public WebTestClient.ResponseSpec getApplication(String applicationKey) {
         return webClient.get()
                 .uri(uriBuilder -> uriBuilder
@@ -45,6 +57,16 @@ public class ApplicationsTestClient {
 
         return webClient.get()
                 .uri("/api/applications")
+                .exchange();
+    }
+
+    public WebTestClient.ResponseSpec listApplications(String tag) {
+        return webClient.get()
+                .uri(uriBuilder -> {
+                    return uriBuilder.path("/api/applications")
+                            .queryParam("tag", tag)
+                            .build();
+                })
                 .exchange();
     }
 

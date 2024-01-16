@@ -102,13 +102,13 @@ public class Applications extends AbstractController {
     }
 
 
-    @PostMapping(value = "/{applicationKey}/tags/{tag}")
+    @PostMapping(value = "/{applicationKey}/tags")
     @ResponseStatus(HttpStatus.OK)
-    Mono<Responses.ApplicationResponse> createTag(@PathVariable String applicationKey, @PathVariable String tag, @RequestBody String value) {
+    Mono<Responses.ApplicationResponse> createTag(@PathVariable String applicationKey, @RequestBody String tag) {
         return super.acquireContext()
                 .flatMap(ctx ->
                         this.applicationsService.getApplication(applicationKey, ctx)
-                                .flatMap(application -> this.applicationsService.createTag(application, tag, value, ctx)))
+                                .flatMap(application -> this.applicationsService.createTag(application, tag, ctx)))
                 .map(application ->
                         new Responses.ApplicationResponse(
                                 application.key(),

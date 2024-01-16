@@ -94,7 +94,7 @@ public class FindEntities {
 
                         ModelBuilder builder = new ModelBuilder();
                         builder.subject(resource);
-                        bnd.asSet("types").stream()
+                        bnd.asSet("types", ",").stream()
                                 .map(typeString -> SimpleValueFactory.getInstance().createIRI(typeString))
                                 .forEach(typeIRI -> builder.add(RDF.TYPE, typeIRI));
                         bnd.findValue("sct").ifPresent(val -> {
