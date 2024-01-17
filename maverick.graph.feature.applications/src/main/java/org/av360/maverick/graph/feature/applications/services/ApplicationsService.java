@@ -146,15 +146,30 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
 
     @RequiresPrivilege(Authorities.MAINTAINER_VALUE)
     @OnRepositoryType(RepositoryType.APPLICATION)
-    public Mono<Application> createTag(Application application, String tag, SessionContext ctx) {
+    public Mono<Application> addKeyword(Application application, String tag, SessionContext ctx) {
         Statement statement = Statements.statement(application.iri(), ApplicationTerms.HAS_KEYWORD, Values.literal(tag), null);
-        return this.store.importStatements(Set.of(statement), ctx.updateEnvironment(env -> env.setRepositoryType(RepositoryType.APPLICATION)).getEnvironment())
+        return this.store.commit(new RdfTransaction().inserts(statement), ctx.getEnvironment().setRepositoryType(RepositoryType.APPLICATION))
+                .then(this.getApplication(application.key(), ctx, true))
+                .doOnNext(trx -> this.cache.invalidateAll())
+                .doOnSuccess(app -> {
+                    this.eventPublisher.publishEvent(new ApplicationUpdatedEvent(app));
+                    log.debug("Added keyword '{}' to application with label '{}'", tag, app.label());
+                })
+                .doOnSubscribe(StreamsLogger.debug(log, "Adding keyword '{}' to application with label '{}'", tag, application.label()));
+    }
+
+    @RequiresPrivilege(Authorities.MAINTAINER_VALUE)
+    @OnRepositoryType(RepositoryType.APPLICATION)
+    public Mono<Application> removeKeyword(Application application, String keyword, SessionContext ctx) {
+        Statement statement = Statements.statement(application.iri(), ApplicationTerms.HAS_KEYWORD, Values.literal(keyword), null);
+        return this.store.commit(new RdfTransaction().removes(statement), ctx.getEnvironment().setRepositoryType(RepositoryType.APPLICATION))
+                .doOnNext(trx -> this.cache.invalidateAll())
                 .then(this.getApplication(application.key(), ctx, true))
                 .doOnSuccess(app -> {
                     this.eventPublisher.publishEvent(new ApplicationUpdatedEvent(app));
-                    log.debug("Added tag '{}' to application with label '{}'", tag, app.label());
+                    log.debug("Removed keyword '{}' from application with label '{}'", keyword, app.label());
                 })
-                .doOnSubscribe(StreamsLogger.debug(log, "Adding tag '{}' to application with label '{}'", tag, application.label()));
+                .doOnSubscribe(StreamsLogger.debug(log, "Removing keyword '{}' from application with label '{}'", keyword, application.label()));
     }
 
     @RequiresPrivilege(Authorities.MAINTAINER_VALUE)
@@ -165,10 +180,10 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
         ModelBuilder m = this.buildConfigurationItem(configKey, configValue, application.iri(), null);
 
 
-        Mono<Void> deleteMono = this.deleteConfigurationItem(application, configKey, ctx);
-        Mono<Void> insertMono = this.store.importStatements(m.build(), ctx.updateEnvironment(env -> env.setRepositoryType(RepositoryType.APPLICATION)).getEnvironment());
-
-        return deleteMono.then(insertMono).then(this.getApplication(application.key(), ctx, true))
+        return this.deleteConfigurationItem(application, configKey, ctx)
+                .then(this.store.commit(new RdfTransaction().inserts(m.build()), ctx.getEnvironment().setRepositoryType(RepositoryType.APPLICATION)))
+                .doOnNext(trx -> this.cache.invalidateAll())
+                .then(this.getApplication(application.key(), ctx, true))
                 .doOnSuccess(app -> {
                     this.eventPublisher.publishEvent(new ApplicationUpdatedEvent(app));
                     log.debug("Updated configuration key '{}' of application with label '{}'", configKey, app.label());
@@ -181,15 +196,13 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
     public Mono<Void> setMetric(Application application, String key, Serializable value, SessionContext ctx) {
         ModelBuilder m = this.buildMetricsItem(key, value, application.iri(), null);
 
-        Transaction trx = new RdfTransaction().forInsert(m.build());
-
-        return this.store.commit(trx, ctx.getEnvironment())
+        return this.store.commit(new RdfTransaction().inserts(m.build()), ctx.getEnvironment().setRepositoryType(RepositoryType.APPLICATION))
                 .filter(Transaction::isCompleted)
                 .then()
                 .doOnSuccess(app -> {
                     log.trace("Updated metrics '{}' of application with label '{}'", application.key(), application.label());
                 })
-                .doOnSubscribe(StreamsLogger.debug(log, "Updating configuration key '{}' for node with label '{}'", key, application.label()));
+                .doOnSubscribe(StreamsLogger.debug(log, "Updating metrics '{}' for node with label '{}'", key, application.label()));
     }
 
     @RequiresPrivilege(Authorities.MAINTAINER_VALUE)
@@ -454,6 +467,7 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
 
         return isApplicationAdmin || isAdmin;
     }
+
 
 
 }

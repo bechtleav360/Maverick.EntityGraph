@@ -102,13 +102,15 @@ public class Applications extends AbstractController {
     }
 
 
-    @PostMapping(value = "/{applicationKey}/tags")
+    @PostMapping(value = "/{applicationKey}/keywords")
     @ResponseStatus(HttpStatus.OK)
-    Mono<Responses.ApplicationResponse> createTag(@PathVariable String applicationKey, @RequestBody String tag) {
+    Mono<Responses.ApplicationResponse> createKeyword(@PathVariable String applicationKey, @RequestBody String keyword) {
+        Assert.isTrue(keyword.matches("^[a-zA-Z0-9_-]+$"), "Only alphanumeric characters, dash and underscore are allowed for keywords.");
+
         return super.acquireContext()
                 .flatMap(ctx ->
                         this.applicationsService.getApplication(applicationKey, ctx)
-                                .flatMap(application -> this.applicationsService.createTag(application, tag, ctx)))
+                                .flatMap(application -> this.applicationsService.addKeyword(application, keyword, ctx)))
                 .map(application ->
                         new Responses.ApplicationResponse(
                                 application.key(),
@@ -118,7 +120,20 @@ public class Applications extends AbstractController {
                                 application.configuration()
                         )
 
-                ).doOnSubscribe(subscription -> log.info("Request to update tag '{}' for application with id '{}'", tag, applicationKey));
+                ).doOnSubscribe(subscription -> log.info("Request to add keyword '{}' to application with id '{}'", keyword, applicationKey));
+    }
+
+    @DeleteMapping(value = "/{applicationKey}/keywords/{keyword}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    Mono<Void> deleteKeyword(@PathVariable String applicationKey, @PathVariable String keyword) {
+        Assert.isTrue(keyword.matches("^[a-zA-Z0-9_-]+$"), "Only alphanumeric characters, dash and underscore are allowed for keywords.");
+
+        return super.acquireContext()
+                .flatMap(ctx ->
+                        this.applicationsService.getApplication(applicationKey, ctx)
+                                .flatMap(application -> this.applicationsService.removeKeyword(application, keyword, ctx)))
+                .then()
+                .doOnSubscribe(subscription -> log.info("Request to remove keyword with id '{}'", applicationKey));
     }
 
     @PostMapping(value = "/{applicationKey}/configuration/{configurationKey}")

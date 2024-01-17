@@ -21,4 +21,9 @@ public interface Maintainable extends Commitable {
         return this.commit(trx, environment).then();
     }
 
+    default Mono<Void> purgeStatements(Collection<Statement> statements, Environment environment) {
+        Transaction trx = new RdfTransaction().removes(statements);
+        return this.commit(trx, environment).then();
+    }
+
 }

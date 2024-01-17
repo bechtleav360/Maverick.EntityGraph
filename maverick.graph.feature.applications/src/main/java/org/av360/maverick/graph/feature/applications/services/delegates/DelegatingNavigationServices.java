@@ -1,5 +1,6 @@
 package org.av360.maverick.graph.feature.applications.services.delegates;
 
+import com.apicatalog.jsonld.StringUtils;
 import org.av360.maverick.graph.feature.applications.model.domain.Application;
 import org.av360.maverick.graph.feature.applications.services.ApplicationsService;
 import org.av360.maverick.graph.model.annotations.OnRepositoryType;
@@ -9,7 +10,7 @@ import org.av360.maverick.graph.model.enums.ConfigurationKeysRegistry;
 import org.av360.maverick.graph.model.enums.RepositoryType;
 import org.av360.maverick.graph.model.rdf.AnnotatedStatement;
 import org.av360.maverick.graph.model.security.Authorities;
-import org.av360.maverick.graph.model.vocabulary.DC;
+import org.av360.maverick.graph.model.vocabulary.SDO;
 import org.av360.maverick.graph.services.NavigationServices;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Namespace;
@@ -64,11 +65,17 @@ public class DelegatingNavigationServices implements NavigationServices {
                             applications.forEach(application -> {
                                 Resource appNode = Values.bnode(application.label());
                                 builder.subject(appNode)
+                                        .add(RDF.TYPE, SDO.DATASET)
                                         .add(HYDRA.TITLE, application.label())
                                         .add(HYDRA.ENTRYPOINT, "?/api/s/%s/entities".formatted(application.label()))
                                         .add(HYDRA.VIEW, "?/nav/s/%s/entities".formatted(application.label()));
 
-                                application.tags().forEach(tag -> builder.add(DC.SUBJECT, Values.literal(tag)));
+                                application.tags().forEach(tag -> {
+                                    if(StringUtils.isNotBlank(tag)) {
+                                        builder.add(SDO.KEYWORDS, Values.literal(tag));
+                                    }
+
+                                });
 
                                 builder.add(appsCollection, HYDRA.MEMBER, appNode);
 

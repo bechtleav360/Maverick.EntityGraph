@@ -36,10 +36,19 @@ public class ApplicationsTestClient {
     public WebTestClient.ResponseSpec  addApplicationTag(String key, String testTag) {
         return webClient.post()
                 .uri(uriBuilder -> uriBuilder
-                        .path("/api/applications/{id}/tags")
+                        .path("/api/applications/{id}/keywords")
                         .build(key)
                 )
                 .body(BodyInserters.fromValue(testTag))
+                .exchange();
+    }
+
+    public WebTestClient.ResponseSpec  removeApplicationTag(String key, String keyword) {
+        return webClient.delete()
+                .uri(uriBuilder -> uriBuilder
+                        .path("/api/applications/{id}/keywords/{keyword}")
+                        .build(key, keyword)
+                )
                 .exchange();
     }
 

@@ -10,7 +10,8 @@
     "view": "hydra:view",
     "title": "hydra:title",
     "entrypoint": "hydra:entrypoint",
-    "description": "hydra:description"
+    "description": "hydra:description",
+    "keywords": "sdo:keywords"
 
   },
   "@type": ["hydra:ApiDocumentation", "hydra:Collection"]
