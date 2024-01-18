@@ -1,6 +1,9 @@
 package org.av360.maverick.graph.store.rdf4j.config;
 
-import com.github.benmanes.caffeine.cache.*;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
+import com.github.benmanes.caffeine.cache.RemovalCause;
+import com.github.benmanes.caffeine.cache.Scheduler;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tags;
@@ -15,7 +18,6 @@ import org.av360.maverick.graph.store.FragmentsStore;
 import org.av360.maverick.graph.store.RepositoryBuilder;
 import org.av360.maverick.graph.store.rdf.LabeledRepository;
 import org.av360.maverick.graph.store.rdf4j.repository.util.AbstractRdfRepository;
-import org.checkerframework.checker.index.qual.NonNegative;
 import org.eclipse.rdf4j.repository.RepositoryException;
 import org.eclipse.rdf4j.repository.base.RepositoryWrapper;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
@@ -35,6 +37,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 
 @Component
 @Slf4j(topic = "graph.repo.cfg.builder")
@@ -83,25 +86,20 @@ public class DefaultRdfRepositoryBuilder implements RepositoryBuilder {
     }
 
     public DefaultRdfRepositoryBuilder() {
+        // shutdown evicted caches
 
         cache = Caffeine.newBuilder()
-                .maximumWeight(900)
-                .weigher(new Weigher<String, LabeledRepository>() {
-                    @Override
-                    public @NonNegative int weigh(String key, LabeledRepository value) {
-                        if(value.getConnectionsCount() > 0) {
-                            return 0; // ignore repositories with active connections
-                        } else if(! value.isInitialized()) {
-                            return 600;
-                        } else {
-                            return 200;
-                        }
-                    }
-                })
+                .expireAfterAccess(240, TimeUnit.SECONDS)
                 .scheduler(Scheduler.systemScheduler())
                 .evictionListener((String key, LabeledRepository labeledRepository, RemovalCause cause) -> {
                     log.debug("Repository {} shutting down due to reason: {}", key, cause);
-                    if(Objects.nonNull(labeledRepository) && labeledRepository.isInitialized()) {
+                    if(Objects.isNull(labeledRepository)) return;
+
+                    else if(labeledRepository.getConnectionsCount() > 0) {
+                        getCache().put(key, labeledRepository);
+                    }
+
+                    else if(labeledRepository.isInitialized()) {
                         try {
                             labeledRepository.shutDown();
                         } catch (RepositoryException exception) {
@@ -111,8 +109,6 @@ public class DefaultRdfRepositoryBuilder implements RepositoryBuilder {
                 } )
                 .recordStats()
                 .build();
-
-
     }
 
 

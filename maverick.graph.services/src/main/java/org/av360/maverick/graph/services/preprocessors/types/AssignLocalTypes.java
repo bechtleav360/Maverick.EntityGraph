@@ -45,6 +45,7 @@ public class AssignLocalTypes implements ModelPreprocessor {
         Model result = new LinkedHashModel(model);
 
         return Flux.fromIterable(Collections.unmodifiableSet(model.subjects()))
+                .filter(sub -> ! sub.isTriple())
                 .filter(sub -> assignIndividualsType(sub, model, result))
                 .filter(sub -> assignClassifierType(sub, model, result))
                 .filter(sub -> assignCompositeType(sub, model, result))

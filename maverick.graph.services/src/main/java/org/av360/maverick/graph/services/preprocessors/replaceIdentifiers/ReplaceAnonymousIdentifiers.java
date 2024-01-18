@@ -90,12 +90,18 @@ public class ReplaceAnonymousIdentifiers extends AbstractIdentifierReplace imple
 
 
     private Mono<Resource> createLocalIdentifierFrom(BNode subj, Model model, Environment environment) {
+        if(model.contains(subj, RDF.TYPE, RDF.STATEMENT)) {
+            return Mono.empty();
+        }
+
 
         Set<Value> characteristicProperties = this.findCharacteristicProperties(subj, model);
         Set<Value> values = model.filter(subj, null, null).stream().map(Statement::getObject).collect(Collectors.toSet());
         Set<Value> externalTypes = model.filter(subj, RDF.TYPE, null).stream().map(Statement::getObject).filter(value -> !value.stringValue().startsWith("urn:pwid:meg")).collect(Collectors.toSet());
 
-        Optional<Value> internalType = model.filter(subj, RDF.TYPE, null).stream().map(Statement::getObject).filter(value -> value.stringValue().startsWith("urn:pwid:meg")).findFirst();
+        Optional<Value> internalType = model
+                .filter(subj, RDF.TYPE, null)
+                .stream().map(Statement::getObject).filter(value -> value.stringValue().startsWith("urn:pwid:meg")).findFirst();
         if (internalType.isEmpty())
             return Mono.error(new IOException("An internal type was not set, which is a prerequisite for generating identifiers."));
 
