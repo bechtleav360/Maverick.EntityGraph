@@ -29,7 +29,7 @@ import reactor.core.publisher.Mono;
 @ConfigurationProperties(prefix = "application")
 public class PostgresRepositoryBuilder implements RepositoryBuilder {
     @Override
-    public Mono<LabeledRepository> buildRepository(FragmentsStore store, Environment environment) {
+    public Mono<LabeledRepository> getRepository(FragmentsStore store, Environment environment) {
         return null;
     }
 

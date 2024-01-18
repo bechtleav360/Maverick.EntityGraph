@@ -7,7 +7,6 @@ import org.av360.maverick.graph.model.entities.ScheduledJob;
 import org.av360.maverick.graph.model.events.JobScheduledEvent;
 import org.av360.maverick.graph.model.security.Authorities;
 import org.av360.maverick.graph.services.SessionContextBuilder;
-import org.springframework.boot.task.TaskSchedulerBuilder;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import reactor.core.publisher.Flux;
@@ -39,7 +38,10 @@ public class JobWorker {
         this.registeredJobs = jobs;
         this.submittedJobs = new ArrayDeque<>();
         this.meterRegistry = meterRegistry;
-        this.taskScheduler = new TaskSchedulerBuilder().poolSize(1).threadNamePrefix("jobs").build();
+        this.taskScheduler = new ThreadPoolTaskScheduler();
+        this.taskScheduler.setPoolSize(1);
+        this.taskScheduler.setThreadGroupName("jobs");
+
         this.taskScheduler.initialize();
     }
 

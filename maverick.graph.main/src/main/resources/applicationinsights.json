@@ -1,6 +1,3 @@
 {
-  "connectionString": "InstrumentationKey=dc2f7f51-cba2-4203-a77a-aba5238df5f3;IngestionEndpoint=https://westeurope-5.in.applicationinsights.azure.com/;LiveEndpoint=https://westeurope.livediagnostics.monitor.azure.com/",
-  "role": {
-    "name": "entitygraph-sandbox"
-  }
+  "connectionString": "InstrumentationKey=dc2f7f51-cba2-4203-a77a-aba5238df5f3;IngestionEndpoint=https://westeurope-5.in.applicationinsights.azure.com/;LiveEndpoint=https://westeurope.livediagnostics.monitor.azure.com/"
 }

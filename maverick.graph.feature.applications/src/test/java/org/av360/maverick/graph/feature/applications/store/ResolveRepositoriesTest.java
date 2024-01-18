@@ -5,6 +5,7 @@ import org.av360.maverick.graph.feature.applications.model.domain.Application;
 import org.av360.maverick.graph.model.context.SessionContext;
 import org.av360.maverick.graph.store.IndividualsStore;
 import org.av360.maverick.graph.store.rdf.LabeledRepository;
+import org.av360.maverick.graph.store.rdf4j.config.DefaultRdfRepositoryBuilder;
 import org.av360.maverick.graph.tests.config.TestRepositoryConfig;
 import org.av360.maverick.graph.tests.config.TestSecurityConfig;
 import org.eclipse.rdf4j.repository.Repository;
@@ -27,7 +28,7 @@ import java.io.IOException;
 public class ResolveRepositoriesTest {
 
     @Autowired
-    ApplicationRdfRepositoryBuilder builder;
+    DefaultRdfRepositoryBuilder builder;
 
     @Autowired
     IndividualsStore entityStore;
@@ -35,19 +36,19 @@ public class ResolveRepositoriesTest {
     @Test
     public void buildEntityRepoWithTestAuthentication() throws IOException {
 
-        Mono<LabeledRepository> mono = builder.buildRepository(entityStore,  TestSecurityConfig.createTestContext().getEnvironment());
+        Mono<LabeledRepository> mono = builder.getRepository(entityStore,  TestSecurityConfig.createTestContext().getEnvironment());
         StepVerifier.create(mono).assertNext(repo -> repo.isInitialized()).verifyComplete();
     }
 
     @Test
     public void buildEntityRepoWithAdminAuthentication() throws IOException {
-        Mono<LabeledRepository> mono = builder.buildRepository(entityStore, TestSecurityConfig.createAdminContext().getEnvironment());
+        Mono<LabeledRepository> mono = builder.getRepository(entityStore, TestSecurityConfig.createAdminContext().getEnvironment());
         StepVerifier.create(mono).assertNext(Repository::isInitialized).verifyComplete();
     }
 
     @Test
     public void buildEntityRepoWithAnonAuthentication() throws IOException {
-        Mono<LabeledRepository> mono = builder.buildRepository(entityStore, TestSecurityConfig.createAnonymousContext().getEnvironment());
+        Mono<LabeledRepository> mono = builder.getRepository(entityStore, TestSecurityConfig.createAnonymousContext().getEnvironment());
         StepVerifier.create(mono).assertNext(Repository::isInitialized).verifyComplete();
 
     }
@@ -63,7 +64,7 @@ public class ResolveRepositoriesTest {
         TestSecurityConfig.addConfigurationDetail(ctx, Application.CONFIG_KEYS.FLAG_PERSISTENT, "false");
 
 
-        Mono<LabeledRepository> mono = builder.buildRepository(entityStore, ctx.getEnvironment());
+        Mono<LabeledRepository> mono = builder.getRepository(entityStore, ctx.getEnvironment());
         StepVerifier.create(mono).assertNext(Repository::isInitialized).verifyComplete();
 
     }
@@ -78,7 +79,7 @@ public class ResolveRepositoriesTest {
         TestSecurityConfig.addConfigurationDetail(ctx, Application.CONFIG_KEYS.FLAG_PUBLIC, "false");
         TestSecurityConfig.addConfigurationDetail(ctx, Application.CONFIG_KEYS.FLAG_PERSISTENT, "false");
 
-        Mono<LabeledRepository> mono = builder.buildRepository(entityStore, ctx.getEnvironment());
+        Mono<LabeledRepository> mono = builder.getRepository(entityStore, ctx.getEnvironment());
 
 
         StepVerifier.create(mono).assertNext(Repository::isInitialized).verifyComplete();

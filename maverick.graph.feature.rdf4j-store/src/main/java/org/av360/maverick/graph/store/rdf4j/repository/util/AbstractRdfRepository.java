@@ -484,8 +484,7 @@ public abstract class AbstractRdfRepository implements Searchable, Maintainable,
     protected <T> Mono<T> applyWithConnection(Environment environment, ThrowingFunction<RepositoryConnection, T> fun) {
         return transactionsMonoTimer.record(() ->
                 this.verifyValidAndAuthorized(environment)
-                        //.then(this.assertPrivilege(environment))
-                        .then(this.getBuilder().buildRepository(this, environment))
+                        .then(this.getBuilder().getRepository(this, environment))
                         .flatMap(repository -> {
                             try {
                                 RepositoryConnection connection = repository.getConnection();
@@ -505,7 +504,7 @@ public abstract class AbstractRdfRepository implements Searchable, Maintainable,
     protected Mono<Void> consumeWithConnection(Environment environment, ThrowingConsumer<RepositoryConnection> fun) {
         return transactionsMonoTimer.record(() ->
                 this.verifyValidAndAuthorized(environment)
-                        .flatMap(env -> this.getBuilder().buildRepository(this, env))
+                        .flatMap(env -> this.getBuilder().getRepository(this, env))
                         .switchIfEmpty(Mono.error(new IOException("Failed to build repository for repository of type: " + environment.getRepositoryType())))
                         .flatMap(repository -> {
                             try (RepositoryConnection connection = repository.getConnection()) {
@@ -544,7 +543,7 @@ public abstract class AbstractRdfRepository implements Searchable, Maintainable,
         Flux<E> result =
                 this.verifyValidAndAuthorized(environment)
                         // .then(this.assertPrivilege(environment, requiredAuthority))
-                        .then(this.getBuilder().buildRepository(this, environment))
+                        .then(this.getBuilder().getRepository(this, environment))
                         .flatMapMany(repository -> {
                             try {
                                 RepositoryConnection connection = repository.getConnection();

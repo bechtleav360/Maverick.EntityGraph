@@ -20,8 +20,11 @@ import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.reflect.MethodSignature;
 import org.av360.maverick.graph.model.annotations.OnRepositoryType;
+import org.av360.maverick.graph.model.context.Environment;
 import org.av360.maverick.graph.model.context.SessionContext;
 import org.av360.maverick.graph.model.enums.RepositoryType;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
 import java.util.Arrays;
@@ -30,13 +33,42 @@ import java.util.Optional;
 
 @Aspect
 @Component
+@ConfigurationProperties
 public class SetsRepositoryType {
+
+
+    public record DefaultStorageConfiguration(String path, boolean persistence) {}
+
+
+    @Value("${application.storage.entities.path:#{null}}")
+    String entities_path;
+
+    @Value("${application.storage.entities.persistent:false}")
+    boolean entities_persistence;
+
+    @Value("${application.storage.vocabularies.path:#{null}}")
+    String vocabularies_path;
+
+    @Value("${application.storage.vocabularies.persistent:false}")
+    boolean vocabularies_persistence;
+
+    @Value("${application.storage.transactions.path:#{null}}")
+    String transactions_path;
+
+    @Value("${application.storage.transactions.persistent:false}")
+    boolean transactions_persistence;
+
+    @Value("${application.storage.system.path:#{null}}")
+    String system_path;
+
+    @Value("${application.storage.system.persistent:false}")
+    boolean system_persistence;
 
     @Around("@annotation(org.av360.maverick.graph.model.annotations.OnRepositoryType)")
     public Object addRepositoryTypeToEnvironment(ProceedingJoinPoint joinPoint) throws Throwable {
 
         Optional<SessionContext> sessionContextOptional = Arrays.stream(joinPoint.getArgs()).filter(o -> o instanceof SessionContext).findFirst().map(obk -> (SessionContext) obk);
-        if(sessionContextOptional.isEmpty()) throw new IllegalArgumentException("Missing Session Context while running authorization");
+        if(sessionContextOptional.isEmpty()) throw new IllegalArgumentException("Missing Session Context while resolving environment");
         SessionContext ctx = sessionContextOptional.get();
 
 
@@ -53,6 +85,34 @@ public class SetsRepositoryType {
 
         ctx.getEnvironment().withRepositoryType(onRepositoryType);
 
+        // add default configurations
+        this.setDefaultConfigurations(ctx.getEnvironment());
+
         return joinPoint.proceed();
+    }
+
+    private void setDefaultConfigurations(Environment environment) {
+
+        switch (environment.getRepositoryType()) {
+            case APPLICATION:
+                environment.setConfiguration(Environment.RepositoryConfigurationKey.FLAG_PERSISTENT, this.system_persistence);
+                environment.setConfiguration(Environment.RepositoryConfigurationKey.FLAG_PUBLIC, false);
+                break;
+            case ENTITIES:
+                environment.setConfiguration(Environment.RepositoryConfigurationKey.FLAG_PERSISTENT, this.entities_persistence);
+                environment.setConfiguration(Environment.RepositoryConfigurationKey.FLAG_PUBLIC, false);
+                break;
+            case TRANSACTIONS:
+                environment.setConfiguration(Environment.RepositoryConfigurationKey.FLAG_PERSISTENT, this.transactions_persistence);
+                environment.setConfiguration(Environment.RepositoryConfigurationKey.FLAG_PUBLIC, false);
+                break;
+            case SCHEMA:
+                environment.setConfiguration(Environment.RepositoryConfigurationKey.FLAG_PERSISTENT, this.vocabularies_persistence);
+                environment.setConfiguration(Environment.RepositoryConfigurationKey.FLAG_PUBLIC, true);
+                break;
+            case UNSET:
+                environment.setConfiguration(Environment.RepositoryConfigurationKey.FLAG_PERSISTENT, false);
+                environment.setConfiguration(Environment.RepositoryConfigurationKey.FLAG_PUBLIC, true);
+        }
     }
 }

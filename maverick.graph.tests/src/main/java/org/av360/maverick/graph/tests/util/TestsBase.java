@@ -2,7 +2,9 @@ package org.av360.maverick.graph.tests.util;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.av360.maverick.graph.model.context.Environment;
 import org.av360.maverick.graph.model.context.SessionContext;
+import org.av360.maverick.graph.model.enums.RepositoryType;
 import org.av360.maverick.graph.store.IndividualsStore;
 import org.av360.maverick.graph.store.TransactionsStore;
 import org.av360.maverick.graph.tests.config.TestSecurityConfig;
@@ -108,7 +110,12 @@ public abstract class TestsBase {
 
 
     protected void resetRepository(SessionContext ctx) {
-        Mono<Void> r1 = this.entityStore.asMaintainable().purge(ctx.getEnvironment())
+        ctx.updateEnvironment(environment -> {
+            environment.setConfiguration(Environment.RepositoryConfigurationKey.FLAG_PERSISTENT, false);
+            environment.setRepositoryType(RepositoryType.ENTITIES);
+        });
+
+        Mono<Void> r1 = this.entityStore.asMaintainable().purge(ctx.updateEnvironment(e -> e.setRepositoryType(RepositoryType.ENTITIES)).getEnvironment())
                 .then(this.transactionsStore.asMaintainable().purge(ctx.getEnvironment()));
 
         StepVerifier.create(r1).verifyComplete();
