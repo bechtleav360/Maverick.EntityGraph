@@ -15,7 +15,9 @@ import org.av360.maverick.graph.store.RepositoryBuilder;
 import org.av360.maverick.graph.store.rdf.LabeledRepository;
 import org.av360.maverick.graph.store.rdf4j.repository.util.AbstractRdfRepository;
 import org.eclipse.rdf4j.repository.RepositoryException;
+import org.eclipse.rdf4j.repository.RepositoryLockedException;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
+import org.eclipse.rdf4j.sail.helpers.DirectoryLockManager;
 import org.eclipse.rdf4j.sail.lmdb.LmdbStore;
 import org.eclipse.rdf4j.sail.lmdb.config.LmdbStoreConfig;
 import org.eclipse.rdf4j.sail.memory.MemoryStore;
@@ -51,7 +53,6 @@ public class DefaultRdfRepositoryBuilder implements RepositoryBuilder {
     }
 
 
-
     @Autowired
     public void setMeterRegistry(MeterRegistry meterRegistry) {
         this.meterRegistry = meterRegistry;
@@ -60,7 +61,9 @@ public class DefaultRdfRepositoryBuilder implements RepositoryBuilder {
 
     @PostConstruct
     private void registerCacheGauges() {
-        if(Objects.nonNull(this.meterRegistry)) {
+        this.cache.init();
+
+        if (Objects.nonNull(this.meterRegistry)) {
             Gauge.builder("graph.store.repository.cache_size", this.cache.items(), Collection::size)
                     .register(this.meterRegistry);
 
@@ -68,19 +71,14 @@ public class DefaultRdfRepositoryBuilder implements RepositoryBuilder {
     }
 
 
-
-
-    private LabeledRepository getCached(String label, Function<String, LabeledRepository> mappingFunction) {
-        return this.cache.map()
-                .computeIfAbsent(label, s -> new RepositoryCache.ManagedRepositoryItem(s, mappingFunction.apply(s)))
-                .activate()
-                .getRepository();
+    private synchronized Mono<LabeledRepository> getCached(String label, Function<String, Mono<LabeledRepository>> mappingFunction) {
+        if (this.cache.contains(label)) {
+            return Mono.just(this.cache.get(label));
+        } else {
+            return mappingFunction.apply(label);
+        }
     }
 
-    @PostConstruct
-    public void schedule() {
-
-    }
 
     public DefaultRdfRepositoryBuilder() {
         this.cache = new RepositoryCache();
@@ -90,25 +88,22 @@ public class DefaultRdfRepositoryBuilder implements RepositoryBuilder {
     /**
      * Initializes the connection to a repository. The repositories are cached
      *
-     * @param store Store
+     * @param store          Store
      * @param authentication Current authentication information
      * @return The repository object
      * @throws IOException If repository cannot be found
      */
     @Override
     public Mono<LabeledRepository> getRepository(FragmentsStore store, Environment target) {
-        if(store instanceof AbstractRdfRepository repository) {
+        if (store instanceof AbstractRdfRepository rdfStore) {
             Validate.isTrue(target.isAuthorized(), "Unauthorized status in repository builder");
             Validate.notNull(target.getRepositoryType(), "Missing repository type in repository builder");
             Validate.notBlank(target.getRepositoryType().toString(), "Empty repository type in repository builder");
 
-            try {
-                LabeledRepository labeledRepository = this.buildRepository(repository, target);
-                return this.validateRepository(labeledRepository, repository, target);
-            } catch (IOException e) {
-                return Mono.error(e);
-            }
-        } else return Mono.error(new InvalidStoreConfiguration("Store of type %s not supported by for building a RDF repository.".formatted(store.getClass().getSimpleName())));
+            return this.buildRepository(rdfStore, target)
+                    .flatMap(repository -> this.validateRepository(repository, rdfStore, target));
+        } else
+            return Mono.error(new InvalidStoreConfiguration("Store of type %s not supported by for building a RDF repository.".formatted(store.getClass().getSimpleName())));
 
     }
 
@@ -119,10 +114,10 @@ public class DefaultRdfRepositoryBuilder implements RepositoryBuilder {
         return Mono.empty();
     }
 
-    protected Mono<LabeledRepository> validateRepository(@Nullable LabeledRepository repository, FragmentsStore store, Environment environment) throws IOException {
+    protected Mono<LabeledRepository> validateRepository(@Nullable LabeledRepository repository, FragmentsStore store, Environment environment) {
         return Mono.create(sink -> {
-            if(!Objects.isNull(repository)) {
-                if(! repository.isInitialized() && repository.getConnectionsCount() == 0) {
+            if (!Objects.isNull(repository)) {
+                if (!repository.isInitialized() && repository.getConnectionsCount() == 0) {
                     repository.init();
                     sink.success(repository);
                 } else {
@@ -134,13 +129,13 @@ public class DefaultRdfRepositoryBuilder implements RepositoryBuilder {
         });
     }
 
-    protected LabeledRepository buildRepository(AbstractRdfRepository store, Environment environment) {
-        if(! environment.hasConfiguration(Environment.RepositoryConfigurationKey.FLAG_PERSISTENT)) {
+    protected Mono<LabeledRepository> buildRepository(AbstractRdfRepository store, Environment environment) {
+        if (!environment.hasConfiguration(Environment.RepositoryConfigurationKey.FLAG_PERSISTENT)) {
             log.warn("Repository configuration for persistence not present, default to false");
             environment.setConfiguration(Environment.RepositoryConfigurationKey.FLAG_PERSISTENT, false);
         }
 
-        if(! environment.hasConfiguration(Environment.RepositoryConfigurationKey.FLAG_PUBLIC)) {
+        if (!environment.hasConfiguration(Environment.RepositoryConfigurationKey.FLAG_PUBLIC)) {
             log.warn("Repository configuration for persistence not present, default to false");
             environment.setConfiguration(Environment.RepositoryConfigurationKey.FLAG_PUBLIC, false);
         }
@@ -155,14 +150,14 @@ public class DefaultRdfRepositoryBuilder implements RepositoryBuilder {
         log.trace("Resolving repository for environment: {}", environment);
 
         String label = formatRepositoryLabel(environment);
-        if(Objects.nonNull(this.meterRegistry)) {
+        if (Objects.nonNull(this.meterRegistry)) {
             meterRegistry.counter("graph.store.repository", "method", "access", "label", label).increment();
         }
 
 
         if (environment.getConfiguration(Environment.RepositoryConfigurationKey.FLAG_PERSISTENT).map(Boolean::parseBoolean).orElse(false)) {
             Path path;
-            if(environment.hasConfiguration(Environment.RepositoryConfigurationKey.KEY)) {
+            if (environment.hasConfiguration(Environment.RepositoryConfigurationKey.KEY)) {
                 path = Paths.get(store.getDirectory(), environment.getConfiguration(Environment.RepositoryConfigurationKey.KEY).get());
             } else {
                 path = Paths.get(store.getDirectory());
@@ -175,15 +170,9 @@ public class DefaultRdfRepositoryBuilder implements RepositoryBuilder {
     }
 
 
-
-
-
-
-    protected LabeledRepository initializePersistentRepository(Path path, String label) {
+    protected Mono<LabeledRepository> initializePersistentRepository(Path path, String label) {
         try {
             log.debug("Initializing persistent repository in path '{}' for label '{}'", path, label);
-
-
 
             Resource file = new FileSystemResource(path);
             LmdbStoreConfig config = new LmdbStoreConfig();
@@ -192,46 +181,60 @@ public class DefaultRdfRepositoryBuilder implements RepositoryBuilder {
 
 
             if (!file.exists() && !file.getFile().mkdirs())
-                throw new IOException("Failed to create path: " + file.getFile());
+                return Mono.error(new IOException("Failed to create path: " + file.getFile()));
 
-            LabeledRepository labeledRepository = new LabeledRepository(label, new SailRepository(new LmdbStore(file.getFile(), config)));
-            labeledRepository.init();
-
-            this.registerMetrics(label, labeledRepository); 
-
-
-
-            return labeledRepository;
-
+            DirectoryLockManager directoryLockManager = new DirectoryLockManager(file.getFile());
+            if (directoryLockManager.isLocked()) {
+                log.warn("Repository directory '{}' is locked by: {}", directoryLockManager.getLocation(), directoryLockManager.lockOrFail());
+            }
+            this.cache.register(label, buildDataRepository(label, file, config));
+            return Mono.just(this.cache.get(label));
 
         } catch (RepositoryException e) {
             log.error("Failed to initialize persistent repository in path '{}'.", path, e);
-            throw e;
+            return Mono.error(e);
         } catch (IOException e) {
             log.error("Failed to initialize persistent repository in path '{}'.", path, e);
             return this.initializeVolatileRepository(label);
         }
     }
 
+    private synchronized LabeledRepository buildDataRepository(String label, Resource file, LmdbStoreConfig config) throws IOException {
+        try {
+            LabeledRepository labeledRepository = new LabeledRepository(label, new SailRepository(new LmdbStore(file.getFile(), config)));
+            labeledRepository.init();
+
+            this.registerMetrics(label, labeledRepository);
+
+            return labeledRepository;
+        } catch (RepositoryLockedException lockedException) {
+            log.warn("Failed to init persistent repository, it is locked");
+            throw lockedException;
+        } catch (IOException e) {
+            log.error("Failed to initialize persistent repository in path '{}'.", file, e);
+            throw e;
+        }
+    }
+
     private void registerMetrics(String label, LabeledRepository labeledRepository) {
-        if(Objects.nonNull(this.meterRegistry)) {
+        if (Objects.nonNull(this.meterRegistry)) {
             meterRegistry.counter("graph.store.repository", "method", "init", "mode", "persistent", "label", label).increment();
             meterRegistry.gauge("graph.store.repository.connections", Tags.of("label", label), labeledRepository, LabeledRepository::getConnectionsCount);
         }
     }
 
-    protected LabeledRepository initializeVolatileRepository(String label) {
+    protected Mono<LabeledRepository> initializeVolatileRepository(String label) {
         log.debug("Initializing in-memory repository for label '{}'", label);
 
 
-
-
         LabeledRepository labeledRepository = new LabeledRepository(label, new SailRepository(new MemoryStore()));
+        this.cache.register(label, labeledRepository);
+
         labeledRepository.init();
 
         this.registerMetrics(label, labeledRepository);
 
-        return labeledRepository;
+        return Mono.just(this.cache.get(label));
     }
 
 
@@ -245,8 +248,8 @@ public class DefaultRdfRepositoryBuilder implements RepositoryBuilder {
 
     protected String formatRepositoryLabel(Environment environment) {
         StringBuilder label = new StringBuilder(environment.getRepositoryType().toString());
-        if(Objects.nonNull(environment.getScope())) label.append("_").append(environment.getScope().label());
-        if(StringUtils.hasLength(environment.getStage())) label.append("_").append(environment.getStage());
+        if (Objects.nonNull(environment.getScope())) label.append("_").append(environment.getScope().label());
+        if (StringUtils.hasLength(environment.getStage())) label.append("_").append(environment.getStage());
 
         return label.toString();
     }

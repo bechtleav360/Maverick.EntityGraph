@@ -17,12 +17,13 @@ package org.av360.maverick.graph.store.rdf4j.config;
 
 import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.store.rdf.LabeledRepository;
+import reactor.core.publisher.Mono;
 
 import java.time.Instant;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
@@ -39,7 +40,7 @@ final class RepositoryCache {
     public static int TIME_TO_EVICT = 120;
 
     public RepositoryCache() {
-        this.cache = new HashMap<>();
+        this.cache = new ConcurrentHashMap<>();
     }
 
     public void init() {
@@ -98,17 +99,27 @@ final class RepositoryCache {
         }
     }
 
+    public boolean contains(String label) {
+        return this.cache.containsKey(label);
+    }
+
+    public LabeledRepository get(String label) {
+        return this.cache.get(label).getRepository();
+    }
+
+    public void register(String label, LabeledRepository labeledRepository) {
+        this.cache.put(label, new ManagedRepositoryItem(labeledRepository));
+    }
+
 
     static class ManagedRepositoryItem {
 
-        private final String label;
         private final LabeledRepository labeledRepository;
         private final Instant creationDate;
         private Instant idleDate;
         private ManagedRepositoryStatus status;
 
-        ManagedRepositoryItem(String label, LabeledRepository labeledRepository) {
-            this.label = label;
+        ManagedRepositoryItem(LabeledRepository labeledRepository) {
             this.labeledRepository = labeledRepository;
             this.creationDate = Instant.now();
             this.status = ManagedRepositoryStatus.ACTIVE;
@@ -154,6 +165,10 @@ final class RepositoryCache {
             return this;
         }
 
+        public Mono<LabeledRepository> getRepositoryMono() {
+            return Mono.just(this.getRepository());
+        }
+
 
         enum ManagedRepositoryStatus {
             ACTIVE,
@@ -162,10 +177,6 @@ final class RepositoryCache {
         }
 
 
-
-        public String label() {
-            return label;
-        }
 
         public LabeledRepository getRepository() {
             return labeledRepository;
@@ -188,7 +199,7 @@ final class RepositoryCache {
             if (obj == this) return true;
             if (obj == null || obj.getClass() != this.getClass()) return false;
             var that = (ManagedRepositoryItem) obj;
-            return Objects.equals(this.label, that.label) &&
+            return
                     Objects.equals(this.labeledRepository, that.labeledRepository) &&
                     Objects.equals(this.creationDate, that.creationDate) &&
                     Objects.equals(this.idleDate, that.idleDate) &&
@@ -197,18 +208,10 @@ final class RepositoryCache {
 
         @Override
         public int hashCode() {
-            return Objects.hash(label, labeledRepository, creationDate, idleDate, status);
+            return Objects.hash(labeledRepository, creationDate, idleDate, status);
         }
 
-        @Override
-        public String toString() {
-            return "ManagedRepository[" +
-                    "label=" + label + ", " +
-                    "labeledRepository=" + labeledRepository + ", " +
-                    "created=" + creationDate + ", " +
-                    "idled=" + idleDate + ", " +
-                    "status=" + status + ']';
-        }
+
     }
 
 }
