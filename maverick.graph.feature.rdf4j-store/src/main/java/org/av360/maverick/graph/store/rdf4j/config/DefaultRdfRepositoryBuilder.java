@@ -1,9 +1,5 @@
 package org.av360.maverick.graph.store.rdf4j.config;
 
-import com.github.benmanes.caffeine.cache.Cache;
-import com.github.benmanes.caffeine.cache.Caffeine;
-import com.github.benmanes.caffeine.cache.RemovalCause;
-import com.github.benmanes.caffeine.cache.Scheduler;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tags;
@@ -19,7 +15,6 @@ import org.av360.maverick.graph.store.RepositoryBuilder;
 import org.av360.maverick.graph.store.rdf.LabeledRepository;
 import org.av360.maverick.graph.store.rdf4j.repository.util.AbstractRdfRepository;
 import org.eclipse.rdf4j.repository.RepositoryException;
-import org.eclipse.rdf4j.repository.base.RepositoryWrapper;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
 import org.eclipse.rdf4j.sail.lmdb.LmdbStore;
 import org.eclipse.rdf4j.sail.lmdb.config.LmdbStoreConfig;
@@ -36,8 +31,9 @@ import javax.annotation.Nullable;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Collection;
 import java.util.Objects;
-import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 
 @Component
 @Slf4j(topic = "graph.repo.cfg.builder")
@@ -45,15 +41,12 @@ import java.util.concurrent.TimeUnit;
 public class DefaultRdfRepositoryBuilder implements RepositoryBuilder {
 
 
-    private final Cache<String, LabeledRepository> cache;
-
+    private RepositoryCache cache;
     protected MeterRegistry meterRegistry;
 
     @PreDestroy
     public void shutdownRepositories() {
-        if(cache != null) {
-            cache.asMap().values().forEach(RepositoryWrapper::shutDown);
-        }
+        cache.shutdown();
 
     }
 
@@ -68,47 +61,29 @@ public class DefaultRdfRepositoryBuilder implements RepositoryBuilder {
     @PostConstruct
     private void registerCacheGauges() {
         if(Objects.nonNull(this.meterRegistry)) {
-            Gauge.builder("graph.store.repository.cache_size", cache, Cache::estimatedSize)
+            Gauge.builder("graph.store.repository.cache_size", this.cache.items(), Collection::size)
                     .register(this.meterRegistry);
 
-            Gauge.builder("graph.store.repository.cache_evictions", cache, c -> c.stats().evictionCount())
-                    .register(this.meterRegistry);
-
-            Gauge.builder("graph.store.repository.cache_loads", cache, c -> c.stats().loadCount())
-                    .register(this.meterRegistry);
-
-            Gauge.builder("graph.store.repository.cache_hits", cache, c -> c.stats().hitCount())
-                    .register(this.meterRegistry);
-
-            Gauge.builder("graph.store.repository.cache_weight", cache, c -> c.stats().evictionWeight())
-                    .register(this.meterRegistry);
         }
     }
 
+
+
+
+    private LabeledRepository getCached(String label, Function<String, LabeledRepository> mappingFunction) {
+        return this.cache.map()
+                .computeIfAbsent(label, s -> new RepositoryCache.ManagedRepositoryItem(s, mappingFunction.apply(s)))
+                .activate()
+                .getRepository();
+    }
+
+    @PostConstruct
+    public void schedule() {
+
+    }
+
     public DefaultRdfRepositoryBuilder() {
-        // shutdown evicted caches
-
-        cache = Caffeine.newBuilder()
-                .expireAfterAccess(240, TimeUnit.SECONDS)
-                .scheduler(Scheduler.systemScheduler())
-                .evictionListener((String key, LabeledRepository labeledRepository, RemovalCause cause) -> {
-                    log.debug("Repository {} shutting down due to reason: {}", key, cause);
-                    if(Objects.isNull(labeledRepository)) return;
-
-                    else if(labeledRepository.getConnectionsCount() > 0) {
-                        getCache().put(key, labeledRepository);
-                    }
-
-                    else if(labeledRepository.isInitialized()) {
-                        try {
-                            labeledRepository.shutDown();
-                        } catch (RepositoryException exception) {
-                            log.warn("Exception while shutting down for repository {}: {}", key, exception.getMessage());
-                        }
-                    }
-                } )
-                .recordStats()
-                .build();
+        this.cache = new RepositoryCache();
     }
 
 
@@ -135,21 +110,12 @@ public class DefaultRdfRepositoryBuilder implements RepositoryBuilder {
             }
         } else return Mono.error(new InvalidStoreConfiguration("Store of type %s not supported by for building a RDF repository.".formatted(store.getClass().getSimpleName())));
 
-
-
     }
 
     @Override
     public Mono<Void> shutdownRepository(FragmentsStore store, Environment environment) {
-        if(cache != null) {
-            String key = formatRepositoryLabel(environment);
-            LabeledRepository repository = cache.getIfPresent(key);
-            if(!Objects.isNull(repository)) {
-                repository.shutDown();
-                cache.invalidate(key);
-            }
-
-        }
+        String key = formatRepositoryLabel(environment);
+        this.cache.shutdown(key);
         return Mono.empty();
     }
 
@@ -157,8 +123,8 @@ public class DefaultRdfRepositoryBuilder implements RepositoryBuilder {
         return Mono.create(sink -> {
             if(!Objects.isNull(repository)) {
                 if(! repository.isInitialized() && repository.getConnectionsCount() == 0) {
-                    log.warn("Validation error: Repository of type '{}' is not initialized", repository);
-                    sink.error(new IOException(String.format("Repository %s not initialized", environment.getRepositoryType())));
+                    repository.init();
+                    sink.success(repository);
                 } else {
                     sink.success(repository);
                 }
@@ -202,11 +168,12 @@ public class DefaultRdfRepositoryBuilder implements RepositoryBuilder {
                 path = Paths.get(store.getDirectory());
             }
 
-            return getCache().get(label, s -> initializePersistentRepository(path, label));
+            return getCached(label, s -> initializePersistentRepository(path, label));
         } else {
-            return getCache().get(label, s -> initializeVolatileRepository(label));
+            return getCached(label, s -> initializeVolatileRepository(label));
         }
     }
+
 
 
 
@@ -267,9 +234,6 @@ public class DefaultRdfRepositoryBuilder implements RepositoryBuilder {
         return labeledRepository;
     }
 
-    public Cache<String, LabeledRepository> getCache() {
-        return cache;
-    }
 
     protected String formatRepositoryLabel(RepositoryType rt, String... details) {
         StringBuilder label = new StringBuilder(rt.toString());

@@ -6,8 +6,9 @@ import org.eclipse.rdf4j.repository.RepositoryException;
 import org.eclipse.rdf4j.repository.base.RepositoryConnectionWrapper;
 import org.eclipse.rdf4j.repository.base.RepositoryWrapper;
 
+import java.util.Collections;
+import java.util.Set;
 import java.util.WeakHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Required to override the toString() Method, to find out in the logs which repository has been used (to differentiate between the different applications)
@@ -16,15 +17,13 @@ public class LabeledRepository extends RepositoryWrapper {
 
     private final String label;
 
-    private final WeakHashMap<String, RepositoryConnection> connections;
+    private final Set<RepositoryConnection> connections;
 
-    private final AtomicInteger counter;
 
     public LabeledRepository(String label, Repository repository) {
         super(repository);
         this.label = label;
-        connections = new WeakHashMap<>();
-        this.counter = new AtomicInteger();
+        connections = Collections.newSetFromMap(new WeakHashMap<>());
     }
 
     @Override
@@ -35,11 +34,11 @@ public class LabeledRepository extends RepositoryWrapper {
     @Override
     public RepositoryConnection getConnection() throws RepositoryException {
         RepositoryConnectionWrapper connection = new RepositoryConnectionWrapper(this, super.getConnection());
-        this.connections.put(this.label+counter.incrementAndGet(), connection);
+        this.connections.add(connection);
         return connection;
     }
 
-    public int getConnectionsCount() {
-        return this.connections.size();
+    public long getConnectionsCount() {
+        return this.connections.stream().filter(RepositoryConnection::isOpen).count();
     }
 }

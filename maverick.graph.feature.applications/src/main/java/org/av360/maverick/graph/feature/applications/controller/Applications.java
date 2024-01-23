@@ -126,7 +126,6 @@ public class Applications extends AbstractController {
     @DeleteMapping(value = "/{applicationKey}/keywords/{keyword}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     Mono<Void> deleteKeyword(@PathVariable String applicationKey, @PathVariable String keyword) {
-        Assert.isTrue(keyword.matches("^[a-zA-Z0-9_-]+$"), "Only alphanumeric characters, dash and underscore are allowed for keywords.");
 
         return super.acquireContext()
                 .flatMap(ctx ->
