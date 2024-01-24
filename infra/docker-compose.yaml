@@ -1,0 +1,237 @@
+volumes:
+  logs:
+  system:
+  exports:
+  content:
+  entities:
+
+services:
+  ownership:
+    image: alpine
+    restart: "no"
+    entrypoint: |
+      /bin/sh -c "chown 1002:1000 /data/logs && chown 1002:1000 /data/system && chown 1002:1000 /data/exports && chown 1002:1000 /data/content &&chown 1002:1000 /data/entities"
+    volumes:
+      - logs:/data/logs
+      - system:/data/system
+      - exports:/data/exports
+      - content:/data/content
+      - entities:/data/entities
+
+  graph:
+    image: ghcr.io/bechtleav360/maverick.entity-graph:latest
+    restart: always
+    depends_on:
+      - ownership
+    ports:
+      - 9090:9090
+    volumes:
+      - logs:/data/logs
+      - system:/data/system
+      - exports:/data/exports
+      - content:/data/content
+      - entities:/data/entities
+    environment:
+      SERVER_PORT: 9090
+      SPRING_PROFILES_ACTIVE: persistent
+      SPRING_APPLICATION_JSON: >
+        {
+          "application": {
+              "security": {
+                  "enabled": true,
+                  "apiKey": "123",
+                  "basic": {
+                      "enabled": false
+                  }
+              },
+              "features": {
+                  "modules": {
+                      "applications": {
+                          "enabled": true,
+                          "configuration": {
+        
+                          }
+                      },
+                      "admin": {
+                          "enabled": true,
+                          "configuration": {
+        
+                          }
+        
+                      },
+                      "navigation": {
+                          "enabled": true,
+                          "configuration": {
+                              "limit": 100
+                          }
+                      },
+                      "jobs": {
+                          "enabled": false,
+                          "scheduled": {
+                              "detectDuplicates": {
+                                  "enabled": false,
+                                  "defaultFrequency": "@midnight"
+                              },
+        
+                              "replaceIdentifiers": {
+                                  "enabled": false,
+                                  "defaultFrequency": "@midnight"
+                              },
+                              "typeCoercion": {
+                                  "enabled": false,
+                                  "defaultFrequency": "@midnight"
+                              },
+                              "exportApplication": {
+                                  "enabled": true,
+                                  "defaultFrequency": "@midnight",
+                                  "defaultLocalPath": "/data/exports",
+                                  "defaultS3Host": null,
+                                  "defaultS3BucketId": null
+                              },
+                              "computeStatistics": {
+                                  "enabled": true,
+                                  "defaultFrequency": "@hourly"
+                              }
+                          }
+                      },
+                      "objects": {
+                          "enabled": true,
+                          "configuration": {
+                              "mode": "File system",
+                              "path": "/data/content"
+                          }
+                      }
+                  },
+                  "transformers": {
+                      "replaceGlobalIdentifiers": true,
+                      "replaceAnonymousIdentifiers": true,
+                      "mergeDuplicates": true,
+                      "typeCoercion": true
+                  },
+                  "validators": {
+                      "checkRequiredType": true
+                  }
+              },
+              "storage": {
+                  "vocabularies": {
+                      "persistent": true,
+                      "path": "/data/system/vocabularies"
+                  },
+                  "system": {
+                      "persistent": true,
+                      "path": "/data/system"
+                  },
+                  "entities": {
+                      "persistent": true,
+                      "path": "/data/entities"
+                  },
+                  "transactions": {
+                      "persistent": true,
+                      "path": "/data/system/transactions"
+                  }
+              }
+          },
+          "spring": {
+              "profiles": {
+                  "active": "dev"
+              },
+              "security": {
+                  "user": {
+                      "name": "admin",
+                      "password": "123"
+                  }
+              }
+          },
+          "server": {
+              "use-forward-headers": true,
+              "forward-headers-strategy": "framework"
+          },
+          "logging": {
+              "file": {
+                  "name": "main.log",
+                  "path": "/data/logs"
+              },
+              "level": {
+                  "root": "INFO",
+                  "graph": {
+                      "jobs": "INFO",
+                      "repo": "INFO",
+                      "srvc": "INFO",
+                      "ctrl": "INFO",
+                      "feat": "INFO"
+                  },
+                  "org": {
+                      "eclipse" : {
+                          "rdf4j": "INFO"
+                      },
+                      "springframework": {
+                          "security": "INFO"
+                      }
+                  }
+              }
+          },
+          "management": {
+              "info": {
+                  "env": {
+                      "enabled": true
+                  },
+                  "git": {
+                      "enabled": true,
+                      "mode": "full"
+                  }
+              },
+              "health": {
+                  "defaults": {
+                      "enabled": false
+                  },
+                  "probes": {
+                      "enabled": true
+                  }
+              },
+              "endpoints": {
+                  "web": {
+                      "exposure": {
+                          "include": "health, info, git, loggers, metrics, logfile, prometheus, env, configprops, scheduledTasks, jobs"
+                      }
+                  }
+              },
+              "endpoint": {
+                  "discovery": {
+                      "enabled": true
+                  },
+                  "jobs": {
+                      "enabled": true
+                  },
+                  "health": {
+                      "enabled": true,
+                      "show-details": "always"
+                  },
+                  "info": {
+                      "enabled": true
+                  },
+                  "env": {
+                      "enabled": true,
+                      "show-values": "WHEN_AUTHORIZED"
+                  },
+                  "configprops": {
+                      "enabled": true,
+                      "show-values": "WHEN_AUTHORIZED"
+                  },
+                  "loggers": {
+                      "enabled": true
+                  },
+                  "metrics": {
+                      "enabled": true
+                  },
+                  "scheduledTasks": {
+                      "enabled": true
+                  },
+                  "logfile": {
+                      "enabled": true
+                  },
+                  "prometheus": {
+                      "enabled": true
+                  }
+              }
+          }
+        }
