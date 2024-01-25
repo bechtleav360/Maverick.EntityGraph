@@ -17,7 +17,6 @@ import org.av360.maverick.graph.store.rdf4j.repository.util.AbstractRdfRepositor
 import org.eclipse.rdf4j.repository.RepositoryException;
 import org.eclipse.rdf4j.repository.RepositoryLockedException;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
-import org.eclipse.rdf4j.sail.helpers.DirectoryLockManager;
 import org.eclipse.rdf4j.sail.lmdb.LmdbStore;
 import org.eclipse.rdf4j.sail.lmdb.config.LmdbStoreConfig;
 import org.eclipse.rdf4j.sail.memory.MemoryStore;
@@ -33,6 +32,8 @@ import javax.annotation.Nullable;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 import java.util.Collection;
 import java.util.Objects;
 import java.util.function.Function;
@@ -49,7 +50,6 @@ public class DefaultRdfRepositoryBuilder implements RepositoryBuilder {
     @PreDestroy
     public void shutdownRepositories() {
         cache.shutdown();
-
     }
 
 
@@ -71,11 +71,11 @@ public class DefaultRdfRepositoryBuilder implements RepositoryBuilder {
     }
 
 
-    private synchronized Mono<LabeledRepository> getCached(String label, Function<String, Mono<LabeledRepository>> mappingFunction) {
+    private synchronized Mono<LabeledRepository> getCached(String label, Function<String, LabeledRepository> mappingFunction) {
         if (this.cache.contains(label)) {
             return Mono.just(this.cache.get(label));
         } else {
-            return mappingFunction.apply(label);
+            return Mono.just(mappingFunction.apply(label)).cache(Duration.of(10, ChronoUnit.SECONDS));
         }
     }
 
@@ -170,8 +170,12 @@ public class DefaultRdfRepositoryBuilder implements RepositoryBuilder {
     }
 
 
-    protected Mono<LabeledRepository> initializePersistentRepository(Path path, String label) {
+    protected synchronized LabeledRepository initializePersistentRepository(Path path, String label) {
         try {
+            if(this.cache.contains(label)) {
+                return this.cache.get(label);
+            }
+
             log.debug("Initializing persistent repository in path '{}' for label '{}'", path, label);
 
             Resource file = new FileSystemResource(path);
@@ -181,40 +185,39 @@ public class DefaultRdfRepositoryBuilder implements RepositoryBuilder {
 
 
             if (!file.exists() && !file.getFile().mkdirs())
-                return Mono.error(new IOException("Failed to create path: " + file.getFile()));
+                throw new IOException("Failed to create path: " + file.getFile());
 
-            DirectoryLockManager directoryLockManager = new DirectoryLockManager(file.getFile());
-            if (directoryLockManager.isLocked()) {
-                log.warn("Repository directory '{}' is locked by: {}", directoryLockManager.getLocation(), directoryLockManager.lockOrFail());
+            try {
+
+                LabeledRepository labeledRepository = new LabeledRepository(label, new SailRepository(new LmdbStore(file.getFile(), config)));
+                labeledRepository.init();
+                this.registerMetrics(label, labeledRepository);
+
+                this.cache.register(label, labeledRepository);
+                
+                return this.cache.get(label);
+            } catch (RepositoryLockedException lockedException) {
+                log.warn("Failed to init persistent repository, it is locked");
+                if(this.cache.contains(label)) {
+                    return this.cache.get(label);
+                }
+                throw lockedException;
             }
-            this.cache.register(label, buildDataRepository(label, file, config));
-            return Mono.just(this.cache.get(label));
+
+
+
+
+
 
         } catch (RepositoryException e) {
             log.error("Failed to initialize persistent repository in path '{}'.", path, e);
-            return Mono.error(e);
+            throw e;
         } catch (IOException e) {
             log.error("Failed to initialize persistent repository in path '{}'.", path, e);
             return this.initializeVolatileRepository(label);
         }
     }
 
-    private synchronized LabeledRepository buildDataRepository(String label, Resource file, LmdbStoreConfig config) throws IOException {
-        try {
-            LabeledRepository labeledRepository = new LabeledRepository(label, new SailRepository(new LmdbStore(file.getFile(), config)));
-            labeledRepository.init();
-
-            this.registerMetrics(label, labeledRepository);
-
-            return labeledRepository;
-        } catch (RepositoryLockedException lockedException) {
-            log.warn("Failed to init persistent repository, it is locked");
-            throw lockedException;
-        } catch (IOException e) {
-            log.error("Failed to initialize persistent repository in path '{}'.", file, e);
-            throw e;
-        }
-    }
 
     private void registerMetrics(String label, LabeledRepository labeledRepository) {
         if (Objects.nonNull(this.meterRegistry)) {
@@ -223,7 +226,7 @@ public class DefaultRdfRepositoryBuilder implements RepositoryBuilder {
         }
     }
 
-    protected Mono<LabeledRepository> initializeVolatileRepository(String label) {
+    protected synchronized LabeledRepository initializeVolatileRepository(String label) {
         log.debug("Initializing in-memory repository for label '{}'", label);
 
 
@@ -234,7 +237,7 @@ public class DefaultRdfRepositoryBuilder implements RepositoryBuilder {
 
         this.registerMetrics(label, labeledRepository);
 
-        return Mono.just(this.cache.get(label));
+        return this.cache.get(label);
     }
 
 

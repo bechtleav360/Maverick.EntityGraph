@@ -1,5 +1,6 @@
 package org.av360.maverick.graph.store.rdf;
 
+import lombok.extern.slf4j.Slf4j;
 import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.RepositoryException;
@@ -13,6 +14,7 @@ import java.util.WeakHashMap;
 /**
  * Required to override the toString() Method, to find out in the logs which repository has been used (to differentiate between the different applications)
  */
+@Slf4j
 public class LabeledRepository extends RepositoryWrapper {
 
     private final String label;
@@ -39,6 +41,8 @@ public class LabeledRepository extends RepositoryWrapper {
     }
 
     public long getConnectionsCount() {
-        return this.connections.stream().filter(RepositoryConnection::isOpen).count();
+        long countAll = this.connections.stream().count();
+        // long count = this.connections.stream().filter(RepositoryConnection::isOpen).count(); // is always zero
+        return countAll;
     }
 }

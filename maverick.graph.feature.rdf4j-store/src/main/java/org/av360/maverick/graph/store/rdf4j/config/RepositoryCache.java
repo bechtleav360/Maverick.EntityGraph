@@ -51,25 +51,25 @@ final class RepositoryCache {
                 }
                 else if(repo.isActive() && ! repo.hasConnections()) {
                     if(repo.getInitDate().plusSeconds(TIME_TO_IDLE).isBefore(Instant.now())) {
-                        log.trace("Pausing repository: {}", key);
+                        log.info("Pausing repository: {}", key);
                         repo.setIdle();
                     }
                 }
                 else if(repo.isIdle() && repo.hasConnections()) {
-                    log.trace("Reactivating idle repository with {} connections : {}", key, repo.getRepository().getConnectionsCount());
+                    log.info("Reactivating idle repository with {} connections : {}", key, repo.getRepository().getConnectionsCount());
                     repo.setActive();
                 }
                 else if(repo.isIdle() && !repo.hasConnections()) {
                     if(repo.getIdleDate().plusSeconds(TIME_TO_EVICT).isBefore(Instant.now())) {
-                        log.trace("Evicting repository: {}", key);
+                        log.info("Evicting repository: {}", key);
                         repo.setStale();
                     }
                 } else if(repo.isStale() && repo.hasConnections()) {
-                    log.trace("Reactivating stale repository with {} connections : {}", key, repo.getRepository().getConnectionsCount());
+                    log.info("Reactivating stale repository with {} connections : {}", key, repo.getRepository().getConnectionsCount());
                     repo.setActive();
                 } else if(repo.isStale() && ! repo.hasConnections()) {
                     if(repo.getRepository().isInitialized()) {
-                        log.debug("Shutting down repository: {}", key);
+                        log.info("Shutting down repository: {}", key);
                         repo.getRepository().shutDown();
                     }
 
@@ -82,7 +82,10 @@ final class RepositoryCache {
     }
 
     public void shutdown() {
-        cache.values().forEach(managedRepository -> managedRepository.getRepository().shutDown());
+        cache.values().forEach(managedRepository -> {
+            log.debug("Shutting down repository: {}", managedRepository.getRepository().toString());
+            managedRepository.getRepository().shutDown();
+        });
     }
 
     public Collection<ManagedRepositoryItem> items() {
@@ -115,19 +118,20 @@ final class RepositoryCache {
     static class ManagedRepositoryItem {
 
         private final LabeledRepository labeledRepository;
-        private final Instant creationDate;
+        private Instant activeDate;
         private Instant idleDate;
         private ManagedRepositoryStatus status;
 
         ManagedRepositoryItem(LabeledRepository labeledRepository) {
             this.labeledRepository = labeledRepository;
-            this.creationDate = Instant.now();
+            this.activeDate = Instant.now();
             this.status = ManagedRepositoryStatus.ACTIVE;
         }
 
         public void setActive() {
             this.status = ManagedRepositoryStatus.ACTIVE;
             this.idleDate = null;
+            this.activeDate = Instant.now();
         }
 
         public void setStale() {
@@ -157,7 +161,7 @@ final class RepositoryCache {
         }
 
         public Instant getInitDate() {
-            return this.creationDate;
+            return this.activeDate;
         }
 
         public ManagedRepositoryItem activate() {
@@ -183,7 +187,7 @@ final class RepositoryCache {
         }
 
         public Instant creationDate() {
-            return creationDate;
+            return activeDate;
         }
 
         public Instant getIdleDate() {
@@ -201,14 +205,14 @@ final class RepositoryCache {
             var that = (ManagedRepositoryItem) obj;
             return
                     Objects.equals(this.labeledRepository, that.labeledRepository) &&
-                    Objects.equals(this.creationDate, that.creationDate) &&
+                    Objects.equals(this.activeDate, that.activeDate) &&
                     Objects.equals(this.idleDate, that.idleDate) &&
                     Objects.equals(this.status, that.status);
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(labeledRepository, creationDate, idleDate, status);
+            return Objects.hash(labeledRepository, activeDate, idleDate, status);
         }
 
 

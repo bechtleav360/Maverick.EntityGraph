@@ -24,10 +24,13 @@ application:
         scheduled:
           detectDuplicates:
             enabled: true
+            defaultFrequency: "*/10 * * * * *"
           replaceIdentifiers:
             enabled: true
+            defaultFrequency: "*/10 * * * * *"
           typeCoercion:
-            enabled: false
+            enabled: true
+            defaultFrequency: "*/10 * * * * *"
           exportApplication:
             enabled: false
             defaultLocalPath: "D:/Sandbox/files/exports"
