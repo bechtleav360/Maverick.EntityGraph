@@ -43,7 +43,7 @@ public class DefaultBeansConfiguration implements BeanPostProcessor {
         else return bean;
     }
 
-    @Bean
+    @Bean("Local")
     public TaskScheduler taskScheduler() {
         return new ThreadPoolTaskScheduler();
     }
