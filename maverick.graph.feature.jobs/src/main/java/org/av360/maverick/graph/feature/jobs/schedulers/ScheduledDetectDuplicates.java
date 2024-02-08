@@ -10,6 +10,8 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+import java.util.concurrent.TimeUnit;
+
 /**
  * Regular check for duplicates in the entity stores.
  * <p>
@@ -55,8 +57,7 @@ public class ScheduledDetectDuplicates  {
 
     // https://github.com/spring-projects/spring-framework/issues/23533
 
-//    @Scheduled(initialDelay = 60, fixedRate = 600, timeUnit = TimeUnit.SECONDS)
-    @Scheduled(cron = "${application.features.modules.jobs.scheduled.detectDuplicates.defaultFrequency:0 */5 * * * ?}")
+    @Scheduled(fixedRate = 1, timeUnit = TimeUnit.HOURS)
     public void checkForDuplicatesScheduled() {
         JobScheduledEvent event = new JobScheduledEvent(MergeDuplicatesJob.NAME, new SessionContext().setSystemAuthentication());
         eventPublisher.publishEvent(event);

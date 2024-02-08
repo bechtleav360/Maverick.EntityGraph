@@ -181,9 +181,13 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
 
 
         return this.deleteConfigurationItem(application, configKey, ctx)
-                .then(this.store.commit(new RdfTransaction().inserts(m.build()), ctx.getEnvironment().setRepositoryType(RepositoryType.APPLICATION)))
-                .doOnNext(trx -> this.cache.invalidateAll())
-                .then(this.getApplication(application.key(), ctx, true))
+                .then(
+                        this.store.commit(new RdfTransaction().inserts(m.build()), ctx.getEnvironment().setRepositoryType(RepositoryType.APPLICATION))
+                                .doOnSuccess(trx -> this.cache.invalidate(application.key()))
+                )
+                .then(
+                        this.getApplication(application.key(), ctx, true)
+                )
                 .doOnSuccess(app -> {
                     this.eventPublisher.publishEvent(new ApplicationUpdatedEvent(app));
                     log.debug("Updated configuration key '{}' of application with label '{}'", configKey, app.label());
@@ -283,14 +287,13 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
 
         Application cached = APPLICATION_CACHING && !ignoreCache ? this.cache.getIfPresent(applicationKey) : null;
         Mono<Application> response = null;
-        if (Objects.isNull(cached)) {
+        if (Objects.isNull(cached) || ignoreCache) {
             // rebuild cache
-            response = this.listApplications(Set.of(), ctx)
+            response = this.listApplications(Set.of(), ctx, ignoreCache)
                     .filter(application -> {
                         boolean res = application.key().equalsIgnoreCase(applicationKey);
                         return res;
                     })
-                    .doOnNext(next -> log.trace("next"))
                     .switchIfEmpty(Mono.error(new InvalidApplication(applicationKey)))
                     .single();
         } else {
@@ -302,7 +305,7 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
 
     @RequiresPrivilege(Authorities.READER_VALUE)
     @OnRepositoryType(RepositoryType.APPLICATION)
-    public Flux<Application> listApplications(Set<String> tags, SessionContext ctx) {
+    public Flux<Application> listApplications(Set<String> tags, SessionContext ctx, boolean ignoreCache) {
         try {
             Validate.isTrue(ctx.getAuthentication().isPresent());
             Validate.isTrue(ctx.getAuthentication().get().isAuthenticated());
@@ -310,7 +313,7 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
             return Flux.error(e);
         }
 
-        if (!APPLICATION_CACHING || this.cache.asMap().isEmpty()) {
+        if (!APPLICATION_CACHING || ignoreCache || this.cache.asMap().isEmpty()) {
 
             GraphPattern whereClause = QueryVariables.varNodeApplication.isA(ApplicationTerms.TYPE)
                     .andHas(ApplicationTerms.HAS_KEY, QueryVariables.varAppKey)
@@ -399,7 +402,7 @@ public class ApplicationsService implements ApplicationListener<GraphApplication
 
         if (applicationLabel.equalsIgnoreCase(Globals.DEFAULT_APPLICATION_LABEL)) return Mono.empty();
 
-        return this.listApplications(Set.of(), ctx)
+        return this.listApplications(Set.of(), ctx, false)
                 .filter(application -> application.label().equalsIgnoreCase(applicationLabel))
                 .switchIfEmpty(Mono.error(new InvalidApplication(applicationLabel)))
                 .single()

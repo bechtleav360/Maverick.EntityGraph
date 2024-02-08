@@ -11,6 +11,7 @@ import org.av360.maverick.graph.model.context.SessionContext;
 import org.av360.maverick.graph.model.enums.RepositoryType;
 import org.av360.maverick.graph.model.events.JobScheduledEvent;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.TaskScheduler;
@@ -46,7 +47,7 @@ public abstract class ScopedJobScheduler {
 
     @PostConstruct
     public void initializeScheduledJobs() {
-        applicationsService.listApplications(Set.of(), new SessionContext().setSystemAuthentication()).doOnNext(this::scheduleRunnableTask).subscribe();
+        applicationsService.listApplications(Set.of(), new SessionContext().setSystemAuthentication(), false).doOnNext(this::scheduleRunnableTask).subscribe();
     }
 
     protected void scheduleRunnableTask(Application application) {
@@ -104,7 +105,7 @@ public abstract class ScopedJobScheduler {
     }
 
     @Autowired
-    public void setTaskScheduler(TaskScheduler taskScheduler) {
+    public void setTaskScheduler(@Qualifier("Local") TaskScheduler taskScheduler) {
         this.taskScheduler = taskScheduler;
     }
 

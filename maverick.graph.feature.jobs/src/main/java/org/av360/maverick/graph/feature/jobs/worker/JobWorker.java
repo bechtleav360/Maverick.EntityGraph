@@ -22,7 +22,6 @@ public class JobWorker {
 
     private final Set<SessionContextBuilder> builders;
 
-
     private final JobQueue requestedJobs;
     private final List<ScheduledJob> registeredJobs;
 
@@ -45,7 +44,7 @@ public class JobWorker {
         this.taskScheduler.initialize();
     }
 
-    @Scheduled(fixedRate = 5, timeUnit = TimeUnit.SECONDS)
+    @Scheduled(fixedRate = 2, timeUnit = TimeUnit.MINUTES)
     public void runJob() {
 
         if(requestedJobs.peek().isEmpty()) return;

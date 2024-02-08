@@ -73,7 +73,7 @@ public class Applications extends AbstractController {
     @ResponseStatus(HttpStatus.OK)
     Flux<Responses.ApplicationResponse> listApplications( @RequestParam(value = "tag", required = false) Set<String> tags) {
         return super.acquireContext()
-                .flatMapMany(ctx -> this.applicationsService.listApplications(tags, ctx))
+                .flatMapMany(ctx -> this.applicationsService.listApplications(tags, ctx, false))
                 .map(application ->
                         new Responses.ApplicationResponse(
                                 application.key(),
