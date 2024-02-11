@@ -88,7 +88,9 @@ public class MergeDuplicatesJob implements ScheduledJob {
 
     private record Duplicates(Set<IRI> entities, IRI type, String sharedValue) {
         public TreeSet<IRI> sortedEntities() {
-            return new TreeSet<>(entities);
+            TreeSet<IRI> result = new TreeSet<>(Comparator.comparing(IRI::getLocalName));
+            result.addAll(this.entities);
+            return result;
         }
     }
 
@@ -153,16 +155,16 @@ public class MergeDuplicatesJob implements ScheduledJob {
      * @return
      */
     private Mono<Void> mergeDuplicate(Duplicates duplicate, SessionContext ctx) {
-        Optional<IRI> original = duplicate.entities().stream().findFirst();
-        if (original.isEmpty()) return Mono.empty();
-        SortedSet<IRI> deletionCandidates = duplicate.sortedEntities().tailSet(original.get(), false);
+        TreeSet<IRI> affectedEntities = duplicate.sortedEntities();
+        IRI original = affectedEntities.first();
+        NavigableSet<IRI> deletionCandidates = affectedEntities.tailSet(original, false);
 
         /* relink */
         return Flux.fromIterable(deletionCandidates)
                 .doOnSubscribe(subscription -> log.trace("Trying to merge all duplicates, keeping entity '{}' as original", original))
                 .flatMap(duplicateIRI ->
                         this.findStatementsPointingToDuplicate(duplicateIRI, ctx)
-                                .flatMap(mislinkedStatement -> this.relinkEntity(mislinkedStatement.subject(), mislinkedStatement.predicate(), mislinkedStatement.object(), original.get(), ctx))
+                                .flatMap(mislinkedStatement -> this.relinkEntity(mislinkedStatement.subject(), mislinkedStatement.predicate(), mislinkedStatement.object(), original, ctx))
                                 .doOnNext(trx -> log.info("Relinking completed in Transaction {}", trx.getIdentifier()))
                                 .map(transaction -> duplicateIRI)
                                 .switchIfEmpty(Mono.just(duplicateIRI))
@@ -214,12 +216,7 @@ public class MergeDuplicatesJob implements ScheduledJob {
     private Flux<Duplicates> findCandidates(SessionContext ctx) {
 
         String query = """
-                PREFIX schema: <http://schema.org/>
-                PREFIX sdo: <https://schema.org/>
-                PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-                PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-
-                SELECT ?propertyValue ?type (GROUP_CONCAT(DISTINCT ?entity; separator=", ") AS ?duplicates)
+                SELECT ?propertyValue ?type (GROUP_CONCAT(DISTINCT ?entity; separator=",") AS ?duplicates)
                 WHERE {
                   ?entity rdf:type ?type .
                   FILTER (!STRSTARTS(STR(?type), "urn:pwid:meg"))
@@ -233,8 +230,6 @@ public class MergeDuplicatesJob implements ScheduledJob {
                   OPTIONAL { ?entity <http://purl.org/dc/terms/identifier> ?dcterms_identifier . }
                   OPTIONAL { ?entity <http://www.w3.org/2004/02/skos/core#prefLabel> ?skos_prefLabel . }
                   OPTIONAL { ?entity <http://www.w3.org/2000/01/rdf-schema#label> ?rdfs_label . }
-                  OPTIONAL { ?entity rdfs:label ?rdfs_label . }
-                  OPTIONAL { ?entity rdfs:label ?rdfs_label . }
                   FILTER(BOUND(?schema_name) || BOUND(?rdfs_label) || BOUND(?schema_termCode)
                     || BOUND(?sdo_termCode) || BOUND(?schema_identifier) || BOUND(?sdo_identifier)
                     || BOUND(?dc_identifier) || BOUND(?dcterms_identifier) || BOUND(?skos_prefLabel)

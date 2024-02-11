@@ -1,13 +1,15 @@
 package org.av360.maverick.graph.model.events;
 
+import org.av360.maverick.graph.model.context.Environment;
 import org.av360.maverick.graph.model.entities.Transaction;
-import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Resource;
+import org.eclipse.rdf4j.model.vocabulary.RDF;
 
 import java.util.Set;
 
 public class EntityCreatedEvent extends EntityEvent {
-    public EntityCreatedEvent(Transaction trx) {
-        super(trx);
+    public EntityCreatedEvent(Transaction trx, Environment environment) {
+        super(trx, environment);
     }
 
     @Override
@@ -16,8 +18,8 @@ public class EntityCreatedEvent extends EntityEvent {
     }
 
 
-    public Set<IRI> listCreatedEntityIdentifiers() {
-        return Set.of();
+    public Set<Resource> listInsertedFragmentSubjects() {
+        return super.getTransaction().getInsertedStatements().filter(null, RDF.TYPE, null).subjects();
     }
 
     @Override

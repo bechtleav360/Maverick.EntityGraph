@@ -48,40 +48,6 @@ public class RemoveDetails {
         this.api = ctrl;
     }
 
-    /**
-     * Will remove all detail statements for a given value, i.e. all statements where the value statement is a subject triple.
-     *
-     * @param entityIdentifier
-     * @param predicate
-     * @param languageTag
-     * @param valueIdentifier
-     * @param trx
-     * @param ctx
-     * @return
-     */
-    Mono<Transaction> removeDetailStatements(Transaction trx, SessionContext ctx) {
-        Set<Flux<Statement>> collect = trx.getRemovedStatements().stream()
-                .map(statement ->
-                        this.api.entities().getStore().asStatementsAware().listStatements(null, RDF.SUBJECT, statement.getSubject(), ctx.getEnvironment())
-                                .flatMapMany(Flux::fromIterable)
-                                .map(Statement::getSubject)
-                                .flatMap(subject -> this.api.entities().getStore().asStatementsAware().listStatements(subject, null, null, ctx.getEnvironment()))
-                                .flatMap(Flux::fromIterable))
-                .collect(Collectors.toSet());
-
-
-        // following for native rdf star support in lmdb
-        /* Set<Flux<Statement>> collect = trx.getRemovedStatements().stream()
-                .map(Values::triple)
-                .map(triple -> this.ctrl.entityServices.getStore(ctx).asStatementsAware().listStatements(triple, null, null, ctx.getEnvironment()).flatMapMany(Flux::fromIterable))
-                .collect(Collectors.toSet());*/
-        return Flux.merge(collect)
-                .collectList()
-                .map(trx::removes);
-
-
-    }
-
 
     public Mono<Transaction> removeAllDetails(IRI entityIdentifier, IRI predicate, String languageTag, String valueIdentifier, Transaction trx, SessionContext ctx) {
         if(StringUtils.isNotBlank(valueIdentifier)) {
@@ -91,55 +57,6 @@ public class RemoveDetails {
         } else {
             return removeAllDetailsWithoutQualifier(entityIdentifier, predicate, trx, ctx);
         }
-    }
-
-    private Mono<Transaction> removeAllDetailsUsingLanguageTag(IRI entityIdentifier, IRI predicate, String languageTag, Transaction trx, SessionContext ctx) {
-        return this.api.entities().getStore().asStatementsAware().listStatements(null, RDF.SUBJECT, entityIdentifier, ctx.getEnvironment()) // returns all details for all values of the current entity
-                .flatMapMany(Flux::fromIterable)
-                .filterWhen(detailsStatement -> this.api.entities().getStore().asStatementsAware().hasStatement(detailsStatement.getSubject(), RDF.PREDICATE, predicate, ctx.getEnvironment()))
-                .flatMap(detailsStatement ->
-                        this.api.entities().getStore().asStatementsAware().listStatements(detailsStatement.getSubject(), RDF.OBJECT, null, ctx.getEnvironment()) // returns only details affecting the value property (can still be multiple)
-                                .map(statements -> statements.stream()
-                                        .filter(statement -> statement.getObject().isLiteral()
-                                                && ((Literal) statement.getObject()).getLanguage().isPresent()
-                                                && ((Literal) statement.getObject()).getLanguage().get().equalsIgnoreCase(languageTag)
-                                        )
-                                        .collect(Collectors.toSet())
-                                        .stream()
-                                        .findFirst())  // compute value identifier and compare with parameter value
-                                .map(optionalStatement -> optionalStatement.map(Statement::getSubject))
-                                .flatMap(optionalSubject -> optionalSubject.map(resource -> this.api.entities().getStore().asStatementsAware().listStatements(resource, null, null, ctx.getEnvironment())).orElseGet(() -> Mono.just(Set.of()))))
-                .flatMapIterable(set -> set)
-                .collectList()
-                .map(trx::removes);
-    }
-
-    public Mono<Transaction> removeAllDetailsWithoutQualifier(IRI entityIdentifier, IRI predicate,  Transaction trx, SessionContext ctx) {
-        return this.api.entities().getStore().asStatementsAware().listStatements(null, RDF.SUBJECT, entityIdentifier, ctx.getEnvironment()) // returns all details for all values of the current entity
-                .flatMapMany(Flux::fromIterable)
-                .filterWhen(detailsStatement -> this.api.entities().getStore().asStatementsAware().hasStatement(detailsStatement.getSubject(), RDF.PREDICATE, predicate, ctx.getEnvironment()))
-                .flatMap(detailsStatement -> this.api.entities().getStore().asStatementsAware().listStatements(detailsStatement.getSubject(), null, null, ctx.getEnvironment()))
-                .flatMapIterable(set -> set)
-                .collectList()
-                .map(trx::removes);
-    }
-
-
-    private Mono<Transaction> removeAllDetailsUsingValueIdentifier(IRI entityIdentifier, IRI predicate, String valueIdentifier, Transaction trx, SessionContext ctx) {
-        return this.api.entities().getStore().asStatementsAware().listStatements(null, RDF.SUBJECT, entityIdentifier, ctx.getEnvironment()) // returns all details for all values of the current entity
-                .flatMapMany(Flux::fromIterable)
-                .flatMap(detailsStatement ->
-                        this.api.entities().getStore().asStatementsAware().listStatements(detailsStatement.getSubject(), RDF.OBJECT, null, ctx.getEnvironment()) // returns only details affecting the value property (can still be multiple)
-                                .map(statements -> statements.stream()
-                                        .filter(statement -> ValuesUtils.generateHashForValue(predicate, statement.getObject()).equalsIgnoreCase(valueIdentifier))
-                                        .collect(Collectors.toSet())
-                                        .stream()
-                                        .findFirst())  // compute value identifier and compare with parameter value
-                                .map(optionalStatement -> optionalStatement.map(Statement::getSubject))
-                                .flatMap(optionalSubject -> optionalSubject.map(resource -> this.api.entities().getStore().asStatementsAware().listStatements(resource, null, null, ctx.getEnvironment())).orElseGet(() -> Mono.just(Set.of()))))
-                .flatMapIterable(set -> set)
-                .collectList()
-                .map(trx::removes);
     }
 
     /**
@@ -172,10 +89,38 @@ public class RemoveDetails {
 
                 })
                 .doOnSuccess(trx -> {
-                    api.publishEvent(new DetailRemovedEvent(trx));
+                    api.publishEvent(new DetailRemovedEvent(trx, ctx.getEnvironment()));
                 });
 
 
+    }
+
+
+    private Mono<Transaction> removeAllDetailsWithoutQualifier(IRI entityIdentifier, IRI predicate,  Transaction trx, SessionContext ctx) {
+        return this.api.entities().getStore().asStatementsAware().listStatements(null, RDF.SUBJECT, entityIdentifier, ctx.getEnvironment()) // returns all details for all values of the current entity
+                .flatMapMany(Flux::fromIterable)
+                .filterWhen(detailsStatement -> this.api.entities().getStore().asStatementsAware().hasStatement(detailsStatement.getSubject(), RDF.PREDICATE, predicate, ctx.getEnvironment()))
+                .flatMap(detailsStatement -> this.api.entities().getStore().asStatementsAware().listStatements(detailsStatement.getSubject(), null, null, ctx.getEnvironment()))
+                .flatMapIterable(set -> set)
+                .collectList()
+                .map(trx::removes);
+    }
+
+    private Mono<Transaction> removeAllDetailsUsingValueIdentifier(IRI entityIdentifier, IRI predicate, String valueIdentifier, Transaction trx, SessionContext ctx) {
+        return this.api.entities().getStore().asStatementsAware().listStatements(null, RDF.SUBJECT, entityIdentifier, ctx.getEnvironment()) // returns all details for all values of the current entity
+                .flatMapMany(Flux::fromIterable)
+                .flatMap(detailsStatement ->
+                        this.api.entities().getStore().asStatementsAware().listStatements(detailsStatement.getSubject(), RDF.OBJECT, null, ctx.getEnvironment()) // returns only details affecting the value property (can still be multiple)
+                                .map(statements -> statements.stream()
+                                        .filter(statement -> ValuesUtils.generateHashForValue(predicate, statement.getObject()).equalsIgnoreCase(valueIdentifier))
+                                        .collect(Collectors.toSet())
+                                        .stream()
+                                        .findFirst())  // compute value identifier and compare with parameter value
+                                .map(optionalStatement -> optionalStatement.map(Statement::getSubject))
+                                .flatMap(optionalSubject -> optionalSubject.map(resource -> this.api.entities().getStore().asStatementsAware().listStatements(resource, null, null, ctx.getEnvironment())).orElseGet(() -> Mono.just(Set.of()))))
+                .flatMapIterable(set -> set)
+                .collectList()
+                .map(trx::removes);
     }
 
     private Mono<Transaction> remove(RdfFragment entity, IRI valuePredicate, IRI detailPredicate, SessionContext ctx) {
@@ -204,5 +149,26 @@ public class RemoveDetails {
         return api.entities().getStore().asCommitable().commit(trx, ctx.getEnvironment());
     }
 
+
+    private Mono<Transaction> removeAllDetailsUsingLanguageTag(IRI entityIdentifier, IRI predicate, String languageTag, Transaction trx, SessionContext ctx) {
+        return this.api.entities().getStore().asStatementsAware().listStatements(null, RDF.SUBJECT, entityIdentifier, ctx.getEnvironment()) // returns all details for all values of the current entity
+                .flatMapMany(Flux::fromIterable)
+                .filterWhen(detailsStatement -> this.api.entities().getStore().asStatementsAware().hasStatement(detailsStatement.getSubject(), RDF.PREDICATE, predicate, ctx.getEnvironment()))
+                .flatMap(detailsStatement ->
+                        this.api.entities().getStore().asStatementsAware().listStatements(detailsStatement.getSubject(), RDF.OBJECT, null, ctx.getEnvironment()) // returns only details affecting the value property (can still be multiple)
+                                .map(statements -> statements.stream()
+                                        .filter(statement -> statement.getObject().isLiteral()
+                                                && ((Literal) statement.getObject()).getLanguage().isPresent()
+                                                && ((Literal) statement.getObject()).getLanguage().get().equalsIgnoreCase(languageTag)
+                                        )
+                                        .collect(Collectors.toSet())
+                                        .stream()
+                                        .findFirst())  // compute value identifier and compare with parameter value
+                                .map(optionalStatement -> optionalStatement.map(Statement::getSubject))
+                                .flatMap(optionalSubject -> optionalSubject.map(resource -> this.api.entities().getStore().asStatementsAware().listStatements(resource, null, null, ctx.getEnvironment())).orElseGet(() -> Mono.just(Set.of()))))
+                .flatMapIterable(set -> set)
+                .collectList()
+                .map(trx::removes);
+    }
 
 }

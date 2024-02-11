@@ -59,7 +59,7 @@ public class DeleteValue {
                 .flatMap(trx -> api.entities().getStore().asCommitable().commit(trx, ctx.getEnvironment()))
                 //.flatMap(trx -> ser.entityServices.getStore(ctx).asCommitable().commit(trx, ctx.getEnvironment()))
                 .doOnSuccess(trx -> {
-                    api.publishEvent(new ValueRemovedEvent(trx));
+                    api.publishEvent(new ValueRemovedEvent(trx, ctx.getEnvironment()));
                 });
     }
 

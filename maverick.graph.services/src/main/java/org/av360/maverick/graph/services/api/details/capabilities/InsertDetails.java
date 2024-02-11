@@ -61,7 +61,7 @@ public class InsertDetails {
                     }
                 })
                 .doOnSuccess(trx -> {
-                    api.publishEvent(new DetailInsertedEvent(trx));
+                    api.publishEvent(new DetailInsertedEvent(trx, ctx.getEnvironment()));
                 });
 
 

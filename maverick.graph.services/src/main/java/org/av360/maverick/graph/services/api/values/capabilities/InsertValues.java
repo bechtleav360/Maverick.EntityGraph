@@ -60,22 +60,9 @@ public class InsertValues {
     public Mono<Transaction> insert(IRI entityIdentifier, IRI predicate, Value value, @Nullable Boolean replace, SessionContext ctx) {
         return this.insertStatement(entityIdentifier, predicate, value, new RdfTransaction(), !Objects.isNull(replace) && replace, ctx)
                 .doOnSuccess(trx -> {
-                    api.publishEvent(new ValueInsertedEvent(trx));
+                    api.publishEvent(new ValueInsertedEvent(trx, ctx.getEnvironment()));
                 });
     }
-
-
-    private Mono<Value> normalizeValue(String value, String languageTag) {
-        if (value.matches("^<\\w+:(/?/?)[^\\s>]+>$")) {
-            value = value.substring(1, value.length() - 1);
-            return Mono.just(SimpleValueFactory.getInstance().createIRI(value));
-        } else if (value.matches("^\\w+:(/?/?)[^\\s>]+$")) {
-            return Mono.just(SimpleValueFactory.getInstance().createLiteral(value));
-        } else
-
-            return extractLanguageTag(value, languageTag);
-    }
-
 
 
 
@@ -92,6 +79,9 @@ public class InsertValues {
                     return trx;
                 })
                 .flatMap(trx -> this.api.entities().getStore().asCommitable().commit(trx, ctx.getEnvironment()))
+                .doOnSuccess(trx -> {
+                    this.api.publishEvent(new ValueInsertedEvent(trx, ctx.getEnvironment()));
+                })
                 .switchIfEmpty(Mono.just(transaction));
     }
 
@@ -103,7 +93,7 @@ public class InsertValues {
 
         return this.api.entities().getStore().asCommitable().commit(transaction, ctx.getEnvironment())
                 .doOnSuccess(trx -> {
-                    this.api.publishEvent(new ValueReplacedEvent(trx));
+                    this.api.publishEvent(new ValueReplacedEvent(trx, ctx.getEnvironment()));
                 });
 
     }
@@ -178,5 +168,16 @@ public class InsertValues {
 
         } else return Mono.just(transaction);
 
+    }
+
+    private Mono<Value> normalizeValue(String value, String languageTag) {
+        if (value.matches("^<\\w+:(/?/?)[^\\s>]+>$")) {
+            value = value.substring(1, value.length() - 1);
+            return Mono.just(SimpleValueFactory.getInstance().createIRI(value));
+        } else if (value.matches("^\\w+:(/?/?)[^\\s>]+$")) {
+            return Mono.just(SimpleValueFactory.getInstance().createLiteral(value));
+        } else
+
+            return extractLanguageTag(value, languageTag);
     }
 }

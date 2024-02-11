@@ -90,7 +90,7 @@ public class FindEntities {
                 .map(BindingsAccessor::new)
                 .flatMap(bnd -> {
                     try {
-                        Resource resource = bnd.asIRI("id");
+                        Resource resource = bnd.asResource("id");
 
                         ModelBuilder builder = new ModelBuilder();
                         builder.subject(resource);

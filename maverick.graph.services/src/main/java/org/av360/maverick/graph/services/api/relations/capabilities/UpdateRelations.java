@@ -57,7 +57,7 @@ public class UpdateRelations {
         ).flatMap(triple ->
                 this.removeLinkStatement(triple.getT1(), triple.getT3(), triple.getT2(), new RdfTransaction(), ctx)
         ).doOnSuccess(trx -> {
-            api.publishEvent(new LinkRemovedEvent(trx));
+            api.publishEvent(new LinkRemovedEvent(trx, ctx.getEnvironment()));
         }).doOnError(error -> log.error("Failed to remove link due to reason: {}", error.getMessage()));
     }
 

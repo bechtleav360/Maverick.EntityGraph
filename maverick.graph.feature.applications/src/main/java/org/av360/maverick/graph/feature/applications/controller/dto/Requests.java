@@ -11,7 +11,22 @@ public class Requests {
 
 
     @Schema(
-            example = "{\"label\": \"string\", \"flags\": {\"isPersistent\": true, \"isPublic\": true}, \"configuration\": {\"detect_duplicates_frequency\": \"0 */5 * * * ?\", \"replace_identifiers_frequency\": \"0 */5 * * * ?\", \"assign_internal_types_frequency\": \"0 */5 * * * ?\", \"export_frequency\": \"0 */5 * * * ?\", \"export_local_path\": \"/\", \"export_s3_host\": \"http://localhost:9000\", \"export_s3_bucket\": \"string\"}}"
+            example = """
+                    {
+                      "label": "string",
+                      "flags": {
+                        "isPersistent": true,
+                        "isPublic": true
+                      },
+                      "tags" : [],
+                      "configuration": {
+                        "detect_duplicates_frequency": "@daily",
+                        "replace_identifiers_frequency": "@daily",
+                        "assign_internal_types_frequency": "@daily",
+                        "export_frequency": "@weekly"
+                      }
+                    }
+                """
     )
     public record RegisterApplicationRequest(String label, ApplicationFlags flags, Set<String> tags, Map<String, Serializable> configuration) {
     }

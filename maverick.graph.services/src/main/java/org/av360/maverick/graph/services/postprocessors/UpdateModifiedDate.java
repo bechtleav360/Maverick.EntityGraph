@@ -11,8 +11,17 @@
  *
  *  Unless required by applicable law or agreed to in writing, software distributed under the Licence is distributed on an "AS IS" basis,  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  See the Licence for the specific language governing permissions and limitations under the Licence.
  *
- *
- *  A collection of listeners, which perform reconciliation tasks.
  */
 
 package org.av360.maverick.graph.services.postprocessors;
+
+import org.av360.maverick.graph.model.events.EntityUpdatedEvent;
+import org.springframework.context.ApplicationListener;
+
+public class UpdateModifiedDate implements ApplicationListener<EntityUpdatedEvent> {
+
+    @Override
+    public void onApplicationEvent(EntityUpdatedEvent event) {
+
+    }
+}

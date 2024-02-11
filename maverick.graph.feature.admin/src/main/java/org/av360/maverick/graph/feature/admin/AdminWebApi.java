@@ -73,7 +73,7 @@ public interface AdminWebApi {
             content = @Content(examples = {
                     @ExampleObject(name = "Import from sandbox", value = """
                             {
-                              "endpoint": "https://entitygraph.azurewebsites.net/api/query/query?repository=entities",
+                              "endpoint": "https://entitygraph.azurewebsites.net/api/query/select?repository=entities",
                               "headers": {
                                 "X-Application": "default",
                                 "X-API-KEY": "the_api_key"

@@ -17,15 +17,33 @@ package org.av360.maverick.graph.services.postprocessors;
 
 import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.model.events.EntityCreatedEvent;
-import org.springframework.context.ApplicationListener;
+import org.av360.maverick.graph.services.EntityServices;
+import org.eclipse.rdf4j.model.Resource;
+import org.springframework.context.event.EventListener;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
+
+import java.util.Set;
 
 
 @Component
 @Slf4j
-public class InjectCreationDate implements ApplicationListener<EntityCreatedEvent> {
-    @Override
-    public void onApplicationEvent(EntityCreatedEvent event) {
-        log.info("An entity has been created");
+public class InjectCreationDate {
+
+    private final EntityServices entityServices;
+
+    public InjectCreationDate(EntityServices entityServices) {
+        this.entityServices = entityServices;
+
+    }
+
+    @Async
+    @EventListener
+    void handleEntityCreated(EntityCreatedEvent event) {
+        Set<Resource> resources = event.listInsertedFragmentSubjects();
+
+        log.info("test");
+
+
     }
 }

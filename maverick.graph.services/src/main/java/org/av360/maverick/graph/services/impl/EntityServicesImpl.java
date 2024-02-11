@@ -128,8 +128,6 @@ public class EntityServicesImpl implements EntityServices {
     }
 
 
-
-
     @Override
     @RequiresPrivilege(Authorities.MAINTAINER_VALUE)
     @OnRepositoryType(RepositoryType.ENTITIES)
@@ -199,7 +197,7 @@ public class EntityServicesImpl implements EntityServices {
         return this.prepareTransactions(triples, parameters, new RdfTransaction(), ctx)
                 .flatMap(transaction -> entityStore.asCommitable().commit(transaction, ctx.getEnvironment()))
                 .doOnSuccess(transaction -> {
-                    eventPublisher.publishEvent(new EntityCreatedEvent(transaction));
+                    eventPublisher.publishEvent(new EntityCreatedEvent(transaction, ctx.getEnvironment()));
                 });
 
 

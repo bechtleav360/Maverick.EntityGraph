@@ -44,7 +44,7 @@ public class UpdateEntities {
                 .map(statements -> new RdfTransaction().removes(statements))
                 .flatMap(trx -> this.entityStore.asCommitable().commit(trx, ctx.getEnvironment()))
                 .doOnSuccess(transaction -> {
-                    api.publishEvent(new EntityDeletedEvent(transaction));
+                    api.publishEvent(new EntityDeletedEvent(transaction, ctx.getEnvironment()));
                 });
     }
 }

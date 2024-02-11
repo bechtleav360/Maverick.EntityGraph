@@ -23,9 +23,9 @@ application:
         enabled: true
         scheduled:
           detectDuplicates:
-            enabled: true
+            enabled: false
           replaceIdentifiers:
-            enabled: true
+            enabled: false
           typeCoercion:
             enabled: false
           exportApplication:

@@ -1,11 +1,12 @@
 package org.av360.maverick.graph.model.events;
 
+import org.av360.maverick.graph.model.context.Environment;
 import org.av360.maverick.graph.model.entities.Transaction;
 
 public class EntityDeletedEvent extends EntityEvent {
 
-    public EntityDeletedEvent(Transaction trx) {
-        super(trx);
+    public EntityDeletedEvent(Transaction trx, Environment environment) {
+        super(trx, environment);
     }
 
     @Override

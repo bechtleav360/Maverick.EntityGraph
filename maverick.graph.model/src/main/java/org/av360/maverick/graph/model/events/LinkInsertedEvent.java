@@ -1,11 +1,12 @@
 package org.av360.maverick.graph.model.events;
 
+import org.av360.maverick.graph.model.context.Environment;
 import org.av360.maverick.graph.model.entities.Transaction;
 
-public class LinkInsertedEvent extends EntityEvent {
+public class LinkInsertedEvent extends EntityUpdatedEvent {
 
-    public LinkInsertedEvent(Transaction trx) {
-        super(trx);
+    public LinkInsertedEvent(Transaction trx, Environment environment) {
+        super(trx, environment);
     }
 
     @Override

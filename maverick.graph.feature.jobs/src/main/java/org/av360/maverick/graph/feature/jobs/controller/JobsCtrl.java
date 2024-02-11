@@ -31,7 +31,7 @@ public class JobsCtrl extends AbstractController implements org.av360.maverick.g
     public Mono<Void> execDeduplicationJob() {
 
         return super.acquireContext()
-                .flatMap(ctx -> this.jobsService.scheduleJob(MergeDuplicatesJobOld.NAME, ctx))
+                .flatMap(ctx -> this.jobsService.scheduleJob(MergeDuplicatesJob.NAME, ctx))
                 .doOnSubscribe(subscription -> log.info("Request to execute job: Deduplication"));
     }
 
