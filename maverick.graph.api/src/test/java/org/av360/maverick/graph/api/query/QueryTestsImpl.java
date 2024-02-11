@@ -63,7 +63,7 @@ public class QueryTestsImpl extends TestsBase implements QueriesTest {
                 .consumeWith(csvConsumer);
 
 
-        Assertions.assertEquals(8, csvConsumer.getRows().size());
+        Assertions.assertEquals(10, csvConsumer.getRows().size());
     }
 
     @Override

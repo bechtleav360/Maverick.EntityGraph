@@ -23,4 +23,9 @@ import org.eclipse.rdf4j.model.Resource;
 public interface Fragment extends Triples {
 
     public Resource getIdentifier();
+
+    public boolean isIndividual();
+
+
+    public boolean isClassifier();
 }

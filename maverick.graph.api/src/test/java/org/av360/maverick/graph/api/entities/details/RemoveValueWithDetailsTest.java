@@ -40,7 +40,7 @@ public class RemoveValueWithDetailsTest extends ApiTestsBase  {
         super.printStep("Dumping current model");
         CsvConsumer cc1 = super.getTestClient().listAllStatements();
         super.dumpStatementsAsTable(cc1);
-        Assertions.assertEquals(11, cc1.getRows().size());
+        Assertions.assertEquals(12, cc1.getRows().size());
 
         super.printStep("Removing value 'sdo.teaches'");
         super.getTestClient().deleteValue(sourceIdentifier, "sdo.teaches");
@@ -48,7 +48,7 @@ public class RemoveValueWithDetailsTest extends ApiTestsBase  {
         super.printStep("Dumping current model");
         CsvConsumer cc2 = super.getTestClient().listAllStatements();
         super.dumpStatementsAsTable(cc2);
-        Assertions.assertEquals(4, cc2.getRows().size());
+        Assertions.assertEquals(5, cc2.getRows().size());
     }
 
     @Test
@@ -73,7 +73,7 @@ public class RemoveValueWithDetailsTest extends ApiTestsBase  {
         super.printStep("Dumping current model");
         CsvConsumer cc1 = super.getTestClient().listAllStatements();
         super.dumpStatementsAsTable(cc1);
-        Assertions.assertEquals(16, cc1.getRows().size());
+        Assertions.assertEquals(17, cc1.getRows().size());
 
         super.printStep("Removing value 'sdo.propA'");
         super.getTestClient().deleteValue(sourceIdentifier, "sdo.propA");
@@ -81,7 +81,7 @@ public class RemoveValueWithDetailsTest extends ApiTestsBase  {
         super.printStep("Dumping current model");
         CsvConsumer cc2 = super.getTestClient().listAllStatements();
         super.dumpStatementsAsTable(cc2);
-        Assertions.assertEquals(10, cc2.getRows().size());
+        Assertions.assertEquals(11, cc2.getRows().size());
     }
 
     @Test
@@ -118,7 +118,7 @@ public class RemoveValueWithDetailsTest extends ApiTestsBase  {
         super.printStep("Dumping current model");
         CsvConsumer cc1 = super.getTestClient().listAllStatements();
         super.dumpStatementsAsTable(cc1);
-        Assertions.assertEquals(25, cc1.getRows().size());
+        Assertions.assertEquals(26, cc1.getRows().size());
 
         super.printStep("Removing value 'eav.propB'");
         super.getTestClient().deleteValueByHash(sourceIdentifier, "sdo.propB", hash2);
@@ -126,7 +126,7 @@ public class RemoveValueWithDetailsTest extends ApiTestsBase  {
         super.printStep("Dumping current model");
         CsvConsumer cc2 = super.getTestClient().listAllStatements();
         super.dumpStatementsAsTable(cc2);
-        Assertions.assertEquals(18, cc2.getRows().size());
+        Assertions.assertEquals(19, cc2.getRows().size());
     }
 
 

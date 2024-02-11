@@ -17,10 +17,21 @@ package org.av360.maverick.graph.model.events;
 
 import org.av360.maverick.graph.model.context.Environment;
 import org.av360.maverick.graph.model.entities.Transaction;
+import org.eclipse.rdf4j.model.Resource;
+
+import java.util.HashSet;
+import java.util.Set;
 
 public abstract class EntityUpdatedEvent extends EntityEvent {
 
     public EntityUpdatedEvent(Transaction source, Environment environment) {
         super(source, environment);
+    }
+
+    public Set<Resource> listUpdatedEntityIdentifiers() {
+        Set<Resource> result = new HashSet<>();
+        result.addAll(super.getTransaction().getInsertedStatements().filter(null, null, null).subjects());
+        result.addAll(super.getTransaction().getInsertedStatements().filter(null, null, null).subjects());
+        return result;
     }
 }

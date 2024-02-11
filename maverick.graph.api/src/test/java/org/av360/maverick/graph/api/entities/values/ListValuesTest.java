@@ -42,7 +42,7 @@ public class ListValuesTest extends ApiTestsBase {
         RdfConsumer rc2 = super.getTestClient().listValues(sourceIdentifier);
         rc2.print(RDFFormat.TURTLESTAR);
 
-        Assertions.assertEquals(6, rc2.asModel().size());
+        Assertions.assertEquals(8, rc2.asModel().size());
     }
 
 

@@ -1,9 +1,11 @@
 package org.av360.maverick.graph.store.rdf.fragments;
 
 import org.av360.maverick.graph.model.rdf.Fragment;
+import org.av360.maverick.graph.model.vocabulary.Local;
 import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Statement;
+import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.repository.RepositoryResult;
 
 /**
@@ -43,10 +45,21 @@ public class RdfFragment extends TripleModel implements Fragment {
 
 
 
+
+
     public Resource getIdentifier() {
         return identifier;
     }
 
+    @Override
+    public boolean isIndividual() {
+        return super.hasStatement(getIdentifier(), RDF.TYPE, Local.Entities.TYPE_INDIVIDUAL);
+    }
+
+    @Override
+    public boolean isClassifier() {
+        return super.hasStatement(getIdentifier(), RDF.TYPE, Local.Entities.TYPE_CLASSIFIER);
+    }
 
 
 }

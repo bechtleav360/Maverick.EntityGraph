@@ -1,4 +1,5 @@
 package org.av360.maverick.graph.api;
+
 import org.av360.maverick.graph.api.entities.ListEntities;
 import org.av360.maverick.graph.api.entities.formats.CreateEntitiesInJsonLDTests;
 import org.av360.maverick.graph.api.entities.formats.CreateEntitiesInTurtleTests;
@@ -15,4 +16,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 @SpringBootTest
 @SelectClasses({CreateEntitiesInJsonLDTests.class, CreateEntitiesInTurtleTests.class, CreateLinksTests.class, RemoveLinkTests.class, CreateValuesTest.class, RemoveValuesTest.class, ListEntities.class})
 public class TestSuite {
+
+
+
 }
