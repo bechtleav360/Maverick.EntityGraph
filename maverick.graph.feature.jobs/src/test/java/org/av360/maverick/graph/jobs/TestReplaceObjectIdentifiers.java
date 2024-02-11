@@ -79,7 +79,7 @@ class TestReplaceObjectIdentifiers extends TestsBase {
         SimpleValueFactory vf = SimpleValueFactory.getInstance();
         StepVerifier.create(read2)
                 .assertNext(model -> {
-                    Assertions.assertEquals(5, model.size());
+                    Assertions.assertEquals(6, model.size());
                     Assertions.assertEquals(1, model.subjects().size());
                     Assertions.assertTrue(model.contains(null, OWL.SAMEAS, vf.createIRI("http://www.example.org/vocab#x")));
                     Assertions.assertFalse(model.contains(null, Local.ORIGINAL_IDENTIFIER, null));
@@ -111,7 +111,7 @@ class TestReplaceObjectIdentifiers extends TestsBase {
 
         StepVerifier.create(read2)
                 .assertNext(model -> {
-                    Assertions.assertEquals(10, model.size());
+                    Assertions.assertEquals(12, model.size());
                     Assertions.assertTrue(model.contains(null, OWL.SAMEAS, vf.createIRI("http://www.example.org/vocab#x")));
                     Assertions.assertTrue(model.contains(null, OWL.SAMEAS, vf.createIRI("http://www.example.org/vocab#y")));
                     Assertions.assertFalse(model.contains(null, Local.ORIGINAL_IDENTIFIER, null));
@@ -143,7 +143,7 @@ class TestReplaceObjectIdentifiers extends TestsBase {
 
         StepVerifier.create(read2)
                 .assertNext(model -> {
-                    Assertions.assertEquals(9, model.size());
+                    Assertions.assertEquals(11, model.size());
                     Assertions.assertTrue(model.contains(null, OWL.SAMEAS, vf.createIRI("http://www.example.org/vocab#x")));
                     Assertions.assertTrue(model.contains(null, OWL.SAMEAS, vf.createIRI("http://www.acme.org/vocab#a")));
                     Assertions.assertFalse(model.contains(null, Local.ORIGINAL_IDENTIFIER, null));
@@ -180,7 +180,7 @@ class TestReplaceObjectIdentifiers extends TestsBase {
 
         StepVerifier.create(read2)
                 .assertNext(model -> {
-                    Assertions.assertEquals(11, model.size());
+                    Assertions.assertEquals(14, model.size());
                     Assertions.assertEquals(3, model.subjects().size());
                 })
                 .verifyComplete();
@@ -209,7 +209,7 @@ class TestReplaceObjectIdentifiers extends TestsBase {
 
         StepVerifier.create(read2)
                 .assertNext(model -> {
-                    Assertions.assertEquals(21, model.size());
+                    Assertions.assertEquals(26, model.size());
                     Assertions.assertEquals(5, model.subjects().size());
                 })
                 .verifyComplete();

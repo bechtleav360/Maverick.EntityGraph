@@ -76,7 +76,7 @@ class TypeCoercionTests extends TestsBase {
         IRI iri = vf.createIRI("urn:pwid:meg:e:bjfbd0ox");
         StepVerifier.create(read2)
                 .assertNext(model -> {
-                    Assertions.assertEquals(5, model.size());
+                    Assertions.assertEquals(6, model.size());
                     Assertions.assertEquals(1, model.subjects().size());
                     Assertions.assertTrue(model.contains(null, RDF.TYPE, Local.Entities.TYPE_INDIVIDUAL));
                     Assertions.assertTrue(model.contains(null, OWL.SAMEAS, null));
@@ -110,7 +110,7 @@ class TypeCoercionTests extends TestsBase {
         SimpleValueFactory vf = SimpleValueFactory.getInstance();
         StepVerifier.create(read2)
                 .assertNext(model -> {
-                    Assertions.assertEquals(12, model.size());
+                    Assertions.assertEquals(15, model.size());
                     Assertions.assertEquals(3, model.subjects().size());
                     Assertions.assertTrue(model.contains(null, RDF.TYPE, Local.Entities.TYPE_INDIVIDUAL), "No individual");
                     Assertions.assertTrue(model.contains(null, RDF.TYPE, Local.Entities.TYPE_CLASSIFIER), "No classifier");

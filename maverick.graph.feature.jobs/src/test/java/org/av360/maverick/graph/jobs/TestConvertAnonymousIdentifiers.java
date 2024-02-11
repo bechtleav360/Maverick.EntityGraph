@@ -67,7 +67,7 @@ class TestConvertAnonymousIdentifiers extends TestsBase {
 
         StepVerifier.create(read2)
                 .assertNext(model -> {
-                    Assertions.assertEquals(4, model.size());
+                    Assertions.assertEquals(5, model.size());
                     Assertions.assertEquals(1, model.subjects().size());
                     Assertions.assertEquals(Local.Entities.NAME + "sew68axx", model.subjects().stream().findFirst().get().stringValue());
                 })
@@ -95,7 +95,7 @@ class TestConvertAnonymousIdentifiers extends TestsBase {
         StepVerifier.create(jobMono).verifyComplete();
 
         StepVerifier.create(read2)
-                .assertNext(model -> Assertions.assertEquals(10, model.size()))
+                .assertNext(model -> Assertions.assertEquals(12, model.size()))
                 .verifyComplete();
 
     }
@@ -120,7 +120,7 @@ class TestConvertAnonymousIdentifiers extends TestsBase {
         StepVerifier.create(jobMono).verifyComplete();
 
         StepVerifier.create(read2)
-                .assertNext(model -> Assertions.assertEquals(9, model.size()))
+                .assertNext(model -> Assertions.assertEquals(11, model.size()))
                 .verifyComplete();
 
     }
@@ -148,7 +148,7 @@ class TestConvertAnonymousIdentifiers extends TestsBase {
 
         StepVerifier.create(read2)
                 .assertNext(model -> {
-                    Assertions.assertEquals(12, model.size());
+                    Assertions.assertEquals(15, model.size());
                 })
                 .verifyComplete();
 

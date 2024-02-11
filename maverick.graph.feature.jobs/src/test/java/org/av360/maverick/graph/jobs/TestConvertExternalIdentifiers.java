@@ -75,7 +75,7 @@ class TestConvertExternalIdentifiers extends TestsBase {
         IRI iri = vf.createIRI(Local.Entities.NAME + "bjfbd0ox");
         StepVerifier.create(read2)
                 .assertNext(model -> {
-                    Assertions.assertEquals(5, model.size());
+                    Assertions.assertEquals(6, model.size());
                     Assertions.assertEquals(1, model.subjects().size());
                     Assertions.assertEquals(iri, model.subjects().stream().findFirst().get());
                     Assertions.assertTrue(model.contains(iri, OWL.SAMEAS, vf.createIRI("http://www.example.org/vocab#x")));
@@ -106,7 +106,7 @@ class TestConvertExternalIdentifiers extends TestsBase {
 
         StepVerifier.create(read2)
                 .assertNext(model -> {
-                    Assertions.assertEquals(10, model.size());
+                    Assertions.assertEquals(12, model.size());
                 })
                 .verifyComplete();
 
@@ -135,7 +135,7 @@ class TestConvertExternalIdentifiers extends TestsBase {
 
         StepVerifier.create(read2)
                 .assertNext(model -> {
-                    Assertions.assertEquals(9, model.size());
+                    Assertions.assertEquals(11, model.size());
                 })
                 .verifyComplete();
 
@@ -163,7 +163,7 @@ class TestConvertExternalIdentifiers extends TestsBase {
 
         StepVerifier.create(read2)
                 .assertNext(model -> {
-                    Assertions.assertEquals(12, model.size());
+                    Assertions.assertEquals(15, model.size());
                 })
                 .verifyComplete();
 
@@ -191,7 +191,7 @@ class TestConvertExternalIdentifiers extends TestsBase {
 
         StepVerifier.create(read2)
                 .assertNext(model -> {
-                    Assertions.assertEquals(21, model.size());
+                    Assertions.assertEquals(26, model.size());
                     Assertions.assertEquals(5, model.subjects().size());
                 })
                 .verifyComplete();
