@@ -1,6 +1,9 @@
 package org.av360.maverick.graph.model.events;
 
 import org.av360.maverick.graph.model.entities.Transaction;
+import org.eclipse.rdf4j.model.IRI;
+
+import java.util.Set;
 
 public class EntityCreatedEvent extends EntityEvent {
     public EntityCreatedEvent(Transaction trx) {
@@ -10,6 +13,11 @@ public class EntityCreatedEvent extends EntityEvent {
     @Override
     public String getType() {
         return "maverick.graph.entity.created";
+    }
+
+
+    public Set<IRI> listCreatedEntityIdentifiers() {
+        return Set.of();
     }
 
     @Override

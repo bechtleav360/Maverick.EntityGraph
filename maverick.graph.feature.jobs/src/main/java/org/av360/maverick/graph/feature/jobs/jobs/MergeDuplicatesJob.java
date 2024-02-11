@@ -28,14 +28,11 @@ import org.av360.maverick.graph.services.ValueServices;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
-import org.eclipse.rdf4j.model.vocabulary.OWL;
-import org.eclipse.rdf4j.model.vocabulary.RDFS;
-import org.eclipse.rdf4j.sparqlbuilder.constraint.Expressions;
+import org.eclipse.rdf4j.model.util.Values;
 import org.eclipse.rdf4j.sparqlbuilder.core.SparqlBuilder;
 import org.eclipse.rdf4j.sparqlbuilder.core.Variable;
 import org.eclipse.rdf4j.sparqlbuilder.core.query.Queries;
 import org.eclipse.rdf4j.sparqlbuilder.core.query.SelectQuery;
-import org.eclipse.rdf4j.sparqlbuilder.rdf.Rdf;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Scheduler;
@@ -43,9 +40,8 @@ import reactor.core.scheduler.Schedulers;
 
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
-import java.util.List;
-import java.util.SortedSet;
-import java.util.TreeSet;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Regular check for duplicates in the entity stores.
@@ -88,7 +84,15 @@ public class MergeDuplicatesJob implements ScheduledJob {
     private final ValueServices valueServices;
     private final SimpleValueFactory valueFactory;
 
-    private final int limit = 10;
+    private final int limit = 100;
+
+    private record Duplicates(Set<IRI> entities, IRI type, String sharedValue) {
+        public TreeSet<IRI> sortedEntities() {
+            return new TreeSet<>(entities);
+        }
+    }
+
+    private record MislinkedStatement(IRI subject, IRI predicate, IRI object) {  }
 
     public MergeDuplicatesJob(EntityServices service, QueryServices queryServices, ValueServices valueServices) {
         this.entityServices = service;
@@ -104,21 +108,7 @@ public class MergeDuplicatesJob implements ScheduledJob {
 
     public Mono<Void> run(SessionContext ctx) {
 
-
-
-        return this.checkForDuplicates(RDFS.LABEL, ctx)
-                .then(this.checkForDuplicates(OWL.SAMEAS, ctx))
-                /*.then(this.checkForDuplicates(SDO.IDENTIFIER, ctx))
-                .then(this.checkForDuplicates(SDO.TERM_CODE, ctx))
-                .then(this.checkForDuplicates(SDO.NAME, ctx))
-                .then(this.checkForDuplicates(SDO.URL, ctx))
-                .then(this.checkForDuplicates(SCHEMA.IDENTIFIER, ctx))
-                .then(this.checkForDuplicates(SCHEMA.TERM_CODE, ctx))
-                .then(this.checkForDuplicates(SCHEMA.NAME, ctx))
-                .then(this.checkForDuplicates(SCHEMA.URL, ctx))
-                .then(this.checkForDuplicates(SKOS.PREF_LABEL, ctx))
-                .then(this.checkForDuplicates(DCTERMS.IDENTIFIER, ctx))
-                .then(this.checkForDuplicates(DC.IDENTIFIER, ctx))*/
+        return this.checkForDuplicates(ctx)
                 .doOnError(throwable -> log.error("Exception while checking for duplicates: {}", throwable.getMessage()))
                 .doOnSubscribe(sub -> {
                     ctx.updateEnvironment(env -> env.setRepositoryType(RepositoryType.ENTITIES));
@@ -127,86 +117,23 @@ public class MergeDuplicatesJob implements ScheduledJob {
                 })
                 .doOnSuccess(success -> log.debug("Completed checking for duplicates in environment {}.", ctx.getEnvironment()))
                 .then();
-
-
     }
 
-    private Mono<Void> checkForDuplicates(IRI characteristicProperty, SessionContext ctx) {
-        Scheduler scheduler = Schedulers.newSingle("duplicates_" + characteristicProperty.getLocalName());
+    private Mono<Void> checkForDuplicates(SessionContext ctx) {
+        Scheduler scheduler = Schedulers.newSingle("duplicates");
 
-        return this.findCandidates(characteristicProperty, ctx)
+        return this.findCandidates(ctx)
                 .subscribeOn(scheduler)
                 .map(candidate -> {
                     log.trace("There are multiple entities with shared type '{}' and label '{}'", candidate.type(), candidate.sharedValue());
                     return candidate;
                 })
-                .flatMap(candidate ->
-                        this.findDuplicates(candidate, ctx)
-                                .doOnNext(duplicate -> log.trace("Entity '{}' identified as duplicate. Another item exists with property {} and value {} .", duplicate.id(), candidate.sharedProperty(), candidate.sharedValue()))
-                                .collectList()
-                                .flatMap(duplicates -> this.mergeDuplicates(duplicates, ctx))
-                                .then(Mono.just(candidate))
-                )
-                .collectList()
-                .doOnNext(list -> {
-                    if(list.size() > 0) {
-                        log.debug("Found {} candidates for duplicates for property {}", list.size(), characteristicProperty);
-                    }
-                })
-                .doOnNext(list -> {
-                    if(list.size() == this.limit) {
-                        this.checkForDuplicates(characteristicProperty, ctx).subscribeOn(scheduler).subscribe();
-                    }
-                })
-                .doOnSubscribe(sub ->
-                        log.debug("Checking duplicates sharing the same characteristic property <{}> in environment {}", characteristicProperty, ctx.getEnvironment())
-                )
-
+                .flatMap(duplicate -> this.mergeDuplicate(duplicate, ctx))
+                .doOnSubscribe(sub -> log.debug("Checking duplicates sharing the same characteristic property in environment {}", ctx.getEnvironment()))
                 .thenEmpty(Mono.empty());
 
     }
 
-    private Flux<Duplicate> findDuplicates(DuplicateCandidate duplicate, SessionContext ctx) {
-
-        /*
-        select ?thing where {
-                ?thing 	a <http://schema.org/video>.
-  ?thing 	<http://schema.org/identifier> "_a1238" .
-    ?thing 	<http://schema.org/dateCreated> ?date .
-}
-         */
-        /*
-
-        SELECT ?id WHERE {
-   ?id a <http://schema.org/Organization> .
-   ?id <http://schema.org/name> ?val .
-   FILTER regex(?val, "Stupa-Präsidium Universität Hamburg")
-}
-
-SELECT ?id WHERE { ?id a <urn:pwid:meg:e:Individual> . ?id <http://schema.org/name> "Noam Greenberg"^^<http://www.w3.org/2001/XMLSchema#string> . }
-         */
-
-        Variable idVariable = SparqlBuilder.var("id");
-        Variable valVariable = SparqlBuilder.var("val");
-
-        SelectQuery findDuplicates = Queries.SELECT(idVariable).where(
-                idVariable.isA(this.valueFactory.createIRI(duplicate.type()))
-                        .and(idVariable.has(duplicate.sharedProperty(),valVariable ))
-                        .filter(Expressions.equals(Expressions.str(valVariable), Rdf.literalOf(duplicate.sharedValue)))
-        );
-
-        return this.queryServices.queryValues(findDuplicates, RepositoryType.ENTITIES, ctx)
-                .doOnSubscribe(subscription -> log.trace("Retrieving all duplicates of same type with value '{}' for property '{}' ", duplicate.sharedValue, duplicate.sharedProperty))
-                .flatMap(bindings -> {
-                    Value id = bindings.getValue(idVariable.getVarName());
-
-                    if (id.isIRI()) {
-                        return Mono.just(new Duplicate((IRI) id));
-                    } else return Mono.empty();
-
-                });
-
-    }
 
     /**
      * Method to merge the duplicates. We do the following steps
@@ -225,30 +152,29 @@ SELECT ?id WHERE { ?id a <urn:pwid:meg:e:Individual> . ?id <http://schema.org/na
      * @param ctx
      * @return
      */
-    private Mono<Void> mergeDuplicates(List<Duplicate> duplicates, SessionContext ctx) {
-        if (duplicates.isEmpty()) return Mono.empty();
-
-        TreeSet<Duplicate> orderedDuplicates = new TreeSet<>(duplicates);
-        Duplicate original = orderedDuplicates.first();
-        SortedSet<Duplicate> deletionCandidates = orderedDuplicates.tailSet(original, false);
-
+    private Mono<Void> mergeDuplicate(Duplicates duplicate, SessionContext ctx) {
+        Optional<IRI> original = duplicate.entities().stream().findFirst();
+        if (original.isEmpty()) return Mono.empty();
+        SortedSet<IRI> deletionCandidates = duplicate.sortedEntities().tailSet(original.get(), false);
 
         /* relink */
         return Flux.fromIterable(deletionCandidates)
-                .doOnSubscribe(subscription -> log.trace("Trying to merge all duplicates, keeping entity '{}' as original", original.id()))
-                .flatMap(duplicate ->
-                        this.findStatementsPointingToDuplicate(duplicate, ctx)
-                                .flatMap(mislinkedStatement -> this.relinkEntity(mislinkedStatement.subject(), mislinkedStatement.predicate(), mislinkedStatement.object(), original.id(), ctx))
+                .doOnSubscribe(subscription -> log.trace("Trying to merge all duplicates, keeping entity '{}' as original", original))
+                .flatMap(duplicateIRI ->
+                        this.findStatementsPointingToDuplicate(duplicateIRI, ctx)
+                                .flatMap(mislinkedStatement -> this.relinkEntity(mislinkedStatement.subject(), mislinkedStatement.predicate(), mislinkedStatement.object(), original.get(), ctx))
                                 .doOnNext(trx -> log.info("Relinking completed in Transaction {}", trx.getIdentifier()))
-                                .map(transaction -> duplicate)
-                                .switchIfEmpty(Mono.just(duplicate))
+                                .map(transaction -> duplicateIRI)
+                                .switchIfEmpty(Mono.just(duplicateIRI))
                 )
-                .flatMap(duplicate ->
-                        this.removeDuplicate(duplicate.id(), ctx)
-                                .doOnNext(trx -> log.info("Removed duplicate entity with identifier '{}' in transaction '{}'", duplicate.id(), trx.getIdentifier()))
+                .flatMap(duplicateIRI ->
+                        this.removeDuplicate(duplicateIRI, ctx)
+                                .doOnNext(trx -> log.info("Removed duplicate entity with identifier '{}' in transaction '{}'", duplicateIRI, trx.getIdentifier()))
                 )
                 .then();
+
     }
+
 
     private Mono<Transaction> removeDuplicate(IRI object, SessionContext ctx) {
         // not sure if we should use the entity services (which handle authentication), or let the jobs always access only the store layer
@@ -266,113 +192,80 @@ SELECT ?id WHERE { ?id a <urn:pwid:meg:e:Individual> . ?id <http://schema.org/na
      * @param ctx,       auth info
      * @return the statements pointing to the duplicate (as Flux)
      */
-    private Flux<MislinkedStatement> findStatementsPointingToDuplicate(Duplicate duplicate, SessionContext ctx) {
+    private Flux<MislinkedStatement> findStatementsPointingToDuplicate(IRI duplicateIRI, SessionContext ctx) {
         Variable subject = SparqlBuilder.var("s");
         Variable predicate = SparqlBuilder.var("p");
 
-        SelectQuery query = Queries.SELECT(subject, predicate).where(subject.has(predicate, duplicate.id()));
+        SelectQuery query = Queries.SELECT(subject, predicate).where(subject.has(predicate, duplicateIRI));
         return queryServices.queryValues(query, RepositoryType.ENTITIES, ctx)
-                .doOnSubscribe(subscription -> log.trace("Retrieving all statements pointing to duplicate with id '{}'", duplicate.id()))
+                .doOnSubscribe(subscription -> log.trace("Retrieving all statements pointing to duplicate with id '{}'", duplicateIRI))
                 .flatMap(binding -> {
                     Value pVal = binding.getValue(predicate.getVarName());
                     Value sVal = binding.getValue(subject.getVarName());
 
                     if (pVal.isIRI() && sVal.isIRI()) {
                         log.trace("Statement with subject identifier {} pointing with  predicate {} to the duplicate", sVal.stringValue(), pVal.stringValue());
-                        return Mono.just(new MislinkedStatement((IRI) sVal, (IRI) pVal, duplicate.id()));
+                        return Mono.just(new MislinkedStatement((IRI) sVal, (IRI) pVal, duplicateIRI));
                     } else return Mono.empty();
                 });
 
     }
 
-    private Flux<DuplicateCandidate> findCandidates(IRI sharedProperty, SessionContext ctx) {
+    private Flux<Duplicates> findCandidates(SessionContext ctx) {
 
-        /*
-        select ?type ?shared where {
-          ?thing 	a ?type .
-          ?thing 	<sharedProperty> ?value .
-        } group by ?type ?id
-        having (count(?thing) > 1)
+        String query = """
+                PREFIX schema: <http://schema.org/>
+                PREFIX sdo: <https://schema.org/>
+                PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+                PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 
-         */
+                SELECT ?propertyValue ?type (GROUP_CONCAT(DISTINCT ?entity; separator=", ") AS ?duplicates)
+                WHERE {
+                  ?entity rdf:type ?type .
+                  FILTER (!STRSTARTS(STR(?type), "urn:pwid:meg"))
+                  OPTIONAL { ?entity <http://schema.org/name> ?schema_name . }
+                  OPTIONAL { ?entity <https://schema.org/name> ?sdo_name . }
+                  OPTIONAL { ?entity <http://schema.org/termCode> ?schema_termCode . }
+                  OPTIONAL { ?entity <https://schema.org/termCode> ?sdo_termCode . }
+                  OPTIONAL { ?entity <http://schema.org/identifier> ?schema_identifier . }
+                  OPTIONAL { ?entity <https://schema.org/identifier> ?sdo_identifier . }
+                  OPTIONAL { ?entity <http://purl.org/dc/elements/1.1/identifier> ?dc_identifier . }
+                  OPTIONAL { ?entity <http://purl.org/dc/terms/identifier> ?dcterms_identifier . }
+                  OPTIONAL { ?entity <http://www.w3.org/2004/02/skos/core#prefLabel> ?skos_prefLabel . }
+                  OPTIONAL { ?entity <http://www.w3.org/2000/01/rdf-schema#label> ?rdfs_label . }
+                  OPTIONAL { ?entity rdfs:label ?rdfs_label . }
+                  OPTIONAL { ?entity rdfs:label ?rdfs_label . }
+                  FILTER(BOUND(?schema_name) || BOUND(?rdfs_label) || BOUND(?schema_termCode)
+                    || BOUND(?sdo_termCode) || BOUND(?schema_identifier) || BOUND(?sdo_identifier)
+                    || BOUND(?dc_identifier) || BOUND(?dcterms_identifier) || BOUND(?skos_prefLabel)
+                    || BOUND(?rdfs_label))
+                  BIND(COALESCE(?schema_name, ?rdfs_label, ?schema_termCode, ?sdo_termCode, ?schema_identifier, ?sdo_identifier, ?dc_identifier, ?dcterms_identifier, ?skos_prefLabel, ?rdfs_label) AS ?propertyValue)
+                }
+                GROUP BY ?propertyValue ?type
+                HAVING (COUNT(?entity) > 1)
+                LIMIT %s
+                                
+                """.formatted(limit);
 
-        Variable sharedValue = SparqlBuilder.var("s");
-        Variable type = SparqlBuilder.var("type");
-        Variable thing = SparqlBuilder.var("thing");
+        Variable entitiesVariable = SparqlBuilder.var("duplicates");
+        Variable propertyValueVariable = SparqlBuilder.var("propertyValue");
+        Variable typeVariable = SparqlBuilder.var("type");
 
-        SelectQuery findDuplicates = Queries.SELECT(type, sharedValue)
-                .where(
-                        thing.isA(type),
-                        thing.has(sharedProperty, sharedValue)
-                ).groupBy(sharedValue, type).having(Expressions.gt(Expressions.count(thing), 1)).limit(this.limit);
-
-
-        return queryServices.queryValues(findDuplicates, RepositoryType.ENTITIES, ctx)
+        return queryServices.queryValues(query, RepositoryType.ENTITIES, ctx)
                 .map(binding -> {
-                    Value sharedValueVal = binding.getValue(sharedValue.getVarName());
-                    Value typeVal = binding.getValue(type.getVarName());
-                    return new DuplicateCandidate(sharedProperty, typeVal.stringValue(), sharedValueVal.stringValue());
+                    String sharedValueVal = binding.getValue(propertyValueVariable.getVarName()).stringValue();
+                    IRI typeVal = (IRI) binding.getValue(typeVariable.getVarName());
+                    Set<IRI> entities = Arrays.stream(binding.getValue(entitiesVariable.getVarName()).stringValue().split(",")).map(Values::iri).collect(Collectors.toSet());
+
+                    return new Duplicates(entities, typeVal, sharedValueVal);
                 }).timeout(Duration.of(60, ChronoUnit.SECONDS));
 
 
     }
 
-    private record DuplicateCandidate(IRI sharedProperty, String type, String sharedValue) {
-    }
 
-    private record MislinkedStatement(IRI subject, IRI predicate, IRI object) {
-    }
 
-    private record Duplicate(IRI id) implements Comparable<Duplicate> {
-        @Override
-        public int compareTo(Duplicate o) {
-            return o.id().stringValue().compareTo(this.id().stringValue());
-        }
-    }
 
 
 }
 
-
-/*
-
-## Original state
-
-d20398wioe a ns1:VideoObject ;
-    ns1:identifier "_a1234" ;
-    ns1:title "Video 1" ;
-	ns1:dateCreated "2022-12-12T12:32:24" .
-
-90ildsm32i a ns1:VideoObject ;
-    ns1:identifier "_a1234" ;
-    ns1:title "Video 1" ;
-	ns1:dateCreated "2022-12-12T13:32:24" .
-
-
-dfm3209ews a ns1:VideoObject ;
-    ns1:identifier "_a1234" ;
-    ns1:title "Video 1" ;
-	ns1:dateCreated "2022-12-12T13:32:26" .
-
-
-## Desired state
-
-d20398wioe a ns1:VideoObject ;
-    ns1:identifier "_a1234" ;
-    local:alternativeIdentifier "90ildsm32i", "dfm3209ews"
-    ns1:title "Video 1" ;
-	ns1:dateCreated "2022-12-12T12:32:24" .
-
-
-## Response for GET /entities/d20398wioe
-
-d20398wioe a ns1:VideoObject ;
-    ns1:identifier "_a1234" ;
-    ns1:title "Video 1" ;
-	ns1:dateCreated "2022-12-12T12:32:24" .
-
-
-## Response for GET /entities/90ildsm32i
-    HTTP 302 GET /entities/d20398wioe
-
- */

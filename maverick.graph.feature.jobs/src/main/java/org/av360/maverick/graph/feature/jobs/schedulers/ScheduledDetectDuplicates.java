@@ -2,7 +2,7 @@ package org.av360.maverick.graph.feature.jobs.schedulers;
 
 
 import lombok.extern.slf4j.Slf4j;
-import org.av360.maverick.graph.feature.jobs.jobs.MergeDuplicatesJob;
+import org.av360.maverick.graph.feature.jobs.jobs.MergeDuplicatesJobOld;
 import org.av360.maverick.graph.model.context.SessionContext;
 import org.av360.maverick.graph.model.events.JobScheduledEvent;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -59,7 +59,7 @@ public class ScheduledDetectDuplicates  {
 
     @Scheduled(fixedRate = 1, timeUnit = TimeUnit.HOURS)
     public void checkForDuplicatesScheduled() {
-        JobScheduledEvent event = new JobScheduledEvent(MergeDuplicatesJob.NAME, new SessionContext().setSystemAuthentication());
+        JobScheduledEvent event = new JobScheduledEvent(MergeDuplicatesJobOld.NAME, new SessionContext().setSystemAuthentication());
         eventPublisher.publishEvent(event);
 
     }
