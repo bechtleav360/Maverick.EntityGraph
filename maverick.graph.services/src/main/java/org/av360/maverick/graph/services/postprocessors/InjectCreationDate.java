@@ -49,23 +49,31 @@ public class InjectCreationDate {
 
     @Async
     @EventListener
-    void handleEntitiesCreated(EntityCreatedEvent event) {
+    void handleEntitiesCreatedForInjectCreateDate(EntityCreatedEvent event) {
         Flux.fromIterable(event.listInsertedFragmentSubjects())
                 .flatMap(iri -> handleEntityCreated(iri, event.getEnvironment()))
+                .doOnSubscribe(subscription -> log.info("Postprocessing: Injecting creation date (if not yet present)"))
                 .subscribe();
     }
 
     Mono<Void> handleEntityCreated(Resource entityIdentifier, Environment environment) {
         return this.entityStore.asFragmentable().getFragment(entityIdentifier, environment)
                 .filter(rdfFragment -> rdfFragment.isIndividual() || rdfFragment.isClassifier())
-                        .flatMap(rdfFragment -> this.entityStore.asCommitable().commit(
-                                new RdfTransaction().inserts(
-                                        rdfFragment.getIdentifier(),
-                                        DCTERMS.CREATED,
-                                        Values.literal(ZonedDateTime.now(ZoneOffset.UTC).truncatedTo(ChronoUnit.SECONDS).format(DateTimeFormatter.ISO_OFFSET_DATE_TIME))
-                                ),
-                                environment
-                        )).then();
+                .filter(rdfFragment -> !rdfFragment.hasStatement(rdfFragment.getIdentifier(), DCTERMS.CREATED, null))
+                .flatMap(rdfFragment -> {
+                    String date = ZonedDateTime.now(ZoneOffset.UTC).truncatedTo(ChronoUnit.SECONDS).format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
+                    log.info("Postprocessing: Setting creation date to {}", date);
+                    return this.entityStore.asCommitable().commit(
+
+                            new RdfTransaction().inserts(
+                                    rdfFragment.getIdentifier(),
+                                    DCTERMS.CREATED,
+                                    Values.literal(date)
+                            ),
+                            environment
+                    );
+                })
+                .then();
 
     }
 }

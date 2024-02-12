@@ -53,23 +53,23 @@ public class UpdateModifiedDate {
         return this.entityStore.asFragmentable().getFragment(entityIdentifier, environment)
                 .filter(rdfFragment -> rdfFragment.isIndividual() || rdfFragment.isClassifier())
                 .flatMap(rdfFragment -> {
-                    RdfTransaction trx = new RdfTransaction();
+                        RdfTransaction trx = new RdfTransaction();
 
-                    // remove old modified date statements
-                    rdfFragment.streamStatements(rdfFragment.getIdentifier(), DCTERMS.MODIFIED, null)
-                            .forEach(trx::removes);
+                        // remove old modified date statements
+                        rdfFragment.streamStatements(rdfFragment.getIdentifier(), DCTERMS.MODIFIED, null)
+                                .forEach(trx::removes);
 
-                    // insert current date as last modification date
-                    trx.inserts(
-                            rdfFragment.getIdentifier(),
-                            DCTERMS.CREATED,
-                            Values.literal(ZonedDateTime.now(ZoneOffset.UTC).truncatedTo(ChronoUnit.SECONDS).format(DateTimeFormatter.ISO_OFFSET_DATE_TIME))
-                    );
+                        // insert current date as last modification date
+                        trx.inserts(
+                                rdfFragment.getIdentifier(),
+                                DCTERMS.MODIFIED,
+                                Values.literal(ZonedDateTime.now(ZoneOffset.UTC).truncatedTo(ChronoUnit.SECONDS).format(DateTimeFormatter.ISO_OFFSET_DATE_TIME))
+                        );
 
-                    return this.entityStore.asCommitable().commit(
-                            trx,
-                            environment
-                    );
+                        return this.entityStore.asCommitable().commit(
+                                trx,
+                                environment
+                        );
                 }).then();
 
     }

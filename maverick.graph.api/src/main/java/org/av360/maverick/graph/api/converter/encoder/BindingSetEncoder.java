@@ -78,6 +78,12 @@ public class BindingSetEncoder implements Encoder<BindingSet> {
                             bindingSetList.forEach(b::handleSolution);
                             b.endQueryResult();
                             QueryResultIO.writeTuple(b.getQueryResult(), format, baos);
+                        } else {
+                            TupleQueryResultBuilder b = new TupleQueryResultBuilder();
+                            b.startQueryResult(List.of("None"));
+                            b.endQueryResult();
+                            QueryResultIO.writeTuple(b.getQueryResult(), format, baos);
+
                         }
 
                         return Flux.just(bufferFactory.wrap(baos.toByteArray()));

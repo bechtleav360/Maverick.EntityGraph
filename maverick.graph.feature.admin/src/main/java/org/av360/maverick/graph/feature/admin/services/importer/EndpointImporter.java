@@ -59,7 +59,7 @@ public class EndpointImporter {
 
         repository.setAdditionalHttpHeaders(headers);
 
-        return this.importFromEndpoint(repository, 1000, 0, ctx);
+        return this.importFromEndpoint(repository, 5000, 0, ctx);
     }
 
     private Mono<Void> importFromEndpoint(SPARQLRepository repository, int limit, int offset, SessionContext ctx) {

@@ -337,8 +337,8 @@ public abstract class AbstractRdfRepository implements Searchable, Maintainable,
 
                 RdfFragment entity = new RdfFragment(id).withResult(statements);
 
-                Model composites = loadComposites(connection, entity);
-                entity.getModel().addAll(composites);
+                Model embeds = loadEmbeds(connection, entity);
+                entity.getModel().addAll(embeds);
                 if (includeDetails) {
                     Model details = loadDetailsWithReification(connection, entity);
                     entity.getModel().addAll(details);
@@ -415,16 +415,16 @@ public abstract class AbstractRdfRepository implements Searchable, Maintainable,
 
     }
 
-    private Model loadComposites(RepositoryConnection connection, RdfFragment entity) {
+    private Model loadEmbeds(RepositoryConnection connection, RdfFragment entity) {
         HashSet<Value> objects = new HashSet<>(entity.getModel().objects());
 
-        Set<Resource> compositeResources = objects.stream()
+        Set<Resource> embedsSubjects = objects.stream()
                 .filter(Value::isIRI)
                 .flatMap(value -> connection.getStatements((IRI) value, RDF.TYPE, Local.Entities.TYPE_EMBEDDED).stream())
                 .map(Statement::getSubject)
                 .collect(Collectors.toSet());
 
-        Model result = compositeResources.stream()
+        Model result = embedsSubjects.stream()
                 .flatMap(resource -> connection.getStatements(resource, null, null).stream())
                 .collect(new ModelCollector());
         return result;

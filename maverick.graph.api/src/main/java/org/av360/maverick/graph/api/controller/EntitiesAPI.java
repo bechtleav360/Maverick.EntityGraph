@@ -66,7 +66,7 @@ public interface EntitiesAPI {
             }
     )
     @GetMapping(value = "/entities/{id}",
-            produces = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.N3_VALUE})
+            produces = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.N3_VALUE, RdfMimeTypes.TURTLESTAR_VALUE})
     @ResponseStatus(HttpStatus.OK)
     Flux<AnnotatedStatement> read(@Parameter(description = "Key of the entity to be fetched", required = true) @PathVariable String key,
                                   @Parameter(description = "Prefixed property key like 'dc.identifier' pointing to a global external identifier, if the internal key is unknown.", required = false) @RequestParam(required = false) @Nullable String property);
