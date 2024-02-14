@@ -162,6 +162,31 @@ public abstract class AbstractRdfRepository implements Searchable, Maintainable,
         });
     }
 
+
+    public Mono<Void> update(String query, Environment environment) {
+        return this.consumeWithConnection(environment, connection -> {
+            try {
+
+                getLogger().debug("Running update query in repository: {}", connection.getRepository());
+                getLogger().trace("Query: {} ", query.replace('\n', ' ').trim());
+
+                Update q = connection.prepareUpdate(QueryLanguage.SPARQL, query);
+                q.setMaxExecutionTime(30);
+                q.execute();
+
+                if (getLogger().isInfoEnabled())
+                    getLogger().info("Update query executed");
+
+            } catch (MalformedQueryException e) {
+                getLogger().warn("Error while parsing query, reason: {}", e.getMessage());
+                throw new HttpClientErrorException(HttpStatus.BAD_REQUEST, "Invalid query");
+            } catch (Exception e) {
+                getLogger().error("Unknown error while running query", e);
+                throw e;
+            }
+        });
+    }
+
     @Override
     public Mono<Void> purge(Environment environment) {
 

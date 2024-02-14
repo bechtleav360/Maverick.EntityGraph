@@ -9,6 +9,7 @@ import org.av360.maverick.graph.services.QueryServices;
 import org.eclipse.rdf4j.query.BindingSet;
 import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 @RestController
 
@@ -26,6 +27,15 @@ public class QueryRestController extends AbstractController implements QueryAPI 
 
         return super.acquireContext()
                 .flatMapMany(ctx -> queryServices.queryValues(query, repositoryType, ctx))
+                .doOnSubscribe(s -> {
+                    if (log.isDebugEnabled()) log.debug("Request to search graph with tuples query: {}", query);
+                });
+    }
+
+    @Override
+    public Mono<Void> queryUpdatePost(String query, RepositoryType repositoryType) {
+        return super.acquireContext()
+                .flatMap(ctx -> queryServices.update(query, repositoryType, ctx))
                 .doOnSubscribe(s -> {
                     if (log.isDebugEnabled()) log.debug("Request to search graph with tuples query: {}", query);
                 });

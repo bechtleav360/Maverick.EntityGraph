@@ -34,6 +34,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+
 @RequestMapping(path = "/api/query")
 @SecurityRequirement(name = "api_key")
 @Tag(name = "Queries", description = """
@@ -68,6 +70,21 @@ public interface QueryAPI {
     @ResponseStatus(HttpStatus.OK)
     Flux<BindingSet> queryBindingsPost(@RequestBody String query,
                                        @RequestParam(required = false, defaultValue = "entities", value = "entities") @Parameter(name = "repository", description = "The repository type in which the query should search.")
+                                       RepositoryType repositoryType);
+
+
+    @PostMapping(value = "/update", consumes = {MediaType.TEXT_PLAIN_VALUE, SparqlMimeTypes.SPARQL_QUERY_VALUE},
+            produces = { SparqlMimeTypes.JSON_VALUE, "text/csv; charset=utf-8"})
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(
+            description = "Sparql Update Query (Be careful!)",
+            content = @Content(examples = {
+                    @ExampleObject(name = "Select types", value = "SELECT ?entity  ?type WHERE { ?entity a ?type } LIMIT 100"),
+                    @ExampleObject(name = "Query everything", value = "SELECT ?a ?b ?c  ?type WHERE { ?a ?b ?c } LIMIT 100")
+            })
+    )
+    @ResponseStatus(HttpStatus.OK)
+    Mono<Void> queryUpdatePost(@RequestBody String query,
+                                       @RequestParam(required = false, defaultValue = "entities", value = "entities") @Parameter(name = "repository", description = "The repository type in which the query should update.")
                                        RepositoryType repositoryType);
 
 

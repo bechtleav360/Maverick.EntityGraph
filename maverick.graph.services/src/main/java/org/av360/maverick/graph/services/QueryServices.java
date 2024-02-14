@@ -8,6 +8,7 @@ import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.sparqlbuilder.core.query.ConstructQuery;
 import org.eclipse.rdf4j.sparqlbuilder.core.query.SelectQuery;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 public interface QueryServices {
 
@@ -72,4 +73,6 @@ public interface QueryServices {
     Flux<AnnotatedStatement> queryGraphTrusted(String query, RepositoryType target, SessionContext ctx);
 
     Flux<BindingSet> queryValuesTrusted(String query, RepositoryType repositoryType, SessionContext ctx);
+
+    Mono<Void> update(String query, RepositoryType repositoryType, SessionContext ctx);
 }

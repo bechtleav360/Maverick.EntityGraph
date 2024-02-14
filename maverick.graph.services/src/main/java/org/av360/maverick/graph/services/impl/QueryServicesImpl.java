@@ -16,6 +16,7 @@ import org.eclipse.rdf4j.sparqlbuilder.core.query.ConstructQuery;
 import org.eclipse.rdf4j.sparqlbuilder.core.query.SelectQuery;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -75,6 +76,23 @@ public class QueryServicesImpl implements QueryServices {
             return Flux.error(e);
         }
     }
+
+    @Override
+    @RequiresPrivilege(Authorities.SYSTEM_VALUE)
+    public Mono<Void> update(String query, RepositoryType repositoryType, SessionContext ctx) {
+        try {
+            ctx.getEnvironment().withRepositoryType(repositoryType);
+            ParsedUpdate parsedQuery = QueryParserUtil.parseUpdate(QueryLanguage.SPARQL, query, null);
+            if(parsedQuery != null) {
+                return this.updateTrusted(query, repositoryType, ctx);
+            } else throw new InvalidQuery(query);
+        } catch (Exception | InvalidQuery e) {
+            return Mono.error(e);
+        }
+    }
+
+
+
     @RequiresPrivilege(Authorities.READER_VALUE)
     public Flux<AnnotatedStatement> queryGraph(ConstructQuery query,  RepositoryType repositoryType, SessionContext ctx) {
         return this.queryGraphTrusted(query.getQueryString(), repositoryType, ctx);
@@ -98,6 +116,22 @@ public class QueryServicesImpl implements QueryServices {
         }
     }
 
+    private Mono<Void> updateTrusted(String query, RepositoryType repositoryType, SessionContext ctx) {
+        try {
+            if(Objects.isNull(ctx.getEnvironment().getRepositoryType())) ctx.updateEnvironment(env -> env.setRepositoryType(repositoryType));
+
+            // check if we should set back to old repository type if needed
+            return this.stores.get(repositoryType).asSearchable().update(query, ctx.getEnvironment())
+                    .doOnSubscribe(subscription -> {
+                        if (log.isTraceEnabled())
+                            log.trace("Running update query in {}: {}", ctx.getEnvironment(), query.replace('\n', ' ').trim());
+                    });
+        } catch (Exception e) {
+            return Mono.error(e);
+        }
+    }
+
+
     @Override
     public Flux<BindingSet> queryValuesTrusted(String query, RepositoryType repositoryType, SessionContext ctx) {
         try {
@@ -112,6 +146,7 @@ public class QueryServicesImpl implements QueryServices {
             return Flux.error(e);
         }
     }
+
 
 
 
