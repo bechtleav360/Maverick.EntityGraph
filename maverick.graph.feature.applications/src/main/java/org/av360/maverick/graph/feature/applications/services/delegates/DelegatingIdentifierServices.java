@@ -110,6 +110,8 @@ public class DelegatingIdentifierServices implements IdentifierServices {
          */
 
         try {
+
+
             // 4) https URLs will be ignored, they have to be handled elsewhere (transformed to local iri with owl:sameas link)
             if(! identifier.getNamespace().startsWith("urn")) return identifier;
             // 6) identifier is known internal type
@@ -117,57 +119,63 @@ public class DelegatingIdentifierServices implements IdentifierServices {
             if(Local.Entities.TYPE_CLASSIFIER.equals(identifier)) return identifier;
             if(Local.Entities.TYPE_EMBEDDED.equals(identifier)) return identifier;
 
-            Optional<String> header_scope = Objects.isNull(headers) ? Optional.empty() : Optional.of(headers.getOrDefault(Globals.HEADER_APPLICATION_LABEL, null));
-            Optional<String> env_scope = environment.hasScope() ? Optional.of(environment.getScope().label()) : Optional.empty();
-            Optional<String> key_scope = IdentifierServices.getScopeFromKey(identifier.getLocalName());
-            Optional<String> host = Objects.isNull(endpoint) ? Optional.empty() : Optional.of(new URIBuilder(endpoint).removeQuery().setPath("/api/entities/").toString());
+            Optional<String> target_header_scope = Objects.isNull(headers) ? Optional.empty() : Optional.of(headers.getOrDefault(Globals.HEADER_APPLICATION_LABEL, null));
+            Optional<String> current_env_scope = environment.hasScope() ? Optional.of(environment.getScope().label()) : Optional.empty();
+            Optional<String> target_key_scope = IdentifierServices.getScopeFromKey(identifier.getLocalName());
+            Optional<String> host = Objects.isNull(endpoint) ? Optional.empty() : Optional.of(new URIBuilder(endpoint).removeQuery().setPath("/api/entities").toString());
 
+            if(log.isTraceEnabled()) {
+                log.trace("Checking if incoming identifier <{}> with scope '{}' can be imported to scope '{}'>", identifier, target_key_scope.orElse("None"), current_env_scope.orElse("None"));
+            }
 
             // 1) if (target scope from env matches key scope) and (key scope matches source scope from header): we leave the scope
-            if(env_scope.isPresent() && header_scope.isPresent() && key_scope.isPresent() && env_scope.get().equalsIgnoreCase(key_scope.get()) && key_scope.get().equalsIgnoreCase(header_scope.get())) {
+            if(current_env_scope.isPresent() && target_header_scope.isPresent() && target_key_scope.isPresent() && current_env_scope.get().equalsIgnoreCase(target_key_scope.get()) && target_key_scope.get().equalsIgnoreCase(target_header_scope.get())) {
                 IRI result = Values.iri(environment.getRepositoryType().getIdentifierNamespace(), identifier.getLocalName());
+                log.trace("Incoming identifier <{}> matches to <{}>", identifier, result);
                 return result;
             }
 
             //  2) if target (env scope) is different from key scope and key scope matches header scope): we convert the scope
-            if(env_scope.isPresent() && header_scope.isPresent() && key_scope.isPresent() && ! env_scope.get().equalsIgnoreCase(key_scope.get()) && key_scope.get().equalsIgnoreCase(header_scope.get())) {
+            if(current_env_scope.isPresent() && target_header_scope.isPresent() && target_key_scope.isPresent() && ! current_env_scope.get().equalsIgnoreCase(target_key_scope.get()) && target_key_scope.get().equalsIgnoreCase(target_header_scope.get())) {
                 IRI result = Values.iri(environment.getRepositoryType().getIdentifierNamespace(), this.validate(identifier.getLocalName(), environment));
                 log.trace("Converted local identifier {} with known scope to target scoped identifier {}>", identifier, result);
                 return result;
             }
 
             // 3a) if env scope is different from key scope and key scope does not match header scope (host is present)
-            if(env_scope.isPresent() && header_scope.isPresent() && key_scope.isPresent() && host.isPresent() && ! env_scope.get().equalsIgnoreCase(key_scope.get()) && ! key_scope.get().equalsIgnoreCase(header_scope.get())) {
+            if(current_env_scope.isPresent() && target_header_scope.isPresent() && target_key_scope.isPresent() && host.isPresent() && ! current_env_scope.get().equalsIgnoreCase(target_key_scope.get()) && ! target_key_scope.get().equalsIgnoreCase(target_header_scope.get())) {
+                log.trace("Ignored identifier {} with external scope '{}'", identifier, target_key_scope.get());
+                // String newHost = "%ss/%s/".formatted(host.get(), target_key_scope.get());
+                // IRI result = Values.iri(newHost, identifier.getLocalName());
 
-                String newHost = "%s/s/%s".formatted(host.get(), key_scope.get());
-                IRI result = Values.iri(newHost, identifier.getLocalName());
-                log.trace("Converted local identifier {} with unknown scope into external IRI <{}>", identifier, result);
-                return result;
+                return identifier;
             }
 
             // 3b) if env scope is different from key scope and key scope does not match header scope (host is not present)
-            if(env_scope.isPresent() && header_scope.isPresent() && key_scope.isPresent() && host.isEmpty() && ! env_scope.get().equalsIgnoreCase(key_scope.get()) && ! key_scope.get().equalsIgnoreCase(header_scope.get())) {
+            if(current_env_scope.isPresent() && target_header_scope.isPresent() && target_key_scope.isPresent() && host.isEmpty() && ! current_env_scope.get().equalsIgnoreCase(target_key_scope.get()) && ! target_key_scope.get().equalsIgnoreCase(target_header_scope.get())) {
                 log.error("Cannot convert identifier {}, since target host is missing to resolve the identifier into an URI", identifier);
                 return identifier;
             }
 
             // 5a) if identifier is unscoped but target is scoped
-            if(key_scope.isEmpty() && env_scope.isPresent() && host.isPresent()) {
+            if(target_key_scope.isEmpty() && current_env_scope.isPresent() && host.isPresent()) {
                 IRI result = Values.iri(host.get(), identifier.getLocalName());
                 log.trace("Converted local identifier {} with no scope into external IRI <{}>, since targed is scoped", identifier, result);
                 return result;
             }
             // 5a) if identifier is unscoped but target is scoped
-            if(key_scope.isEmpty() && (env_scope.isEmpty() || env_scope.get().equalsIgnoreCase(Globals.DEFAULT_APPLICATION_LABEL))) {
+            if(target_key_scope.isEmpty() && (current_env_scope.isEmpty() || current_env_scope.get().equalsIgnoreCase(Globals.DEFAULT_APPLICATION_LABEL))) {
                 IRI result = Values.iri(environment.getRepositoryType().getIdentifierNamespace(), identifier.getLocalName());
+                log.trace("Incoming identifier <{}> without scope  converted to scoped identifier <{}>", identifier, result);
                 return result;
             }
 
 
             log.error("Failed to handle identifier: {}", identifier);
-            header_scope.ifPresent(str -> log.warn("Source scope in header: {}", str));
-            key_scope.ifPresent(str -> log.warn("Source scope in key: {}", str));
-            env_scope.ifPresent(str -> log.warn("Target scope in environment: {}", str));
+            log.info("Source scope in header: {}", target_header_scope.orElse("None"));
+            log.info("Source scope in key: {}", target_key_scope.orElse("None"));
+            log.info("Target scope in environment: {}", current_env_scope.orElse("None"));
+
             throw new RuntimeException("Failed to handle identifier: %s".formatted(identifier));
 
         } catch (URISyntaxException e) {
