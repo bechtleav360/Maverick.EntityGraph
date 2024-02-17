@@ -113,7 +113,7 @@ public class DelegatingIdentifierServices implements IdentifierServices {
 
 
             // 4) https URLs will be ignored, they have to be handled elsewhere (transformed to local iri with owl:sameas link)
-            if(! identifier.getNamespace().startsWith("urn")) return identifier;
+            if(! identifier.getNamespace().startsWith("urn:pwid:meg")) return identifier;
             // 6) identifier is known internal type
             if(Local.Entities.TYPE_INDIVIDUAL.equals(identifier)) { return identifier;}
             if(Local.Entities.TYPE_CLASSIFIER.equals(identifier)) return identifier;
