@@ -75,8 +75,6 @@ public class ValueServicesImpl implements ValueServices {
     }
 
 
-
-
     @Override
     @RequiresPrivilege(Authorities.CONTRIBUTOR_VALUE)
     @OnRepositoryType(RepositoryType.ENTITIES)
@@ -114,8 +112,13 @@ public class ValueServicesImpl implements ValueServices {
     @RequiresPrivilege(Authorities.CONTRIBUTOR_VALUE)
     @OnRepositoryType(RepositoryType.ENTITIES)
     public Mono<Transaction> insertDetail(String entityKey, String prefixedValueKey, String prefixedDetailKey, String value, @Nullable String hash, SessionContext ctx) {
-        return this.api.details().inserts().insert(entityKey, prefixedValueKey, prefixedDetailKey, value, hash, ctx);
+        return Mono.zip(
+                api.identifiers().localIdentifiers().asLocalIRI(entityKey, ctx.getEnvironment()),
+                api.identifiers().prefixes().resolvePrefixedName(prefixedValueKey),
+                api.identifiers().prefixes().resolvePrefixedName(prefixedDetailKey)
+        ).flatMap(t -> api.details().inserts().insert(t.getT1(), t.getT2(), t.getT3(), value, hash, ctx));
     }
+
 
     @Override
     @RequiresPrivilege(Authorities.CONTRIBUTOR_VALUE)

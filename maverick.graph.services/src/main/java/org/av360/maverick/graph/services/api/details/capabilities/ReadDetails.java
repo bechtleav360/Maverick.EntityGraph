@@ -26,6 +26,7 @@ import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.util.Values;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import java.util.Optional;
 
@@ -53,7 +54,9 @@ public class ReadDetails {
                 .map(statement -> {
                     return Pair.of(statement.getPredicate(), statement.getObject());
                 });
+    }
 
-
+    public Mono<Boolean> hasDetail(IRI entityIdentifier, IRI valuePredicate, IRI detailPredicate) {
+        return Mono.just(Boolean.FALSE);
     }
 }

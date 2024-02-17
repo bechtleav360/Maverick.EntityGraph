@@ -15,7 +15,6 @@
 
 package org.av360.maverick.graph.services.api.details.capabilities;
 
-import jakarta.annotation.Nullable;
 import org.av360.maverick.graph.model.context.SessionContext;
 import org.av360.maverick.graph.model.entities.Transaction;
 import org.av360.maverick.graph.model.errors.InconsistentModelException;
@@ -43,33 +42,32 @@ public class InsertDetails {
         this.api = valueServices;
     }
 
-    public Mono<Transaction> insert(String entityKey, String prefixedValueKey, String prefixedDetailKey, String value, @Nullable String valueIdentifier, SessionContext ctx) {
-        return Mono.zip(
-                        api.identifiers().localIdentifiers().asLocalIRI(entityKey, ctx.getEnvironment())
-                                .flatMap(entityIdentifier -> api.entities().select().get(entityIdentifier, true, 0, ctx)),
-                        api.identifiers().prefixes().resolvePrefixedName(prefixedValueKey),
-                        api.identifiers().prefixes().resolvePrefixedName(prefixedDetailKey)
-                ).flatMap(tuple -> {
-                    RdfFragment entity = tuple.getT1();
-                    IRI valuePredicate = tuple.getT2();
-                    IRI detailPredicate = tuple.getT3();
 
+
+    public Mono<Transaction> insert(IRI entityIdentifier, IRI valuePredicate, IRI detailPredicate, String detailValue, String valueIdentifier, SessionContext ctx) {
+        return api.entities().select().get(entityIdentifier, true, 0, ctx)
+                .flatMap(entityFragment -> {
                     if (Objects.isNull(valueIdentifier)) {
-                        return this.insertWithoutHash(entity, valuePredicate, detailPredicate, value, ctx);
+                        return this.insertWithoutHash(entityFragment, valuePredicate, detailPredicate, detailValue, ctx);
                     } else {
-                        return this.insertWithHash(entity, valuePredicate, detailPredicate, value, valueIdentifier, ctx);
+                        return this.insertWithHash(entityFragment, valuePredicate, detailPredicate, detailValue, valueIdentifier, ctx);
                     }
-                })
-                .doOnSuccess(trx -> {
+                }).doOnSuccess(trx -> {
                     api.publishEvent(new DetailInsertedEvent(trx, ctx.getEnvironment()));
                 });
-
-
     }
 
     private Mono<Transaction> insertWithHash(RdfFragment entity, IRI valuePredicate, IRI detailPredicate, String value, String hash, SessionContext ctx) {
         return this.buildDetailStatementForValueWithHash(entity, valuePredicate, detailPredicate, value, hash)
-                .map(statement -> new RdfTransaction().forInsert(statement))
+                .map(statement -> {
+                    // check if we already have a statement
+                    api.details().selects().hasDetail((IRI) statement.getSubject(), valuePredicate, detailPredicate);
+
+
+                    return new RdfTransaction().forInsert(statement);
+
+                })
+
                 .flatMap(trx -> api.entities().commit(trx, ctx.getEnvironment()));
     }
 
@@ -121,4 +119,6 @@ public class InsertDetails {
         }
 
     }
+
+
 }

@@ -95,11 +95,7 @@ public class EndpointImporter {
                 return Mono.error(e);
             }
 
-            if (Objects.nonNull(resultingModel)) {
-                if (resultingModel.isEmpty()) {
-                    log.debug("Finished importing around {} statements from endpoint {}", offset, endpoint);
-                }
-
+            if (Objects.nonNull(resultingModel) && !resultingModel.isEmpty()) {
                 return this.stores.get(ctx.getEnvironment().getRepositoryType())
                         .asMaintainable()
                         .importStatements(resultingModel, ctx.getEnvironment())
@@ -122,6 +118,7 @@ public class EndpointImporter {
                         })
                         .then();
             } else {
+                log.debug("Finished importing around {} statements from endpoint {}", offset, endpoint);
                 return Mono.empty();
             }
 
