@@ -61,7 +61,7 @@ public class InsertDetails {
         return this.buildDetailStatementForValueWithHash(entity, valuePredicate, detailPredicate, value, hash)
                 .map(statement -> {
                     // check if we already have a statement
-                    api.details().selects().hasDetail((IRI) statement.getSubject(), valuePredicate, detailPredicate);
+                    api.details().selects().hasDetail((IRI) entity.getIdentifier(), valuePredicate, detailPredicate);
 
 
                     return new RdfTransaction().forInsert(statement);
