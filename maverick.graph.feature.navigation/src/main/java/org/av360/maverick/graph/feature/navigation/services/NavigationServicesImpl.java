@@ -138,11 +138,13 @@ public class NavigationServicesImpl implements NavigationServices {
 
                     // IRI currentView = this.generateResolvableIRI("/api/entities/%s".formatted(((IRI) fragment.getIdentifier()).getLocalName()));
                     Resource currentView = Values.bnode();
+                    Resource internalNavigationLinks = Values.bnode();
 
                     builder.namedGraph(NAVIGATION_CONTEXT);
                     builder.setNamespace(HYDRA.PREFIX, HYDRA.NAMESPACE);
-                    builder.add(currentView, RDF.TYPE, HYDRA.VIEW);
+                    builder.add(currentView, RDF.TYPE, HYDRA.RESOURCE);
                     builder.add(currentView, HYDRA.DESCRIPTION, "Details of a linked data fragment.");
+
                     if (ctx.getRequestDetails().isPresent() && ctx.getRequestDetails().get().getHeaders().containsKey("X-MEG-PREVIOUS")) {
                         String previous_url_string = ctx.getRequestDetails().get().getHeaders().get("X-MEG-PREVIOUS");
                         URI uri = URI.create(previous_url_string);
@@ -153,8 +155,15 @@ public class NavigationServicesImpl implements NavigationServices {
 
                     builder.namedGraph(DATA_CONTEXT);
                     fragment.streamStatements()
-                            .filter(statement -> ! statement.getSubject().isTriple())
-                            .forEach(statement -> builder.add(statement.getSubject(), statement.getPredicate(), statement.getObject()));
+                            .filter(statement -> !statement.getSubject().isTriple())
+                            .forEach(statement -> {
+                                builder.add(statement.getSubject(), statement.getPredicate(), statement.getObject());
+                                if (statement.getObject().isIRI()
+                                        && (statement.getObject().stringValue().startsWith(Local.Entities.NAME) || statement.getObject().stringValue().startsWith(Local.Classifier.NAME))
+                                        && ! statement.getPredicate().equals(RDF.TYPE)) {
+                                    generateEntityViewURL((IRI) statement.getObject()).ifPresent(link -> builder.add(currentView, HYDRA.NEXT, link));
+                                }
+                            });
 
                     fragment.streamStatements()
                             .filter(statement -> statement.getSubject().isTriple())
@@ -240,11 +249,11 @@ public class NavigationServicesImpl implements NavigationServices {
     }
 
     private Optional<Literal> generateEntityViewURL(Resource identifier) {
-        if(identifier instanceof IRI iri) {
+        if (identifier instanceof IRI iri) {
             String localName = iri.getLocalName();
             String[] split = localName.split("\\.");
             Literal literal = null;
-            if(split.length == 2) {
+            if (split.length == 2) {
                 literal = Values.literal("?/nav/s/%s/entities/%s".formatted(split[0], split[1]));
             } else {
                 literal = Values.literal("?/nav/s/default/entities/%s".formatted(localName));
