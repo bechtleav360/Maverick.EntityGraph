@@ -138,7 +138,7 @@ public class NavigationServicesImpl implements NavigationServices {
 
                     // IRI currentView = this.generateResolvableIRI("/api/entities/%s".formatted(((IRI) fragment.getIdentifier()).getLocalName()));
                     Resource currentView = Values.bnode();
-                    Resource internalNavigationLinks = Values.bnode();
+
 
                     builder.namedGraph(NAVIGATION_CONTEXT);
                     builder.setNamespace(HYDRA.PREFIX, HYDRA.NAMESPACE);
@@ -160,8 +160,14 @@ public class NavigationServicesImpl implements NavigationServices {
                                 builder.add(statement.getSubject(), statement.getPredicate(), statement.getObject());
                                 if (statement.getObject().isIRI()
                                         && (statement.getObject().stringValue().startsWith(Local.Entities.NAME) || statement.getObject().stringValue().startsWith(Local.Classifier.NAME))
-                                        && ! statement.getPredicate().equals(RDF.TYPE)) {
-                                    generateEntityViewURL((IRI) statement.getObject()).ifPresent(link -> builder.add(currentView, HYDRA.NEXT, link));
+                                        && ! statement.getPredicate().getNamespace().equalsIgnoreCase(RDF.TYPE.getNamespace())) {
+                                    generateEntityViewURL((IRI) statement.getObject())
+                                            .ifPresent(link -> {
+                                                Resource internalNavigationLink = Values.bnode("_"+statement.getObject().stringValue().hashCode());
+                                                builder.add(internalNavigationLink, HYDRA.VIEW, link);
+                                                builder.add(internalNavigationLink, HYDRA.TITLE, statement.getPredicate().getLocalName());
+                                                builder.add(currentView, HYDRA.NEXT, internalNavigationLink);
+                                            });
                                 }
                             });
 
