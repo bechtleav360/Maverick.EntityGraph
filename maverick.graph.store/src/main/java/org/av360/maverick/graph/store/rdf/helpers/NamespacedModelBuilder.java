@@ -1,8 +1,8 @@
 package org.av360.maverick.graph.store.rdf.helpers;
 
 import org.av360.maverick.graph.model.vocabulary.ICAL;
-import org.av360.maverick.graph.model.vocabulary.Local;
 import org.av360.maverick.graph.model.vocabulary.SDO;
+import org.av360.maverick.graph.model.vocabulary.meg.Local;
 import org.eclipse.rdf4j.model.*;
 import org.eclipse.rdf4j.model.util.ModelBuilder;
 import org.eclipse.rdf4j.model.util.Namespaces;

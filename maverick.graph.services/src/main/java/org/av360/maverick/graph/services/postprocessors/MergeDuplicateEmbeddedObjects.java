@@ -21,7 +21,7 @@ import org.av360.maverick.graph.model.context.Environment;
 import org.av360.maverick.graph.model.entities.Transaction;
 import org.av360.maverick.graph.model.events.EntityCreatedEvent;
 import org.av360.maverick.graph.model.events.EntityUpdatedEvent;
-import org.av360.maverick.graph.model.vocabulary.Local;
+import org.av360.maverick.graph.model.vocabulary.meg.Local;
 import org.av360.maverick.graph.store.IndividualsStore;
 import org.av360.maverick.graph.store.rdf.fragments.RdfFragment;
 import org.av360.maverick.graph.store.rdf.fragments.RdfTransaction;

@@ -182,6 +182,8 @@ public class DefaultRdfRepositoryBuilder implements RepositoryBuilder {
             LmdbStoreConfig config = new LmdbStoreConfig();
 
             config.setTripleIndexes("spoc,ospc,psoc");
+            config.setForceSync(false);
+            
 
 
             if (!file.exists() && !file.getFile().mkdirs())

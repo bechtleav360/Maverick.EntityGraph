@@ -80,29 +80,6 @@ public class BufferedStatementsDecoder implements Decoder<Triples> {
                     return Mono.just(handler.getTriples());
                 });
 
-                /*
-        return DataBufferUtils.join(publisher)
-                .flatMap(dataBuffer -> {
-                    RDFParser parser = RdfUtils.getParserFactory(mimeType).orElseThrow().getParser();
-                    TriplesCollector handler = RdfUtils.getTriplesCollector();
-
-                    String string = dataBuffer.toString();
-
-                    try (InputStream is = dataBuffer.asInputStream(false)) {
-                        var result = new String(is.readAllBytes(), StandardCharsets.UTF_8);
-                        log.info("Länge: {}", result.length());
-                        log.info(result);
-
-
-                        parser.setRDFHandler(handler);
-                        parser.parse(new StringReader(result));
-                        log.debug("Parsed payload of mimetype '{}' with {} statements", mimeType.toString(), handler.getTriples().getModel().size());
-                        return Mono.just(handler.getTriples());
-                    } catch (Exception e) {
-                        log.warn("Failed to parse request of mimetype '{}'", mimeType);
-                        return Mono.error(e);
-                    }
-                });*/
     }
 
 

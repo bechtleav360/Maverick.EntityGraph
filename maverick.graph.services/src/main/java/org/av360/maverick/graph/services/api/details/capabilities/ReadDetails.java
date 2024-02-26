@@ -18,7 +18,7 @@ package org.av360.maverick.graph.services.api.details.capabilities;
 import org.apache.commons.lang3.tuple.Pair;
 import org.av360.maverick.graph.model.context.SessionContext;
 import org.av360.maverick.graph.model.errors.requests.DetailNotFound;
-import org.av360.maverick.graph.model.vocabulary.Details;
+import org.av360.maverick.graph.model.vocabulary.meg.Details;
 import org.av360.maverick.graph.services.api.Api;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;

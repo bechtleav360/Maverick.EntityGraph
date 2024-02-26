@@ -3,7 +3,7 @@ package org.av360.maverick.graph.api.converter.encoder;
 import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.api.config.ReactiveRequestUriContextHolder;
 import org.av360.maverick.graph.model.enums.RdfMimeTypes;
-import org.av360.maverick.graph.model.vocabulary.Local;
+import org.av360.maverick.graph.model.vocabulary.meg.Local;
 import org.av360.maverick.graph.services.SchemaServices;
 import org.av360.maverick.graph.store.rdf.helpers.RdfUtils;
 import org.eclipse.rdf4j.model.*;

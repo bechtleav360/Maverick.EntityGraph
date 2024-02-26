@@ -2,7 +2,7 @@ package org.av360.maverick.graph.services.preprocessors.replaceIdentifiers;
 
 import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.model.context.Environment;
-import org.av360.maverick.graph.model.vocabulary.Local;
+import org.av360.maverick.graph.model.vocabulary.meg.Local;
 import org.av360.maverick.graph.services.IdentifierServices;
 import org.av360.maverick.graph.services.preprocessors.ModelPreprocessor;
 import org.eclipse.rdf4j.model.IRI;

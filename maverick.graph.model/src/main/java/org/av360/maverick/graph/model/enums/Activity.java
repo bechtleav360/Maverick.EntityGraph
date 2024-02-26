@@ -1,6 +1,6 @@
 package org.av360.maverick.graph.model.enums;
 
-import org.av360.maverick.graph.model.vocabulary.Transactions;
+import org.av360.maverick.graph.model.vocabulary.meg.Transactions;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 

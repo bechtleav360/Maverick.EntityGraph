@@ -2,7 +2,7 @@ package org.av360.maverick.graph.feature.navigation.controller.encoder;
 
 import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.api.config.ReactiveRequestUriContextHolder;
-import org.av360.maverick.graph.model.vocabulary.Local;
+import org.av360.maverick.graph.model.vocabulary.meg.Local;
 import org.av360.maverick.graph.services.NavigationServices;
 import org.av360.maverick.graph.store.SchemaStore;
 import org.av360.maverick.graph.store.rdf.helpers.RdfUtils;

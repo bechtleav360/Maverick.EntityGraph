@@ -4,7 +4,7 @@ import org.av360.maverick.graph.model.context.Environment;
 import org.av360.maverick.graph.model.identifier.ChecksumIdentifier;
 import org.av360.maverick.graph.model.identifier.RandomIdentifier;
 import org.av360.maverick.graph.model.rdf.LocalIRI;
-import org.av360.maverick.graph.model.vocabulary.Local;
+import org.av360.maverick.graph.model.vocabulary.meg.Local;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Namespace;
 import reactor.core.publisher.Mono;

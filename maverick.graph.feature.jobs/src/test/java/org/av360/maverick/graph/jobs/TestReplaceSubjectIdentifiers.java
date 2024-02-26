@@ -5,7 +5,7 @@ import org.apache.commons.collections4.IterableUtils;
 import org.av360.maverick.graph.feature.jobs.jobs.ReplaceSubjectIdentifiersJob;
 import org.av360.maverick.graph.model.context.SessionContext;
 import org.av360.maverick.graph.model.entities.Transaction;
-import org.av360.maverick.graph.model.vocabulary.Local;
+import org.av360.maverick.graph.model.vocabulary.meg.Local;
 import org.av360.maverick.graph.services.EntityServices;
 import org.av360.maverick.graph.tests.config.TestRepositoryConfig;
 import org.av360.maverick.graph.tests.config.TestSecurityConfig;

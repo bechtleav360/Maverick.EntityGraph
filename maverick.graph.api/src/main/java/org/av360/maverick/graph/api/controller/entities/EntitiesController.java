@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.api.controller.AbstractController;
 import org.av360.maverick.graph.api.controller.EntitiesAPI;
+import org.av360.maverick.graph.api.controller.dto.Responses;
+import org.av360.maverick.graph.api.converter.dto.EntityItemConverter;
 import org.av360.maverick.graph.model.rdf.AnnotatedStatement;
 import org.av360.maverick.graph.model.rdf.Triples;
 import org.av360.maverick.graph.services.EntityServices;
@@ -18,6 +20,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import javax.annotation.Nullable;
 import java.util.Map;
@@ -42,12 +45,31 @@ public class EntitiesController extends AbstractController implements EntitiesAP
     }
 
     @Override
-    public Flux<AnnotatedStatement> read(@PathVariable String id, @RequestParam(required = false) @Nullable String property) {
+    public Flux<AnnotatedStatement> readAsRDF(@PathVariable String id, @RequestParam(required = false) @Nullable String property) {
+        return super.acquireContext()
+                .flatMap(ctx -> entityServices.find(id,  property, false, 0,  ctx))
+                .flatMapIterable(TripleModel::asStatements)
+                .doOnSubscribe(s -> {
+                    if (log.isDebugEnabled()) log.debug("Request to read entity with id: {}", id);
+                });
+    }
+
+    public Flux<AnnotatedStatement> readAsRDFStar(@PathVariable String id, @RequestParam(required = false) @Nullable String property) {
         return super.acquireContext()
                 .flatMap(ctx -> entityServices.find(id,  property, true, 0,  ctx))
                 .flatMapIterable(TripleModel::asStatements)
                 .doOnSubscribe(s -> {
-                    if (log.isDebugEnabled()) log.debug("Request to read entity with id: {}", id);
+                    if (log.isDebugEnabled()) log.debug("Request to read entity including details with id: {}", id);
+                });
+    }
+
+    @Override
+    public Mono<Responses.EntityResponse> readAsItem(@PathVariable String id, @RequestParam(required = false) @Nullable String property) {
+        return super.acquireContext()
+                .flatMap(ctx -> entityServices.find(id,  property, true, 1,  ctx))
+                .map(EntityItemConverter::convert)
+                .doOnSubscribe(s -> {
+                    if (log.isDebugEnabled()) log.debug("Request to read entity including details with id: {}", id);
                 });
     }
 

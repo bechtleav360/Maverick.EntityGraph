@@ -21,8 +21,8 @@ import org.av360.maverick.graph.model.context.SessionContext;
 import org.av360.maverick.graph.model.entities.ScheduledJob;
 import org.av360.maverick.graph.model.enums.RepositoryType;
 import org.av360.maverick.graph.model.errors.InvalidConfiguration;
-import org.av360.maverick.graph.model.vocabulary.Local;
-import org.av360.maverick.graph.model.vocabulary.Transactions;
+import org.av360.maverick.graph.model.vocabulary.meg.Local;
+import org.av360.maverick.graph.model.vocabulary.meg.Transactions;
 import org.av360.maverick.graph.services.EntityServices;
 import org.av360.maverick.graph.services.QueryServices;
 import org.av360.maverick.graph.services.TransactionsService;
@@ -139,6 +139,7 @@ public class AssignInternalTypesJob implements ScheduledJob {
                     FILTER NOT EXISTS { ?entity a <%s> . }
                     FILTER NOT EXISTS { ?entity a <%s> . }
                     FILTER NOT EXISTS { ?entity a <%s> . }
+                    FILTER NOT EXISTs { FILTER STRSTARTS (STR(?type), "http://www.w3.org/1999/02/22-rdf-syntax-ns") }
                 } LIMIT 1000
                 """;
         String query = String.format(tpl, Local.Entities.TYPE_INDIVIDUAL, Local.Entities.TYPE_CLASSIFIER, Local.Entities.TYPE_EMBEDDED);

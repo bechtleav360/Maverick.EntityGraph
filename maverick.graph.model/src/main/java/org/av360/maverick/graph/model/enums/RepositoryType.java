@@ -1,6 +1,6 @@
 package org.av360.maverick.graph.model.enums;
 
-import org.av360.maverick.graph.model.vocabulary.Local;
+import org.av360.maverick.graph.model.vocabulary.meg.Local;
 
 public enum RepositoryType {
     ENTITIES,

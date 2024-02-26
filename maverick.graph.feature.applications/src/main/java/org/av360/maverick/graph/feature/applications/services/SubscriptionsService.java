@@ -17,7 +17,7 @@ import org.av360.maverick.graph.model.enums.RepositoryType;
 import org.av360.maverick.graph.model.identifier.RandomIdentifier;
 import org.av360.maverick.graph.model.security.Authorities;
 import org.av360.maverick.graph.model.util.StreamsLogger;
-import org.av360.maverick.graph.model.vocabulary.Local;
+import org.av360.maverick.graph.model.vocabulary.meg.Local;
 import org.av360.maverick.graph.services.IdentifierServices;
 import org.av360.maverick.graph.store.rdf.fragments.RdfTransaction;
 import org.av360.maverick.graph.store.rdf.helpers.BindingsAccessor;

@@ -24,15 +24,21 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.av360.maverick.graph.api.controller.dto.Responses;
 import org.av360.maverick.graph.model.enums.RdfMimeTypes;
 import org.av360.maverick.graph.model.rdf.AnnotatedStatement;
 import org.av360.maverick.graph.model.rdf.Triples;
 import org.springframework.boot.web.reactive.error.ErrorAttributes;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import javax.annotation.Nullable;
+
+
+
 
 @SecurityRequirement(name = "api_key")
 @Tag(name = "Entities", description = """
@@ -51,6 +57,9 @@ import javax.annotation.Nullable;
         extensions = @Extension(name = "order", properties = {@ExtensionProperty(name = "position", value = "1")}))
 @RequestMapping(path = "/api")
 public interface EntitiesAPI {
+
+
+
     @Operation(operationId = "readEntity",
             summary = "Returns an entity with the given unique identifier.",
             description = """
@@ -66,10 +75,22 @@ public interface EntitiesAPI {
             }
     )
     @GetMapping(value = "/entities/{id}",
-            produces = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.N3_VALUE, RdfMimeTypes.TURTLESTAR_VALUE})
+            produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.N3_VALUE})
     @ResponseStatus(HttpStatus.OK)
-    Flux<AnnotatedStatement> read(@Parameter(description = "Key of the entity to be fetched", required = true) @PathVariable String key,
+    Flux<AnnotatedStatement> readAsRDF(@Parameter(description = "Key of the entity to be fetched", required = true) @PathVariable String key,
                                   @Parameter(description = "Prefixed property key like 'dc.identifier' pointing to a global external identifier, if the internal key is unknown.", required = false) @RequestParam(required = false) @Nullable String property);
+
+    @GetMapping(value = "/entities/{id}",
+            produces = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLESTAR_VALUE})
+    @ResponseStatus(HttpStatus.OK)
+    Flux<AnnotatedStatement> readAsRDFStar(@Parameter(description = "Key of the entity to be fetched", required = true) @PathVariable String key,
+                                       @Parameter(description = "Prefixed property key like 'dc.identifier' pointing to a global external identifier, if the internal key is unknown.", required = false) @RequestParam(required = false) @Nullable String property);
+
+    @GetMapping(value = "/entities/{id}",
+            produces = {MediaType.APPLICATION_JSON_VALUE})
+    @ResponseStatus(HttpStatus.OK)
+    Mono<Responses.EntityResponse> readAsItem(@Parameter(description = "Key of the entity to be fetched", required = true) @PathVariable String key,
+                                              @Parameter(description = "Prefixed property key like 'dc.identifier' pointing to a global external identifier, if the internal key is unknown.", required = false) @RequestParam(required = false) @Nullable String property);
 
     @GetMapping(value = "/entities", produces = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.N3_VALUE})
     @ResponseStatus(HttpStatus.OK)

@@ -3,7 +3,7 @@ package org.av360.maverick.graph.jobs;
 import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.feature.jobs.jobs.AssignInternalTypesJob;
 import org.av360.maverick.graph.model.context.SessionContext;
-import org.av360.maverick.graph.model.vocabulary.Local;
+import org.av360.maverick.graph.model.vocabulary.meg.Local;
 import org.av360.maverick.graph.services.EntityServices;
 import org.av360.maverick.graph.tests.config.TestRepositoryConfig;
 import org.av360.maverick.graph.tests.config.TestSecurityConfig;

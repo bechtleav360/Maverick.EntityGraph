@@ -50,6 +50,8 @@ import javax.annotation.Nullable;
 public interface RelationsAPI {
 
 
+
+
     @Operation(
             operationId = "listRelations",
             summary = "Returns all relations of an entity.",

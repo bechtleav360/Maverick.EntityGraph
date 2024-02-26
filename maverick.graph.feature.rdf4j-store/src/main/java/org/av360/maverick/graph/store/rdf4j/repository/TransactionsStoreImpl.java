@@ -3,7 +3,7 @@ package org.av360.maverick.graph.store.rdf4j.repository;
 import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.model.context.Environment;
 import org.av360.maverick.graph.model.entities.Transaction;
-import org.av360.maverick.graph.model.vocabulary.Transactions;
+import org.av360.maverick.graph.model.vocabulary.meg.Transactions;
 import org.av360.maverick.graph.store.TransactionsStore;
 import org.av360.maverick.graph.store.behaviours.Maintainable;
 import org.av360.maverick.graph.store.rdf.fragments.RdfFragment;

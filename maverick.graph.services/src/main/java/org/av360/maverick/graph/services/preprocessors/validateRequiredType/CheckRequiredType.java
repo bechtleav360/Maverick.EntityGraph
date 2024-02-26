@@ -18,7 +18,7 @@ package org.av360.maverick.graph.services.preprocessors.validateRequiredType;
 import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.model.context.Environment;
 import org.av360.maverick.graph.model.errors.runtime.MissingType;
-import org.av360.maverick.graph.model.vocabulary.Local;
+import org.av360.maverick.graph.model.vocabulary.meg.Local;
 import org.av360.maverick.graph.services.preprocessors.ModelPreprocessor;
 import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.Resource;

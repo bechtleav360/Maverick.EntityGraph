@@ -1,6 +1,6 @@
 package org.av360.maverick.graph.store.rdf.fragments;
 
-import org.av360.maverick.graph.model.vocabulary.Local;
+import org.av360.maverick.graph.model.vocabulary.meg.Local;
 import org.eclipse.rdf4j.model.Resource;
 
 import java.util.Set;

@@ -3,6 +3,7 @@ package org.av360.maverick.graph.api.controller.entities;
 import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.api.controller.AbstractController;
 import org.av360.maverick.graph.api.controller.DetailsAPI;
+import org.av360.maverick.graph.api.controller.dto.Responses;
 import org.av360.maverick.graph.model.enums.PropertyType;
 import org.av360.maverick.graph.model.rdf.AnnotatedStatement;
 import org.av360.maverick.graph.model.rdf.Triples;
@@ -28,10 +29,10 @@ public class DetailsController extends AbstractController implements DetailsAPI 
 
 
     @Override
-    public Flux<Detail> getDetails(String key, PropertyType type, String prefixedProperty, String valueIdentifier) {
+    public Flux<Responses.Detail> getDetails(String key, PropertyType type, String prefixedProperty, String valueIdentifier) {
         return super.acquireContext()
                 .flatMapMany(ctx -> values.listDetails(key, prefixedProperty, valueIdentifier, ctx))
-                .map(pair -> new Detail(pair.getKey().stringValue(), pair.getValue().stringValue()))
+                .map(pair -> new Responses.Detail(pair.getKey().stringValue(), pair.getValue().stringValue()))
                 .doOnSubscribe(s -> {
                     if (log.isDebugEnabled()) log.  debug("Reading details for property '{}' of entity '{}'", prefixedProperty, key);
                 });

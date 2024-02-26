@@ -24,6 +24,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.av360.maverick.graph.api.controller.dto.Responses;
 import org.av360.maverick.graph.model.enums.RdfMimeTypes;
 import org.av360.maverick.graph.model.rdf.AnnotatedStatement;
 import org.av360.maverick.graph.model.rdf.Triples;
@@ -33,7 +34,6 @@ import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 
 import javax.annotation.Nullable;
-import java.util.List;
 
 @RequestMapping(path = "/api")
 //@Api(tags = "Values")
@@ -59,22 +59,6 @@ import java.util.List;
         """)
 public interface ValuesAPI {
 
-    @Schema(
-            example = """
-                    [
-                        {
-                            "property: "https://schema.org/description",
-                            "value": "...",
-                            "details: [
-                                "property": "urn:pwid:annot:source",
-                                "value": "mistral"
-                            ]
-                        }
-                    ]
-                    """
-    )
-    public record ValueObject(String property, String value, List<DetailsAPI.Detail> details) {
-    }
 
     @Operation(
             operationId = "listValues",
@@ -103,8 +87,8 @@ public interface ValuesAPI {
 
     @GetMapping(value = "/entities/{key:[\\w|\\d|\\-|\\_]+}/values", produces = {MediaType.APPLICATION_JSON_VALUE})
     @ResponseStatus(HttpStatus.OK)
-    Flux<ValueObject> listAsJson(@PathVariable String key,
-                                  @Nullable @RequestParam(required = false) String prefixedProperty);
+    Flux<Responses.ValueObject> listAsJson(@PathVariable String key,
+                                           @Nullable @RequestParam(required = false) String prefixedProperty);
 
     //  @ApiOperation(value = "Sets a value for an entity. Replaces an existing value. ")
     @Operation(

@@ -19,7 +19,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.model.context.SessionContext;
 import org.av360.maverick.graph.model.errors.store.InvalidEntityModelException;
 import org.av360.maverick.graph.model.rdf.Triples;
-import org.av360.maverick.graph.model.vocabulary.Details;
+import org.av360.maverick.graph.model.vocabulary.meg.Metadata;
 import org.av360.maverick.graph.services.api.Api;
 import org.av360.maverick.graph.services.api.values.ValuesUtils;
 import org.av360.maverick.graph.store.rdf.fragments.RdfFragment;
@@ -83,7 +83,7 @@ public class ReadValues {
                 .forEach(statement -> {
                     Triple triple = Values.triple(statement);
                     String hash = ValuesUtils.generateHashForValue(statement.getPredicate().stringValue(), statement.getObject().stringValue());
-                    entity.getModel().add(triple, Details.HASH, Values.literal(hash));
+                    entity.getModel().add(triple, Metadata.HASH_IDENTIFIER, Values.literal(hash));
                 });
         return Mono.just(entity);
     }

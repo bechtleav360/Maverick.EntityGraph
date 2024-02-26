@@ -23,6 +23,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.av360.maverick.graph.api.controller.dto.Responses;
 import org.av360.maverick.graph.model.entities.Transaction;
 import org.av360.maverick.graph.model.enums.PropertyType;
 import org.av360.maverick.graph.model.enums.RdfMimeTypes;
@@ -49,18 +50,7 @@ import reactor.core.publisher.Flux;
                 
                 """)
 public interface DetailsAPI {
-    @Schema(
-            example = """
-                    [
-                        {
-                            "property": "urn:pwid:annot:source",
-                            "value": "mistral"
-                        }
-                    ]
-                    """
-    )
-    public record Detail(String property, String value) {
-    }
+
 
     @Operation(
             operationId = "listDetails",
@@ -84,7 +74,7 @@ public interface DetailsAPI {
     @GetMapping(value = "/entities/{key:[\\w|\\d|\\-|\\_]+}/{type}/{prefixedProperty:[\\w|\\d]+\\.[\\w|\\d]+}/details",
             produces = {MediaType.APPLICATION_JSON_VALUE})
     @ResponseStatus(HttpStatus.OK)
-    Flux<Detail> getDetails(
+    Flux<Responses.Detail> getDetails(
             @PathVariable @Parameter(name = "entity identifier") String key,
             @PathVariable PropertyType type,
             @PathVariable String prefixedProperty,

@@ -1,8 +1,8 @@
 package org.av360.maverick.graph.api.entities.details;
 
 import org.av360.maverick.graph.model.vocabulary.DCTERMS;
-import org.av360.maverick.graph.model.vocabulary.Details;
 import org.av360.maverick.graph.model.vocabulary.SDO;
+import org.av360.maverick.graph.model.vocabulary.meg.Metadata;
 import org.av360.maverick.graph.tests.config.TestSecurityConfig;
 import org.av360.maverick.graph.tests.generator.EntitiesGenerator;
 import org.av360.maverick.graph.tests.util.ApiTestsBase;
@@ -85,7 +85,7 @@ public class CreateDetailsTests extends ApiTestsBase  {
         super.printStep("Retrieving all values");
         RdfConsumer rc2 = super.getTestClient().listValues(sourceIdentifier);
         rc2.print(RDFFormat.TURTLESTAR);
-        Statement statement = rc2.findFirstStatement(Values.triple(vf, sourceIdentifier, SDO.TEACHES, Values.literal("s1", "en")), Details.HASH, null);
+        Statement statement = rc2.findFirstStatement(Values.triple(vf, sourceIdentifier, SDO.TEACHES, Values.literal("s1", "en")), Metadata.HASH_IDENTIFIER, null);
         String hash = statement.getObject().stringValue();
 
 

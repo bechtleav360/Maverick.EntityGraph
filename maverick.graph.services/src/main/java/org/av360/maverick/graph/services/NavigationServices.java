@@ -3,7 +3,7 @@ package org.av360.maverick.graph.services;
 import jakarta.annotation.Nullable;
 import org.av360.maverick.graph.model.context.SessionContext;
 import org.av360.maverick.graph.model.rdf.AnnotatedStatement;
-import org.av360.maverick.graph.model.vocabulary.Local;
+import org.av360.maverick.graph.model.vocabulary.meg.Local;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.util.Values;

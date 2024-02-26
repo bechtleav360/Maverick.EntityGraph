@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023.
+ * Copyright (c) 2023-2024.
  *
  *  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the
  *  European Commission - subsequent versions of the EUPL (the "Licence");
@@ -13,7 +13,7 @@
  *
  */
 
-package org.av360.maverick.graph.model.vocabulary;
+package org.av360.maverick.graph.model.vocabulary.meg;
 
 import org.av360.maverick.graph.model.rdf.EntityNamespace;
 import org.av360.maverick.graph.model.rdf.LocalIRI;
@@ -25,8 +25,8 @@ import org.eclipse.rdf4j.model.Namespace;
  */
 public class Details {
 
-    public static final String NAMESPACE = "http://w3id.org/eaf#";
-    public static final String PREFIX = "eaf";
+    public static final String NAMESPACE = "https://w3id.org/meg/eav/";
+    public static final String PREFIX = "eav";
     public static final Namespace NS = EntityNamespace.of(PREFIX, NAMESPACE);
 
 
@@ -65,4 +65,6 @@ public class Details {
     public static final IRI SOURCE = LocalIRI.from(NAMESPACE, "source");
 
     public static final IRI STORY = LocalIRI.from(NAMESPACE, "story");
+
+    public static final IRI STATUS = LocalIRI.from(NAMESPACE, "status");
 }

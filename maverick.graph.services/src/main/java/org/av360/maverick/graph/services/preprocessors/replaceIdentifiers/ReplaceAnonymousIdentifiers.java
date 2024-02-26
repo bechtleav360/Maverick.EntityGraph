@@ -5,7 +5,7 @@ import org.apache.commons.lang3.Validate;
 import org.av360.maverick.graph.model.context.Environment;
 import org.av360.maverick.graph.model.errors.requests.InvalidEntityUpdate;
 import org.av360.maverick.graph.model.identifier.LocalIdentifier;
-import org.av360.maverick.graph.model.vocabulary.Local;
+import org.av360.maverick.graph.model.vocabulary.meg.Local;
 import org.av360.maverick.graph.services.IdentifierServices;
 import org.av360.maverick.graph.services.SchemaServices;
 import org.av360.maverick.graph.services.preprocessors.ModelPreprocessor;

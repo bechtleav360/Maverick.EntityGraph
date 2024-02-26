@@ -1,6 +1,6 @@
 package org.av360.maverick.graph.api.entities.formats;
 
-import org.av360.maverick.graph.model.vocabulary.Transactions;
+import org.av360.maverick.graph.model.vocabulary.meg.Transactions;
 import org.av360.maverick.graph.tests.clients.EntitiesTestClient;
 import org.av360.maverick.graph.tests.config.TestSecurityConfig;
 import org.av360.maverick.graph.tests.util.ApiTestsBase;

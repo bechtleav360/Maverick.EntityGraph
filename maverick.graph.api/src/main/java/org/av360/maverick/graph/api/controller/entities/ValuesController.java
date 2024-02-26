@@ -3,6 +3,8 @@ package org.av360.maverick.graph.api.controller.entities;
 import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.api.controller.AbstractController;
 import org.av360.maverick.graph.api.controller.ValuesAPI;
+import org.av360.maverick.graph.api.controller.dto.Responses;
+import org.av360.maverick.graph.api.converter.dto.ValueObjectConverter;
 import org.av360.maverick.graph.model.rdf.AnnotatedStatement;
 import org.av360.maverick.graph.model.rdf.Triples;
 import org.av360.maverick.graph.services.EntityServices;
@@ -15,8 +17,6 @@ import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Flux;
 
 import javax.annotation.Nullable;
-import java.util.List;
-import java.util.stream.Stream;
 
 @RestController
 @Slf4j(topic = "graph.ctrl.api.values")
@@ -47,35 +47,16 @@ public class ValuesController extends AbstractController implements ValuesAPI {
     }
 
     @Override
-    public Flux<ValueObject> listAsJson(String key, @Nullable String prefixedProperty) {
+    public Flux<Responses.ValueObject> listAsJson(String key, @Nullable String prefixedProperty) {
         /*
         TODO:
-            - [ ] show only literals of selected item
-            - [ ] embed details
             - [ ] embed composites as json
-
-
          */
 
         return super.acquireContext()
                 .flatMap(ctx -> values.listValues(key, prefixedProperty, ctx))
-                .flatMapMany(triples -> {
-                    Stream<ValueObject> valueObjectStream = triples.streamStatements()
-                            .filter(statement -> statement.getObject().isLiteral() && statement.getSubject().isIRI())
-                            .filter(statement -> {
-                                boolean match = statement.getSubject().stringValue().endsWith(key);
-                                    return match;
-
-                            })
-                            .map(statement -> {
-                                return new ValueObject(
-                                        statement.getPredicate().stringValue(),
-                                        statement.getObject().stringValue(),
-                                        List.of()
-                                );
-                            });
-                    return Flux.fromStream(valueObjectStream);
-                })
+                .map(triples -> ValueObjectConverter.fromTriples(key, triples))
+                .flatMapMany(Flux::fromIterable)
                 .doOnSubscribe(s -> {
                     if (log.isDebugEnabled())
                         log.debug("Request to list values of entity '{}'", key);

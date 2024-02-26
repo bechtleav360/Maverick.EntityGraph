@@ -1,8 +1,8 @@
 package org.av360.maverick.graph.api.entities.values;
 
 import org.av360.maverick.graph.model.enums.RdfMimeTypes;
-import org.av360.maverick.graph.model.vocabulary.Details;
 import org.av360.maverick.graph.model.vocabulary.SDO;
+import org.av360.maverick.graph.model.vocabulary.meg.Metadata;
 import org.av360.maverick.graph.tests.config.TestSecurityConfig;
 import org.av360.maverick.graph.tests.generator.EntitiesGenerator;
 import org.av360.maverick.graph.tests.util.ApiTestsBase;
@@ -213,7 +213,7 @@ public class RemoveValuesTest extends ApiTestsBase {
         RdfConsumer rc2 = super.getTestClient().listValues(sourceIdentifier, "sdo.author");
         rc2.print(RDFFormat.TURTLESTAR);
         Statement valueStatement = rc2.findFirstStatement(sourceIdentifier, SDO.AUTHOR, null);
-        Statement detailStatement = rc2.findFirstStatement(Values.triple(valueStatement), Details.HASH, null);
+        Statement detailStatement = rc2.findFirstStatement(Values.triple(valueStatement), Metadata.HASH_IDENTIFIER, null);
 
         Assertions.assertTrue(detailStatement.getSubject().isTriple());
 

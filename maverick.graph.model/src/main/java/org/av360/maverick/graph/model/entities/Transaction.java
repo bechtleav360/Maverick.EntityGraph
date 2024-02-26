@@ -3,7 +3,7 @@ package org.av360.maverick.graph.model.entities;
 import org.av360.maverick.graph.model.enums.Activity;
 import org.av360.maverick.graph.model.errors.store.FailedTransactionException;
 import org.av360.maverick.graph.model.rdf.Triples;
-import org.av360.maverick.graph.model.vocabulary.Transactions;
+import org.av360.maverick.graph.model.vocabulary.meg.Transactions;
 import org.eclipse.rdf4j.model.*;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.util.ModelCollector;

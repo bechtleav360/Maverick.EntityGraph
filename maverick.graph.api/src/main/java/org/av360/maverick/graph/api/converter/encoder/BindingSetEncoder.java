@@ -4,14 +4,15 @@ import lombok.extern.slf4j.Slf4j;
 import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.query.TupleQueryResultHandlerException;
 import org.eclipse.rdf4j.query.impl.TupleQueryResultBuilder;
-import org.eclipse.rdf4j.query.resultio.*;
+import org.eclipse.rdf4j.query.resultio.QueryResultFormat;
+import org.eclipse.rdf4j.query.resultio.QueryResultIO;
+import org.eclipse.rdf4j.query.resultio.TupleQueryResultFormat;
+import org.eclipse.rdf4j.query.resultio.UnsupportedQueryResultFormatException;
 import org.reactivestreams.Publisher;
 import org.springframework.core.ResolvableType;
 import org.springframework.core.codec.Encoder;
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.core.io.buffer.DataBufferFactory;
-import org.springframework.core.io.buffer.DefaultDataBuffer;
-import org.springframework.core.io.buffer.DefaultDataBufferFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.util.Assert;
 import org.springframework.util.MimeType;
@@ -28,9 +29,10 @@ public class BindingSetEncoder implements Encoder<BindingSet> {
 
     static {
         mimeTypes = List.of(
-                MimeType.valueOf(TupleQueryResultFormat.JSON.getDefaultMIMEType()),
+                MimeType.valueOf("text/csv; charset=utf-8"),
+                MimeType.valueOf(TupleQueryResultFormat.JSON.getDefaultMIMEType())
                 // MimeType.valueOf(TupleQueryResultFormat.CSV.getDefaultMIMEType())
-                MimeType.valueOf("text/csv; charset=utf-8")
+
         );
     }
 
@@ -55,36 +57,23 @@ public class BindingSetEncoder implements Encoder<BindingSet> {
         Assert.notNull(mimeType, "No mimetype is set");
         Assert.isAssignable(BindingSet.class, elementType.toClass(), "Invalid object definition");
 
-
-        // this cannot be outside of flux
-
-
         QueryResultFormat format = QueryResultIO.getParserFormatForMIMEType(mimeType.toString()).orElseThrow();
-        TupleQueryResultWriterFactory tupleQueryResultWriterFactory = TupleQueryResultWriterRegistry.getInstance().get(format).orElseThrow();
-        DefaultDataBuffer dataBuffer = new DefaultDataBufferFactory().allocateBuffer();
-        /*
-            FIXME: we don't really stream the flux, we have to rebuild the tuplequeryresultwriter
-
-         */
 
         return Flux.from(publisher)
                 .collectList()
                 .flatMapMany(bindingSetList -> {
                     try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
 
+                        TupleQueryResultBuilder b = new TupleQueryResultBuilder();
                         if (!bindingSetList.isEmpty()) {
-                            TupleQueryResultBuilder b = new TupleQueryResultBuilder();
                             b.startQueryResult(bindingSetList.get(0).getBindingNames().stream().toList());
                             bindingSetList.forEach(b::handleSolution);
-                            b.endQueryResult();
-                            QueryResultIO.writeTuple(b.getQueryResult(), format, baos);
                         } else {
-                            TupleQueryResultBuilder b = new TupleQueryResultBuilder();
                             b.startQueryResult(List.of("None"));
-                            b.endQueryResult();
-                            QueryResultIO.writeTuple(b.getQueryResult(), format, baos);
 
                         }
+                        b.endQueryResult();
+                        QueryResultIO.writeTuple(b.getQueryResult(), format, baos);
 
                         return Flux.just(bufferFactory.wrap(baos.toByteArray()));
 

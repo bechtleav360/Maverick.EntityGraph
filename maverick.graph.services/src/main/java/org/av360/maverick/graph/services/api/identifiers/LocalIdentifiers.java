@@ -18,7 +18,7 @@ package org.av360.maverick.graph.services.api.identifiers;
 import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.model.context.Environment;
 import org.av360.maverick.graph.model.rdf.LocalIRI;
-import org.av360.maverick.graph.model.vocabulary.Local;
+import org.av360.maverick.graph.model.vocabulary.meg.Local;
 import org.av360.maverick.graph.services.IdentifierServices;
 import org.av360.maverick.graph.services.api.Api;
 import org.eclipse.rdf4j.model.IRI;

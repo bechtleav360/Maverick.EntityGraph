@@ -3,6 +3,7 @@ package org.av360.maverick.graph.feature.applications.controller.ext;
 import io.swagger.v3.oas.annotations.Parameter;
 import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.api.controller.*;
+import org.av360.maverick.graph.api.controller.dto.Responses;
 import org.av360.maverick.graph.api.controller.entities.EntitiesController;
 import org.av360.maverick.graph.feature.applications.services.delegates.DelegatingIdentifierServices;
 import org.av360.maverick.graph.model.enums.PropertyType;
@@ -58,7 +59,7 @@ public class ScopedApiOperations extends AbstractController {
             consumes = MediaType.TEXT_PLAIN_VALUE,
             produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE})
     @ResponseStatus(HttpStatus.OK)
-    Flux<DetailsAPI.Detail> getDetails(
+    Flux<Responses.Detail> getDetails(
             @PathVariable @Parameter(name = "entity identifier") String key,
             @PathVariable PropertyType type,
             @PathVariable String prefixedProperty,
@@ -71,10 +72,19 @@ public class ScopedApiOperations extends AbstractController {
     @GetMapping(value = "/api/s/{label}/entities/{id:[\\w|\\d|\\-|\\_]+}",
             produces = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.N3_VALUE})
     @ResponseStatus(HttpStatus.OK)
-    Flux<AnnotatedStatement> read(@PathVariable String label, @PathVariable String id, @RequestParam(required = false) @Nullable String property) {
+    Flux<AnnotatedStatement> readAsRDF(@PathVariable String label, @PathVariable String id, @RequestParam(required = false) @Nullable String property) {
         /* since we encode the scope (identified by label) also in the id (e.g. urn:pwi:meg:e:{label}:{id}, we add the scope as prefix
          */
-        return entitiesCtrl.read(id, property);
+        return entitiesCtrl.readAsRDF(id, property);
+    }
+
+    @GetMapping(value = "/api/s/{label}/entities/{id:[\\w|\\d|\\-|\\_]+}",
+            produces = {MediaType.APPLICATION_JSON_VALUE})
+    @ResponseStatus(HttpStatus.OK)
+    Mono<Responses.EntityResponse> readAsItem(@PathVariable String label, @PathVariable String id, @RequestParam(required = false) @Nullable String property) {
+        /* since we encode the scope (identified by label) also in the id (e.g. urn:pwi:meg:e:{label}:{id}, we add the scope as prefix
+         */
+        return entitiesCtrl.readAsItem(id, property);
     }
 
     @GetMapping(value = "/api/s/{label}/entities", produces = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.N3_VALUE})
@@ -88,10 +98,17 @@ public class ScopedApiOperations extends AbstractController {
 
 
     @GetMapping(value = "/api/s/{label}/entities/{id:[\\w|\\d|\\-|\\_]+}/values",
-            produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE, MediaType.APPLICATION_JSON_VALUE})
+            produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE})
     @ResponseStatus(HttpStatus.OK)
-    Flux<AnnotatedStatement> listEntityValues(@PathVariable String label, @PathVariable String id, @RequestParam(required = false) String prefixedKey) {
+    Flux<AnnotatedStatement> listValues(@PathVariable String label, @PathVariable String id, @RequestParam(required = false) String prefixedKey) {
         return this.valuesCtrl.list(id, prefixedKey);
+    }
+
+    @GetMapping(value = "/api/s/{label}/entities/{id:[\\w|\\d|\\-|\\_]+}/values",
+            produces = {MediaType.APPLICATION_JSON_VALUE})
+    @ResponseStatus(HttpStatus.OK)
+    Flux<Responses.ValueObject> listValuesAsJson(@PathVariable String label, @PathVariable String id, @RequestParam(required = false) String prefixedKey) {
+        return this.valuesCtrl.listAsJson(id, prefixedKey);
     }
 
     @GetMapping(value = "/api/s/{label}/entities/{id:[\\w|\\d|-|_]+}/links",
