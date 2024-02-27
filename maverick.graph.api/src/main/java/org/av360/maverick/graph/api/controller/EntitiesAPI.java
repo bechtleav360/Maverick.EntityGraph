@@ -60,7 +60,7 @@ public interface EntitiesAPI {
 
 
 
-    @Operation(operationId = "readEntity",
+    @Operation(operationId = "readEntityAsRdf",
             summary = "Returns an entity with the given unique identifier.",
             description = """
                     This operation retrieves an Entity using a provided unique Entity Key. The response includes the entity,
@@ -74,19 +74,19 @@ public interface EntitiesAPI {
                     @ApiResponse(responseCode = "400", description = "Invalid request parameters", content = {@Content(mediaType = "application/json", schema = @Schema(implementation = ErrorAttributes.class))})
             }
     )
-    @GetMapping(value = "/entities/{id}",
+    @GetMapping(value = "/entities/{key}",
             produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.N3_VALUE})
     @ResponseStatus(HttpStatus.OK)
     Flux<AnnotatedStatement> readAsRDF(@Parameter(description = "Key of the entity to be fetched", required = true) @PathVariable String key,
                                   @Parameter(description = "Prefixed property key like 'dc.identifier' pointing to a global external identifier, if the internal key is unknown.", required = false) @RequestParam(required = false) @Nullable String property);
 
-    @GetMapping(value = "/entities/{id}",
+    @GetMapping(value = "/entities/{key}",
             produces = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLESTAR_VALUE})
     @ResponseStatus(HttpStatus.OK)
     Flux<AnnotatedStatement> readAsRDFStar(@Parameter(description = "Key of the entity to be fetched", required = true) @PathVariable String key,
                                        @Parameter(description = "Prefixed property key like 'dc.identifier' pointing to a global external identifier, if the internal key is unknown.", required = false) @RequestParam(required = false) @Nullable String property);
 
-    @GetMapping(value = "/entities/{id}",
+    @GetMapping(value = "/entities/{key}",
             produces = {MediaType.APPLICATION_JSON_VALUE})
     @ResponseStatus(HttpStatus.OK)
     Mono<Responses.EntityResponse> readAsItem(@Parameter(description = "Key of the entity to be fetched", required = true) @PathVariable String key,
@@ -135,7 +135,7 @@ public interface EntitiesAPI {
     Flux<AnnotatedStatement> create(@Parameter(description = "The RDF statements for the new entity.", required = true) @RequestBody Triples request);
 
 
-    @DeleteMapping(value = "/entities/{id:[\\w|\\d|\\-|\\_]+}",
+    @DeleteMapping(value = "/entities/{key:[\\w|\\d|\\-|\\_]+}",
             produces = {RdfMimeTypes.JSONLD_VALUE, RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.N3_VALUE})
     @ResponseStatus(HttpStatus.OK)
     @Operation(

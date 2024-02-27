@@ -12,8 +12,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Objects;
 
 @Configuration
@@ -46,9 +44,9 @@ public class AppsOpenApiConfiguration implements InitializingBean {
     @Override
     public void afterPropertiesSet() {
         Parameter header = new HeaderParameter()
-                .name("X-Application")
+                .name(Globals.HEADER_APPLICATION_LABEL)
                 .description("Label of application this operation should apply to. You can query a list of all available applications using the endpoint '/api/applications'")
-                .addExample("default", new Example().value("default"));
+                .addExample(Globals.DEFAULT_APPLICATION_LABEL, new Example().value(Globals.DEFAULT_APPLICATION_LABEL));
 
         if (Objects.nonNull(this.adminApiBuilder)) {
             adminApiBuilder.addOperationCustomizer((ops, method)
@@ -59,16 +57,12 @@ public class AppsOpenApiConfiguration implements InitializingBean {
             queryApiBuilder.addOperationCustomizer((ops, method)
                     -> ops.addParametersItem(header));
         }
-
-
         if (Objects.nonNull(this.entityApiBuilder)) {
-            List<String> paths = new ArrayList<>(entityApiBuilder.build().getPathsToMatch());
-            paths.add("/api/app/**/entities/**");
-
-            entityApiBuilder
-                    .addOperationCustomizer((ops, method) -> ops.addParametersItem(header))
-                    .pathsToMatch(paths.toArray(new String[0]));
-
+            entityApiBuilder.addOperationCustomizer((ops, method) -> {
+                if(Objects.nonNull(ops.getParameters()) && ops.getParameters().stream().anyMatch(parameter -> parameter.getName().equalsIgnoreCase(Globals.HEADER_APPLICATION_LABEL))) { // since we override
+                    return ops;
+                } else return ops.addParametersItem(header);
+            });
         }
 
     }

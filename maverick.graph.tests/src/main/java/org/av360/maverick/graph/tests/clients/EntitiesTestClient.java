@@ -133,7 +133,7 @@ public class EntitiesTestClient {
         RDFFormat format = Objects.isNull(formatParam) ? RDFFormat.TURTLE : formatParam;
         return webClient.get()
                 .uri(uriBuilder -> uriBuilder
-                        .path("/api/entities/{id}")
+                        .path("/api/entities/{key}")
                         .build(sourceIdentifier)
                 )
                 .accept(RdfUtils.getMediaType(format))

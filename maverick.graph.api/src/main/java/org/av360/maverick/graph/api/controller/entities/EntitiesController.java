@@ -45,31 +45,31 @@ public class EntitiesController extends AbstractController implements EntitiesAP
     }
 
     @Override
-    public Flux<AnnotatedStatement> readAsRDF(@PathVariable String id, @RequestParam(required = false) @Nullable String property) {
+    public Flux<AnnotatedStatement> readAsRDF(@PathVariable String key, @RequestParam(required = false) @Nullable String property) {
         return super.acquireContext()
-                .flatMap(ctx -> entityServices.find(id,  property, false, 0,  ctx))
+                .flatMap(ctx -> entityServices.find(key,  property, false, 0,  ctx))
                 .flatMapIterable(TripleModel::asStatements)
                 .doOnSubscribe(s -> {
-                    if (log.isDebugEnabled()) log.debug("Request to read entity with id: {}", id);
+                    if (log.isDebugEnabled()) log.debug("Request to read entity with id: {}", key);
                 });
     }
 
-    public Flux<AnnotatedStatement> readAsRDFStar(@PathVariable String id, @RequestParam(required = false) @Nullable String property) {
+    public Flux<AnnotatedStatement> readAsRDFStar(@PathVariable String key, @RequestParam(required = false) @Nullable String property) {
         return super.acquireContext()
-                .flatMap(ctx -> entityServices.find(id,  property, true, 0,  ctx))
+                .flatMap(ctx -> entityServices.find(key,  property, true, 0,  ctx))
                 .flatMapIterable(TripleModel::asStatements)
                 .doOnSubscribe(s -> {
-                    if (log.isDebugEnabled()) log.debug("Request to read entity including details with id: {}", id);
+                    if (log.isDebugEnabled()) log.debug("Request to read entity including details with id: {}", key);
                 });
     }
 
     @Override
-    public Mono<Responses.EntityResponse> readAsItem(@PathVariable String id, @RequestParam(required = false) @Nullable String property) {
+    public Mono<Responses.EntityResponse> readAsItem(@PathVariable String key, @RequestParam(required = false) @Nullable String property) {
         return super.acquireContext()
-                .flatMap(ctx -> entityServices.find(id,  property, true, 1,  ctx))
+                .flatMap(ctx -> entityServices.find(key,  property, true, 1,  ctx))
                 .map(EntityItemConverter::convert)
                 .doOnSubscribe(s -> {
-                    if (log.isDebugEnabled()) log.debug("Request to read entity including details with id: {}", id);
+                    if (log.isDebugEnabled()) log.debug("Request to read entity including details with id: {}", key);
                 });
     }
 
@@ -104,13 +104,13 @@ public class EntitiesController extends AbstractController implements EntitiesAP
 
 
     @Override
-    public Flux<AnnotatedStatement> delete(@PathVariable String id) {
+    public Flux<AnnotatedStatement> delete(@PathVariable String key) {
         return super.acquireContext()
-                .flatMap(ctx -> entityServices.remove(id, ctx))
+                .flatMap(ctx -> entityServices.remove(key, ctx))
                 .flatMapIterable(Triples::asStatements)
                 .doOnSubscribe(s -> {
                     if (log.isDebugEnabled()) log.debug("Delete an Entity");
-                    if (log.isTraceEnabled()) log.trace("id: \n {}", id);
+                    if (log.isTraceEnabled()) log.trace("id: \n {}", key);
                 });
     }
 
