@@ -34,8 +34,8 @@ public class RemoveValueWithDetailsTest extends ApiTestsBase  {
         super.getTestClient().createValue(sourceIdentifier, "sdo.teaches", "skill");
 
         super.printStep("Setting details");
-        super.getTestClient().addDetail(sourceIdentifier, "sdo.teaches", "dc.source", "source value", null);
-        super.getTestClient().addDetail(sourceIdentifier, "sdo.teaches", "dc.subject", "text value", null);
+        super.getTestClient().setDetail(sourceIdentifier, "sdo.teaches", "dc.source", "source value", null);
+        super.getTestClient().setDetail(sourceIdentifier, "sdo.teaches", "dc.subject", "text value", null);
 
         super.printStep("Dumping current model");
         CsvConsumer cc1 = super.getTestClient().listAllStatements();
@@ -65,10 +65,10 @@ public class RemoveValueWithDetailsTest extends ApiTestsBase  {
         super.getTestClient().createValue(sourceIdentifier, "sdo.propB", "skill");
 
         super.printStep("Setting details");
-        super.getTestClient().addDetail(sourceIdentifier, "sdo.propA", "eav.detailA", "A - first detail", null);
+        super.getTestClient().setDetail(sourceIdentifier, "sdo.propA", "eav.detailA", "A - first detail", null);
 
         super.printStep("Setting details");
-        super.getTestClient().addDetail(sourceIdentifier, "sdo.propB", "eav.detailA", "B - first detail", null);
+        super.getTestClient().setDetail(sourceIdentifier, "sdo.propB", "eav.detailA", "B - first detail", null);
 
         super.printStep("Dumping current model");
         CsvConsumer cc1 = super.getTestClient().listAllStatements();
@@ -100,20 +100,20 @@ public class RemoveValueWithDetailsTest extends ApiTestsBase  {
 
         super.printStep("Setting details");
 
-        super.getTestClient().addDetail(sourceIdentifier, "sdo.propA", "eav.detailA", "A - first detail", null);
-        super.getTestClient().addDetail(sourceIdentifier, "sdo.propA", "eav.detailB", "A - second detail", null);
+        super.getTestClient().setDetail(sourceIdentifier, "sdo.propA", "eav.detailA", "A - first detail", null);
+        super.getTestClient().setDetail(sourceIdentifier, "sdo.propA", "eav.detailB", "A - second detail", null);
 
 
         super.printStep("Setting details");
         String hash1 = ValuesUtils.generateHashForValue("https://schema.org/propB", "skill 1");
         String hash2 = ValuesUtils.generateHashForValue("https://schema.org/propB", "skill 2");
 
-        super.getTestClient().addDetail(sourceIdentifier, "sdo.propB", "eav.detailA", "B1 - first detail", hash1, null);
-        super.getTestClient().addDetail(sourceIdentifier, "sdo.propB", "eav.detailB", "B1 - second detail", hash1,  null);
+        super.getTestClient().setDetail(sourceIdentifier, "sdo.propB", "eav.detailA", "B1 - first detail", hash1, null);
+        super.getTestClient().setDetail(sourceIdentifier, "sdo.propB", "eav.detailB", "B1 - second detail", hash1,  null);
 
         super.printStep("Setting details");
-        super.getTestClient().addDetail(sourceIdentifier, "sdo.propB", "eav.detailA", "B2 - first detail", hash2, null);
-        super.getTestClient().addDetail(sourceIdentifier, "sdo.propB", "eav.detailB", "B2 - second detail", hash2, null);
+        super.getTestClient().setDetail(sourceIdentifier, "sdo.propB", "eav.detailA", "B2 - first detail", hash2, null);
+        super.getTestClient().setDetail(sourceIdentifier, "sdo.propB", "eav.detailB", "B2 - second detail", hash2, null);
 
         super.printStep("Dumping current model");
         CsvConsumer cc1 = super.getTestClient().listAllStatements();

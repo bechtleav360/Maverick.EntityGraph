@@ -35,7 +35,14 @@ class Common {
                 .filter(st -> st.getSubject().isTriple())
                 .filter(st -> st.getSubject().equals(Values.triple(statement)))
                 .filter(st -> st.getPredicate().getNamespace().equals(Metadata.NAMESPACE))
-                .collect(Collectors.toMap(st -> st.getPredicate().getLocalName(), st -> st.getObject().stringValue()));
+                .collect(Collectors.toMap(
+                        st -> st.getPredicate().getLocalName(),
+                        st -> st.getObject().stringValue(),
+                        (left, right) -> {
+                            return right;  // merge function, when duplicate, always take the right
+                        }
+
+                ));
     }
 
     static Map<String, Serializable> getDetails(Statement statement, Triples triples) {
@@ -44,7 +51,13 @@ class Common {
                 .filter(st -> st.getSubject().isTriple())
                 .filter(st -> st.getSubject().equals(Values.triple(statement)))
                 .filter(st -> ! st.getPredicate().getNamespace().equals(Metadata.NAMESPACE))
-                .collect(Collectors.toMap(st -> st.getPredicate().getLocalName(), st -> st.getObject().stringValue()));
+                .collect(Collectors.toMap(
+                        st -> st.getPredicate().getLocalName(),
+                        st -> st.getObject().stringValue(),
+                        (left, right) -> {
+                            return right;  // merge function, when duplicate, always take the right
+                        }
+                ));
     }
 
     public static boolean isRelationStatement(Statement statement, Triples triples) {

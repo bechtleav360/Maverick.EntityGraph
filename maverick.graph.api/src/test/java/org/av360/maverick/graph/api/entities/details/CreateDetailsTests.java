@@ -38,7 +38,7 @@ public class CreateDetailsTests extends ApiTestsBase  {
         super.getTestClient().createValue(sourceIdentifier, "sdo.teaches", "a certain skill");
 
         super.printStep("Setting detail");
-        super.getTestClient().addDetail(sourceIdentifier, "sdo.teaches", "dc.source", "zephyr", null);
+        super.getTestClient().setDetail(sourceIdentifier, "sdo.teaches", "dc.source", "zephyr", null);
 
         super.printStep("Retrieving all values");
         RdfConsumer rc2 = super.getTestClient().listValues(sourceIdentifier);
@@ -66,7 +66,7 @@ public class CreateDetailsTests extends ApiTestsBase  {
 
 
         super.printStep("Setting detail");
-        super.getTestClient().addDetail(sourceIdentifier, "sdo.teaches", "dc.source", "zephyr", null).expectStatus().isBadRequest();
+        super.getTestClient().setDetail(sourceIdentifier, "sdo.teaches", "dc.source", "zephyr", null).expectStatus().isBadRequest();
     }
 
 
@@ -90,7 +90,7 @@ public class CreateDetailsTests extends ApiTestsBase  {
 
 
         super.printStep("Setting detail with hash '%s'".formatted(hash));
-        super.getTestClient().addDetail(sourceIdentifier, "sdo.teaches", "dc.source", "s1", hash, null).expectStatus().isOk();
+        super.getTestClient().setDetail(sourceIdentifier, "sdo.teaches", "dc.source", "s1", hash, null).expectStatus().isOk();
     }
 
 
@@ -106,8 +106,8 @@ public class CreateDetailsTests extends ApiTestsBase  {
         super.getTestClient().createValue(sourceIdentifier, "sdo.teaches", "skill");
 
         super.printStep("Setting details");
-        super.getTestClient().addDetail(sourceIdentifier, "sdo.teaches", "dc.source", "source", null);
-        super.getTestClient().addDetail(sourceIdentifier, "sdo.teaches", "dc.subject", "text", null);
+        super.getTestClient().setDetail(sourceIdentifier, "sdo.teaches", "dc.source", "source", null);
+        super.getTestClient().setDetail(sourceIdentifier, "sdo.teaches", "dc.subject", "text", null);
 
         super.printStep("Retrieving all values");
         RdfConsumer rc2 = super.getTestClient().listValues(sourceIdentifier);
@@ -133,8 +133,8 @@ public class CreateDetailsTests extends ApiTestsBase  {
         super.getTestClient().createValue(sourceIdentifier, "sdo.teaches", "skill");
 
         super.printStep("Setting details");
-        super.getTestClient().addDetail(sourceIdentifier, "sdo.teaches", "dc.source", "s1", null).expectStatus().isOk();
-        super.getTestClient().addDetail(sourceIdentifier, "sdo.teaches", "dc.source", "s2", null).expectStatus().isOk();
+        super.getTestClient().setDetail(sourceIdentifier, "sdo.teaches", "dc.source", "s1", null).expectStatus().isOk();
+        super.getTestClient().setDetail(sourceIdentifier, "sdo.teaches", "dc.source", "s2", null).expectStatus().isOk();
 
         super.printStep("Retrieving all values");
         RdfConsumer rc2 = super.getTestClient().listValues(sourceIdentifier);

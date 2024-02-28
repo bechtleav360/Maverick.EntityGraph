@@ -1,3 +1,18 @@
+/*
+ * Copyright (c) 2024.
+ *
+ *  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the
+ *  European Commission - subsequent versions of the EUPL (the "Licence");
+ *
+ *  You may not use this work except in compliance with the Licence.
+ *  You may obtain a copy of the Licence at:
+ *
+ *  https://joinup.ec.europa.eu/software/page/eupl5
+ *
+ *  Unless required by applicable law or agreed to in writing, software distributed under the Licence is distributed on an "AS IS" basis,  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  See the Licence for the specific language governing permissions and limitations under the Licence.
+ *
+ */
+
 package org.av360.maverick.graph.api.entities.details;
 
 import org.av360.maverick.graph.model.vocabulary.SDO;
@@ -8,8 +23,6 @@ import org.av360.maverick.graph.tests.util.CsvConsumer;
 import org.av360.maverick.graph.tests.util.RdfConsumer;
 import org.eclipse.rdf4j.model.IRI;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
@@ -20,51 +33,27 @@ import org.springframework.test.context.event.RecordApplicationEvents;
 @ContextConfiguration(classes = TestSecurityConfig.class)
 @RecordApplicationEvents
 @ActiveProfiles({"test", "api"})
-public class RemoveDetailsTests extends ApiTestsBase  {
+public class ReplaceDetailsTest extends ApiTestsBase {
     @Test
-    public void deleteDetail() {
-        super.printStart("Remove a specific detail.");
+    public void createDetailDefault() {
+        super.printStart("Add a detail to a single value");
 
         RdfConsumer rc1 = super.getTestClient().createEntity(EntitiesGenerator.generateCreativeWork());
         IRI sourceIdentifier = rc1.getEntityIdentifier(SDO.CREATIVE_WORK);
 
         super.printStep("Setting value");
-        super.getTestClient().createValue(sourceIdentifier, "sdo.teaches", "skill");
+        super.getTestClient().createValue(sourceIdentifier, "sdo.teaches", "a certain skill");
 
-        super.printStep("Setting details");
-        super.getTestClient().setDetail(sourceIdentifier, "sdo.teaches", "dc.source", "source", null);
-        super.getTestClient().setDetail(sourceIdentifier, "sdo.teaches", "dc.subject", "text", null);
+        super.printStep("Setting detail");
+        super.getTestClient().setDetail(sourceIdentifier, "sdo.teaches", "eav.status", "suggested", null);
 
-        super.printStep("Dumping and validating current model");
-        CsvConsumer cc1 = super.getTestClient().listAllStatements();
-        super.dumpStatementsAsTable(cc1);
-        Assertions.assertEquals(13, cc1.getRows().size());
-
-        super.printStep("Deleting detail dc.source from predicate teaches");
-        super.getTestClient().deleteValueDetail(sourceIdentifier, "sdo.teaches", "dc.source").expectStatus().isOk();
+        super.printStep("Setting detail");
+        super.getTestClient().setDetail(sourceIdentifier, "sdo.teaches", "eav.status", "approved", null);
 
         super.printStep("Dumping and validating current model");
         CsvConsumer cc2 = super.getTestClient().listAllStatements();
         super.dumpStatementsAsTable(cc2);
-        Assertions.assertEquals(8, cc2.getRows().size());
-    }
-
-
-    @Test
-    @Disabled
-    public void deleteSpecificDetailByHash() {
+        Assertions.assertEquals(12, cc2.getRows().size());
 
     }
-
-    @Test
-    @Disabled
-    public void deleteSpecificDetailWithoutHashFail() {
-
-    }
-
-    @BeforeEach
-    public void resetRepository() {
-        super.resetRepository();
-    }
-
 }

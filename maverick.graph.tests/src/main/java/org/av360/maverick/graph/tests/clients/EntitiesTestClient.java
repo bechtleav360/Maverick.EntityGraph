@@ -321,7 +321,7 @@ public class EntitiesTestClient {
 
 
 
-    public WebTestClient.ResponseSpec addDetail(IRI entityIdentifier, String valueProperty, String detailProperty, String detailValue, @Nullable RdfConsumer consumer) {
+    public WebTestClient.ResponseSpec setDetail(IRI entityIdentifier, String valueProperty, String detailProperty, String detailValue, @Nullable RdfConsumer consumer) {
         WebTestClient.ResponseSpec exchange = webClient.post()
                 .uri(uriBuilder -> uriBuilder
                         .path("/api/entities/{id}/values/{valueProperty}/details/{detailProperty}")
@@ -341,7 +341,7 @@ public class EntitiesTestClient {
     }
 
 
-    public WebTestClient.ResponseSpec addDetail(IRI entityIdentifier, String valueProperty, String detailProperty, String detailValue, String valueIdentifier,  @Nullable RdfConsumer consumer) {
+    public WebTestClient.ResponseSpec setDetail(IRI entityIdentifier, String valueProperty, String detailProperty, String detailValue, String valueIdentifier, @Nullable RdfConsumer consumer) {
         WebTestClient.ResponseSpec exchange = webClient.post()
                 .uri(uriBuilder -> uriBuilder
                         .path("/api/entities/{id}/values/{valueProperty}/details/{detailProperty}")
