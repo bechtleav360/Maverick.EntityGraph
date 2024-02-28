@@ -23,6 +23,7 @@ import org.av360.maverick.graph.tests.util.CsvConsumer;
 import org.av360.maverick.graph.tests.util.RdfConsumer;
 import org.eclipse.rdf4j.model.IRI;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
@@ -34,6 +35,12 @@ import org.springframework.test.context.event.RecordApplicationEvents;
 @RecordApplicationEvents
 @ActiveProfiles({"test", "api"})
 public class ReplaceDetailsTest extends ApiTestsBase {
+
+    @BeforeEach
+    public void resetRepository() {
+        super.resetRepository();
+    }
+
     @Test
     public void createDetailDefault() {
         super.printStart("Add a detail to a single value");
