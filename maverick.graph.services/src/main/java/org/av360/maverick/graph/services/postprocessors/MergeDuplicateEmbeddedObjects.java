@@ -53,7 +53,7 @@ public class MergeDuplicateEmbeddedObjects {
     void handleEntitiesUpdatedForDuplicateMerge(EntityUpdatedEvent event) {
         Flux.fromIterable(event.listUpdatedEntityIdentifiers())
                 .flatMap(iri -> handleEntityCreated(iri, event.getEnvironment()))
-                .doOnSubscribe(subscription -> log.info("Postprocessing: Merge duplicate embedded objects"))
+                .doOnSubscribe(subscription -> log.debug("Postprocessing: Merge duplicate embedded objects"))
                 .subscribe();
     }
 
@@ -62,7 +62,7 @@ public class MergeDuplicateEmbeddedObjects {
     void handleEntitiesCreatedForDuplicateMerge(EntityCreatedEvent event) {
         Flux.fromIterable(event.listInsertedFragmentSubjects())
                 .flatMap(iri -> handleEntityCreated(iri, event.getEnvironment()))
-                .doOnSubscribe(subscription -> log.info("Postprocessing: Merge duplicate embedded objects"))
+                .doOnSubscribe(subscription -> log.debug("Postprocessing: Merge duplicate embedded objects"))
                 .subscribe();
     }
 

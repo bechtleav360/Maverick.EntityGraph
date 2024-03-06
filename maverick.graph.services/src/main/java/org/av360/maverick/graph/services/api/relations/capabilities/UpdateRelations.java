@@ -18,7 +18,6 @@ package org.av360.maverick.graph.services.api.relations.capabilities;
 import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.model.context.SessionContext;
 import org.av360.maverick.graph.model.entities.Transaction;
-import org.av360.maverick.graph.model.errors.requests.InvalidEntityUpdate;
 import org.av360.maverick.graph.model.events.LinkRemovedEvent;
 import org.av360.maverick.graph.services.api.Api;
 import org.av360.maverick.graph.store.rdf.fragments.RdfTransaction;
@@ -36,18 +35,11 @@ public class UpdateRelations {
     }
 
 
-    public Mono<Transaction> insert(String entityKey, String prefixedKey, String targetKey, Boolean replace, SessionContext ctx) {
-        return Mono.zip(
-                        api.entities().select().resolveAndVerify(entityKey, ctx),
-                        api.entities().select().resolveAndVerify(targetKey, ctx),
-                        api.identifiers().prefixes().resolvePrefixedName(prefixedKey)
-                )
-                .switchIfEmpty(Mono.error(new InvalidEntityUpdate(entityKey, "Failed to insert link")))
-                .flatMap(triple ->
-                        api.values().insert().insert(triple.getT1(), triple.getT3(), triple.getT2(), !Objects.isNull(replace) && replace, ctx)
-                );
+    public Mono<Transaction> insert(IRI entityIdentifier, IRI predicate, IRI targetIdentifier, Boolean replace, SessionContext ctx) {
+        return  api.values().insert().insert(entityIdentifier, predicate, targetIdentifier, !Objects.isNull(replace) && replace, ctx);
     }
 
+    @Deprecated
     public Mono<Transaction> remove(String entityKey, String prefixedKey, String targetKey, SessionContext ctx) {
         return Mono.zip(
                 api.entities().select().resolveAndVerify(entityKey, ctx),
@@ -55,17 +47,19 @@ public class UpdateRelations {
                 api.identifiers().prefixes().resolvePrefixedName(prefixedKey)
 
         ).flatMap(triple ->
-                this.removeLinkStatement(triple.getT1(), triple.getT3(), triple.getT2(), new RdfTransaction(), ctx)
-        ).doOnSuccess(trx -> {
-            api.publishEvent(new LinkRemovedEvent(trx, ctx.getEnvironment()));
-        }).doOnError(error -> log.error("Failed to remove link due to reason: {}", error.getMessage()));
+                this.remove(triple.getT1(), triple.getT3(), triple.getT2(), ctx)
+        );
     }
 
-    private Mono<Transaction> removeLinkStatement(IRI entityIdentifier, IRI predicate, IRI targetIdentifier, Transaction transaction, SessionContext ctx) {
-
+    public Mono<Transaction> remove(IRI entityIdentifier, IRI predicate, IRI targetIdentifier, SessionContext ctx) {
         return this.api.entities().getStore().asStatementsAware().listStatements(entityIdentifier, predicate, targetIdentifier, ctx.getEnvironment())
-                .map(transaction::removes)
-                .flatMap(trx -> api.entities().getStore().asCommitable().commit(trx, ctx.getEnvironment()));
+                .map(statements -> new RdfTransaction().removes(statements))
+                .flatMap(trx -> api.entities().getStore().asCommitable().commit(trx, ctx.getEnvironment()))
+                .doOnSuccess(trx -> {
+                    api.publishEvent(new LinkRemovedEvent(trx, ctx.getEnvironment()));
+                })
+                .doOnError(error -> log.error("Failed to remove link due to reason: {}", error.getMessage()));
 
     }
+
 }

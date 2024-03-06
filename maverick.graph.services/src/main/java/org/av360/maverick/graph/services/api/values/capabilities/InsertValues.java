@@ -46,6 +46,7 @@ public class InsertValues {
         this.api = services;
     }
 
+    @Deprecated
     public Mono<Transaction> insert(String entityKey, String prefixedPoperty, String value, String languageTag, Boolean replace, SessionContext ctx) {
         return Mono.zip(
                         api.entities().select().resolveAndVerify(entityKey, ctx),
@@ -170,7 +171,7 @@ public class InsertValues {
 
     }
 
-    private Mono<Value> normalizeValue(String value, String languageTag) {
+    public Mono<Value> normalizeValue(String value, String languageTag) {
         if (value.matches("^<\\w+:(/?/?)[^\\s>]+>$")) {
             value = value.substring(1, value.length() - 1);
             return Mono.just(SimpleValueFactory.getInstance().createIRI(value));

@@ -43,6 +43,7 @@ public class DeleteValue {
         this.api = ctrl;
     }
 
+    @Deprecated
     public Mono<Transaction> remove(String entityKey, String predicate, String languageTag, String valueIdentifier, SessionContext ctx) {
         return Mono.zip(
                         api.entities().select().resolveAndVerify(entityKey, ctx),

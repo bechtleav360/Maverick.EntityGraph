@@ -75,7 +75,10 @@ public class EntityServicesImpl implements EntityServices {
     @OnRepositoryType(RepositoryType.ENTITIES)
     public Mono<RdfFragment> get(Resource entityIri, boolean details, int depth, SessionContext ctx) {
         return this.api.entities().getStore().asFragmentable().getFragment(entityIri, depth, details, ctx.getEnvironment())
-                .switchIfEmpty(Mono.error(new EntityNotFound(entityIri)));
+                .switchIfEmpty(Mono.error(new EntityNotFound(entityIri)))
+                .doOnSubscribe(subscription -> {
+                    log.info("Loading entity <{}> in scope '{}'. Details: {}", entityIri.stringValue(), ctx.getEnvironment().getScope(), details ? "enabled": "disabled");
+                });
     }
 
 
@@ -90,21 +93,17 @@ public class EntityServicesImpl implements EntityServices {
     @RequiresPrivilege(Authorities.READER_VALUE)
     @OnRepositoryType(RepositoryType.ENTITIES)
     public Flux<RdfFragment> list(int limit, int offset, SessionContext ctx, String query) {
-        return api.entities().find().list(limit, offset, ctx, query);
+        return api.entities().find().list(limit, offset, ctx, query)
+                .doOnSubscribe(subscription -> {
+                    log.info("Listing entities in scope '{}' ", ctx.getEnvironment().getScope());
+                });
     }
 
-    @Override
-    @RequiresPrivilege(Authorities.READER_VALUE)
-    @OnRepositoryType(RepositoryType.ENTITIES)
-    public Mono<RdfFragment> findByKey(String entityKey, boolean details, int depth, SessionContext ctx) {
-        return api.identifiers().localIdentifiers().asLocalIRI(entityKey, ctx.getEnvironment())
-                .flatMap(entityIdentifier -> this.get(entityIdentifier, details, depth, ctx));
-    }
 
-    @Override
-    @RequiresPrivilege(Authorities.READER_VALUE)
-    @OnRepositoryType(RepositoryType.ENTITIES)
-    public Mono<RdfFragment> findByProperty(String identifier, IRI predicate, boolean details, int depth, SessionContext ctx) {
+
+
+
+    private Mono<RdfFragment> findByProperty(String identifier, IRI predicate, boolean details, int depth, SessionContext ctx) {
         return api.entities().find().findByProperty(identifier, predicate, details, depth, ctx);
     }
 
@@ -112,12 +111,14 @@ public class EntityServicesImpl implements EntityServices {
     @RequiresPrivilege(Authorities.READER_VALUE)
     @OnRepositoryType(RepositoryType.ENTITIES)
     public Mono<RdfFragment> find(String key, @Nullable String property, boolean details, int depth, SessionContext ctx) {
-        if (StringUtils.hasLength(property)) {
-            return this.api.identifiers().prefixes().resolvePrefixedName(property)
-                    .flatMap(propertyIri -> this.findByProperty(key, propertyIri, details, depth, ctx));
-        } else {
-            return this.findByKey(key,  details, depth, ctx);
-        }
+        Mono<RdfFragment> result = StringUtils.hasLength(property) ?
+                this.api.identifiers().prefixes().resolvePrefixedName(property)
+                        .flatMap(propertyIri -> this.findByProperty(key, propertyIri, details, depth, ctx)) :
+                this.findByKey(key,  details, depth, ctx);
+
+        return result.doOnSubscribe(subscription -> {
+            log.info("Find entity with key '{}' in scope '{}'. Property: {}", key, ctx.getEnvironment().getScope(), StringUtils.hasLength(property) ? property: "none");
+        });
     }
 
     @Override
@@ -176,7 +177,10 @@ public class EntityServicesImpl implements EntityServices {
     @RequiresPrivilege(Authorities.MAINTAINER_VALUE)
     @OnRepositoryType(RepositoryType.ENTITIES)
     public Mono<Transaction> remove(IRI entityIri, SessionContext ctx) {
-        return api.entities().updates().delete(entityIri, ctx);
+        return api.entities().updates().delete(entityIri, ctx)
+                .doOnSubscribe(subscription -> {
+                    log.info("Deleting entity with key '{}' in scope '{}'.", entityIri.stringValue(), ctx.getEnvironment().getScope());
+                });
     }
 
 
@@ -198,7 +202,11 @@ public class EntityServicesImpl implements EntityServices {
                 .flatMap(transaction -> entityStore.asCommitable().commit(transaction, ctx.getEnvironment()))
                 .doOnSuccess(transaction -> {
                     eventPublisher.publishEvent(new EntityCreatedEvent(transaction, ctx.getEnvironment()));
-                });
+                })
+                .doOnSubscribe(subscription -> {
+                    log.info("Creating entity in scope '{}'.", ctx.getEnvironment().getScope());
+                })
+                ;
 
 
         // return this.authorizationService.check(ctx, Authorities.CONTRIBUTOR).then(action);
@@ -220,6 +228,11 @@ public class EntityServicesImpl implements EntityServices {
                 .flatMap(model -> entityStore.asCommitable().insertStatements(model, transaction));
     }
 
+
+    private Mono<RdfFragment> findByKey(String entityKey, boolean details, int depth, SessionContext ctx) {
+        return api.identifiers().localIdentifiers().asLocalIRI(entityKey, ctx.getEnvironment())
+                .flatMap(entityIdentifier -> this.get(entityIdentifier, details, depth, ctx));
+    }
 
     /**
      * Adds the entity to the model and creates a connection from the entity to the new entity

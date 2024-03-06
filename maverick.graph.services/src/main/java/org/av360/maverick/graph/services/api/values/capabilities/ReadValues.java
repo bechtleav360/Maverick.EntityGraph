@@ -45,6 +45,8 @@ public class ReadValues {
 
     public ReadValues(Api api) {
 
+        
+
         this.api = api;
     }
 
@@ -73,6 +75,18 @@ public class ReadValues {
     }
 
 
+    public Mono<Triples> getValue(IRI entityIdentifier, IRI predicate, String languageTag, String valueIdentifier, SessionContext ctx) {
+        return api.entities().select().get(entityIdentifier, true, 0, ctx)
+                .map(entity -> entity.filter(st -> {
+                    if (st.getSubject().isTriple()) {
+                        // include details for the given value predicate
+                        return ((Triple) st.getSubject()).getPredicate().equals(predicate);
+                    } else {
+                        // include the value statements
+                        return st.getPredicate().equals(predicate);
+                    }
+                }));
+    }
 
 
 
@@ -120,9 +134,6 @@ public class ReadValues {
         else if(list.size() == 0) return Optional.empty();
         else return Optional.of(list.get(0));
     }
-
-
-
 
 
 

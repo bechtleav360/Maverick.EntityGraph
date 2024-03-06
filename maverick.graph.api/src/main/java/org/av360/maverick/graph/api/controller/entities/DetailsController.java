@@ -34,7 +34,7 @@ public class DetailsController extends AbstractController implements DetailsAPI 
                 .flatMapMany(ctx -> values.listDetails(key, prefixedProperty, valueIdentifier, ctx))
                 .map(pair -> new Responses.Detail(pair.getKey().stringValue(), pair.getValue().stringValue()))
                 .doOnSubscribe(s -> {
-                    if (log.isDebugEnabled()) log.  debug("Reading details for property '{}' of entity '{}'", prefixedProperty, key);
+                    if (log.isDebugEnabled()) log.debug("Reading details for property '{}' of entity '{}'", prefixedProperty, key);
                 });
     }
 

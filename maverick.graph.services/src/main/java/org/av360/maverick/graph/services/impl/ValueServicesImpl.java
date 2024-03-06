@@ -22,6 +22,7 @@ import org.av360.maverick.graph.model.annotations.RequiresPrivilege;
 import org.av360.maverick.graph.model.context.SessionContext;
 import org.av360.maverick.graph.model.entities.Transaction;
 import org.av360.maverick.graph.model.enums.RepositoryType;
+import org.av360.maverick.graph.model.errors.requests.InvalidEntityUpdate;
 import org.av360.maverick.graph.model.rdf.Triples;
 import org.av360.maverick.graph.model.security.Authorities;
 import org.av360.maverick.graph.services.EntityServices;
@@ -40,6 +41,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import javax.annotation.Nullable;
+import java.util.Objects;
 import java.util.Set;
 
 @Slf4j(topic = "graph.svc.values")
@@ -79,7 +81,13 @@ public class ValueServicesImpl implements ValueServices {
     @RequiresPrivilege(Authorities.CONTRIBUTOR_VALUE)
     @OnRepositoryType(RepositoryType.ENTITIES)
     public Mono<Transaction> insertValue(String entityKey, String prefixedPoperty, String value, String languageTag, @Nullable Boolean replace, SessionContext ctx) {
-        return this.api.values().insert().insert(entityKey, prefixedPoperty, value, languageTag, replace, ctx);
+        return Mono.zip(
+                        api.entities().select().resolveAndVerify(entityKey, ctx),
+                        api.identifiers().prefixes().resolvePrefixedName(prefixedPoperty),
+                        api.values().insert().normalizeValue(value, languageTag)
+                )
+                .switchIfEmpty(Mono.error(new InvalidEntityUpdate(entityKey, "Failed to insert value")))
+                .flatMap(triple -> this.insertValue(triple.getT1(), triple.getT2(), triple.getT3(), Objects.isNull(replace) ? Boolean.FALSE : replace, ctx));
     }
 
 
@@ -87,7 +95,10 @@ public class ValueServicesImpl implements ValueServices {
     @RequiresPrivilege(Authorities.CONTRIBUTOR_VALUE)
     @OnRepositoryType(RepositoryType.ENTITIES)
     public Mono<Transaction> insertValue(IRI entityIdentifier, IRI predicate, Value value, @Nullable Boolean replace, SessionContext ctx) {
-        return this.api.values().insert().insert(entityIdentifier, predicate, value, replace, ctx);
+        return this.api.values().insert().insert(entityIdentifier, predicate, value, replace, ctx)
+                .doOnSubscribe(subscription -> {
+                    log.info("Insert value for entity <{}> and property <{}> in scope '{}'.", entityIdentifier, predicate, ctx.getEnvironment().getScope());
+                });
     }
 
     /**
@@ -96,15 +107,49 @@ public class ValueServicesImpl implements ValueServices {
     @Override
     @RequiresPrivilege(Authorities.CONTRIBUTOR_VALUE)
     @OnRepositoryType(RepositoryType.ENTITIES)
-    public Mono<Transaction> removeValue(String entityKey, String predicate, @Nullable String languageTag, @Nullable String valueIdentifier, SessionContext ctx) {
-        return this.api.values().remove().remove(entityKey, predicate, languageTag, valueIdentifier, ctx);
+    public Mono<Transaction> removeValue(String entityKey, String prefixedPoperty, @Nullable String languageTag, @Nullable String valueIdentifier, SessionContext ctx) {
+        return Mono.zip(
+                        api.entities().select().resolveAndVerify(entityKey, ctx),
+                        api.identifiers().prefixes().resolvePrefixedName(prefixedPoperty)
+                )
+                .switchIfEmpty(Mono.error(new InvalidEntityUpdate(entityKey, "Failed to remove value")))
+                .flatMap(tuple -> this.removeValue(tuple.getT1(), tuple.getT2(), languageTag, valueIdentifier, ctx));
     }
 
     @Override
     @RequiresPrivilege(Authorities.CONTRIBUTOR_VALUE)
     @OnRepositoryType(RepositoryType.ENTITIES)
+    public Mono<Transaction> removeValue(IRI entityIdentifier, IRI predicate, @Nullable String languageTag, @Nullable String valueIdentifier, SessionContext ctx) {
+        return this.api.values().remove().remove(entityIdentifier, predicate, languageTag, valueIdentifier, ctx)
+                .doOnSubscribe(subscription -> {
+                    log.info("Removing value for entity <{}> and property <{}> in scope '{}'.", entityIdentifier, predicate, ctx.getEnvironment().getScope());
+                });
+    }
+
+
+    @Override
+    @RequiresPrivilege(Authorities.CONTRIBUTOR_VALUE)
+    @OnRepositoryType(RepositoryType.ENTITIES)
     public Mono<Transaction> insertLink(String entityKey, String prefixedKey, String targetKey, @Nullable Boolean replace, SessionContext ctx) {
-        return this.api.relations().updates().insert(entityKey, prefixedKey, targetKey, replace, ctx);
+        return Mono.zip(
+                        api.entities().select().resolveAndVerify(entityKey, ctx),
+                        api.entities().select().resolveAndVerify(targetKey, ctx),
+                        api.identifiers().prefixes().resolvePrefixedName(prefixedKey)
+                )
+                .switchIfEmpty(Mono.error(new InvalidEntityUpdate(entityKey, "Failed to insert link")))
+                .flatMap(triple ->
+                        this.insertLink(triple.getT1(), triple.getT3(), triple.getT2(), !Objects.isNull(replace) && replace, ctx)
+                );
+    }
+
+    @Override
+    @RequiresPrivilege(Authorities.CONTRIBUTOR_VALUE)
+    @OnRepositoryType(RepositoryType.ENTITIES)
+    public Mono<Transaction> insertLink(IRI entityIdentifier, IRI predicate, IRI targetIdentifier, @Nullable Boolean replace, SessionContext ctx) {
+        return this.api.relations().updates().insert(entityIdentifier, predicate, targetIdentifier, replace, ctx)
+                .doOnSubscribe(subscription -> {
+                    log.info("Inserting link from entity <{}> to entity <{}> with property <{}> in scope '{}'.", entityIdentifier, targetIdentifier, predicate, ctx.getEnvironment().getScope());
+                });
     }
 
 
@@ -113,10 +158,20 @@ public class ValueServicesImpl implements ValueServices {
     @OnRepositoryType(RepositoryType.ENTITIES)
     public Mono<Transaction> insertDetail(String entityKey, String prefixedValueKey, String prefixedDetailKey, String value, @Nullable String hash, SessionContext ctx) {
         return Mono.zip(
-                api.identifiers().localIdentifiers().asLocalIRI(entityKey, ctx.getEnvironment()),
-                api.identifiers().prefixes().resolvePrefixedName(prefixedValueKey),
-                api.identifiers().prefixes().resolvePrefixedName(prefixedDetailKey)
-        ).flatMap(t -> api.details().inserts().insert(t.getT1(), t.getT2(), t.getT3(), value, hash, ctx));
+                        api.identifiers().localIdentifiers().asLocalIRI(entityKey, ctx.getEnvironment()),
+                        api.identifiers().prefixes().resolvePrefixedName(prefixedValueKey),
+                        api.identifiers().prefixes().resolvePrefixedName(prefixedDetailKey)
+                ).flatMap(t -> this.insertDetail(t.getT1(), t.getT2(), t.getT3(), value, hash, ctx));
+    }
+
+    @Override
+    @RequiresPrivilege(Authorities.CONTRIBUTOR_VALUE)
+    @OnRepositoryType(RepositoryType.ENTITIES)
+    public Mono<Transaction> insertDetail(IRI entityIdentifier, IRI valuePredicate, IRI detailPredicate, String value, @Nullable String hash, SessionContext ctx) {
+        return api.details().inserts().insert(entityIdentifier, valuePredicate, detailPredicate, value, hash, ctx)
+                .doOnSubscribe(subscription -> {
+                    log.info("Inserting detail <{}> for entity <{}> and property <{}> in scope '{}'.", detailPredicate, entityIdentifier, valuePredicate, ctx.getEnvironment().getScope());
+                });
     }
 
 
@@ -131,16 +186,25 @@ public class ValueServicesImpl implements ValueServices {
     @Override
     @RequiresPrivilege(Authorities.CONTRIBUTOR_VALUE)
     @OnRepositoryType(RepositoryType.ENTITIES)
-    public Mono<Transaction> removeValue(IRI entityIdentifier, IRI predicate, @Nullable String languageTag, @Nullable String valueIdentifier, SessionContext ctx) {
-        return this.api.values().remove().remove(entityIdentifier, predicate, languageTag, valueIdentifier, ctx);
-    }
+    public Mono<Transaction> removeLink(String entityKey, String prefixedProperty, String targetKey, SessionContext ctx) {
+        return Mono.zip(
+                api.entities().select().resolveAndVerify(entityKey, ctx),
+                api.entities().select().resolveAndVerify(targetKey, ctx),
+                api.identifiers().prefixes().resolvePrefixedName(prefixedProperty)
 
+        ).flatMap(triple ->
+                this.removeLink(triple.getT1(), triple.getT3(), triple.getT2(), ctx)
+        );
+    }
 
     @Override
     @RequiresPrivilege(Authorities.CONTRIBUTOR_VALUE)
     @OnRepositoryType(RepositoryType.ENTITIES)
-    public Mono<Transaction> removeLink(String entityKey, String prefixedProperty, String targetKey, SessionContext ctx) {
-        return this.api.relations().updates().remove(entityKey, prefixedProperty, targetKey, ctx);
+    public Mono<Transaction> removeLink(IRI entityIdentifier, IRI predicate, IRI targetIdentifier, SessionContext ctx) {
+        return this.api.relations().updates().remove(entityIdentifier, predicate, targetIdentifier, ctx)
+                .doOnSubscribe(subscription -> {
+                    log.info("Removing link from entity <{}> to entity <{}> with property <{}> in scope '{}'.", entityIdentifier, targetIdentifier, predicate, ctx.getEnvironment().getScope());
+                });
     }
 
     @Override
@@ -179,8 +243,17 @@ public class ValueServicesImpl implements ValueServices {
 
     @Override
     @OnRepositoryType(RepositoryType.ENTITIES)
-    public Flux<Pair<IRI, Value>> listDetails(String key, String prefixedProperty, String valueIdentifier, SessionContext ctx) {
-        return this.api.details().selects().listDetails(key, prefixedProperty, valueIdentifier, ctx);
+    public Flux<Pair<IRI, Value>> listDetails(String entityKey, String prefixedProperty, String valueIdentifier, SessionContext ctx) {
+        return this.api.details().selects().listDetails(entityKey, prefixedProperty, valueIdentifier, ctx);
+    }
+
+    @Override
+    public Mono<Triples> getValue(String entityKey, String prefixedProperty, @Nullable String languageTag, @Nullable String valueIdentifier, SessionContext ctx) {
+        return Mono.zip(
+                        api.identifiers().localIdentifiers().asLocalIRI(entityKey, ctx.getEnvironment()),
+                        api.identifiers().prefixes().resolvePrefixedName(prefixedProperty)
+                )
+                .flatMap(pair -> this.api.values().read().getValue(pair.getT1(), pair.getT2(), languageTag, valueIdentifier, ctx));
     }
 
 

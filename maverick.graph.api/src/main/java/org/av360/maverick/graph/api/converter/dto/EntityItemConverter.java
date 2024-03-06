@@ -67,7 +67,7 @@ public class EntityItemConverter {
     }
 
     private static Set<Responses.ValueObject> getValueObjects(RdfFragment fragment) {
-        return ValueObjectConverter.fromTriples(getKey(fragment), fragment);
+        return ValueObjectConverter.listFromTriples(getKey(fragment), fragment);
     }
 
     private static Map<String, String> getMetadata(RdfFragment fragment) {

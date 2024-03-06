@@ -32,6 +32,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import javax.annotation.Nullable;
 
@@ -55,7 +56,7 @@ import javax.annotation.Nullable;
         \s 
         You can also store objects (binary files, large text documents, etc.) as values to an entity via file upload. 
         They are persisted in an object store. Adresses, compound names, etc. should be stored as composites. 
-        
+                
         """)
 public interface ValuesAPI {
 
@@ -129,11 +130,39 @@ public interface ValuesAPI {
             consumes = {MediaType.TEXT_PLAIN_VALUE},
             produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE})
     @ResponseStatus(HttpStatus.OK)
-    Flux<AnnotatedStatement> insert(@PathVariable String key,
-                                    @PathVariable String prefixedProperty,
-                                    @RequestBody String value,
-                                    @Nullable @RequestParam(required = false) String languageTag,
-                                    @Nullable @RequestParam(required = false) Boolean replace);
+    Flux<AnnotatedStatement> insertAsRdf(@PathVariable String key,
+                                         @PathVariable String prefixedProperty,
+                                         @RequestBody String value,
+                                         @Nullable @RequestParam(required = false) String languageTag,
+                                         @Nullable @RequestParam(required = false) Boolean replace);
+
+
+    @PostMapping(value = "/entities/{key:[\\w|\\d|\\-|\\_]+}/values/{prefixedProperty:[\\w|\\d]+\\.[\\w|\\d|\\-|\\_]+}",
+            consumes = {MediaType.APPLICATION_JSON_VALUE},
+            produces = {MediaType.APPLICATION_JSON_VALUE})
+    @ResponseStatus(HttpStatus.OK)
+    Flux<AnnotatedStatement> insertAsJson(@PathVariable String key,
+                                          @PathVariable String prefixedProperty,
+                                          @RequestBody String value,
+                                          @Nullable @RequestParam(required = false) String languageTag,
+                                          @Nullable @RequestParam(required = false) Boolean replace);
+
+
+    @GetMapping(value = "/entities/{key:[\\w|\\d|\\-|\\_]+}/values/{prefixedProperty:[\\w|\\d]+\\.[\\w|\\d|\\-|\\_]+}",
+            produces = {RdfMimeTypes.TURTLE_VALUE, RdfMimeTypes.JSONLD_VALUE})
+    @ResponseStatus(HttpStatus.OK)
+    Flux<AnnotatedStatement> getAsRdf(@PathVariable String key,
+                                      @PathVariable String prefixedProperty,
+                                      @Nullable @RequestParam(required = false) String languageTag,
+                                      @Nullable @RequestParam(required = false) String valueIdentifier);
+
+    @GetMapping(value = "/entities/{key:[\\w|\\d|\\-|\\_]+}/values/{prefixedProperty:[\\w|\\d]+\\.[\\w|\\d|\\-|\\_]+}",
+            produces = {MediaType.APPLICATION_JSON_VALUE})
+    @ResponseStatus(HttpStatus.OK)
+    Mono<Responses.ValueObject> getAsJson(@PathVariable String key,
+                                          @PathVariable String prefixedProperty,
+                                          @Nullable @RequestParam(required = false) String languageTag,
+                                          @Nullable @RequestParam(required = false) String valueIdentifier);
 
 
     @Operation(

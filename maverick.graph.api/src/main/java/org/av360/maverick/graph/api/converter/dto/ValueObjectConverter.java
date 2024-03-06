@@ -30,7 +30,23 @@ import java.util.stream.Collectors;
 public class ValueObjectConverter {
 
 
-    public static Set<Responses.ValueObject> fromTriples(String entityKey, Triples triples) {
+    public static Responses.ValueObject getFromTriples(String entityKey, Triples triples) {
+        return triples.streamStatements()
+                .filter(statement -> statement.getSubject().isIRI())
+                .filter(statement -> statement.getSubject().stringValue().endsWith(entityKey))
+                .filter(statement -> !statement.getPredicate().getNamespace().equalsIgnoreCase(RDF.NAMESPACE))
+                .filter(statement -> !Common.isRelationStatement(statement, triples))
+                .map(statement -> new Responses.ValueObject(
+                        statement.getPredicate().stringValue(),
+                        getValue(statement.getObject(), triples),
+                        getLanguage(statement.getObject()),
+                        Common.getMetadata(statement, triples),
+                        Common.getDetails(statement, triples)
+                ))
+                .findFirst().orElseThrow();
+    }
+
+    public static Set<Responses.ValueObject> listFromTriples(String entityKey, Triples triples) {
         return triples.streamStatements()
                 .filter(statement -> statement.getSubject().isIRI())
                 .filter(statement -> statement.getSubject().stringValue().endsWith(entityKey))

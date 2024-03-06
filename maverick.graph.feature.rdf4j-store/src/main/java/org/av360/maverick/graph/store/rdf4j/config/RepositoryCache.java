@@ -36,8 +36,8 @@ final class RepositoryCache {
 
 
     private Map<String, ManagedRepositoryItem> cache;
-    public static int TIME_TO_IDLE = 60;
-    public static int TIME_TO_EVICT = 120;
+    public static int TIME_TO_IDLE = 300;
+    public static int TIME_TO_EVICT = 600;
 
     public RepositoryCache() {
         this.cache = new ConcurrentHashMap<>();

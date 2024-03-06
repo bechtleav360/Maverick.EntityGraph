@@ -100,19 +100,6 @@ public interface EntityServices {
     Mono<Transaction> linkEntityTo(String entityKey, IRI predicate, Triples linkedEntities, SessionContext ctx);
 
 
-    /**
-     * Retrieves a complete entity representation (identifier, values and relations) from store.
-     *
-     * @param authentication The current authentication
-     * @param entityKey      The unique entity key
-     * @param details
-     * @param depth
-     * @return Entity as Mono
-     */
-
-    Mono<RdfFragment> findByKey(String entityKey, boolean details, int depth, SessionContext ctx);
-
-    Mono<RdfFragment> findByProperty(String identifier, IRI predicate, boolean details, int depth, SessionContext ctx);
 
     Mono<RdfFragment> find(String entityKey, @Nullable String property, boolean details, int depth, SessionContext ctx);
 

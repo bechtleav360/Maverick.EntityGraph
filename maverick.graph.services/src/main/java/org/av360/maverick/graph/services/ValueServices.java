@@ -1,9 +1,13 @@
 package org.av360.maverick.graph.services;
 
 import org.apache.commons.lang3.tuple.Pair;
+import org.av360.maverick.graph.model.annotations.OnRepositoryType;
+import org.av360.maverick.graph.model.annotations.RequiresPrivilege;
 import org.av360.maverick.graph.model.context.SessionContext;
 import org.av360.maverick.graph.model.entities.Transaction;
+import org.av360.maverick.graph.model.enums.RepositoryType;
 import org.av360.maverick.graph.model.rdf.Triples;
+import org.av360.maverick.graph.model.security.Authorities;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Statement;
@@ -53,6 +57,10 @@ public interface ValueServices {
     Mono<Transaction> insertValue(IRI entityIdentifier, IRI predicate, Value value, @Nullable Boolean replace, SessionContext ctx);
 
 
+    @RequiresPrivilege(Authorities.CONTRIBUTOR_VALUE)
+    @OnRepositoryType(RepositoryType.ENTITIES)
+    Mono<Transaction> insertLink(IRI entityIdentifier, IRI predicate, IRI targetIdentifier, @Nullable Boolean replace, SessionContext ctx);
+
     /**
      * Inserts an annotation to an existing property
      *
@@ -70,6 +78,10 @@ public interface ValueServices {
                                    String value,
                                    @Nullable String hash,
                                    SessionContext ctx);
+
+
+
+    Mono<Transaction> insertDetail(IRI entityIdentifier, IRI valuePredicate, IRI detailPredicate, String value, @Nullable String hash, SessionContext ctx);
 
     /**
      * Inserts a set of statement as embedded entity
@@ -112,6 +124,10 @@ public interface ValueServices {
     Mono<Transaction> removeLink(String entityKey, String prefixedValueKey, String targetKey, SessionContext ctx);
 
 
+    @RequiresPrivilege(Authorities.CONTRIBUTOR_VALUE)
+    @OnRepositoryType(RepositoryType.ENTITIES)
+    Mono<Transaction> removeLink(IRI entityIdentifier, IRI predicate, IRI targetIdentifier, SessionContext ctx);
+
     /**
      * Removes a detail associated with a given entity key, value predicate, and detail predicate.
      *
@@ -141,4 +157,6 @@ public interface ValueServices {
 
 
     Flux<Pair<IRI, Value>> listDetails(String key, String prefixedProperty, String valueIdentifier, SessionContext ctx);
+
+    Mono<Triples> getValue(String key, String prefixedProperty, String languageTag, String valueIdentifier, SessionContext ctx);
 }

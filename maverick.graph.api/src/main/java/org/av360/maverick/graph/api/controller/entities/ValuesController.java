@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import javax.annotation.Nullable;
 
@@ -55,7 +56,7 @@ public class ValuesController extends AbstractController implements ValuesAPI {
 
         return super.acquireContext()
                 .flatMap(ctx -> values.listValues(key, prefixedProperty, ctx))
-                .map(triples -> ValueObjectConverter.fromTriples(key, triples))
+                .map(triples -> ValueObjectConverter.listFromTriples(key, triples))
                 .flatMapMany(Flux::fromIterable)
                 .doOnSubscribe(s -> {
                     if (log.isDebugEnabled())
@@ -65,7 +66,7 @@ public class ValuesController extends AbstractController implements ValuesAPI {
 
 
     @Override
-    public Flux<AnnotatedStatement> insert(String key,
+    public Flux<AnnotatedStatement> insertAsRdf(String key,
                                            String prefixedProperty,
                                            String value,
                                            String languageTag,
@@ -78,6 +79,27 @@ public class ValuesController extends AbstractController implements ValuesAPI {
                 .doOnSubscribe(s -> {
                     if (log.isDebugEnabled())
                         log.debug("Request to set property '{}' of entity '{}' to value '{}'", prefixedProperty, key, value.length() > 64 ? value.substring(0, 64) : value);
+                });
+    }
+
+    @Override
+    public Flux<AnnotatedStatement> insertAsJson(String key, String prefixedProperty, String value, @Nullable String languageTag, @Nullable Boolean replace) {
+        return null;
+    }
+
+    @Override
+    public Flux<AnnotatedStatement> getAsRdf(String key, String prefixedProperty, @Nullable String languageTag, @Nullable String valueIdentifier) {
+        return this.list(key, prefixedProperty);
+    }
+
+    @Override
+    public Mono<Responses.ValueObject> getAsJson(String key, String prefixedProperty, @Nullable String languageTag,  @Nullable String valueIdentifier) {
+        return super.acquireContext()
+                .flatMap(ctx -> values.getValue(key, prefixedProperty, languageTag, valueIdentifier, ctx))
+                .map(triples -> ValueObjectConverter.getFromTriples(key, triples))
+                .doOnSubscribe(s -> {
+                    if (log.isDebugEnabled())
+                        log.debug("Request to list values of entity '{}'", key);
                 });
     }
 
