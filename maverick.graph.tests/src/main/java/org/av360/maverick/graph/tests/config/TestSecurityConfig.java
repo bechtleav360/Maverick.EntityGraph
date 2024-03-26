@@ -14,6 +14,7 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.core.task.SyncTaskExecutor;
 import org.springframework.core.task.TaskExecutor;
 import org.springframework.http.HttpMethod;
+import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.authentication.DelegatingReactiveAuthenticationManager;
 import org.springframework.security.authentication.ReactiveAuthenticationManager;
@@ -31,6 +32,7 @@ import java.util.List;
 
 @TestConfiguration
 @EnableWebFluxSecurity
+@EnableAsync
 @Profile({"(test && api) && !secure"})
 @Slf4j(topic = "graph.test.cfg")
 public class TestSecurityConfig {

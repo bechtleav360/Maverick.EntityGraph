@@ -14,6 +14,7 @@ import org.av360.maverick.graph.model.rdf.LocalIRI;
 import org.av360.maverick.graph.model.rdf.Triples;
 import org.av360.maverick.graph.model.security.Authorities;
 import org.av360.maverick.graph.model.util.ValidateReactive;
+import org.av360.maverick.graph.model.vocabulary.meg.Local;
 import org.av360.maverick.graph.services.EntityServices;
 import org.av360.maverick.graph.services.IdentifierServices;
 import org.av360.maverick.graph.services.QueryServices;
@@ -28,7 +29,9 @@ import org.av360.maverick.graph.store.rdf.helpers.TriplesCollector;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.Resource;
+import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.util.ModelCollector;
+import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.rio.RDFFormat;
 import org.eclipse.rdf4j.rio.RDFParser;
 import org.eclipse.rdf4j.rio.RDFParserRegistry;
@@ -45,6 +48,8 @@ import reactor.core.publisher.Mono;
 import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Slf4j(topic = "graph.srvc.entity")
 @Service
@@ -218,14 +223,26 @@ public class EntityServicesImpl implements EntityServices {
     protected Mono<Transaction> prepareTransactions(Triples triples, Map<String, String> parameters, RdfTransaction transaction, SessionContext context) {
 
         if (log.isTraceEnabled())
-            log.trace("Validating and transforming {} statements for new entity. Parameters: {}", triples.streamStatements().count(), parameters.size() > 0 ? parameters : "none");
+            log.trace("Validating and transforming {} statements for new entity. Parameters: {}", triples.streamStatements().count(), !parameters.isEmpty() ? parameters : "none");
 
         // TODO: perform validation via sha
         // https://rdf4j.org/javadoc/3.2.0/org/eclipse/rdf4j/sail/shacl/ShaclSail.html
         return Mono.just(triples)
                 .map(Triples::getModel)
                 .flatMap(model -> preprocessor.handle(model, parameters, context.getEnvironment()))
-                .flatMap(model -> entityStore.asCommitable().insertStatements(model, transaction));
+                // .flatMap(model -> entityStore.asCommitable().insertStatements(model, transaction))
+                .map(model -> {
+                    Transaction trx = new RdfTransaction().inserts(model);
+
+                    Set<Statement> affectedTypeStatements = model.filter(null, RDF.TYPE, null)
+                            .stream()
+                            .filter(statement -> !statement.getObject().stringValue().startsWith(Local.URN_PREFIX))
+                            .collect(Collectors.toSet());
+                    trx.affects(affectedTypeStatements);
+
+
+                    return trx;
+                });
     }
 
 

@@ -18,12 +18,12 @@ package org.av360.maverick.graph.services.postprocessors;
 import lombok.extern.slf4j.Slf4j;
 import org.av360.maverick.graph.model.context.Environment;
 import org.av360.maverick.graph.model.events.EntityCreatedEvent;
+import org.av360.maverick.graph.model.vocabulary.meg.Metadata;
 import org.av360.maverick.graph.services.EntityServices;
 import org.av360.maverick.graph.store.IndividualsStore;
 import org.av360.maverick.graph.store.rdf.fragments.RdfTransaction;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.util.Values;
-import org.eclipse.rdf4j.model.vocabulary.DCTERMS;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
@@ -59,7 +59,7 @@ public class InjectCreationDate {
     Mono<Void> handleEntityCreated(Resource entityIdentifier, Environment environment) {
         return this.entityStore.asFragmentable().getFragment(entityIdentifier, environment)
                 .filter(rdfFragment -> rdfFragment.isIndividual() || rdfFragment.isClassifier())
-                .filter(rdfFragment -> !rdfFragment.hasStatement(rdfFragment.getIdentifier(), DCTERMS.CREATED, null))
+                .filter(rdfFragment -> !rdfFragment.hasStatement(rdfFragment.getIdentifier(), Metadata.CREATED, null))
                 .flatMap(rdfFragment -> {
                     String date = ZonedDateTime.now(ZoneOffset.UTC).truncatedTo(ChronoUnit.SECONDS).format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
                     log.info("Postprocessing: Setting creation date to {}", date);
@@ -67,7 +67,7 @@ public class InjectCreationDate {
 
                             new RdfTransaction().inserts(
                                     rdfFragment.getIdentifier(),
-                                    DCTERMS.CREATED,
+                                    Metadata.CREATED,
                                     Values.literal(date)
                             ),
                             environment

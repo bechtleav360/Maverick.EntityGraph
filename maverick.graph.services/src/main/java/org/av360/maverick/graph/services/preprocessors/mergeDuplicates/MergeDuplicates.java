@@ -23,7 +23,7 @@ import java.util.stream.Collectors;
 @Component
 /**
  * Checks whether duplicates exist in the incoming model. Does not check within the repository (this is delegated to a
- * scheduled job)
+ * scheduled job or postprocessor) 
  */
 @ConditionalOnProperty(name = "application.features.transformers.mergeDuplicates", havingValue = "true")
 public class MergeDuplicates implements ModelPreprocessor {

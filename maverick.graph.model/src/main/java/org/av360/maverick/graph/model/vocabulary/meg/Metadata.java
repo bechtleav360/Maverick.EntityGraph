@@ -28,10 +28,10 @@ public class Metadata {
 
 
     /* Last update date */
-    public static final IRI MODIFIED = LocalIRI.from(NAMESPACE, "modifiedAt");
+    public static final IRI MODIFIED = LocalIRI.from(NAMESPACE, "modified");
 
     /* Creation date */
-    public static final IRI CREATED = LocalIRI.from(NAMESPACE, "createdAt");
+    public static final IRI CREATED = LocalIRI.from(NAMESPACE, "created");
 
 
     /* Hash identifier */

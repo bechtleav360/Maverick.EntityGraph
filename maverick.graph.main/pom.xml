@@ -9,6 +9,7 @@
     </parent>
     <properties>
         <image.name>ghcr.io/bechtleav360/maverick.entity-graph</image.name>
+        <image.tag>${revision}</image.tag>
         <docker.publish>true</docker.publish>
         <docker.registry.host>https://ghcr.io</docker.registry.host>
         <docker.credentials.user>xxx</docker.credentials.user>
@@ -159,13 +160,17 @@
                     <image>
                         <!--suppress UnresolvedMavenProperty -->
                         <name>${image.name}</name>
+                        <tags>${image.name}:${image.tag},${image.name}</tags>
                         <!-- <name>ghcr.io/bechtleav360/maverick-entity-graph</name> -->
                         <publish>${docker.publish}</publish>
                         <verboseLogging>true</verboseLogging>
                         <env>
                             <BP_OCI_SOURCE>https://github.com/bechtleav360/Maverick.EntityGraph</BP_OCI_SOURCE>
                             <BP_JVM_VERSION>${java.version}</BP_JVM_VERSION>
-                            <JAVA_TOOL_OPTIONS>-XX:MaxDirectMemorySize=16GB -Xmx=8GB</JAVA_TOOL_OPTIONS>
+                            <BPL_JVM_HEAD_ROOM>30</BPL_JVM_HEAD_ROOM>
+                            <BPE_DELIM_JAVA_TOOL_OPTIONS xml:space="preserve"> </BPE_DELIM_JAVA_TOOL_OPTIONS>
+                            <BPE_APPEND_JAVA_TOOL_OPTIONS>-XX:MaxDirectMemorySize=16g</BPE_APPEND_JAVA_TOOL_OPTIONS>
+
                         </env>
                     </image>
                     <docker>

@@ -101,7 +101,8 @@ public class RdfConsumer implements Consumer<EntityExchangeResult<byte[]>> {
     }
 
     public Statement findFirstStatement(Resource s, IRI p, Value o) {
-        return StreamSupport.stream(this.asModel().getStatements(s, p, o).spliterator(), false).findFirst().orElseThrow();
+        return StreamSupport.stream(this.asModel().getStatements(s, p, o).spliterator(), false).findFirst()
+                .orElseThrow(() -> new RuntimeException("No statement in result with property <%s> and value %s".formatted(p, o)));
     }
 
     public int countValues(Resource s, IRI p) {

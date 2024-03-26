@@ -93,7 +93,7 @@ public class EntitiesController extends AbstractController implements EntitiesAP
 
         return super.acquireContext()
                 .flatMap(ctx -> entityServices.create(request, Map.of(), ctx))
-                .flatMapIterable(Triples::asStatements)
+                .flatMapIterable(transaction -> transaction.asStatements())
                 .doOnSubscribe(s -> {
                     if (log.isDebugEnabled()) log.debug("Request to create a new Entity");
                     if (log.isTraceEnabled()) log.trace("Payload: \n {}", request);

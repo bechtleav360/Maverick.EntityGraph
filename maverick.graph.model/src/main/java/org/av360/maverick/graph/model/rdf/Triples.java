@@ -7,6 +7,7 @@ import java.io.Serializable;
 import java.util.Collection;
 import java.util.NoSuchElementException;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -22,7 +23,8 @@ public interface Triples extends NamespaceAware, Serializable  {
     Model getModel();
 
     default Collection<AnnotatedStatement> asStatements() {
-        return this.streamStatements().map(statement -> AnnotatedStatement.wrap(statement, this.getNamespaces())).collect(Collectors.toSet());
+        Set<AnnotatedStatement> collect = this.streamStatements().map(statement -> AnnotatedStatement.wrap(statement, this.getNamespaces())).collect(Collectors.toSet());
+        return collect;
     }
 
     default Collection<AnnotatedStatement> asStatements(Resource... context) {

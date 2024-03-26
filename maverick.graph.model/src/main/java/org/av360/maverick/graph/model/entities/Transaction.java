@@ -28,6 +28,10 @@ public interface Transaction extends Triples {
         return this.affects(List.of(SimpleValueFactory.getInstance().createStatement(subject, predicate, value)));
     }
 
+    default Transaction affects(Statement statement) {
+        return this.affects(List.of(statement));
+    }
+
     default Transaction inserts(Resource subject, IRI predicate, Value value) {
         return this.inserts(subject, predicate, value, null);
     }
@@ -121,4 +125,5 @@ public interface Transaction extends Triples {
     default Transaction removes(IRI subject, IRI predicate, Value value, Resource context) {
         return this.removes(Statements.statement(subject, predicate, value, context));
     }
+
 }

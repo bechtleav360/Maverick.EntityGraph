@@ -17,11 +17,11 @@ package org.av360.maverick.graph.services.postprocessors;
 
 import org.av360.maverick.graph.model.context.Environment;
 import org.av360.maverick.graph.model.events.EntityUpdatedEvent;
+import org.av360.maverick.graph.model.vocabulary.meg.Metadata;
 import org.av360.maverick.graph.store.IndividualsStore;
 import org.av360.maverick.graph.store.rdf.fragments.RdfTransaction;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.util.Values;
-import org.eclipse.rdf4j.model.vocabulary.DCTERMS;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
@@ -56,13 +56,13 @@ public class UpdateModifiedDate {
                         RdfTransaction trx = new RdfTransaction();
 
                         // remove old modified date statements
-                        rdfFragment.streamStatements(rdfFragment.getIdentifier(), DCTERMS.MODIFIED, null)
+                        rdfFragment.streamStatements(rdfFragment.getIdentifier(), Metadata.MODIFIED, null)
                                 .forEach(trx::removes);
 
                         // insert current date as last modification date
                         trx.inserts(
                                 rdfFragment.getIdentifier(),
-                                DCTERMS.MODIFIED,
+                                Metadata.MODIFIED,
                                 Values.literal(ZonedDateTime.now(ZoneOffset.UTC).truncatedTo(ChronoUnit.SECONDS).format(DateTimeFormatter.ISO_OFFSET_DATE_TIME))
                         );
 
