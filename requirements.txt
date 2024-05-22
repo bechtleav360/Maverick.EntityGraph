@@ -1,0 +1,9 @@
+mkdocs
+mkdocs-material
+mkdocs-rtd-dropdown
+mkdocs-git-revision-date-plugin
+mkdocs-git-revision-date-localized-plugin 
+mkdocs-yamp
+mkdocs-markdownextradata-plugin
+neoteroi-mkdocs
+Pygments

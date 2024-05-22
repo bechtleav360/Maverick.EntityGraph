@@ -1,14 +1,47 @@
-site_name: Maverick.EntityGraph Documentation
+site_name: Maverick.EntityGraph
 repo_url: https://github.com/bechtleav360/Maverick.EntityGraph
 
+extra_css: 
+   - assets/stylesheets/extra.css
 theme:
   name: material
+  custom_dir: docs/overrides
+  features: 
+   - navigation.tabs
+   - navigation.tabs.sticky   
+
+extra:
+  generator: false
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/bechtleav360
+
+nav: 
+  - "Concepts": 
+    - "Entities": 
+      - "explanations/entities/entity.md"
+      - "explanations/entities/values.md"
+      - "explanations/entities/relations.md"
+      - "explanations/entities/details.md"   
+      - "explanations/entities/classifier.md"         
+    - "Graph": 
+      - "explanations/graph/index.md"
+    - "Behaviours": 
+      - "explanations/features/idempotence.md"
+      - "explanations/features/multitenancy.md"
+
+  - "Reference": 
+    - "reference/index.md"
+  - "Tutorials": 
+    - "tutorials/index.md"
+  - "Guides": 
+    - "guides/index.md"
+
+# extra_css:
+#   - css/neoteroi-mkdocs.css
 
 plugins:
   - search
-
-
-
 
 markdown_extensions:
   - admonition
@@ -24,3 +57,4 @@ markdown_extensions:
       custom_checkbox: true
   - pymdownx.tabbed:
       alternate_style: true
+# - neoteroi.cards      
